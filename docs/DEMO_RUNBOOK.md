@@ -1,83 +1,144 @@
-# Monday demonstration runbook
+# Monday demonstration runbook — Phase 2
 
-**Meeting target:** Monday, November 2, 2026, New Western Georgia office.  
-**Purpose:** Demonstrate a tangible workflow and earn interest in an authorized pilot.  
-**Positioning:** “A concept for New Western by Tailored Agents.” No endorsement or production access claim.
+**Meeting target:** Monday, November 2, 2026, prospective New Western Georgia office pilot.
 
-## Preparation
+**Purpose:** Show a working investor-to-property workflow and identify the requirements for an authorized pilot.
 
-1. Use the setup in the root README. Run the required checks, then `npm run build` and `npm run test:smoke` before the meeting. The default smoke runner uses a disposable database and automatically starts/stops its own app and worker; it does not alter meeting data.
-2. Start the app on localhost; the normal launcher starts its worker too. Confirm the worker startup message before demonstrating unattended jobs/reminders.
-3. Confirm the local SQLite data is present and contains only fictional records. Do not reset it during a running demonstration.
-4. Check the current role and use a dispositions persona for the main story. The settings/demo switcher is not a production login screen. The fixed personas are **Alex Morgan** (dispositions), **Jordan Lee** (acquisitions) and **Taylor Reed** (manager), all in the fictional Atlanta workspace.
-5. If a valid OpenAI API project is available, configure it and perform the live text/voice acceptance test ahead of time. Otherwise plan the clearly labeled local flow.
-6. Check audio device, microphone permission, browser zoom and a narrow/mobile viewport. Keep the fixture flow available if network/provider access fails.
-7. Open Copilot, Investor Hunter, Notes, Work Queue and Settings once to verify no broken navigation.
+**Positioning:** “A concept for New Western by Tailored Agents.” No endorsement, corporate-policy, real-investor or production-access claim.
 
-## Suggested 8–12 minute narrative
+## Prepare the existing workspace
 
-### 1. One assistant knows the work
+1. Follow the [README](../README.md). Double-click **Start AgentDesk.command**, keep its Terminal window open, and open [the local workspace](http://127.0.0.1:3000) after Ready appears. The launcher starts the app and worker together; keep both running for research and reminders.
+2. Check [PROGRESS](PROGRESS.md) for the final verification checkpoint. Before the meeting, run the documented type, lint, test, build and smoke checks if the source has changed. The default smoke runner uses a disposable database and does not alter meeting records. Do not set `SMOKE_BASE_URL` for this preparation unless intentionally adding fixtures to the active workspace.
+3. Preserve the active `data/agentdesk.sqlite` database. Phase 1 is checkpointed at `cded4cd`; `data/phase1-checkpoint.sqlite` is a recovery backup, not a file to restore before the demo. Do not reset the database or erase earlier work.
+4. Confirm the fixed fictional identities under **Settings → Local demonstration identity → Demo user role**: **Alex Morgan** (dispositions), **Jordan Lee** (acquisitions), and **Taylor Reed** (manager). Use the manager briefly for release management, then Alex for the main relationship story. This switcher is a local demo feature, not production sign-in.
+5. Open **Calling queue**, **Property releases**, **Post-call debrief**, **Deal packages**, **Investor Hunter**, **Work queue**, and **Deals & investors** once. On a narrow screen, the navigation menu opens the full workspace; Calls and Debrief also appear in the bottom navigation.
+6. Optional voice: set the authorized API key only in the ignored `.env.local`, restart the server, and test the actual account, selected model, audio device and browser microphone permission in advance. The key stays server-side. A ChatGPT subscription does not supply an API key. Without validated credentials, demonstrate typed workflows and the honest voice setup state.
 
-Open the dashboard and describe pending work, research and review in one place. In Copilot ask:
+### Persisted examples already available
 
-> What should I focus on today?
+These records were created or updated during local browser QA and are deliberately retained. Inspect the current UI before presenting; later demonstrations may have added versions or changed values.
 
-Show that the answer uses stored tasks/jobs/approvals and that result links lead to actual records. Without model credentials, state that this is the local tool demonstration and that natural-language breadth is limited.
-
-### 2. Property-specific investor discovery
-
-Open Investor Hunter. Use the fictional **123 Example Street, Marietta, Georgia** property, county **Cobb**, price **$235,000**, strategy **Fix & flip**, requested count **12**. The sample property selector fills the matching seeded facts.
-
-Start the job, then leave the page to show it persists. Return to the actual stage/progress. Inspect ranking, one score explanation and source evidence. Clearly say:
-
-> These are fictional research fixtures. The research pipeline, scoring, duplicate checks and review flow are working locally; a licensed live source is the next integration.
-
-Filter or inspect existing/possible duplicate classes. Export CSV. Select eligible net-new prospects and prepare an import. Show the pending proposal before approving. The resulting records should appear in the local investor list; never call this a production Salesforce import.
-
-### 3. Call notes turn into reviewable work
-
-Use this fictional transcript or the interface’s sample:
-
-> Agent: Thanks for speaking with me, Mike. What are you looking for?  
-> Mike Bennett: I am looking for fix-and-flip houses in Cobb and Cherokee counties. My budget is $200,000 to $325,000. I use cash for acquisitions and prefer cosmetic rehab.  
-> Agent: When would you like to buy?  
-> Mike Bennett: Within the next 60 days. I am concerned about foundation issues. Please send the property details tomorrow.  
-> Agent: I will send the details and follow up on Friday.
-
-Extract the notes. Review parties, criteria, commitment excerpts, questions/objections and missing information. Explain that extraction reflects employee-provided text and still needs review. Select the matching **Mike Bennett** sample investor, prepare the proposed CRM note and open the approval. Approve once and verify the local notes changed. Refresh to demonstrate persistence.
-
-### 4. Guidance belongs in normal work
-
-Ask about the next step for a selected investor. David Ortiz has unconfirmed funding in the seed data; Mike Bennett initially lacks a timeline, which may already have been added during a prior demonstration. Show known and missing qualification fields, recommended next action and why it matters. Use **Update qualification** to prepare a confirmed field change, inspect the before/after approval and apply it locally. State that the current checklist is a baseline example awaiting the office’s approved procedures.
-
-Create a reminder or task, then mark a task complete and reload. This shows real state rather than a scripted response.
-
-### 5. Voice, if prevalidated
-
-Only start a live voice demonstration if the account/device test passed. Ask for the daily priorities, follow up, and request a task or research job. Verify the corresponding record in the app. End the call and confirm the microphone indicator stops.
-
-If credentials or network access are unavailable, show the truthful setup state and explain the implemented secure connection boundary. Do not simulate an active call or describe untested voice as proven.
-
-### 6. Workforce and pilot scope
-
-Show all 16 employees with their actual status. Explain that Copilot routes work, so the catalog is optional navigation. If appropriate, switch to the fictional manager and show the local office work overview. Distinguish operational activity counts from real Salesforce sales-performance reporting.
-
-## What to ask the office after the demonstration
-
-Identify the highest-value repeatable workflows, the pilot sponsor/admin owner, approved procedures, Salesforce sandbox path, allowed communication channels, research source expectations, retention needs and evaluation criteria. Avoid discussing speculative national roll-out or pricing as an agreed deal.
-
-## Fallbacks
-
-| Failure | Response |
+| Example | Expected starting state |
 | --- | --- |
-| No model credential | Use local deterministic tools and dedicated forms; identify the mode clearly |
-| Voice fails | End the microphone session, show the error/setup state, continue text workflows |
-| Research provider unavailable | Use synthetic provider with its visible label; no fabricated live evidence |
-| Job failed | Inspect persisted error, retry safely and show actual status |
-| CRM unavailable | Use the local adapter; production Salesforce is not connected |
-| Unexpected existing demo state | Use a new conversation/job and explain prior persisted work; avoid destructive resets |
-| Internet unavailable | Continue local forms, notes extraction, approvals and tasks |
+| Alex’s investors | Four visible fictional records, including Avery Collins from the Phase 1 import; do not describe the imported record as a newly discovered real person |
+| 123 Example Street, Marietta | Released version 1; asking price **$235,000**, supplied ARV assumption **$320,000**, supplied repair assumption **$35,000**; all synthetic |
+| Sample photo URL | `https://example.com/agentdesk-demo-photos` is a **placeholder, not live photos and not a Google Drive folder**. Any stored access confirmation is synthetic employee attestation, not a live permission check |
+| Mike Bennett | Synthetic signed-disclosure fixture; reviewed maximum purchase price **$250,000** and cosmetic rehab preference; approved note and follow-up reminder already exist |
+| Mike’s prior package | Manual handoff prepared during QA; **not sent** |
+| Sarah Chen | A saved package is blocked by missing disclosure eligibility; restricted message content/copy remain unavailable |
 
-## Success checklist
+## Eight-part demonstration, approximately 12–15 minutes
 
-The audience sees one cohesive assistant, real persisted state, a property-specific research pipeline, a source-aware call-note flow, a genuine approval boundary, contextual next steps and honest integration status. Do not imply that the local prototype is already enterprise-ready or that synthetic results establish investment performance.
+### 1. A property release creates relevant work
+
+Begin with the existing **123 Example Street** release. Show **Released**, its version, source, permitted audience and the distinction between upstream acquisition and downstream investor-sale context. The ARV and repair figures are supplied fictional assumptions, not verified valuations or comparable-sales analysis.
+
+For a live release-management step, switch to Taylor Reed through Settings and open **Property releases**:
+
+- For an existing property, use **Revise release**. Do not try to create a second release for the same property.
+- For an available property without a release, use **Create demo release**, choose **Property**, set **Release status** to **Released to authorized team**, and enter the actual fictional **Source**, **Approved deal description** and **Property notes** you intend to show.
+- Review **Dispositions teammates who can work this release** and select Alex. Optional economics belong in **ARV assumption**, **Repair assumption** and **Source for economics**.
+- A genuine authorized media URL is not supplied for this demo. Keep a new release’s media field empty, or identify the existing example.com value explicitly as a nonfunctional placeholder. Do not present it as real photos or verified Drive access. Recipient-confirmed media requires selecting the intended investors; that records employee attestation only.
+- Select **Save & release to permitted team**. A revision increments the version and makes earlier packages require a fresh composition/review. Use the existing version without editing if you want to preserve the saved QA package example.
+
+Return to Alex. Show that the shared property release can surface Alex’s permitted buyer matches while investor relationships retain separate access rules. No Marketplace connection is implied.
+
+### 2. “Who should I call?” leads to a real briefing
+
+Open the dashboard’s **Who should I call today?** suggestion and **Open calling queue**, or ask Copilot:
+
+> Who should I call today?
+
+Show the current rank and the reasons actually displayed. Distinguish **Call priority**, **Property fit** and **Engagement**; none is a prediction that someone will buy. Point out the related property, disclosure state, contact limitations, due commitments and last recorded outcome.
+
+Use **Move up** and **Clear priority boost**, or dismiss a suggestion and restore it through **Show dismissed suggestions**, to demonstrate persisted employee control. Do not invent current buying activity when the evidence says unknown.
+
+Select Mike’s **Get ready to call**, or ask:
+
+> Get me ready to call Mike.
+
+Review the current buy boxes, previous conversation, outstanding commitment, relevant match, missing qualification information and call objective. This is a briefing built from permitted records. Do not place a real call.
+
+### 3. A personal-phone recap captures the useful details
+
+Choose Mike’s **Quick debrief**, or open **Post-call debrief → Post-call recap**. Explain that the employee uses this after a normal personal phone call; AgentDesk does not record the cellular call.
+
+Because Mike’s current maximum may already be $250,000, use $245,000 below to make the proposed change visible. If the record has changed again, choose another clearly fictional, intentional revision and explain it.
+
+> I just spoke to Mike Bennett about 123 Example Street. He buys in Cobb and Cherokee counties, uses cash, and wants fix-and-flip single-family houses under $245,000 with cosmetic rehab. He asked for the property details and photo link, and I promised to call him tomorrow.
+
+Select **Turn recap into next steps**. Inspect the summary, proposed structured criteria, source excerpts, commitments and useful questions for next time. Confirm Mike and the intended property under **Confirm the right records**. If the parser flags an ambiguous name or property, resolve the link explicitly instead of claiming certainty.
+
+The **Authorized transcript** tab retains text upload, permission confirmation, extraction and reviewed-note preparation. It is a separate input path; a transcript is not required for the post-call recap.
+
+### 4. Reviewed criteria and notes improve the relationship record
+
+Keep **Create the suggested follow-up reminder** selected if you want a new local reminder. Select **Prepare changes for review**, then **Review proposed CRM changes**. A selected reminder is created locally at preparation; CRM note and criteria changes remain pending until separately approved.
+
+In **Work queue → Approvals**, review each proposal’s exact target and content. For criteria, show the current/proposed values or proposed buy-box version, conflicts and source statement. Select **Approve & apply to sample CRM** only after reading the intended change. Approve the note separately as applicable.
+
+Return to **Deals & investors → Mike Bennett**. Verify the new maximum, rehab preference, source/history and note; refresh once to demonstrate persistence. Multiple distinct purchase strategies can be stored as separate buy boxes. Approval changes only this local sample CRM—Salesforce remains unconnected.
+
+### 5. A package is ready to copy only when the recipient is eligible
+
+From Mike’s profile, calling card or property release, choose **Prepare deal package**. In **Deal packages**, select Mike, the released property, and **Email draft** or **Personal text · copy**. Select **Check eligibility & prepare**.
+
+Read the resulting facts, missing-information notices and source. Keep the example.com photo URL visibly identified as a placeholder if it is present. It is not evidence of actual media access. The package uses a local demo template, not corporate-approved New Western language.
+
+You may remove or reorder complete sourced lines. To change property facts, revise the release and prepare a fresh package. After any edits, use **Save edited draft**, review again, then **Approve reviewed package**. Choose **Copy for manual handoff** and show **Copied. Nothing sent.** If the browser denies clipboard access, the UI prepares a manual handoff and tells you to select/copy the reviewed text instead; do not claim it copied successfully.
+
+Do not paste into a real recipient’s messaging app or send anything. The recorded delivery status remains **not sent**, even when handoff has been prepared.
+
+Repeat with Sarah Chen and the same release, or open her existing blocked package. Show the eligibility reasons and absence of restricted message/copy controls. Do not manufacture a signed disclosure to bypass this demonstration. Mike’s ready state comes from an explicitly synthetic fixture; a real process requires approved documents and verifiable evidence.
+
+### 6. Investor Hunter looks for net-new external prospects
+
+Open **Investor Hunter → New research**. Choose **123 Example Street**, **Cobb**, **$235,000**, **Fix and flip**, **Single-family**, and **Target prospects: 12**. The finite sample provider contains **12 distinct fictional candidates**, not 100; requesting more does not create more evidence.
+
+Start research, leave the page, and return to its actual saved stage/result. Explain that the worker continues while the browser is closed as long as the launcher is running. Open one candidate’s evidence and score explanation.
+
+Show that **External investor fit** uses similarity of fictional purchases, property type, price, strategy and evidence. It is separate from an existing CRM buyer’s property fit and engagement. A same-county match alone is not proof of buying intent. Contact details remain unavailable/unverified.
+
+Inspect duplicate classifications. A private relationship may produce an opaque duplicate warning without exposing its identity. Export CSV if useful. For an import demonstration, select only eligible **New prospect** records, choose **Prepare CRM import**, inspect the pending action, and approve it explicitly. Previously imported fixtures can already be duplicates; use another eligible candidate or show the existing Avery record instead of resetting the database.
+
+### 7. The next step stays connected to a promise
+
+In Copilot ask:
+
+> What should I do next with Mike Bennett?
+
+Review the recommendation against the actual updated record, disclosure status and pending packages. Guidance is part of normal work and reflects a local baseline awaiting company-approved procedures.
+
+Open **Work queue → Tasks** and locate the follow-up created from the recap. Show its due date and relationship link. If appropriate, complete an expendable fictional reminder and reload to demonstrate persisted status; leave the meeting’s next follow-up open if it will be used later. **Log outcome** on a calling card can capture an explicit fictional call outcome and follow-up time, but it does not mean the app placed a call.
+
+Briefly show **AI employees**: all 16 specialists remain registered with truthful local/demo/planned status. Users work through one Copilot; they do not need to choose an employee before each task. Manager activity counts are local operational records, not real sales-performance reporting.
+
+### 8. The same context works on a narrow screen; live voice is optional
+
+Use the verified narrow browser view to show Calls, the briefing, a debrief and package review without horizontal page overflow. Browser viewport testing is not certification on a physical phone. The normal server binds to loopback, so do not promise another phone can connect over office Wi-Fi without a separately approved deployment setup.
+
+If live voice was successfully validated ahead of time, use **Talk to Copilot** or **Debrief with Copilot**, grant microphone access, ask for a briefing or dictate the recap, and verify the resulting record/tool artifact in the app. End the session and confirm the microphone indicator stops. Live two-way conversation is distinct from telephone recording.
+
+Otherwise show the truthful configuration state and continue with typed input. Do not simulate a live conversation or describe untested model/audio behavior as proven. Slack is the next external messaging candidate and remains unconfigured; connected SMS is a planned optional metered add-on; Telegram comes later. No external channel is sending demo messages.
+
+## Recovery without losing the demonstration
+
+| Situation | Response |
+| --- | --- |
+| No model credentials or network | Use the dedicated forms and deterministic local Copilot commands; identify the mode clearly |
+| Voice unavailable | End the microphone session, show its setup/error state and continue typed debriefs |
+| Existing release or reviewed criteria | Inspect the persisted record; revise its current version or use a different available property. Do not reset the database |
+| Old package is blocked after a release/template/disclosure change | Explain the recheck, prepare a new package and review it again |
+| Sarah’s package is blocked | This is the intended disclosure demonstration; show the reason and withheld copy |
+| Research job fails | Inspect the persisted error and use Retry research; never replace missing results with invented evidence |
+| No eligible new research fixtures remain | Show prior imports and duplicate checks, or use the disposable smoke suite later; do not claim another 100 investors exist |
+| Placeholder photo link is questioned | State that it is not live media and no real Drive-access test has occurred |
+| Clipboard denied | Show the manual selection/copy fallback and retain not-sent delivery status |
+| Unexpected reminder timing | Check the visible due date and America/New_York display; keep the worker running and account for quiet hours |
+
+## Questions for the prospective office
+
+Confirm the pilot sponsor and Salesforce administrator; relationship ownership/sharing rules; authoritative property-release source; required disclosure document/version and evidence; approved templates/media-sharing rules; permitted research sources and communication channels; retention and access requirements; and the outcomes the pilot should measure. Alex’s reported workflow is discovery input, not proof of national corporate policy.
+
+The demonstration succeeds when the audience sees connected work, real persisted state, sourced investor changes, meaningful approval and disclosure boundaries, and honest integration status. It does not establish investment performance, customer endorsement, production readiness or authorization for actual investor outreach.

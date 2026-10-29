@@ -24,6 +24,7 @@ export async function createVoiceSession(actor:Actor,conversationId?:string){
   const data=await response.json() as {value?:string;expires_at?:number};
   if(!data.value)throw new service.AppError(502,'Voice provider returned an invalid session credential.');
   const id=newId('voice');getDb().prepare('INSERT INTO voice_sessions VALUES(?,?,?,?,?,?,NULL)').run(id,actor.organizationId,actor.officeId,actor.id,conversation.id,now());
+  service.addMessage(actor,conversation.id,{role:'assistant',content:'Live voice session started with your currently authorized workspace context.'},context);
   service.recordUsage(actor,'voice_sessions_started',1);audit(actor,'voice.started',id);
   return {value:data.value,expiresAt:data.expires_at,voiceSessionId:id,conversationId:conversation.id,maxSeconds:600};
 }
@@ -31,7 +32,7 @@ export async function createVoiceSession(actor:Actor,conversationId?:string){
 export async function executeVoiceTool(actor:Actor,sessionId:string,callId:string,name:string,args:unknown):Promise<ToolResult>{
   const session=voiceSession(actor,sessionId);
   const prior=getDb().prepare('SELECT status,result FROM voice_calls WHERE session_id=? AND call_id=?').get(sessionId,callId) as {status:string;result:string|null}|undefined;
-  if(prior){if(prior.result)return JSON.parse(prior.result) as ToolResult;throw new service.AppError(409,'This voice tool call is already processing.');}
+  if(prior){if(prior.result)return {specialistIds:[],message:prior.status==='completed'?'This tool call was already completed. Open the current workflow to review its authorized state; no action was repeated.':'This tool call previously failed. No action was repeated.',artifacts:[],data:{duplicate:true,completed:prior.status==='completed'}};throw new service.AppError(409,'This voice tool call is already processing.');}
   getDb().prepare('INSERT INTO voice_calls VALUES(?,?,?,NULL)').run(sessionId,callId,'running');
   try{
     const result=await dispatchTool(actor,name,args);

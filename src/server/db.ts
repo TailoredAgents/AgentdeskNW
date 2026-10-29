@@ -25,7 +25,7 @@ export function getDb(): Database.Database {
   database.pragma('journal_mode = WAL');
   database.pragma('busy_timeout = 5000');
   database.exec('CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL)');
-  for (const [version, file] of [[1,'001_initial.sql'],[2,'002_voice.sql']] as const) {
+  for (const [version, file] of [[1,'001_initial.sql'],[2,'002_voice.sql'],[3,'003_investor_intelligence.sql'],[4,'004_workflows.sql']] as const) {
     const migrationPath=resolve(process.cwd(), 'src/server/migrations',file);
     if (!existsSync(migrationPath)) continue;
     if (!database.prepare('SELECT 1 FROM schema_migrations WHERE version=?').get(version)) {
@@ -37,6 +37,7 @@ export function getDb(): Database.Database {
     }
   }
   seed(database);
+  seedPrivateDuplicate(database);
   return database;
 }
 
@@ -126,4 +127,11 @@ function seed(db:Database.Database) {
     ];
     for (const task of tasks) db.prepare('INSERT INTO tasks(id,organization_id,office_id,owner_id,investor_id,data) VALUES(?,?,?,?,?,?)').run(task.id,'org-demo','office-atlanta','user-alex',task.investorId,JSON.stringify(task));
   })();
+}
+
+/** A deliberately private fictional relationship exercises opaque duplicate detection. */
+function seedPrivateDuplicate(db:Database.Database) {
+ if(db.prepare('SELECT 1 FROM investors WHERE id=?').get('investor-jordan-private'))return;
+ const investor:Investor={id:'investor-jordan-private',name:'Morgan Ellis',company:'Cedar & Stone Investments',counties:['Cobb'],strategy:'Fix & flip',budgetMin:200000,budgetMax:290000,financing:'Cash',rehab:'Medium',timeframe:null,email:null,phone:null,notes:'Private fictional acquisition relationship. Protected notes must never appear in another employee’s research.',lastContactAt:null,ownerId:'user-jordan',synthetic:true};
+ db.prepare('INSERT INTO investors VALUES(?,?,?,?,?)').run(investor.id,'org-demo','office-atlanta','user-jordan',JSON.stringify(investor));
 }

@@ -1,5 +1,23 @@
 # Development progress
 
+## October 29, 2026 — Phase 2 verified local milestone
+
+**Final checks passed:** `npm run typecheck`, `npm run lint` (zero warnings), `npm test` (**85 tests in four files**), `npm run build` (successful production build), `npm run test:smoke` (**77 HTTP checks**) and `git diff --check`. The isolated smoke runner starts the built app and worker with a disposable database and no model key; it leaves the prepared demonstration data unchanged. No dependency versions changed in Phase 2; the prior clean runtime audit is historical, not represented as a new audit.
+
+**Architecture and data preserved:** Phase 1 Git checkpoint `cded4cd` and ignored pre-migration backup `data/phase1-checkpoint.sqlite`. Additive migrations 003/004 retain prior investors, approved notes/criteria, conversations, tasks and research. The browser confirmed the prior Avery import and completed work remain available.
+
+**Implemented:** structured investor intelligence and separate buy boxes with field/revision provenance, versioned review, owner/read-sharing/manager assignment policy, private duplicate collision checks, synthetic disclosure evidence and eligibility, release audience/version/idempotency, source-generated package formats/templates/review/copy, post-call recap extraction and reviewed updates, explicit follow-up tasks, calling priorities/outcomes, pre-call briefings, enhanced matching and reweighted external research. All sixteen specialists remain; twelve have limited local/demo capabilities and four remain planned.
+
+**Security/reliability checks:** owner/tenant/office/read-only sharing boundaries; reassignment and revocation; direct and bootstrap property visibility; no protected duplicate IDs; stale buy-box approvals; no unsigned/wrong-version/expired disclosure sharing; recipient-specific media attestation; release/template/criteria freshness; handoff requiring approval; duplicate release events and recap submissions; quiet-hour notification retry/deduplication; structured chat-history redaction; voice duplicate receipts without cached bodies; old-owner approval payload restrictions. Historical free text without structured references remains a documented migration limitation.
+
+**Browser QA:** created/released fictional 123 Example Street, switched back to Alex, inspected private calling priorities and briefing, captured Mike's personal-phone recap, inspected exact note and before/after fields, approved the local changes and verified package drafting → approval → copy handoff. Mike's package is `handed_off` and `not_sent`; Sarah's unknown disclosure produced a blocked package with no property body/copy control. The supplied photo URL is explicitly a placeholder, not live media. These reviewable examples and the requested reminder remain in the local workspace.
+
+**Responsive QA:** 390 × 844 phone layout, direct Calls/Debrief navigation, readable calling-card layout, no horizontal overflow; desktop screenshots and phone screenshot saved under ignored `artifacts/`. Browser captured no errors or warnings. Physical devices, PWA installation/offline behavior and real voice/audio were not tested.
+
+**Integrations remain honest:** live Salesforce, disclosure provider, Marketplace, Drive access verification, licensed external research and all outbound delivery are disconnected. Responses/Realtime paths require an API project and live validation. Slack has tested signature/link primitives but no active app/webhook/send integration; SMS has an entitlement foundation but no provider or billing. There was no deployment, real investor contact or production-account mutation.
+
+The full A–J completion report is [PHASE_2_REPORT](PHASE_2_REPORT.md). The updated [DEMO_RUNBOOK](DEMO_RUNBOOK.md) uses the prepared examples and separates discovery observations from customer policy. This supersedes the Phase 1 counts below while preserving the implementation history.
+
 ## October 29, 2026 — Initialization checkpoint
 
 - Confirmed project directory initially empty; Node 20.19.3 and npm 10.8.2 available.

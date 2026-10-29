@@ -8,12 +8,28 @@ import * as services from '../src/server/services';
 import { chat,dispatchTool,toolDefinitions } from '../src/server/orchestrator';
 import { assertLocalDemo,getActor,setSession } from '../src/server/auth';
 import { createVoiceSession,executeVoiceTool,saveVoiceTranscript,endVoiceSession } from '../src/server/voice';
+import { listDebriefs } from '../src/server/debrief';
+import { getInvestorIntelligence } from '../src/server/intelligence';
 
 beforeEach(()=>{closeDb();process.env.AGENTDESK_DB_PATH=':memory:';delete process.env.OPENAI_API_KEY;process.env.AGENTDESK_DEMO='true';process.env.AGENTDESK_ALLOW_PRODUCTION_DEMO='true';});
 afterEach(()=>{closeDb();vi.unstubAllGlobals();});
 describe('manager and tools',()=>{
  it('registers strict tool schemas without any approval or external send tool',()=>{
    const tools=toolDefinitions();expect(tools.length).toBeGreaterThan(8);expect(tools.every(t=>t.strict&&t.parameters.additionalProperties===false)).toBe(true);expect(tools.map(t=>t.name).join(' ')).not.toMatch(/approve|execute_action|send_email/);
+   for(const tool of tools){const properties=Object.keys(tool.parameters.properties as object);expect(tool.parameters.required??[]).toEqual(properties);}
+ });
+ it('routes a calling queue and pre-call briefing to the same scoped services',async()=>{
+   const actor=services.demoActor();const queue=await chat(actor,'Who should I call today?');expect(queue.result.artifacts[0].type).toBe('calling_queue');expect(queue.result.message).toContain('Mike');expect(queue.result.message).not.toContain('Jordan private');
+   const brief=await chat(actor,'Get me ready to call Mike',queue.conversation.id);expect(brief.result.artifacts[0].type).toBe('briefing');expect(brief.result.message).toContain('Disclosure: signed');expect(brief.conversation.messages).toHaveLength(4);
+ });
+ it('captures a personal-phone recap without applying criteria or silently creating follow-ups',async()=>{
+   const actor=services.demoActor();const before=getInvestorIntelligence(actor,'investor-mike');const tasks=services.listTasks(actor).length;
+   const response=await chat(actor,'I just talked to Mike. He wants cosmetic flips in Cobb County under $250k, using cash. I will call him tomorrow.');
+   expect(response.result.artifacts[0].type).toBe('debrief');expect(listDebriefs(actor)).toHaveLength(1);expect(getInvestorIntelligence(actor,'investor-mike').buyBoxes).toEqual(before.buyBoxes);expect(services.listTasks(actor)).toHaveLength(tasks);
+ });
+ it('requires exact package context and never offers a model handoff or approval tool',async()=>{
+   const actor=services.demoActor();const response=await chat(actor,'Send property details and photos to Mike');expect(response.result.message).toContain('exact property release');
+   await expect(dispatchTool(actor,'handoff_package',{id:'fake'})).rejects.toThrow('Unknown');expect(toolDefinitions().some(tool=>/handoff|approve|send_/.test(tool.name))).toBe(false);
  });
  it('dispatches real services, persists a conversation, and retrieves actual work',async()=>{
    const actor=services.demoActor();const first=await chat(actor,'What should I focus on today?');expect(first.conversation.messages).toHaveLength(2);expect(first.result.specialistIds).toContain('daily-coordinator');expect(first.result.message).toContain('Confirm Mike’s purchase timeline');expect(first.result.artifacts[0].type).toBe('task');

@@ -33,13 +33,17 @@ Use a real API project, HTTPS or localhost, an available Realtime model and a mi
 
 ## Conversation/call notes
 
-Initial call notes accept authorized manually entered notes and text transcripts. They do not record telephone calls or prove that a caller consented. Audio upload, transcription vendors and telephony integrations need an explicit consent/retention process and organization approval. Preserve employee-source provenance and let the user review extracted facts before proposing CRM updates.
+Post-call debrief accepts the employee's typed recap or a recap captured through the configured live-voice tool. The original authorized transcript entry remains available. These paths do not record personal telephone calls or prove caller consent. Extracted criteria retain the employee's source statement and require approval. A suggested tomorrow follow-up uses 10am America/New_York and remains unscheduled until explicitly requested. Audio upload, transcription vendors and telephony integrations still need an approved consent/retention process.
 
-## Channel adapter design — planned
+## Channel provider foundation — disconnected
 
 A channel adapter converts an authenticated inbound event into a canonical conversation request: tenant, employee, channel identity, conversation reference, message, attachment references, external message ID and timestamp. It returns a delivery result and provider message ID. Core tools remain channel-independent.
 
 No active Telegram, Slack, Teams or SMS connector is implied by this design. The organization’s allowed channel has not been established.
+
+Current priority is AgentDesk web/PWA and live voice, then Slack if the customer uses it, then optional paid SMS; Telegram is a later alternative. `src/server/channels.ts` contains the provider boundary, raw-body Slack signature verification, a trusted local identity lookup/link foundation and disconnected delivery responses. It does not install a Slack app, expose a webhook, perform OAuth, or deliver messages. An inbound route must verify the raw request and timestamp before any parsing or dispatch, then deduplicate event IDs and resolve a verified installation/member link. Follow the official [Slack request verification guide](https://docs.slack.dev/authentication/verifying-requests-from-slack/) and [Slack OAuth installation guide](https://docs.slack.dev/authentication/installing-with-oauth/).
+
+The package composer offers channel-specific selection and editable source-backed copy. Personal text and iMessage use a copy handoff. Slack/SMS formats also remain copy-only here; there is no claim that personal-phone/iMessage sending is supported. SMS entitlement foundation never bypasses consent, provider setup, spending limits or delivery receipts.
 
 ### Secure account linking
 

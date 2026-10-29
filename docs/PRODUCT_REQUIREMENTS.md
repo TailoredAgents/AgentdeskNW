@@ -1,5 +1,18 @@
 # Product requirements
 
+## Phase 2 operational acceptance — local implementation
+
+Discovery source and unverified policy questions are recorded in [NEW_WESTERN_DISCOVERY](NEW_WESTERN_DISCOVERY.md). The same AgentDesk application and sixteen-specialist catalog now support the following connected work:
+
+- Private investor intelligence with separately reviewed, versioned buy boxes, source statements, local synchronization status, disclosure evidence and relationship history. Shared read access does not grant mutation rights. Managers operate under an explicit demo policy, not presumed corporate authority.
+- Versioned property releases with explicit employee recipients, idempotent event keys, supplied economics/media and configurable transaction descriptions. Shared inventory never broadens buyer access.
+- A source-grounded deal composer for email, personal text, iMessage, Slack and SMS formats. A signed current disclosure and acceptable media access are prerequisites. The implemented outcome is reviewed copy handoff; every package remains `not_sent`.
+- Typed post-call recaps suited to personal-phone work, plus the existing authorized transcript path. Extracted fields require review, ambiguous investor/property references are resolved by the employee, and follow-up creation is explicit. Multiple strategies are not silently flattened into one inferred buy box.
+- A dynamically ranked calling queue, separate match/readiness scores, reasons, briefings, dismiss/reorder controls and recorded outcomes. No call or external contact is placed.
+- Enhanced existing-buyer matching with best distinct buy box, conflicts and missingness; external Investor Hunter remains a separate synthetic research pipeline whose strongest weights are property-type and purchase-price similarity.
+
+Production evidence ingestion, real Salesforce synchronization, disclosure-provider proof, Drive permission verification, licensed research, live delivery and customer-approved policy remain integration gates. Desktop/mobile browser checks and exact test results belong in [PROGRESS](PROGRESS.md), not capability promises.
+
 Status: implementation baseline, October 29, 2026. Verified completion is tracked separately in [PROGRESS](PROGRESS.md).
 
 ## Users and access

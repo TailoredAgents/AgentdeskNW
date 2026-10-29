@@ -3,15 +3,23 @@ import { z } from 'zod';
 
 export const researchInputSchema=z.object({
   address:z.string().trim().min(5).max(300), county:z.string().trim().max(100),
-  price:z.number().finite().min(0).max(100_000_000), strategy:z.string().trim().max(100), limit:z.number().int().min(1).max(100),
+  propertyType:z.string().trim().max(100).optional(), price:z.number().finite().min(0).max(100_000_000), strategy:z.string().trim().max(100), limit:z.number().int().min(1).max(100),
 }).strict();
-export const defaultScoreWeights={geography:25,strategy:20,price:20,recency:15,activity:10,evidence:10};
+export const defaultScoreWeights={propertyType:25,price:25,strategy:20,geography:10,recency:10,activity:5,evidence:5};
 export type ScoreWeights=typeof defaultScoreWeights;
 export function normalizeStrategy(value:string):string {
  const key=value.toLowerCase().replace(/[^a-z]/g,'');
  if(['fixflip','fixandflip','flip','flips','flipper','flippers'].includes(key))return 'fix-and-flip';
  if(['buyhold','buyandhold','rental','rentals','rentalinvestor','rentalinvestors'].includes(key))return 'buy-and-hold';
  if(['both','any','all'].includes(key))return 'both';
+ return key;
+}
+export function normalizePropertyType(value:string):string {
+ const key=value.toLowerCase().replace(/[^a-z]/g,'');
+ if(['singlefamily','singlefamilyhome','sfr','sfh','detached'].includes(key))return 'single-family';
+ if(['multifamily','multifamilyhome','duplex','triplex','fourplex'].includes(key))return 'multifamily';
+ if(['townhome','townhouse','townhomes'].includes(key))return 'townhome';
+ if(['condominium','condo','condos'].includes(key))return 'condominium';
  return key;
 }
 export const normalizeCounty=(value:string)=>value.trim().toLowerCase().replace(/\s+county$/,'');
@@ -43,10 +51,11 @@ export function scoreProspect(prospect:Prospect,input:ResearchInput,weights:Scor
   const similarity=input.price>0?Math.max(0,1-Math.abs(prospect.typicalPrice-input.price)/input.price):0;
   const evidence=prospect.evidence.length?Math.min(1,prospect.evidence.length/2):0;
   const sameCounty=normalizeCounty(prospect.county)===normalizeCounty(input.county),sameStrategy=strategiesMatch(prospect.strategy,input.strategy);
-  const factors={geography:sameCounty?1:0.25,strategy:sameStrategy?1:0.25,price:similarity,recency:Number.isFinite(ageDays)&&ageDays>=0?Math.max(0,1-ageDays/365):0,activity:Math.max(0,Math.min(1,prospect.transactionCount/8)),evidence};
+  const sameType=!!input.propertyType&&!!prospect.propertyType&&normalizePropertyType(input.propertyType)===normalizePropertyType(prospect.propertyType);
+  const factors={propertyType:sameType?1:0,geography:sameCounty?1:0.25,strategy:sameStrategy?1:0.25,price:similarity,recency:Number.isFinite(ageDays)&&ageDays>=0?Math.max(0,1-ageDays/365):0,activity:Math.max(0,Math.min(1,prospect.transactionCount/8)),evidence};
   const breakdown=Object.fromEntries(Object.entries(factors).map(([key,value])=>[key,Math.round(value*weights[key as keyof ScoreWeights]/total*1000)/10]));
   const score=Math.min(100,Math.round(Object.values(breakdown).reduce((sum,n)=>sum+n,0)));
-  return {...prospect,score,scoreBreakdown:breakdown,rationale:`${sameCounty?'Same county':'Different county'}; ${sameStrategy?'matching strategy':'different strategy'}; typical purchase $${prospect.typicalPrice.toLocaleString('en-US')}; ${prospect.transactionCount} ${prospect.synthetic?'fictional':'reported'} purchases. Relevance score only, not purchase intent. ${prospect.synthetic?'All evidence is synthetic.':''}`};
+  return {...prospect,score,scoreBreakdown:breakdown,rationale:`${!input.propertyType||!prospect.propertyType?'Property type not confirmed':sameType?'Similar property type':'Different property type'}; ${sameCounty?'Same county':'Different county'}; ${sameStrategy?'matching strategy':'different strategy'}; typical purchase $${prospect.typicalPrice.toLocaleString('en-US')}; ${prospect.transactionCount} ${prospect.synthetic?'fictional':'reported'} purchases. Relevance score only, not purchase intent. ${prospect.synthetic?'All evidence is synthetic.':''}`};
 }
 
 const fixtures=[
@@ -68,8 +77,9 @@ export const syntheticResearchProvider:SynchronousResearchProvider={
  discover(input) {
   return fixtures.map(([name,company,county,strategy,typicalPrice,transactionCount,days],index)=>{
    const activity=new Date(Date.now()-days*86400000).toISOString();
-   const prospect:Prospect={id:`prospect-fixture-${index+1}`,name,company,county,strategy,typicalPrice,transactionCount,lastActivityAt:activity,score:0,scoreBreakdown:{},rationale:'',duplicateStatus:'uncertain',matchedInvestorId:null,phone:null,contactStatus:'missing',synthetic:true,
-    evidence:[{id:`evidence-${index+1}-a`,title:'Synthetic transaction example',url:null,observedAt:activity,detail:`Fictional fixture: ${company} acquired a sample property in ${county} County at $${typicalPrice.toLocaleString('en-US')}. Not a public-record finding.`,synthetic:true},{id:`evidence-${index+1}-b`,title:'Synthetic activity profile',url:null,observedAt:activity,detail:`Fictional fixture: ${transactionCount} sample acquisitions and a ${strategy.toLowerCase()} preference. No live verification or contact enrichment has occurred.`,synthetic:true}]};
+   const propertyType=index===4||index===8?'Multifamily':'Single-family';
+   const prospect:Prospect={propertyType,id:`prospect-fixture-${index+1}`,name,company,county,strategy,typicalPrice,transactionCount,lastActivityAt:activity,score:0,scoreBreakdown:{},rationale:'',duplicateStatus:'uncertain',matchedInvestorId:null,phone:null,contactStatus:'missing',synthetic:true,
+    evidence:[{id:`evidence-${index+1}-a`,propertyType,title:'Synthetic transaction example',url:null,observedAt:activity,detail:`Fictional fixture: ${company} acquired a sample ${propertyType.toLowerCase()} property in ${county} County at $${typicalPrice.toLocaleString('en-US')}. Not a public-record finding.`,synthetic:true},{id:`evidence-${index+1}-b`,title:'Synthetic activity profile',url:null,observedAt:activity,detail:`Fictional fixture: ${transactionCount} sample acquisitions and a ${strategy.toLowerCase()} preference. No live verification or contact enrichment has occurred.`,synthetic:true}]};
    return scoreProspect(prospect,input);
   }).sort((a,b)=>b.score-a.score).slice(0,input.limit);
  }

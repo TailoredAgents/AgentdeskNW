@@ -1,9 +1,12 @@
 import { z } from 'zod';
-import type { Actor, Artifact, Bootstrap, Conversation, Investor, Message, NoteSummary, Notification, Property, ProposedAction, ResearchInput, ResearchJob, Role, Settings, Task } from '../lib/contracts';
+import type { Actor, Artifact, Bootstrap, Conversation, Investor, Message, NoteSummary, Notification, ProposedAction, ResearchInput, ResearchJob, Role, Settings, Task } from '../lib/contracts';
 import { AppError, assertActor, audit, getDb, insertRecord, newId, now, requireRole, scopedGet, scopedRows, updateRecord } from './db';
 import { specialists } from './registry';
-import { classifyDuplicate, normalizeCounty, researchInputSchema, strategiesMatch, syntheticResearchProvider } from './research';
+import { researchInputSchema, syntheticResearchProvider } from './research';
+import { classifyAuthorizedDuplicate, readInvestor, readInvestorRow, readInvestors, readProperty, readProperties, writableInvestor } from './access';
+import { addRelationshipEvent, applyBuyBoxApproval, listBuyBoxes, matchProperty, syncPrimaryBuyBox } from './intelligence';
 import { extractNotes } from './notes';
+import { collectHistoryReferences, readHistoryMessage, type StoredMessage } from './history';
 
 export { AppError, assertActor, demoActor } from './db';
 export { specialists } from './registry';
@@ -14,18 +17,22 @@ const settingsSchema=z.object({guidance:z.enum(['concise','guided']),notificatio
 const defaultSettings:Settings={guidance:'guided',notifications:true,quietHoursStart:21,quietHoursEnd:8};
 const researchRoles:Role[]=['dispositions','manager'];
 
-export function listInvestors(actor:Actor) { return scopedRows<Investor>(actor,'investors'); }
-export function getInvestor(actor:Actor,id:string) { return scopedGet<Investor>(actor,'investors',idSchema.parse(id)); }
-export function listProperties(actor:Actor) { return scopedRows<Property>(actor,'properties'); }
+export function listInvestors(actor:Actor) { return readInvestors(actor); }
+export function getInvestor(actor:Actor,id:string) { return readInvestor(actor,idSchema.parse(id)); }
+export function listProperties(actor:Actor) { return readProperties(actor); }
 function refreshDuplicateStatus(actor:Actor,job:ResearchJob):ResearchJob {
  if(job.status!=='completed')return job;
- const investors=listInvestors(actor);
- const prospects=job.prospects.map(prospect=>({...prospect,...classifyDuplicate(prospect,investors)}));
- return {...job,prospects,stage:`Completed: ${prospects.length} synthetic candidates (${prospects.filter(item=>item.duplicateStatus==='net_new').length} currently new within your authorized CRM scope). Dataset contains 12 candidates.`};
+ const prospects=job.prospects.map(prospect=>({...prospect,...classifyAuthorizedDuplicate(actor,prospect)}));
+ return {...job,prospects,stage:`Completed: ${prospects.length} synthetic candidates (${prospects.filter(item=>item.duplicateStatus==='net_new').length} currently eligible as new after privacy-preserving CRM duplicate checks). Dataset contains 12 candidates.`};
 }
 export function listJobs(actor:Actor) { return scopedRows<ResearchJob>(actor,'research_jobs').map(job=>refreshDuplicateStatus(actor,job)); }
 export function listTasks(actor:Actor) { return scopedRows<Task>(actor,'tasks'); }
-export function listApprovals(actor:Actor) { return scopedRows<ProposedAction>(actor,'proposed_actions'); }
+function checkApprovalReferences(actor:Actor,action:ProposedAction):ProposedAction {
+ if(typeof action.payload.investorId==='string')getInvestor(actor,action.payload.investorId);
+ return action;
+}
+export function getApproval(actor:Actor,id:string):ProposedAction {return checkApprovalReferences(actor,scopedGet<ProposedAction>(actor,'proposed_actions',idSchema.parse(id)));}
+export function listApprovals(actor:Actor) {return scopedRows<ProposedAction>(actor,'proposed_actions').filter(action=>{try{checkApprovalReferences(actor,action);return true;}catch(error){if(error instanceof AppError&&[403,404].includes(error.status))return false;throw error;}});}
 
 export function recordUsage(actor:Actor,kind:string,quantity:number) {
  assertActor(actor);
@@ -49,7 +56,7 @@ function notificationsAllowed(actor:Actor):boolean {
  const start=settings.quietHoursStart,end=settings.quietHoursEnd;
  return start===end || !(start<end?hour>=start&&hour<end:hour>=start||hour<end);
 }
-function notify(actor:Actor,dedupeKey:string,title:string,body:string,link:string) {
+export function notify(actor:Actor,dedupeKey:string,title:string,body:string,link:string) {
  if(!notificationsAllowed(actor))return;
  const count=getDb().prepare("SELECT COUNT(*) AS n FROM notifications WHERE organization_id=? AND office_id=? AND owner_id=? AND json_extract(data,'$.createdAt')>=?").get(actor.organizationId,actor.officeId,actor.id,new Date(Date.now()-86400000).toISOString()) as {n:number};
  if(count.n>=10)return;
@@ -60,6 +67,19 @@ export function processNotifications(actor:Actor) {
  assertActor(actor);
  for(const task of scopedRows<Task>(actor,'tasks',true))if(task.status==='open'&&task.dueAt&&Date.parse(task.dueAt)<=Date.now())notify(actor,`task-due:${task.id}`,'Follow-up is due',task.title,'queue');
  for(const job of scopedRows<ResearchJob>(actor,'research_jobs',true))if(job.status==='completed')notify(actor,`research-done:${job.id}`,'Your research is ready',`${job.prospects.length} synthetic prospects for ${job.input.address}. Review evidence and duplicates before importing.`,'hunter');
+ if(!notificationsAllowed(actor))return;
+ // Retry from durable current records after quiet hours; stale/withdrawn releases are not replayed.
+ const releases=getDb().prepare('SELECT id,data FROM property_releases WHERE organization_id=? AND office_id=?').all(actor.organizationId,actor.officeId) as {id:string;data:string}[];
+ for(const row of releases){
+  const release=JSON.parse(row.data) as {status:string;version:number;authorizedUserIds:string[];property:{address:string;id:string}};
+  const key=`release:${row.id}:${release.version}`;
+  if(release.status!=='released'||!release.authorizedUserIds.includes(actor.id)||getDb().prepare('SELECT 1 FROM notifications WHERE organization_id=? AND office_id=? AND owner_id=? AND dedupe_key=?').get(actor.organizationId,actor.officeId,actor.id,key))continue;
+  const matches=matchProperty(actor,release.property.id);notify(actor,key,'Demo property release',`${release.property.address}: ${matches.filter(match=>match.score>0).length} matches among your permitted investors. Review fit and disclosure before preparing details.`,'properties');
+ }
+ for(const row of getDb().prepare("SELECT data FROM deal_packages WHERE organization_id=? AND office_id=? AND owner_id=? AND json_extract(data,'$.status')='draft'").all(actor.organizationId,actor.officeId,actor.id) as {data:string}[]){
+  const item=JSON.parse(row.data) as {id:string;investorId:string;releaseId:string};
+  try{readInvestor(actor,item.investorId);const release=releases.find(row=>row.id===item.releaseId);if(!release)continue;const value=JSON.parse(release.data) as {status:string;authorizedUserIds:string[]};if(value.status!=='released'||actor.role!=='manager'&&!value.authorizedUserIds.includes(actor.id))continue;notify(actor,`package-review:${item.id}`,'Deal package awaiting review','Open the saved demo package to review current eligibility and exact content. Nothing has been sent.','properties');}catch(error){if(!(error instanceof AppError)||![403,404].includes(error.status))throw error;}
+ }
 }
 /** Scheduler entry point: reminders do not depend on an active research job or open browser. */
 export function processAllNotifications():number {
@@ -80,17 +100,20 @@ export function createConversation(actor:Actor,title='New conversation'):Convers
 export function getConversation(actor:Actor,id:string):Conversation {
  const conversation=scopedGet<Conversation>(actor,'conversations',idSchema.parse(id),true);
  const rows=getDb().prepare('SELECT data FROM messages WHERE conversation_id=? AND organization_id=? AND office_id=? AND owner_id=? ORDER BY sequence ASC').all(conversation.id,actor.organizationId,actor.officeId,actor.id) as {data:string}[];
- return {...conversation,messages:rows.map(row=>JSON.parse(row.data) as Message)};
+ const messages=rows.map(row=>readHistoryMessage(actor,JSON.parse(row.data) as StoredMessage));
+ return {...conversation,title:messages.some(message=>message.content.startsWith('This historical message is withheld'))?'Conversation with restricted history':conversation.title,messages};
 }
 export function listConversations(actor:Actor):Conversation[] {
  return scopedRows<Conversation>(actor,'conversations',true).slice(0,50).map(item=>getConversation(actor,item.id)).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt));
 }
-const messageSchema=z.object({role:z.enum(['user','assistant']),content:z.string().trim().min(1).max(50000),specialistIds:z.array(z.string().max(100)).max(16).optional(),artifacts:z.array(z.object({type:z.enum(['job','approval','notes','task','investors','guidance']),id:z.string().max(150).optional(),title:z.string().max(300),data:z.unknown().optional()})).max(20).optional()}).strict();
-export function addMessage(actor:Actor,conversationId:string,input:{role:'user'|'assistant';content:string;specialistIds?:string[];artifacts?:Artifact[]}):Message {
+const messageSchema=z.object({role:z.enum(['user','assistant']),content:z.string().trim().min(1).max(50000),specialistIds:z.array(z.string().max(100)).max(16).optional(),artifacts:z.array(z.object({type:z.enum(['job','approval','notes','task','investors','guidance','package','debrief','release','calling_queue','briefing']),id:z.string().max(150).optional(),title:z.string().max(300),data:z.unknown().optional()})).max(20).optional()}).strict();
+export function addMessage(actor:Actor,conversationId:string,input:{role:'user'|'assistant';content:string;specialistIds?:string[];artifacts?:Artifact[]},context?:{investors:{id:string}[];properties:{id:string}[]}):Message {
  const parsed=messageSchema.parse(input);
  return getDb().transaction(()=>{
   const conversation=getConversation(actor,conversationId);
-  const message:Message={id:newId('message'),role:parsed.role,content:parsed.content,specialistIds:parsed.specialistIds??[],artifacts:parsed.artifacts??[],createdAt:now()};
+  const prior=(getDb().prepare('SELECT data FROM messages WHERE conversation_id=? AND organization_id=? AND office_id=? AND owner_id=? ORDER BY sequence DESC LIMIT 24').all(conversation.id,actor.organizationId,actor.officeId,actor.id) as {data:string}[]).map(row=>JSON.parse(row.data) as StoredMessage);
+  const references=collectHistoryReferences(actor,parsed.artifacts??[],prior.flatMap(message=>message.references?[message.references]:[]),context);
+  const message:StoredMessage={id:newId('message'),role:parsed.role,content:parsed.content,specialistIds:parsed.specialistIds??[],artifacts:parsed.artifacts??[],createdAt:now(),references};
   const sequence=(getDb().prepare('SELECT COALESCE(MAX(sequence),0)+1 AS sequence FROM messages WHERE conversation_id=?').get(conversation.id) as {sequence:number}).sequence;
   getDb().prepare('INSERT INTO messages VALUES(?,?,?,?,?,?,?)').run(message.id,actor.organizationId,actor.officeId,actor.id,conversation.id,JSON.stringify(message),sequence);
   updateRecord(actor,'conversations',{...conversation,messages:[],updatedAt:now(),title:conversation.title==='New conversation'&&parsed.role==='user'?parsed.content.slice(0,70):conversation.title},true);
@@ -148,9 +171,8 @@ export function processQueuedJobs(actor?:Actor):number {
     else if(job.progress<50)next={...job,progress:50,stage:'Scoring fictional buying-activity evidence',updatedAt:now()};
     else if(job.progress<80)next={...job,progress:80,stage:'Checking duplicates against your authorized demo CRM records',updatedAt:now()};
     else{
-     const investors=listInvestors(owner);
-     const prospects=syntheticResearchProvider.discover(job.input).map(prospect=>({...prospect,...classifyDuplicate(prospect,investors)}));
-     next={...job,status:'completed',progress:100,stage:`Completed: ${prospects.length} synthetic candidates (${prospects.filter(item=>item.duplicateStatus==='net_new').length} new within your authorized CRM scope). Dataset contains 12 candidates.`,prospects,updatedAt:now()};
+     const prospects=syntheticResearchProvider.discover(job.input).map(prospect=>({...prospect,...classifyAuthorizedDuplicate(owner,prospect)}));
+     next={...job,status:'completed',progress:100,stage:`Completed: ${prospects.length} synthetic candidates (${prospects.filter(item=>item.duplicateStatus==='net_new').length} eligible as new after privacy-preserving CRM duplicate checks). Dataset contains 12 candidates.`,prospects,updatedAt:now()};
      recordUsage(owner,'research_jobs',1);audit(owner,'research.completed',job.id,{count:prospects.length,synthetic:true});
     }
     updateRecord(owner,'research_jobs',next);
@@ -173,7 +195,7 @@ export function summarizeNotes(actor:Actor,transcript:string):NoteSummary {
 }
 const noteSummarySchema=z.object({proposedNote:z.string().trim().min(1).max(15000),summary:z.string().max(2000),source:z.literal('employee_transcript'),mode:z.enum(['local_extraction','model']),sourceExcerpts:z.array(z.string().max(10000)).max(30)}).passthrough();
 export function proposeNote(actor:Actor,investorId:string,summary:NoteSummary):ProposedAction {
- const investor=getInvestor(actor,investorId); const parsed=noteSummarySchema.parse(summary);
+ const investor=writableInvestor(actor,investorId); const parsed=noteSummarySchema.parse(summary);
  const action:ProposedAction={id:newId('action'),kind:'crm_note',title:`Add reviewed call note to ${investor.name}`,status:'pending',payload:{investorId:investor.id,note:parsed.proposedNote,source:parsed.source,sourceExcerpts:parsed.sourceExcerpts,synthetic:investor.synthetic},createdAt:now(),executedAt:null,ownerId:actor.id,error:null};
  insertRecord(actor,'proposed_actions',action);audit(actor,'approval.proposed',action.id,{kind:action.kind});return action;
 }
@@ -190,7 +212,7 @@ export function proposeImport(actor:Actor,jobId:string,prospectIds:string[]):Pro
 }
 const investorChangesSchema=z.object({counties:z.array(z.string().trim().min(1).max(100)).min(1).max(20).optional(),strategy:z.string().trim().min(1).max(100).optional(),budgetMin:z.number().finite().min(0).max(100000000).optional(),budgetMax:z.number().finite().min(0).max(100000000).optional(),financing:z.string().trim().min(1).max(300).optional(),rehab:z.string().trim().min(1).max(300).optional(),timeframe:z.string().trim().min(1).max(300).optional()}).strict();
 export function proposeInvestorUpdate(actor:Actor,investorId:string,changes:Record<string,unknown>):ProposedAction {
- const investor=getInvestor(actor,investorId);const parsed=investorChangesSchema.parse(changes);
+ const investor=writableInvestor(actor,investorId);const parsed=investorChangesSchema.parse(changes);listBuyBoxes(actor,investorId);
  if(!Object.keys(parsed).length)throw new AppError(422,'Supply at least one qualification field.');
  const merged={...investor,...parsed};if(merged.budgetMin>merged.budgetMax)throw new AppError(422,'Minimum budget cannot exceed maximum budget.');
  const action:ProposedAction={id:newId('action'),kind:'crm_update',title:`Update ${investor.name}’s qualification details`,status:'pending',payload:{investorId,changes:parsed,before:Object.fromEntries(Object.keys(parsed).map(key=>[key,investor[key as keyof Investor]]))},createdAt:now(),executedAt:null,ownerId:actor.id,error:null};
@@ -200,33 +222,37 @@ export function proposeInvestorUpdate(actor:Actor,investorId:string,changes:Reco
 export function decideAction(actor:Actor,id:string,decision:'approve'|'reject'):ProposedAction {
  z.enum(['approve','reject']).parse(decision);
  return getDb().transaction(()=>{
- const initial=scopedGet<ProposedAction>(actor,'proposed_actions',idSchema.parse(id));
+ const initial=getApproval(actor,idSchema.parse(id));
  if(initial.status==='executed'&&decision==='approve'||initial.status==='rejected'&&decision==='reject')return initial;
  if(initial.status!=='pending')throw new AppError(409,'This action has already been decided.');
  if(decision==='reject'){
   const rejected=updateRecord(actor,'proposed_actions',{...initial,status:'rejected' as const});audit(actor,'approval.rejected',id);return rejected;
  }
  try{return getDb().transaction(()=>{
-  const action=scopedGet<ProposedAction>(actor,'proposed_actions',id);
+  const action=getApproval(actor,id);
   if(action.status!=='pending')throw new AppError(409,'This action has already been decided.');
   const owner=actorForMember(actor.organizationId,actor.officeId,action.ownerId);
   if(action.kind==='crm_note'){
    const payload=z.object({investorId:idSchema,note:z.string().min(1).max(15000)}).parse(action.payload);
-   const investor=getInvestor(actor,payload.investorId);
+   const investor=writableInvestor(actor,payload.investorId);
    updateRecord(actor,'investors',{...investor,notes:`${investor.notes}\n\n[Reviewed local note · ${now()}]\n${payload.note}`});
+   addRelationshipEvent(actor,investor.id,'debrief',payload.note,'Reviewed employee-supplied recap/transcript; statements not independently verified');
   }else if(action.kind==='crm_update'){
    const payload=z.object({investorId:idSchema,changes:investorChangesSchema,before:z.record(z.string(),z.unknown())}).parse(action.payload);
-   const investor=getInvestor(actor,payload.investorId);
+   const investor=writableInvestor(actor,payload.investorId);
    if(Object.entries(payload.before).some(([key,value])=>JSON.stringify(investor[key as keyof Investor])!==JSON.stringify(value)))throw new AppError(409,'The record changed after this proposal. Prepare a new update from the current record.');
-   updateRecord(actor,'investors',{...investor,...payload.changes});
+   const updated=updateRecord(actor,'investors',{...investor,...payload.changes});
+   syncPrimaryBuyBox(actor,updated,payload.changes,action.id,action.payload);
+  }else if(action.kind==='buy_box'){
+   applyBuyBoxApproval(actor,action);
   }else if(action.kind==='crm_import'){
    const payload=z.object({jobId:idSchema,prospectIds:z.array(idSchema).min(1).max(100)}).parse(action.payload);
-   const job=getResearchJob(actor,payload.jobId);const existing=listInvestors(actor);
+   const job=getResearchJob(actor,payload.jobId);
    for(const prospectId of payload.prospectIds){
     const candidate=job.prospects.find(item=>item.id===prospectId);
-    if(!candidate||classifyDuplicate(candidate,existing).duplicateStatus!=='net_new')throw new AppError(409,'A prospect is now a duplicate or unavailable. Review the current CRM and prepare a new import.');
+    if(!candidate||classifyAuthorizedDuplicate(actor,candidate).duplicateStatus!=='net_new')throw new AppError(409,'A prospect is now a duplicate or unavailable. Review the current CRM and prepare a new import.');
     const investor:Investor={id:newId('investor'),name:candidate.name,company:candidate.company,counties:[candidate.county],strategy:candidate.strategy,budgetMin:0,budgetMax:0,financing:null,rehab:null,timeframe:null,email:null,phone:null,notes:`Imported fictional research fixture. Typical synthetic transaction price: $${candidate.typicalPrice}; this is not a confirmed budget. Contact details and buying intent are unverified. Research job ${job.id}.`,lastContactAt:null,ownerId:owner.id,synthetic:true};
-    insertRecord(owner,'investors',investor);existing.push(investor);
+    insertRecord(owner,'investors',investor);
    }
   }else throw new AppError(422,'This action kind is not executable.');
   const executed=updateRecord(actor,'proposed_actions',{...action,status:'executed' as const,executedAt:now(),error:null});
@@ -241,7 +267,7 @@ export function decideAction(actor:Actor,id:string,decision:'approve'|'reject'):
 const taskSchema=z.object({title:titleSchema,dueAt:z.string().datetime({offset:true}).nullable().optional(),investorId:idSchema.nullable().optional()}).strict();
 export function createTask(actor:Actor,input:{title:string;dueAt?:string|null;investorId?:string|null}):Task {
  assertActor(actor);const parsed=taskSchema.parse(input);
- if(parsed.investorId)getInvestor(actor,parsed.investorId);
+ if(parsed.investorId){const investorRow=readInvestorRow(actor,parsed.investorId);if(investorRow.office_id!==actor.officeId)throw new AppError(403,'A linked task must use an investor in your office.');}
  const task:Task={id:newId('task'),title:parsed.title,dueAt:parsed.dueAt?new Date(parsed.dueAt).toISOString():null,investorId:parsed.investorId??null,status:'open',ownerId:actor.id,createdAt:now()};
  getDb().prepare('INSERT INTO tasks(id,organization_id,office_id,owner_id,investor_id,data) VALUES(?,?,?,?,?,?)').run(task.id,actor.organizationId,actor.officeId,actor.id,task.investorId,JSON.stringify(task));
  audit(actor,'task.created',task.id);return task;
@@ -262,15 +288,9 @@ export function getGuidance(actor:Actor,investorId?:string) {
 }
 export function matchBuyers(actor:Actor,propertyId?:string) {
  requireRole(actor,researchRoles);
- const property=propertyId?scopedGet<Property>(actor,'properties',propertyId):listProperties(actor)[0];
+ const property=propertyId?readProperty(actor,propertyId):listProperties(actor)[0];
  if(!property)throw new AppError(404,'No authorized property is available to match.');
- const matches=listInvestors(actor).map(investor=>{
-  let score=0;const reasons:string[]=[];
-  if(investor.counties.some(county=>normalizeCounty(county)===normalizeCounty(property.county))){score+=40;reasons.push('Target county matches');}
-  if(property.price>=investor.budgetMin&&property.price<=investor.budgetMax){score+=35;reasons.push('Asking price is within recorded budget');}
-  if(strategiesMatch(investor.strategy,property.strategy)){score+=25;reasons.push('Investment strategy matches');}
-  return {investor,score,reasons};
- }).filter(item=>item.score>0).sort((a,b)=>b.score-a.score);
+ const matches=matchProperty(actor,property.id).map(match=>({...match,investor:getInvestor(actor,match.investorId)}));
  return {property,matches};
 }
 export function getDailyBrief(actor:Actor) {

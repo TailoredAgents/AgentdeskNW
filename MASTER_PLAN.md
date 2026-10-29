@@ -1,5 +1,15 @@
 # AgentDesk master plan
 
+## Phase 2 implementation — existing application preserved
+
+The October 29 discovery expands the working local build into a connected investor-to-property workflow. Phase 1 is checkpointed at `cded4cd`; conversations, tasks, research, approvals and local data must survive forward migrations.
+
+Implementation maps to the actual modules: `intelligence.ts`/`access.ts` extend `services.ts` with structured buy boxes, provenance, disclosure, private duplicate detection, matching and daily calling priorities. `workflows.ts`/`debrief.ts` add versioned property releases, disclosure-gated deal packages and reviewed post-call proposals. The existing HTTP boundary and `orchestrator.ts` expose these same services to forms, chat and voice. New interface panels reuse the existing component system; this is not a new app or separate CRM.
+
+P0 is additive schema and access corrections. P1 is the complete release → match → call briefing → debrief → approved intelligence update → eligible property package → follow-up flow. P2 preserves credential-gated provider boundaries, prioritizes Slack investigation over Telegram, and keeps paid SMS separate. Advanced valuation, verified comps and production performance reporting remain later milestones until their required data and authorizations exist.
+
+Acceptance is working local workflows with explicit synthetic labels, backend-enforced disclosure/ownership, preserved regression tests, new risk-focused tests, build/type/lint checks and browser verification. Alex's observations and unresolved corporate questions are separated in `docs/NEW_WESTERN_DISCOVERY.md`.
+
 **Owner:** Tailored Agents  
 **Initialized:** October 29, 2026  
 **First target:** Local demonstration, Monday, November 2, 2026  
@@ -40,7 +50,7 @@ This choice prioritizes a reproducible, inspectable local demonstration. It does
 | M5 — Pilot | Real authorized identity, CRM and research integrations | Tenant/field access verified; provider rights and operational controls approved |
 | M6 — Commercial platform | Multi-office subscriptions and channel access | Billing/entitlements, lifecycle operations, support and measured adoption |
 
-M0–M3 are the immediate implementation focus. M4 is built as a real integration boundary and is not certified operational without live testing. Work on later phases must not undermine the repeatable demonstration.
+M0–M3 and the Phase 2 operational slice are implemented locally; see `docs/PHASE_2_REPORT.md` and `docs/PROGRESS.md` for evidence. M4 is built as a real integration boundary and is not certified operational without live testing. Work on later phases must not undermine the repeatable demonstration.
 
 ## Scope by horizon
 
@@ -48,7 +58,7 @@ M0–M3 are the immediate implementation focus. M4 is built as a real integratio
 
 **Pilot:** user provisioning and SSO, approved SOPs and source versions, licensed property/research provider, Salesforce sandbox OAuth and schema mapping, secure token store, scoped sync, live voice quality/cost trials, retention/deletion controls, backup recovery, production queue and telemetry.
 
-**Expansion:** remaining specialist execution, acquisition workflow depth, approved document coordination, secure Telegram/Teams/Slack adapter, optional SMS with consent/entitlements, subscriptions, multi-office management and broker CRM adapters.
+**Expansion:** remaining specialist execution, acquisition workflow depth, approved document coordination, authorized Slack first if useful to the customer, optional paid SMS with consent/entitlements, later Telegram/Teams alternatives, subscriptions, multi-office management and broker CRM adapters.
 
 ## What success means
 

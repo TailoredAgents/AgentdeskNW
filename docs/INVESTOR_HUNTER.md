@@ -8,20 +8,20 @@ A target count is a maximum requested output, not a promise of verified coverage
 
 ## Pipeline
 
-1. **Validate the subject.** Require address, county, price, strategy and count. Identify missing location/property attributes before live research. The demo accepts employee input without pretending to have resolved the parcel.
+1. **Validate the subject.** Require address, county, price, strategy and count; accept an optional property type for similarity scoring. Identify missing location/property attributes before live research. The demo accepts employee input without pretending to have resolved the parcel.
 2. **Discover external activity.** A provider retrieves licensed transactions or lawfully accessible professional sources. Store source identity, observation date, transaction date when known, source URL/record ID and limitations.
 3. **Resolve entities.** Normalize entity names and addresses. Keep LLC/company attribution separate from a human contact. Do not infer an individual’s ownership solely from a matching surname or address.
 4. **Assess fit.** Calculate transparent relevance factors against the subject property. Store every factor and its contribution, and keep unknowns visible.
-5. **Check CRM duplicates.** Compare authorized CRM entities and contact identifiers, retaining exact, possible and uncertain outcomes. Cross-owner duplicates may need a privacy-preserving enterprise duplicate service before production; do not leak hidden records.
+5. **Check CRM duplicates.** Compare authorized CRM entities and contact identifiers, retaining exact, possible and uncertain outcomes. The local private duplicate service also compares protected same-organization records, returning only an opaque possible-duplicate flag with no matched ID. Production needs customer-approved identity and duplicate rules; hidden records are never disclosed.
 6. **Review contacts.** Keep missing/unverified/verified status and source. The demonstration uses missing contacts; no invented phone numbers.
 7. **Deliver artifacts.** Persist ranked results, evidence, filterable status and CSV. Prepare selected candidates for review as a stored CRM import action.
 8. **Execute only after approval.** Recheck current duplicate and scope state before creating local records. Preserve an audit trail and safe repeated approval behavior.
 
 ## Data contract
 
-`ResearchInput`: address, county, price, strategy, limit. `ResearchJob`: ID, input, owner, provider, status, stage, progress, attempts, result list, error and creation/update timestamps. `Prospect`: entity/name, county, strategy, typical purchase price, transaction count, last activity, score, factor contributions, rationale, duplicate class, optional matched record, contact status, evidence and synthetic flag.
+`ResearchInput`: address, county, price, strategy, optional property type, limit. `ResearchJob`: ID, input, owner, provider, status, stage, progress, attempts, result list, error and creation/update timestamps. `Prospect`: entity/name, county, strategy, typical purchase price, transaction count, last activity, score, factor contributions, rationale, duplicate class, optional matched record, contact status, evidence and synthetic flag.
 
-Every evidence item has an ID, title, nullable URL, observation timestamp, detail and synthetic flag. A missing URL or phone is explicitly missing; placeholder URLs/numbers must not imply verification. Production evidence should also capture provider record keys, retrieved-at versus transaction-at, licensing/retention constraints and source revision/hash.
+Every evidence item has an ID, title, nullable URL, observation timestamp, detail and synthetic flag; transaction evidence may include the compared property type. A missing URL or phone is explicitly missing; placeholder URLs/numbers must not imply verification. Production evidence should also capture provider record keys, retrieved-at versus transaction-at, licensing/retention constraints and source revision/hash.
 
 ## Explainable scoring
 
@@ -29,29 +29,30 @@ Every evidence item has an ID, title, nullable URL, observation timestamp, detai
 
 | Factor | Weight | Implemented baseline |
 | --- | ---: | --- |
-| Geography | 25 | County equality after case/space/“County” suffix normalization receives 1.0; other counties 0.25 |
+| Property type | 25 | Known normalized type equality; missing input/evidence contributes zero |
+| Geography | 10 | County equality after case/space/“County” suffix normalization receives 1.0; other counties 0.25 |
 | Strategy | 20 | Normalized strategy aliases match at 1.0; “both” matches either supported strategy; another strategy receives 0.25 |
-| Price | 20 | `max(0, 1 - abs(typicalPrice - subjectPrice) / subjectPrice)` |
-| Recency | 15 | Linear decay across 365 days; invalid or future activity dates receive zero |
-| Activity | 10 | Transaction count / 8, capped at 1 |
-| Evidence | 10 | Evidence item count / 2, capped at 1 |
+| Price | 25 | `max(0, 1 - abs(typicalPrice - subjectPrice) / subjectPrice)` |
+| Recency | 10 | Linear decay across 365 days; invalid or future activity dates receive zero |
+| Activity | 5 | Transaction count / 8, capped at 1 |
+| Evidence | 5 | Evidence item count / 2, capped at 1 |
 
 Each factor is multiplied by its normalized weight; contributions are rounded to tenths and the total to an integer from 0 to 100. Evidence count is a simple demo signal, not an assessment of source independence or reliability. These formulas are deterministic and inspectable, not claims of empirically calibrated predictive quality.
 
 County match is coarse geographic relevance, not measured parcel distance. Purchase-price similarity is not a financing qualification. Recency decays with age; future or invalid activity dates must not receive unwarranted confidence. Missing information must not be treated as a match. Research relevance does not imply purchase intent, investor quality, loan approval or guaranteed returns.
 
-Before live pilot use, calibrate weights against a labeled sample of relevant and irrelevant buyers. Report missingness and review false positives. Additional factors such as property type/rehab similarity require real source attributes; they cannot be claimed until implemented.
+Before live pilot use, calibrate weights against a labeled sample of relevant and irrelevant buyers. Report missingness and review false positives. Property type now contributes when supplied, with aliases such as SFR/single-family and condo/condominium. Rehab similarity and source reliability grading remain future work. Demo transaction types are explicitly fictional. Property type plus price account for 50 points, reflecting Alex’s reported preference for comparable prior purchases; this weighting is a product choice, not a verified corporate rule.
 
 ## Duplicate classes
 
 | State | Interpretation | Import behavior |
 | --- | --- | --- |
-| `net_new` | No match among permitted records under current rules | Eligible for proposal, subject to execution-time recheck |
+| `net_new` | No match in visible or privacy-checked same-organization records under current rules | Eligible for proposal, subject to execution-time recheck |
 | `existing` | Strong match to existing allowed CRM record | Do not create another record |
-| `possible_duplicate` | Similar entity/contact evidence | Review before import; never silently merge |
+| `possible_duplicate` | Similar permitted entity evidence, or opaque protected same-organization match with no ID | Review before import; never silently merge |
 | `uncertain` | Identity evidence insufficient | Hold for identity review |
 
-A `net_new` label in demo scope means no match in fictional permitted records, not proof of absence from all New Western systems.
+A `net_new` label in demo scope means no match in fictional same-organization records under the implemented rules, not proof of absence from all New Western systems. Research results refresh duplicate status when read, and import execution rechecks after any intervening local changes. The Jordan-owned Cedar & Stone fixture demonstrates an opaque private collision; Alex cannot retrieve its record details.
 
 ## Job lifecycle
 

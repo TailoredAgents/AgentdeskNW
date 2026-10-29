@@ -71,3 +71,15 @@ Store exact proposal payload and target, its creator and timestamp. Approval rec
 ## Sandbox acceptance gate
 
 Require written customer authorization, an administrator owner, External Client App configuration, least-privilege test user, approved schema mapping, representative fictional sandbox fixtures and callback/secrets configuration. Test read restrictions, field-level restrictions, expired/revoked tokens, cross-office records, duplicate conflicts, repeated approvals, API limit responses and disconnected behavior. Production remains disabled until those checks pass and deployment is authorized.
+
+## Phase 2 supplemental intelligence and mapping
+
+AgentDesk now stores multiple versioned buy boxes, field-level source/review metadata, privacy-scoped relationship context, disclosure fixtures and pending changes beside the local CRM. `salesforceRef` remains null in the demo; `local_demo` is a synchronization state, not a remote receipt. Existing investor IDs and Phase 1 records are preserved.
+
+The reviewed mapping bridge keeps legacy primary criteria consistent: approving a `crm_update` changes the corresponding primary buy-box fields; approving the primary buy box maps its counties, strategy, price, rehab and financing back to the local investor. Unchanged fields retain their original provenance. Additional boxes remain independent. Stale versions/before-values fail instead of overwriting newer data. Typical research transaction prices remain unconfirmed evidence and never populate an investor’s confirmed budget automatically.
+
+Customer discovery must choose whether multiple boxes belong in related custom records, approved standard fields or supplemental AgentDesk storage. Confirm object/field types, multi-value conventions, external IDs, source-of-truth precedence, version conflicts, supported remote transactions and Salesforce synchronization status before enabling any write adapter. The existing bridge is a canonical local mapping seam; it is not a completed customer-specific Salesforce mapping.
+
+AgentDesk ownership is configurable for the demo, but cannot replace Salesforce sharing or field security. Production duplicate checks must be authorized to return only permitted details; protected same-organization collisions currently return an opaque possible-duplicate flag with no ID. Production assignment/transfer must follow approved remote rules and delegated user permissions.
+
+Property releases currently use explicit local acquisition/manager entry with versioned event keys. Their source system, Marketplace permissions, media access, disclosure document/version, signing provider and approved transaction-stage vocabulary remain unknown. Neither a release nor a signed synthetic disclosure fixture establishes access to a New Western system.

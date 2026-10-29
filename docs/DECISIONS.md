@@ -1,5 +1,25 @@
 # Architecture decisions
 
+## ADR-011 — Preserve the application and add investor intelligence
+
+Accepted October 29, 2026. Keep Next.js, SQLite migrations, the central Copilot, worker, PWA, voice interface and sixteen specialist IDs. Add structured buy boxes and provenance beside the existing investor record. Existing CRM fields remain the primary-profile compatibility projection; additional profiles stay separate. Phase 1 source checkpoint: `cded4cd`. A private local database backup was taken before applying additive Phase 2 migrations.
+
+## ADR-012 — Separate inventory sharing from relationship access
+
+Release recipients can inspect shared inventory without gaining access to another agent's buyers. Backend access supports ownership, explicit sharing and controlled office/organization visibility. Organization-wide duplicate checks return an opaque collision for a protected record. Formal corporate policy is unknown; conservative demo defaults and explicit manager controls are assumptions requiring pilot confirmation.
+
+## ADR-013 — Disclosure gates preparation and handoff
+
+A restricted property package requires current signed evidence and appropriate release/media access. The same server check runs on composition, later reads, approval and copy handoff. Release/template changes invalidate prior approvals. Demo disclosure evidence is explicitly synthetic and manager-recorded. Informal real-world exceptions are not encoded as an override.
+
+## ADR-014 — Personal-phone recap first; delivery truth preserved
+
+Post-call text or live-voice recap fits the observed personal-cell workflow. No automatic telephone recording is assumed. Source-backed changes remain proposals; ambiguity produces clarification. Personal texting/iMessage uses reviewed copy handoff because AgentDesk has no authorized sending provider. `handed_off` and `not_sent` are compatible and intentional. Slack is the next channel candidate, SMS an optional paid add-on, Telegram a later option.
+
+## ADR-015 — Three different scores
+
+External-research relevance, property-to-existing-buyer match and relationship engagement/readiness have separate inputs and explanations. Property type and price are the strongest current external-fit weights. None is a calibrated prediction of conversion, investor quality or financial return.
+
 ## ADR-001 — Local modular TypeScript monolith
 
 **Accepted October 29, 2026.** Next.js App Router and React provide the application and HTTP boundary; server modules own business logic. Node 20.19 is already available. Strong shared types reduce integration friction. No Python backend or microservices are introduced without a concrete need.

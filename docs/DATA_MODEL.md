@@ -2,7 +2,7 @@
 
 ## Principles
 
-Every business row belongs to an organization and, when applicable, an office and owner. References between scoped entities must not permit cross-tenant joins. The initial implementation uses SQLite with foreign keys and migrations; exact table names/constraints in `src/server/migrations` are authoritative. Shared API types are in `src/lib/contracts.ts`.
+Every business row belongs to an organization and, when applicable, an office and owner. References between scoped entities must not permit cross-tenant joins. The initial implementation uses SQLite with foreign keys and migrations; exact table names/constraints in `src/server/migrations` are authoritative. Shared API types are in `src/lib/contracts.ts` and `src/lib/intelligence-contracts.ts`.
 
 Fictional seed records exercise the application rather than imitating a customer export. Business records carry explicit synthetic provenance. API payloads do not accept a tenant ID as an authority.
 
@@ -14,6 +14,10 @@ Business tables generally use scoped relational columns plus a validated JSON `d
 
 `002_voice.sql`: `voice_sessions` binds an actor and conversation with start/end times; `voice_calls` stores unique session/call receipts and running/completed/failed result state; `voice_events` deduplicates transcript event IDs. Server scope checks protect voice sessions; production work should strengthen their relational composite constraints alongside identity replacement.
 
+`003_investor_intelligence.sql`: `investor_intelligence` stores visibility, explicit sharing, relationship metadata and disclosure; `buy_boxes` stores active structured criteria; `buy_box_versions` preserves previous reviewed versions; `relationship_events` records employee-supplied recaps, reviewed notes, call outcomes, disclosure and assignment history; `call_priorities` persists employee dismissal and priority adjustment. All investor-linked tables use organization/office/investor foreign keys. Buy boxes carry revision and field-level provenance. Version records are unique per box/version.
+
+`004_workflows.sql`: `property_releases` stores the latest version per office/property with actor assignments, source, property snapshot, media access and transaction context. `release_events` provides scoped event-key idempotency and immutable version snapshots. `deal_packages` binds owner, investor and release, with canonical property copy and review/handoff state. `debriefs` persists recaps, extracted proposals, linking status and idempotent proposal results. `channel_templates` stores manager-reviewed local copy; `channel_links` binds external channel identities to trusted memberships. An adapter foundation is not evidence of a connected external channel or successful delivery.
+
 The database enables foreign keys, WAL journaling and a five-second busy timeout. Migration application and initial seeding are transactional. No customer data migration has been attempted.
 
 ## Current logical entities
@@ -23,7 +27,12 @@ The database enables foreign keys, WAL journaling and a five-second busy timeout
 | Organization | ID, display name and tenant settings |
 | Office | Organization, name; the authorization scope for office-level management |
 | User/actor | Organization, office, name, role; fixed demo personas initially |
-| Investor | Scoped owner, company, contact channels, buy-box, notes, last contact, synthetic flag |
+| Investor | Scoped owner, company, contact channels, legacy primary criteria, notes, last contact, synthetic flag |
+| Investor intelligence / buy box | Visibility, sharing, relationship state, disclosure and multiple versioned criteria sets with field provenance |
+| Property release | Latest authorized property snapshot, version, source, assigned users, media access and configurable transaction context |
+| Deal package | Investor/release binding, channel, exact draft, current eligibility and approval/handoff state; delivery remains not sent |
+| Debrief / relationship event | Employee recap, source excerpts, ambiguities, reviewed proposals and actual call outcomes |
+| Call priority | Per-employee dismissal and manual rank adjustment |
 | Property | Scoped address/location, price, physical attributes, strategy, status, synthetic flag |
 | Conversation | Scoped owner, title and timestamps |
 | Message | Conversation, role, text, timestamp, specialist IDs and artifact references |
@@ -50,7 +59,7 @@ Persist timestamps as UTC ISO strings. Render dates in the user’s time zone, i
 
 ## Migration discipline
 
-Keep ordered schema migrations under version control and track applied versions. Migrations run before seeded data or domain queries. Seed only when the intended demo tenant is absent; restarting the app must not overwrite user changes. Test a clean database and upgrade an existing database before shipping a schema change. Back up the local database before migration experiments.
+Keep ordered schema migrations under version control and track applied versions. Migrations run before seeded data or domain queries. Base seed records are created only when the demo tenant is absent. An idempotent private duplicate fixture is added for Phase 2. Primary buy boxes and intelligence metadata are initialized lazily from existing CRM records on first permitted access; restarting never replaces existing reviewed boxes or preferences. Test a clean database and upgrade an existing database before shipping a schema change. Back up the local database before migration experiments.
 
 ## Production model extensions
 
@@ -69,3 +78,11 @@ Do not add speculative tables merely to claim completeness. Add constraints and 
 ## PostgreSQL transition gate
 
 Translate migrations; add database-enforced tenant boundaries and composite foreign keys; migrate synthetic data separately from authorized customer data; verify SQL portability, timestamp/JSON handling, idempotency and worker locks; rehearse backup/restore and rollback. Do not operate multiple web hosts against an ad-hoc shared SQLite file.
+
+## Phase 2 compatibility and ownership
+
+The existing investor JSON and IDs remain intact. Reviewed `crm_update` actions synchronize affected primary-box fields and provenance; approved primary-box changes map back to the legacy fields. Additional boxes remain separate. Immutable previous versions and frozen proposal before-versions prevent silent overwrites. A legacy typical transaction price never becomes a confirmed investor budget.
+
+`organizations.settings.ownershipPolicy` contains `organizationVisibility`, `crossOfficeSharing` and `managerAssignment`. Defaults are false, false and true respectively. Visibility is enforced by the access service; sharing grants reads, while mutations require the owner or a manager in the owning office. Assignment currently changes owner within the same office and clears explicit sharing; it does not migrate tasks, historical events or remote Salesforce records to another office.
+
+Timestamps distinguish call attempts, actual connected contact, recap creation, approval, release and copy/compose handoff. Package `deliveryStatus` remains `not_sent` because no provider-delivery integration is active. `synthetic` flags and `demo:` disclosure references are not real evidence.

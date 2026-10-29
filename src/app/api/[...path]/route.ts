@@ -4,6 +4,7 @@ import * as service from '@/server/services';
 import { assertLocalDemo,getActor,setSession,rateLimit } from '@/server/auth';
 import { chat,researchSchema,qualificationChangesSchema } from '@/server/orchestrator';
 import { createVoiceSession,executeVoiceTool,saveVoiceTranscript,endVoiceSession } from '@/server/voice';
+import { phaseTwoRoute } from '@/server/phase-two-api';
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
 
@@ -34,6 +35,7 @@ async function route(request:NextRequest,{params}:{params:Promise<{path:string[]
       await service.tickJobs(actor);
       const response=json(service.getBootstrap(actor));if(newSession)setSession(response,actor.role);return response;
     }
+    const phaseTwo=await phaseTwoRoute(request,actor,path,()=>body(request));if(phaseTwo)return phaseTwo;
     if(resource==='chat'&&method==='POST'){
       const input=z.object({conversationId:idSchema.optional(),message:z.string().trim().min(1).max(12000)}).strict().parse(await body(request));
       return json(await chat(actor,input.message,input.conversationId));

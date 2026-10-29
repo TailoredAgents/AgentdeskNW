@@ -2,6 +2,20 @@
 
 Completion evidence belongs in [PROGRESS](PROGRESS.md). This roadmap describes gates, not claims of finished implementation.
 
+## Phase 2 directive checkpoint and next sequence
+
+The numbered phases below are the original architecture roadmap. The October 29 **Phase 2 development directive** adds an operational slice across those phases: investor intelligence/access, disclosure gating, releases, composer, debriefs, calling queue, briefings and enhanced matching. These are implemented locally; their external data and communication providers remain disconnected. Do not treat the roadmap's later stages as evidence of completed production integration.
+
+Next work, in priority order:
+
+1. Confirm the GM's ownership/sharing/transfer rules, disclosure version and authoritative evidence, release audience/source, approved templates and measurable pilot outcomes.
+2. Add an authorized Salesforce sandbox with field mappings for multiple buy boxes, investor ownership and disclosure references; implement token lifecycle and conflict-aware synchronization.
+3. Connect approved release/media sources and a real disclosure evidence provider. Manual link attestation must be replaced or supplemented by actual recipient access checks where supported.
+4. Evaluate a licensed Georgia transaction/contact source using labeled examples; preserve uncertainty and private duplicate checks.
+5. Validate configured live text/voice on actual devices. Harden identity, retention, worker supervision and cross-device sessions before any real-data pilot.
+6. Confirm Slack is actually used, then implement authorized installation, expiring identity linking, replay-safe webhook ingress and app-linked approvals. Add SMS later as a metered, consent-aware entitlement; Telegram remains optional.
+7. Add advanced comps, valuation and richer transaction/management analytics only when the required evidence and customer policy are available.
+
 ## Phase 1: reproducible foundation
 
 Initialize Node/Next.js/React/TypeScript, shared contracts and lint/test configuration. Establish the premium responsive shell, local database migrations, fictional organization/office/users, scoped records and demonstration access. Exit when setup is repeatable and the first build serves without broken navigation.
