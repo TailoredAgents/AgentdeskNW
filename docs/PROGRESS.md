@@ -1,5 +1,11 @@
 # AgentDesk progress log
 
+## October 29, 2026 — Four-digit demonstration PIN
+
+At the owner's request, `AGENTDESK_DEMO_ACCESS_CODE` now accepts an exact four-digit PIN, including leading zeroes. Existing 16–256 character invitation codes continue to work. The session signing secret remains separate and unchanged, as do the signed cookies, origin checks and 20-attempt-per-minute login throttle. The hosted acceptance tests now use a four-digit PIN; configuration tests also cover malformed short values and compatibility with longer codes. Updated the Render guide and environment example. Verification passed: 221 automated tests, 15 compiled hosted-demo checks using a four-digit PIN, typecheck, lint and production build. The owner confirmed an existing Render deployment and authorized deploying this revision; the environment PIN will be changed by the owner afterward.
+
+---
+
 ## October 29, 2026 — New GitHub repository publishing authorized
 
 The owner created `https://github.com/TailoredAgents/AgentdeskNW` and explicitly authorized committing and pushing the current local project. The destination was verified as an empty repository with `main` as its default branch. This checkpoint includes the presentation refresh, private hosted-demo preparation, Render blueprint, employee Slack/Twilio implementation, tests and setup documentation, preserving the existing development history. The older `TailoredAgents/AgentDesk` repository is not a push destination.

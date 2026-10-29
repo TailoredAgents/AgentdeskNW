@@ -20,7 +20,7 @@ A paid Render disk preserves records across restarts and deploys. It also means 
 
 ## Configuration at creation
 
-The blueprint generates a session signing secret. Enter an invitation code of at least 16 characters and the existing OpenAI key in Render's private environment settings. Do not include these values in the repository, a URL, or the blueprint. The key is optional for deterministic demonstrations; leave it empty to keep all provider calls disabled.
+The blueprint generates a session signing secret. Enter a four-digit invitation PIN of your choice (leading zeroes are supported), or keep an existing 16–256 character code, and the existing OpenAI key in Render's private environment settings. Do not include these values in the repository, a URL, or the blueprint. The key is optional for deterministic demonstrations; leave it empty to keep all provider calls disabled.
 
 `AGENTDESK_HOSTED_DEMO=true` and `AGENTDESK_DEMO=true` explicitly enable hosted fictional access. The origin defaults to Render's documented `RENDER_EXTERNAL_URL`. For a selected custom domain, set `AGENTDESK_APP_ORIGIN=https://your-domain` without a path, query, or fragment. Only the chosen hostname and same-origin mutations are accepted. Hosted startup fails when required settings are incomplete.
 

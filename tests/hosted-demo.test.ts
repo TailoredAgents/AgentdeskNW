@@ -8,7 +8,7 @@ import { featureAccess, trial } from '../src/server/billing';
 import { listApprovals } from '../src/server/services';
 import { listPackages, listReleases } from '../src/server/workflows';
 const origin='https://agentdesk.example';
-const code='fictional-test-invitation-code';
+const code='0427';
 function request(path:string,method='GET',body?:unknown,cookie?:string,headers:Record<string,string>={}){
  return new NextRequest(`${origin}/api/${path}`,{method,headers:{host:'agentdesk.example',origin,'x-agentdesk-request':'1',...(cookie?{cookie}:{}),...headers},...(body!==undefined?{body:JSON.stringify(body)}:{})});
 }
@@ -18,6 +18,12 @@ function route(path:string,method='GET',body?:unknown,cookie?:string,headers:Rec
 beforeEach(()=>{closeDb();vi.stubEnv('AGENTDESK_DB_PATH',':memory:');vi.stubEnv('AGENTDESK_HOSTED_DEMO','true');vi.stubEnv('AGENTDESK_APP_ORIGIN',origin);vi.stubEnv('AGENTDESK_SESSION_SECRET','test-secret-that-has-at-least-thirty-two-characters');vi.stubEnv('AGENTDESK_DEMO_ACCESS_CODE',code);vi.stubEnv('OPENAI_API_KEY','');});
 afterEach(()=>{closeDb();vi.unstubAllEnvs();vi.useRealTimers();});
 describe('private hosted demonstration',()=>{
+ it('accepts a four-digit PIN including leading zeroes, preserves longer codes, and rejects malformed short codes',()=>{
+  expect(()=>verifyDemoAccess(code)).not.toThrow();
+  expect(()=>verifyDemoAccess('427')).toThrow('not recognized');
+  for(const invalid of ['', '123', '12345', 'abcd', ' 0427']){vi.stubEnv('AGENTDESK_DEMO_ACCESS_CODE',invalid);expect(()=>verifyDemoAccess(invalid)).toThrow('not fully configured');}
+  vi.stubEnv('AGENTDESK_DEMO_ACCESS_CODE','existing-long-invitation-code');expect(()=>verifyDemoAccess('existing-long-invitation-code')).not.toThrow();
+ });
  it('never auto-authenticates a visitor or permits role switching before entry',async()=>{
   expect((await route('bootstrap')).status).toBe(401);
   expect((await route('session','POST',{role:'manager'})).status).toBe(401);

@@ -9,7 +9,7 @@ import { request as httpRequest } from 'node:http';
 const port=await new Promise((resolve,reject)=>{const server=createServer();server.once('error',reject);server.listen(0,'127.0.0.1',()=>{const port=server.address().port;server.close(()=>resolve(port));});});
 const dir=mkdtempSync(join(tmpdir(),'agentdesk-hosted-smoke-'));
 const base=`http://127.0.0.1:${port}`,origin=`https://127.0.0.1:${port}`;
-const code=randomBytes(24).toString('hex');
+const code='0427'; // Fictional fixture also checks preservation of a leading zero.
 const env={...process.env,NODE_ENV:'production',PORT:String(port),AGENTDESK_DB_PATH:join(dir,'demo.sqlite'),AGENTDESK_DEMO:'true',AGENTDESK_HOSTED_DEMO:'true',AGENTDESK_APP_ORIGIN:origin,AGENTDESK_SESSION_SECRET:randomBytes(32).toString('hex'),AGENTDESK_DEMO_ACCESS_CODE:code,AGENTDESK_PREPARE_DEMO:'true',OPENAI_API_KEY:'',AGENTDESK_CHANNELS_ENABLED:'false',AGENTDESK_CHANNEL_SEND_ENABLED:'false',AGENTDESK_RESEARCH_PROVIDER:'synthetic-fixtures-v1'};
 let child,cookie='',checks=0;
 const check=(value,message)=>{assert.ok(value,message);checks++;};

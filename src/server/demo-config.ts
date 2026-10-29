@@ -10,5 +10,7 @@ export function demoOrigin() {
 export function validateHostedDemo() {
   if (!hostedDemo()) return;
   demoOrigin();
-  if (process.env.AGENTDESK_DEMO !== 'true' || (process.env.AGENTDESK_SESSION_SECRET?.length ?? 0) < 32 || (process.env.AGENTDESK_DEMO_ACCESS_CODE?.length ?? 0) < 16) throw new Error('Hosted demo access is not fully configured.');
+  const code = process.env.AGENTDESK_DEMO_ACCESS_CODE ?? '';
+  const validCode = /^[0-9]{4}$/.test(code) || (code.length >= 16 && code.length <= 256);
+  if (process.env.AGENTDESK_DEMO !== 'true' || (process.env.AGENTDESK_SESSION_SECRET?.length ?? 0) < 32 || !validCode) throw new Error('Hosted demo access is not fully configured.');
 }
