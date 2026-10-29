@@ -111,3 +111,7 @@ Two-way voice uses browser WebRTC, server-held short-lived credentials, and an a
 No API key was present during implementation. Text, voice and research protocols are tested with mocks; live model access, actual speech, interruption/device behavior and external findings remain unverified. Settings shows configuration separately from provider receipt evidence. Production Salesforce, outreach, payment collection and production identity remain disconnected.
 
 See `.env.example`, [provider setup and demonstration](docs/DEMO_RUNBOOK.md#phase-4-conversation-demonstration), [official API references](docs/OPENAI_PROVIDER_REFERENCES.md), [voice](docs/VOICE_AND_MESSAGING.md), [research](docs/INVESTOR_HUNTER.md), and [usage limitations](docs/USAGE_METERING.md). Migrations 006–008 are additive; `data/phase4-before.sqlite` preserves the pre-change data. Keep configured secrets only in ignored `.env.local`; restart the web app and worker after changing configuration.
+
+### Live connection follow-up
+
+The configured OpenAI project now passes authentication, live Responses tool execution and persisted conversation-memory checks. Realtime session credential setup also passed; microphone/audio, interruption and live voice tools still need a device walkthrough. External research remains off. See [live provider verification](docs/LIVE_PROVIDER_CHECK.md). Restart the launcher after changing `.env.local` so both app and worker load the configuration.

@@ -1,5 +1,17 @@
 # AgentDesk progress log
 
+## October 29, 2026 — Live OpenAI credential and acceptance checks
+
+The supplied API key is configured in ignored `.env.local`. OpenAI model discovery returned HTTP 200 and listed `gpt-6-astra`, `gpt-realtime-2.1` and `gpt-4o-mini-transcribe`.
+
+**Live text verified:** a bounded real Responses conversation invoked `daily_priorities` through the existing guarded dispatcher, identified Mike’s overdue purchase-timeline task, and answered a follow-up from persisted conversation context with “Mike Bennett.” Three successful provider responses reported 16,846 input tokens and 34 output tokens. Tests used temporary low-reasoning/output/round limits; normal saved configuration was not changed. No tasks or CRM records were created, changed or completed; the four existing tasks remain. The conversation and provider receipts are saved in the active local database. Actual provider dollar cost remains unreconciled.
+
+**Voice setup verified, speech not yet verified:** the actual Realtime client-secret endpoint accepted the configured model and session settings. The unused session was immediately ended without microphone input or generated audio. Its admission reservation was released; all 60 voice minutes remain available. This does not establish working WebRTC audio, interruption or voice tool execution against the live provider.
+
+External research remains explicitly disabled and no investor research or contact verification was performed. See LIVE_PROVIDER_CHECK.md. The 188-test/103-HTTP-check results below describe the preceding code checkpoint; this follow-up changes local configuration and verification documentation only.
+
+---
+
 ## October 29, 2026 — Phase 4 implemented; local verification complete
 
 Phase 3 is preserved at `2701e3ad70bbd10e20a97f6fe0692ad3e1161ef3`; pre-change audit checkpoint `871bf64` and `data/phase4-before.sqlite` were created before implementation. The final implementation commit is recorded in the delivery message and Git history. Live-provider acceptance remains blocked by missing credentials.
