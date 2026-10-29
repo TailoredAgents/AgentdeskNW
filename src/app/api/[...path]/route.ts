@@ -5,7 +5,8 @@ import { z } from 'zod';
 import * as service from '@/server/services';
 import { assertLocalDemo,getActor,setSession,rateLimit } from '@/server/auth';
 import { chat,researchSchema,qualificationChangesSchema } from '@/server/orchestrator';
-import { createVoiceSession,executeVoiceTool,saveVoiceTranscript,endVoiceSession } from '@/server/voice';
+import { createVoiceSession,connectVoiceSession,getVoiceStatus,endVoiceSession } from '@/server/voice';
+import { providerStatus } from '@/server/providers';
 import { phaseTwoRoute } from '@/server/phase-two-api';
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -37,11 +38,13 @@ async function route(request:NextRequest,{params}:{params:Promise<{path:string[]
       await service.tickJobs(actor);
       const response=json(service.getBootstrap(actor));if(newSession)setSession(response,actor.role);return response;
     }
+    if(resource==='providers'&&method==='GET')return json(providerStatus(actor));
+    if(resource==='voice'&&id==='status'&&method==='GET')return json(getVoiceStatus(actor,idSchema.parse(request.nextUrl.searchParams.get('voiceSessionId'))));
     const billing=await billingRoute(request,actor,path,()=>body(request));if(billing)return billing;
     const phaseTwo=await phaseTwoRoute(request,actor,path,()=>body(request));if(phaseTwo)return phaseTwo;
     if(resource==='chat'&&method==='POST'){
-      const input=z.object({conversationId:idSchema.optional(),message:z.string().trim().min(1).max(12000)}).strict().parse(await body(request));
-      return json(await chat(actor,input.message,input.conversationId));
+      const input=z.object({conversationId:idSchema.optional(),requestId:idSchema.optional(),message:z.string().trim().min(1).max(12000)}).strict().parse(await body(request));
+      return json(await chat(actor,input.message,input.conversationId,input.requestId));
     }
     if(resource==='conversations'){
       if(method==='GET')return json(id?service.getConversation(actor,id):service.listConversations(actor));
@@ -52,10 +55,10 @@ async function route(request:NextRequest,{params}:{params:Promise<{path:string[]
       if(id&&method==='GET'){
         const job=service.getResearchJob(actor,id);
         if(operation==='export'){
-          if(job.status!=='completed')throw new service.AppError(409,'Finish the research job before exporting.');
+          if(!job.prospects.length)throw new service.AppError(409,'No saved research candidates are available to export.');
           const headers=['Name','Company','County','Strategy','Score','Duplicate status','Phone','Contact status','Rationale','Evidence','Synthetic'];
-          const rows=job.prospects.map(p=>[p.name,p.company,p.county,p.strategy,p.score,p.duplicateStatus,p.phone,p.contactStatus,p.rationale,p.evidence.map(e=>`${e.title}: ${e.detail} [${e.url||'synthetic fixture; no live source'}]`).join(' | '),'YES — fictional demonstration']);
-          return new NextResponse([headers,...rows].map(row=>row.map(csvCell).join(',')).join('\r\n'),{headers:{'Content-Type':'text/csv; charset=utf-8','Content-Disposition':`attachment; filename="agentdesk-demo-research.csv"`,'Cache-Control':'no-store'}});
+          const rows=job.prospects.map(p=>[p.name,p.company,p.county,p.strategy,p.score,p.duplicateStatus,p.phone,p.contactStatus,p.rationale,p.evidence.map(e=>`${e.title}: ${e.detail} [${e.url||'synthetic fixture; no live source'}]`).join(' | '),p.synthetic?'YES — fictional demonstration':'NO — public sources; unverified']);
+          return new NextResponse([headers,...rows].map(row=>row.map(csvCell).join(',')).join('\r\n'),{headers:{'Content-Type':'text/csv; charset=utf-8','Content-Disposition':`attachment; filename="agentdesk-research.csv"`,'Cache-Control':'no-store'}});
         }
         return json(job);
       }
@@ -82,9 +85,9 @@ async function route(request:NextRequest,{params}:{params:Promise<{path:string[]
       const input=z.object({guidance:z.enum(['concise','guided']).optional(),notifications:z.boolean().optional(),quietHoursStart:z.number().int().min(0).max(23).optional(),quietHoursEnd:z.number().int().min(0).max(23).optional()}).strict().parse(await body(request));return json(service.updateSettings(actor,input));
     }
     if(resource==='voice'&&method==='POST'){
-      if(id==='session'){rateLimit(actor,'voice_session',5);const input=z.object({conversationId:idSchema.optional()}).strict().parse(await body(request));return json(await createVoiceSession(actor,input.conversationId),201);}
-      if(id==='tool'){const input=z.object({voiceSessionId:idSchema,callId:idSchema,name:z.string().min(1).max(80),args:z.unknown()}).strict().parse(await body(request));return json(await executeVoiceTool(actor,input.voiceSessionId,input.callId,input.name,input.args));}
-      if(id==='transcript'){const input=z.object({voiceSessionId:idSchema,eventId:idSchema,role:z.enum(['user','assistant']),text:z.string().min(1).max(12000)}).strict().parse(await body(request));return json(saveVoiceTranscript(actor,input.voiceSessionId,input.eventId,input.role,input.text));}
+      if(id==='session'){rateLimit(actor,'voice_session',5);const input=z.object({conversationId:idSchema.optional()}).strict().parse(await body(request));const {voiceSessionId,conversationId,maxSeconds,expiresAt}=await createVoiceSession(actor,input.conversationId);return json({voiceSessionId,conversationId,maxSeconds,expiresAt},201);}
+      if(id==='connect'){const input=z.object({voiceSessionId:idSchema,sdp:z.string().min(1).max(64000)}).strict().parse(await body(request));return json(await connectVoiceSession(actor,input.voiceSessionId,input.sdp));}
+      if(id==='tool'||id==='transcript')throw new service.AppError(403,'Voice events are accepted only from the trusted provider connection.');
       if(id==='end'){const {voiceSessionId}=z.object({voiceSessionId:idSchema}).strict().parse(await body(request));return json(endVoiceSession(actor,voiceSessionId));}
     }
     throw new service.AppError(404,'This endpoint is not available.');

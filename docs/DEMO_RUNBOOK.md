@@ -184,3 +184,35 @@ Otherwise show the truthful configuration state and continue with typed input. D
 Confirm the pilot sponsor and Salesforce administrator; relationship ownership/sharing rules; authoritative property-release source; required disclosure document/version and evidence; approved templates/media-sharing rules; permitted research sources and communication channels; retention and access requirements; and the outcomes the pilot should measure. Alex’s reported workflow is discovery input, not proof of national corporate policy.
 
 The demonstration succeeds when the audience sees connected work, real persisted state, sourced investor changes, meaningful approval and disclosure boundaries, and honest integration status. It does not establish investment performance, customer endorsement, production readiness or authorization for actual investor outreach.
+
+
+## Phase 4 conversation demonstration
+
+This section supersedes earlier provider/voice statements. No OpenAI key was configured during Phase 4 implementation. The code and mocked provider tests do not establish a successful live conversation, actual microphone/audio operation, real external findings or production readiness.
+
+### Prepare without changing saved work
+
+1. Keep `data/agentdesk.sqlite` and existing backups. Use the launcher as before; it starts the web app and worker together. Do not run the smoke suite against the meeting database: its default temporary-database mode is safer.
+2. For real text/voice, configure `OPENAI_API_KEY` only in ignored `.env.local`, using an API project with approved billing and model access. A ChatGPT subscription does not supply API credits. Keep `OPENAI_MODEL=gpt-6-astra`, `OPENAI_REASONING_EFFORT=high`, and `OPENAI_REALTIME_MODEL=gpt-realtime-2.1` initially. Supported Astra effort values are low/medium/high/xhigh/max; Ultra is not an API value.
+3. Restart both application and worker. Open Settings → Provider verification. “Configured unverified” means credentials exist, not that a call succeeded. A saved provider receipt confirms only that operation; it does not prove research claims or microphone quality.
+4. Alex remains Core-only. Show a denied premium request first. If demonstrating Hunter/briefings/packages, use Taylor's existing Usage & billing administration to grant an explicitly labeled temporary trial for the required implemented specialists, or use the existing subscription simulator. Do not bypass access checks. Grant adequate demo research credits through the same admin controls if the target needs them.
+5. To enable external web research, select `AGENTDESK_RESEARCH_PROVIDER=openai-web-search-v1`, set a conservative positive `AGENTDESK_RESEARCH_ESTIMATED_REQUEST_CENTS` approved by the operator, and keep small request/search/duration limits from `.env.example`. This value is an estimate, not a quoted API price. Licensed property/ownership/contact enrichment is still disconnected. Do not use a fictional example address as if it were an actual property.
+
+### Small live preflight, only after credentials are configured
+
+- Ask one short text question, then “Create a task to review the demonstration.” Confirm the saved task and provider receipt. Repeat/follow up in the same conversation. Review the actual result; do not claim success solely because the model says so.
+- Tap Talk to Copilot, grant microphone permission, and ask for today's work. Confirm audible model speech, interrupt once, and ask it to create one internal review task. End the session. Confirm the normal task list and saved transcript. Reconnect to the same conversation. Test the intended phone separately; screen locking/backgrounding deliberately ends the session. Connected voice holds remain reserved pending minute reconciliation, so plan a short test.
+- For one approved external test, use a genuine subject address, county, price, type and strategy, a target of 3–5, and an explicit small estimate budget sufficient for one configured request. Set maximum requests to 1 for that test. Inspect every returned source, reject unsupported assertions, and expect fewer than the target. No outreach is authorized. A missing key/license or uncertain receipt is a blocker to verify, not a reason to manufacture results.
+
+### Meeting sequence
+
+1. “What should I focus on today?” Show priorities sourced from the fictional CRM and saved tasks. Without a key, identify this as the deterministic local command assistant.
+2. “Find new investors for this property.” Resolve the property and essential facts. Choose fictional demo research or explicitly authorized external public-source research. Confirm the actual queued job; candidate counts are targets.
+3. “Get me ready to call Mike.” Use an eligible premium trial/subscription and inspect the actual briefing. No real investor call is placed.
+4. “I just spoke with Mike. He wants cosmetic flips under $245,000 in Cobb County using cash. Prepare his updates and create a reminder for tomorrow at 10 AM Eastern.” Resolve identities, review extracted facts, confirm the task deadline, and distinguish pending CRM changes from the created task. Offline mode uses the existing exact-selection debrief/task screens.
+5. “Prepare the Marietta property information for Mike.” Resolve the exact release, inspect disclosure/media blockers, and review the saved draft. Approval/copy handoff stays in the existing UI. Nothing is sent.
+6. Switch to voice for a follow-up only if the live preflight passed on that device. Otherwise show the honest setup state and use text; do not portray it as a spoken demonstration.
+7. Return to tasks, approvals and research to show persisted outcomes. Inspect sources, duplicate warnings and unverified contact labels. Failed/canceled external jobs retain saved partial evidence; their unknown requests are not blindly retried.
+8. Show subscription controls and provider usage. Actual provider costs are unresolved unless supported by billing evidence; no economic sustainability claim is justified yet.
+
+The current external adapter uses public OpenAI web-search sources. It is not a licensed transaction database, a verified LLC ownership resolver, or a contact verification service. Production Salesforce and all investor outreach remain disconnected.

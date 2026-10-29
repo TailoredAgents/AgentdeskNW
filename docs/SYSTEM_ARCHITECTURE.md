@@ -15,7 +15,12 @@ flowchart LR
   Services --> Providers[Provider interfaces]
   Providers --> Demo[Synthetic research / local CRM]
   Copilot --> Responses[OpenAI Responses API]
-  API --> Realtime[OpenAI Realtime credential endpoint]
+  API --> Realtime[OpenAI Realtime call setup]
+  Voice <--> Realtime
+  Realtime <--> Sideband[Trusted server sideband]
+  Sideband --> Tools
+  Worker --> Research[Explicit external research adapter]
+  Research --> Responses
 ```
 
 The application is a modular monolith. Browser components receive shared contracts from `src/lib/contracts.ts`; they do not import persistence or integration credentials. `src/server` owns permission checks, domain state changes and integration execution. Next.js route handlers normalize transport details and errors.
@@ -39,6 +44,12 @@ Copilot is a manager, not a handoff to a swarm of independent speakers. The Resp
 
 Simple summaries of actual task/job state, duplicate checks, task creation and local record lookup use deterministic services. The optional model interprets natural language and coordinates these functions. Its loop has a fixed tool-call budget to limit runaway cost. The application retains its own conversation state rather than relying exclusively on provider-side memory.
 
+Phase 4 separates `text-runtime.ts`, `provider-config.ts` and `provider-runtime.ts` from the domain dispatcher. The documented default model is `gpt-6-astra` with `high` reasoning, configurable through the supported effort enum. A text request defaults to five model rounds, eight tool calls, 8,000 output tokens and a 90-second per-request timeout. Limits are bounded configuration values. `store: false` retains state locally. The runtime validates response envelopes, preserves replayable reasoning/function/message groups and distinguishes final answers from commentary, refusals and incomplete responses. See `OPENAI_PROVIDER_REFERENCES.md` for current official API references and the rationale for retaining direct Responses instead of migrating the service layer to an SDK runner.
+
+`assistant_turns` binds a stable request ID and payload hash to an authenticated organization/office/employee and conversation. An identical completed retry returns the saved, currently authorized display answer; conflicting reuse or interrupted execution cannot replay mutations. `assistant_tool_receipts` commits synchronous local service writes and their structured result in one transaction. Function call IDs cannot be reused with different arguments or a different turn. Consequential CRM updates still require the existing separate human approval flow.
+
+`assistant_context` stores full provider history separately from user-visible messages. A fingerprint of current authorized context, capability decisions and relevant protected state invalidates opaque history when its assumptions change. Cached output is never returned directly around history redaction. Provider history is server-side sensitive data, not a client contract or permanent memory authority. Retention/deletion policies for a real-data deployment remain a production requirement.
+
 The local fallback supports a narrower set of requests and is labeled as such. It is a useful offline demonstration of service execution, not an equivalent language model.
 
 Phase 2 adds typed tools for the calling queue, pre-call briefing, property releases, recap capture, reviewable recap changes and package composition. Text and live voice use the same dispatch. Approval and package handoff are deliberately absent from the model tool registry: an employee reviews the exact result in the app. `compose_deal_package` applies the same disclosure/release/media checks as the composer screen. Offline example commands include “Who should I call today?”, “Get me ready to call Mike” and “I just talked to Mike…”; exact selections and nuanced changes remain available in workflow forms.
@@ -47,7 +58,7 @@ Phase 2 adds typed tools for the calling queue, pre-call briefing, property rele
 
 SQLite supports local transactions and foreign keys. Jobs store input, owner scope, status, progress, stage, attempts, timestamps, provider, result and errors. The worker claims eligible work and handles stale running jobs on recovery. Cancellation is checked before further progression; completed results remain inspectable. Job completion generates a deduplicated notification.
 
-The standard launcher starts a separate worker process alongside Next.js; `npm run worker` also starts it independently. It checks pending work every two seconds and advances one stage per eligible job. SQLite transactions claim stages with a 30-second lease, with a one-second delay between stages. A stopped laptop/server does not run work; persisted jobs resume on subsequent processing. This queue architecture is limited to a local single-machine deployment. PostgreSQL leasing or a queue such as Redis-backed workers will replace it for concurrent hosts.
+The standard launcher starts a separate worker process alongside Next.js; `npm run worker` also starts it independently. It checks pending work and advances eligible stages. Synthetic stages retain their short local processing cycle. External research claims durable work, performs provider requests outside SQLite transactions and rechecks entitlement/cancellation before recording or advancing results. An interrupted external request has an unknown outcome and is not silently repeated. A stopped laptop/server does not run work; persisted jobs are inspected on subsequent processing. This queue architecture is limited to a local single-machine deployment. PostgreSQL leasing or a queue such as Redis-backed workers will replace it for concurrent hosts.
 
 Property release commands carry a source, explicit audience, unique event key and expected version. Successful commands create one persisted revision and per-employee notification; repeat keys with changed payloads are rejected. Matches are calculated for the requesting employee and are never stored with protected buyer identities in shared release data. Calling priorities are recalculated from current authorized state when requested. This is deterministic recomputation, not a continuously running autonomous calling agent. Revised/withdrawn releases invalidate old package content; package reads, approval and handoff recheck current evidence and permissions.
 
@@ -56,15 +67,19 @@ Property release commands carry a source, explicit audience, unique event key an
 | Boundary | Current local behavior | Production path |
 | --- | --- | --- |
 | CRM adapter | Authorized fictional buyer lookup and approved note/import mutations | Salesforce delegated OAuth, schema mappings, field access, replay protection |
-| Research provider | Deterministic synthetic candidates and evidence | Licensed transaction/parcel APIs plus cited public professional research |
-| Model provider | Responses API if configured | Project-scoped credentials, evaluated model selection, quotas and budgets |
-| Voice | Authenticated short-lived credential and browser WebRTC | Live quality testing, sideband/server attestation, production metering |
+| Research provider | Separate fictional provider and explicitly selected OpenAI web-search adapter; no live source run verified | Live evidence evaluation, licensed transactions, independent contact verification and source-rights review |
+| Model provider | Bounded Responses manager, durable replay and provider/token receipts; mock-tested | Account access, live evaluation, operational reconciliation and retention |
+| Voice | WebRTC setup, trusted server sideband and receipt-driven tools/lifecycle; live audio unverified | Real microphone/audio trials, cost evaluation, multi-instance operation and production metering policy |
 | Channels | Web is operational surface; channel design documented | Verified external identity links and replay-safe webhooks |
 | Knowledge | Baseline fixture guidance | Approved document revisions and permission-aware retrieval |
 
 ## Trust and memory boundaries
 
 Employee context, business records, procedure knowledge and execution history are separate categories. Model hypotheses do not become verified CRM facts. Transcript text and retrieved documents cannot change system instructions, tools, access scopes or approval state. Long-term approved-memory promotion and versioned SOP retrieval are future work; current persistence consists of messages and domain records.
+
+`provider_operations` records scoped request and response identifiers, status, model and available numeric usage independently of `billing_usage`. Actual provider cost remains null when unknown. Text admission reserves a conservative budget including tools, then reconciles authoritative token totals even if they exceed the estimate. A missing/invalid receipt remains unresolved and reserved; a timeout does not establish that the provider spent nothing. The ledger supports later receipts without granting new capability access. Subscription invoices remain simulated and do not collect money.
+
+External research sends property criteria and prior public candidate names, not private CRM records, to the provider. A candidate URL must occur in returned web-search/citation metadata before becoming evidence. This proves a source reference was returned; it does not independently verify the page's claims, transaction, identity or phone association. Research estimates are explicit operator assumptions and admission limits, not provider-confirmed invoices or guaranteed hard spend caps.
 
 ## Production transition
 

@@ -2,6 +2,7 @@ import type { Investor, Prospect, ResearchInput } from '../lib/contracts';
 import { z } from 'zod';
 
 export const researchInputSchema=z.object({
+  provider:z.enum(['synthetic-fixtures-v1','openai-web-search-v1']).optional(), maxCostCents:z.number().int().min(1).max(10000).optional(),
   address:z.string().trim().min(5).max(300), county:z.string().trim().max(100),
   propertyType:z.string().trim().max(100).optional(), price:z.number().finite().min(0).max(100_000_000), strategy:z.string().trim().max(100), limit:z.number().int().min(1).max(100),
 }).strict();

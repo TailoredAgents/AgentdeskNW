@@ -69,15 +69,15 @@ Phase 1 is preserved at Git checkpoint `cded4cd`, with a local database backup a
 | Calling and briefings | Ranked relationship priorities, distinct property-fit/engagement signals, explanations, outcomes and pre-call context | Reliable real relationship/activity evidence and pilot evaluation |
 | Post-call debrief | Typed recap, record linking, sourced criteria, proposed notes/changes, reminders and coaching; authorized text transcripts retained | Live voice validation; any future telephone recording requires a separate authorized provider |
 | Deal packages | Disclosure/media eligibility checks, demo templates, reviewed drafts and manual copy handoff; actual status remains not sent | Approved templates/disclosure documents and authorized delivery integrations |
-| Investor Hunter | Durable research jobs, finite synthetic provider, explainable external-fit scoring, scoped duplicate checks, evidence, export and reviewed import | Licensed sources, reliable transaction evidence and verified professional contacts |
+| Investor Hunter | Durable synthetic or explicitly selected OpenAI web-search jobs, bounded budgets, partial evidence, export and reviewed import | Credentials, live provider validation, licensed transaction evidence and verified professional contacts |
 | Workflow guidance | Qualification gaps and contextual next steps from permitted local records | Customer-approved, versioned procedures |
 | CRM | Fictional SQLite records with server-enforced approval for notes, imports and criteria changes | Salesforce authorization, identity, mappings, sync and sandbox tests |
-| Voice | Browser WebRTC and server-issued short-lived credential integration | API access, microphone permission and live validation; no cellular-call recording |
+| Voice | Browser WebRTC with server-held ephemeral credentials, trusted sideband tools and token receipts | API access, microphone/device validation, minute reconciliation; no cellular-call recording |
 | Tasks and notifications | Persistent tasks, due reminders, release events and in-app notifications | Reliable deployed scheduler and approved push/delivery policy |
 | Enterprise access | Scoped loopback-only demo users, ownership controls and permission tests | SSO, provisioning, PostgreSQL, retention and operational review |
 | Slack, optional SMS, billing | Unconfigured Slack boundary and documented messaging/entitlement direction; Telegram deferred | Provider setup, implementation, organization approval and delivery evidence |
 
-All investor, property, research, disclosure and package examples are fictional. Media permission is an employee-entered assertion; AgentDesk has not checked live Google Drive access. A copied package is never reported as a sent message.
+All seeded investor, property, research, disclosure and package examples are fictional. Optional external research is labeled separately as public-source, unverified evidence. Media permission is an employee-entered assertion; AgentDesk has not checked live Google Drive access. A copied package is never reported as a sent message.
 
 ## Project map
 
@@ -92,7 +92,7 @@ All investor, property, research, disclosure and package examples are fictional.
 
 Start with [MASTER_PLAN](MASTER_PLAN.md), [DEMO_RUNBOOK](docs/DEMO_RUNBOOK.md), and [PROGRESS](docs/PROGRESS.md). The supplied specifications are retained in [ORIGINAL_BRIEF](docs/ORIGINAL_BRIEF.md) and [PHASE_2_DIRECTIVE](docs/PHASE_2_DIRECTIVE.md). Discovery observations and unresolved corporate questions are separated in [NEW_WESTERN_DISCOVERY](docs/NEW_WESTERN_DISCOVERY.md).
 
-## Current milestone — Phase 3 commercial simulator
+## Preserved milestone — Phase 3 commercial simulator
 
 AgentDesk now includes the AI Employee Marketplace, My AI Workforce, subscription configurator, organization sponsorship/required policies, temporary trials, usage ledger and simulated billing lifecycle. Core is $49 proposed monthly; Core + Hunter + Deal Marketing is $147. All prices/allowances are configurable records, all payments are simulated, and planned specialists remain unavailable.
 
@@ -101,3 +101,13 @@ Premium access is enforced by the same backend services used by API requests, te
 Read [pricing](docs/PRICING_AND_PACKAGES.md), [billing architecture](docs/BILLING_ARCHITECTURE.md), [marketplace](docs/AI_EMPLOYEE_MARKETPLACE.md), [usage metering](docs/USAGE_METERING.md), and the updated [demo runbook](docs/DEMO_RUNBOOK.md). The provider boundary is prepared, but Stripe, live OpenAI/voice, external research, production Salesforce, Slack and Twilio remain disconnected. Production identity, provider receipts, payment webhooks, taxes/proration and the four planned specialists remain future work.
 
 Migration 005 is additive. The ignored pre-migration backup is `data/phase2-checkpoint.sqlite`; Phase 2 source remains `de77fac`. No dependencies were added or updated for Phase 3.
+
+## Current milestone — Phase 4 provider integrations
+
+The Responses manager uses `gpt-6-astra` with supported configurable reasoning effort (`high` by default). It preserves validated reasoning/tool history, bounds calls, records provider token receipts, deduplicates request retries and commits local tool mutations with their receipts. The 12 implemented specialists are callable through one assistant; the other four remain planned. Acquisition coordination reviews saved release handoff context; release publication remains an explicit editor action.
+
+Two-way voice uses browser WebRTC, server-held short-lived credentials, and an authenticated server WebSocket sideband for tools, transcripts and usage. Browser-provided tool calls or usage are rejected. External Hunter uses OpenAI Responses web search as a separate opt-in provider; it saves public-source candidates with citations and unverified claims. It does not verify recorded ownership or contacts and does not silently substitute demo fixtures.
+
+No API key was present during implementation. Text, voice and research protocols are tested with mocks; live model access, actual speech, interruption/device behavior and external findings remain unverified. Settings shows configuration separately from provider receipt evidence. Production Salesforce, outreach, payment collection and production identity remain disconnected.
+
+See `.env.example`, [provider setup and demonstration](docs/DEMO_RUNBOOK.md#phase-4-conversation-demonstration), [official API references](docs/OPENAI_PROVIDER_REFERENCES.md), [voice](docs/VOICE_AND_MESSAGING.md), [research](docs/INVESTOR_HUNTER.md), and [usage limitations](docs/USAGE_METERING.md). Migrations 006–008 are additive; `data/phase4-before.sqlite` preserves the pre-change data. Keep configured secrets only in ignored `.env.local`; restart the web app and worker after changing configuration.

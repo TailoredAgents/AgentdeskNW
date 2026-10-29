@@ -39,6 +39,32 @@ export function settleUsage(actor:Actor,category:MeterCategory,operationId:strin
  }).immediate();
 }
 export function releaseUsage(actor:Actor,category:MeterCategory,operationId:string){assertActor(actor);return getDb().transaction(()=>{const prior=findUsage(actor,category,operationId);if(prior?.status==='reserved')return saveUsage(actor,{...prior,status:'released',billingStatus:'not_billable'});return prior;}).immediate();}
+// Only trusted server receipts reconcile provider work. Actual usage can exceed an admission estimate;
+// record the full amount so the next request is blocked rather than silently discarding consumption.
+export function reconcileTextUsage(actor:Actor,operationId:string){
+ assertActor(actor);return getDb().transaction(()=>{
+ const receipt=getDb().prepare('SELECT data FROM provider_operations WHERE organization_id=? AND office_id=? AND user_id=? AND operation_id=?').get(actor.organizationId,actor.officeId,actor.id,operationId) as {data:string}|undefined;
+ if(!receipt)throw new AppError(404,'Trusted provider receipt not found.');
+ const {usage}=JSON.parse(receipt.data) as {usage:Record<string,number>};
+ if(!Number.isSafeInteger(usage.input_tokens)||!Number.isSafeInteger(usage.output_tokens)||usage.input_tokens<0||usage.output_tokens<0)throw new AppError(409,'Provider token usage is unresolved.');
+ const prior=findUsage(actor,'text_tokens',operationId);if(!prior)throw new AppError(404,'Usage reservation not found.');
+ const quantity=usage.input_tokens+usage.output_tokens;
+ if(prior.status==='consumed'){if(prior.quantity!==quantity)throw new AppError(409,'Provider usage conflicts with its settlement.');return prior;}
+ if(prior.status!=='reserved')throw new AppError(409,'Provider reservation is no longer active.');
+ return saveUsage(actor,{...prior,quantity,status:'consumed',providerCostCents:null,billingStatus:'simulated_included'});
+ }).immediate();
+}
+export function reconcileProviderCounter(actor:Actor,category:'external_search'|'provider_requests',operationId:string,usageKey:'web_search_calls'|'provider_requests'){
+ assertActor(actor);return getDb().transaction(()=>{
+ const row=getDb().prepare('SELECT data FROM provider_operations WHERE organization_id=? AND office_id=? AND user_id=? AND operation_id=?').get(actor.organizationId,actor.officeId,actor.id,operationId) as {data:string}|undefined;
+ const quantity=row?(JSON.parse(row.data) as {usage:Record<string,number>}).usage[usageKey]:undefined;
+ if(quantity===undefined||!Number.isSafeInteger(quantity)||quantity<0)throw new AppError(409,'Provider counter is unresolved.');
+ const prior=findUsage(actor,category,operationId);if(!prior)throw new AppError(404,'Usage reservation not found.');
+ if(prior.status==='consumed'){if(prior.quantity!==quantity)throw new AppError(409,'Provider counter conflicts with its settlement.');return prior;}
+ if(prior.status!=='reserved')throw new AppError(409,'Provider reservation is no longer active.');
+ return saveUsage(actor,{...prior,quantity,status:'consumed',providerCostCents:null,billingStatus:'simulated_included'});
+ }).immediate();
+}
 export function recordMeter(actor:Actor,input:Parameters<typeof reserveUsage>[1]){assertActor(actor);return getDb().transaction(()=>{const old=findUsage(actor,input.category,input.operationId);if(old?.status==='consumed'){if(old.quantity!==input.quantity||old.source!==input.source)throw new AppError(409,'Usage event conflicts with its original receipt.');return old;}reserveUsage(actor,input);return settleUsage(actor,input.category,input.operationId);}).immediate();}
 export function researchCredits(actor:Actor,target:number){return Math.max(1,Math.ceil(target/Math.max(1,allowanceConfig(actor).research_target??25)));}
 export function grantCredits(admin:Actor,input:{userId:string;category:MeterCategory;quantity:number;eventKey:string}){

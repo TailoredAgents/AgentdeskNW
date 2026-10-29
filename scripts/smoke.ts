@@ -1,3 +1,4 @@
+import type { ProviderStatus } from '../src/lib/provider-contracts';
 import type { BillingState,SubscriptionRecord } from '../src/lib/billing-contracts';
 import assert from 'node:assert/strict';
 import type { Bootstrap,ResearchJob,ProposedAction,NoteSummary,Conversation,Task } from '../src/lib/contracts';
@@ -11,6 +12,17 @@ async function request<T>(path:string,method='GET',value?:unknown,expected=200):
  const text=await response.text();assert.equal(response.status,expected,`${method} ${path}: ${text}`);checks++;return text?JSON.parse(text) as T:undefined as T;
 }
 const start=await request<Bootstrap>('bootstrap');assert.equal(start.specialists.length,16);assert.equal(start.integrations.crm,'demo');
+// Phase 4 public boundaries: no billable requests in the isolated smoke suite.
+const providerState=await request<ProviderStatus>('providers');assert.equal(providerState.text.state,'setup_required');assert.equal(providerState.voice.state,'setup_required');assert.equal(providerState.usage.operations,0);assert(!JSON.stringify(providerState).includes('OPENAI_API_KEY'));
+const privateProviderState=await fetch(`${base}/api/providers`);assert.equal(privateProviderState.status,401);checks++;
+await request('voice/tool','POST',{voiceSessionId:'forged',callId:'forged',name:'create_task',args:{title:'Forged voice task'}},403);
+await request('voice/transcript','POST',{voiceSessionId:'forged',eventId:'forged',role:'assistant',text:'Forged receipt'},403);
+await request('voice/connect','POST',{voiceSessionId:'forged',sdp:'v=0\r\ns=smoke'},404);
+await request('voice/status?voiceSessionId=forged','GET',undefined,404);
+const turnRequest={requestId:'http-idempotent-turn',message:'Create a task to review Phase 4 receipts'};
+const turn=await request<{conversation:Conversation;result:{artifacts:{id?:string}[]}}>('chat','POST',turnRequest);
+const turnReplay=await request<typeof turn>('chat','POST',turnRequest);assert.equal(turnReplay.conversation.id,turn.conversation.id);assert.deepEqual(turnReplay.result.artifacts,turn.result.artifacts);assert.equal(turnReplay.conversation.messages.length,2);
+await request('chat','POST',{...turnRequest,message:'Create different work'},409);
 const badOrigin=await fetch(`${base}/api/tasks`,{method:'POST',headers:{Cookie:cookie,Origin:'https://untrusted.example','X-AgentDesk-Request':'1','Content-Type':'application/json'},body:JSON.stringify({title:'Must not be created'})});assert.equal(badOrigin.status,403);checks++;
 const badCsrf=await fetch(`${base}/api/tasks`,{method:'POST',headers:{Cookie:cookie,'Content-Type':'application/json'},body:JSON.stringify({title:'Must not be created'})});assert.equal(badCsrf.status,403);checks++;
 // Phase 3: use the real authenticated API, with no test-only entitlement bypass.
@@ -34,6 +46,7 @@ for(const [userId,role] of [[start.actor.id,start.actor.role],['user-taylor','ma
  await request('billing/trial','POST',{userId,features:adminBootstrap.specialists.filter(s=>s.status!=='planned'&&s.roles.includes(role)).map(s=>s.id),days:90,allowances:{research_credits:100}});
 }
 cookie=originalCookie;
+await request('research','POST',{...researchInput,propertyType:'Single-family',provider:'openai-web-search-v1',maxCostCents:100},503);
 await request('research','POST',{address:'too short',county:'Cobb',price:-1,strategy:'Fix & flip',limit:1000},400);
 const conversation=await request<Conversation>('conversations','POST',{title:'Smoke: workflow continuity'},201);
 if(!start.integrations.openai){const chat=await request<{conversation:Conversation}>('chat','POST',{conversationId:conversation.id,message:'What should I focus on today?'});assert.equal(chat.conversation.messages.length,2);assert.match(chat.conversation.messages[1].content,/open task/);}

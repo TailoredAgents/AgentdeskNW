@@ -6,7 +6,7 @@ AgentDesk web is the primary surface, with responsive navigation and a prominent
 
 ## Live voice integration
 
-The implementation targets the supported OpenAI Realtime WebRTC flow. The server creates a short-lived credential using its permanent project key. The browser negotiates microphone/audio media with OpenAI and exchanges events over a data channel. The permanent key never enters the browser bundle or HTTP response. [OpenAI WebRTC guide](https://developers.openai.com/api/docs/guides/voice-webrtc).
+Phase 4 implements the OpenAI Realtime WebRTC flow with a server-owned control connection. The server mints a 60-second credential, keeps it in memory, and exchanges the browser's SDP with OpenAI. Neither the permanent key nor the ephemeral credential is returned by the application API. The browser carries microphone and generated audio over WebRTC. [OpenAI WebRTC guide](https://developers.openai.com/api/docs/guides/voice-webrtc).
 
 The checked guide also describes GPT-Live. AgentDesk does not silently mix those wire protocols; its Realtime model and endpoint configuration must remain consistent. `OPENAI_REALTIME_MODEL` is configurable; a configured name does not guarantee account access.
 
@@ -14,22 +14,49 @@ The checked guide also describes GPT-Live. AgentDesk does not silently mix those
 
 1. User selects live voice; if no server credential is configured, show the precise setup requirement.
 2. Request microphone permission after a user action and show connection progress.
-3. Authenticate and rate-limit credential creation; bind the request to the employee’s permitted context.
-4. Create the peer connection and data channel, add local audio tracks, exchange SDP and attach remote audio.
-5. Receive transcript/tool events. Tool calls go to authenticated application services using the same typed dispatch as text.
-6. Persist conversation content and service artifacts; do not mark an action executed until the server confirms it.
-7. Handle interruption/turn detection through the Realtime protocol. Surface disconnect and provider errors.
-8. Stop microphone tracks, close the channel and peer connection, and finalize usage when the call ends or the component unmounts.
+3. `POST /api/voice/session` authenticates, checks Core entitlement and remaining voice allowance, reserves at most the configured session limit, and prepares a single-use credential. Its response contains only the session/conversation identifiers, expiry and time limit. Only one unfinished session per employee/office is allowed.
+4. The browser creates a peer connection, adds microphone tracks and a data channel, then sends its SDP to `POST /api/voice/connect`. The server uses the ephemeral credential, obtains the call ID from the provider's `Location` response header and attaches an authenticated WebSocket sideband. It returns the SDP answer only after the control connection opens. A client-supplied call ID is never accepted. [OpenAI server controls](https://developers.openai.com/api/docs/guides/voice-server-controls).
+5. The sideband owns tools, transcript persistence and provider usage receipts. It uses the same validated services as text; no approval or external-send tool is exposed. Duplicate response/tool/transcript events do not repeat work. A canceled response cannot execute its partial function calls. `POST /api/voice/tool` and `/api/voice/transcript` reject browser submissions.
+6. The browser displays listening, thinking, speaking, muted, reconnecting, permission and playback-blocked states. Server VAD handles turns and interruption. The audio player provides an explicit fallback when a mobile browser blocks autoplay.
+7. `GET /api/voice/status` is scoped to the employee and serves as a heartbeat. A server guard checks every five seconds: current Core entitlement, session cap, heartbeat age and protected context. Missing heartbeats for 20 seconds end the remote call. The client allows eight seconds for a temporary peer disconnect before offering a fresh connection to the same saved conversation.
+8. End, cancel, offline, page exit, component teardown and moving the app into the background stop local tracks and close the peer/channel. `POST /api/voice/end` initiates the provider hangup; confirmed versus unconfirmed termination is persisted. The provider hangup endpoint supports WebRTC sessions. Setup canceled while awaiting a provider answer still hangs up a late successful call. [OpenAI hangup guide](https://developers.openai.com/api/docs/guides/voice-sip#hang-up-the-call).
+
+The protocol is Realtime, not GPT-Live. No `session.close`/`session.closed` GPT-Live lifecycle events are mixed into this integration.
 
 ### Approval and trust
 
 Voice can prepare research, tasks and CRM proposals according to the same policy as web chat. It cannot approve its own consequential changes. Model-generated or browser-submitted tool payloads are untrusted. Session credentials authorize the media session; application record access still requires the AgentDesk session.
 
-Browser-reported transcript/usage is not sufficient for trusted production billing or proof of provider-side events. Production hardening should add server-side event observation/attestation, authoritative metering and a robust reconciliation path before charging for voice usage.
+Only the authenticated server sideband can submit provider events to the voice services. Usage events never arrive through a browser HTTP route. Tools recheck scope and entitlement before execution and protected context again before returning results to the provider. The protected snapshot covers ownership/sharing, accessible property and release state, release/media audiences, disclosure readiness/expiry, buy boxes, templates and existing package state. Changes terminate the session; ordinary task/job changes do not. New records produced by an authorized tool are included in the next protected snapshot. A server guard cannot retract speech already played; revocation is observed at the next guarded event or within the five-second heartbeat interval.
+
+Tool execution is capped at four calls in one response and 32 calls per session by default, with a configurable 1–64 session cap. Duplicate provider responses cannot trigger another continuation. An in-progress tool receipt left by a process interruption blocks replay rather than guessing whether the action happened. The current runtime is a single Node process, consistent with the modular local monolith; a production deployment requires a durable control/reconciliation service and production identity.
+
+### Usage and reconciliation
+
+Core's versioned allowance still defaults to 60 voice minutes. Each session reserves no more than its remaining allowance or the configured session cap (default ten minutes). The server cap and hangup are admission controls, not a guarantee of provider billing limits during process or network failure.
+
+Realtime conversational response receipts report input/output text/audio/image tokens. Transcription receipts may separately report tokens or actual input-audio seconds. These are persisted as scoped, idempotent child provider operations; missing usage is `unknown`, not an invented zero receipt. Late receipts can be recorded after subscription cancellation without granting any new tool access. Provider costs remain unknown unless supported billing evidence is supplied. [OpenAI Realtime usage documentation](https://developers.openai.com/api/docs/guides/voice-latency-cost).
+
+Session elapsed seconds remain operational telemetry only. They never settle a minute charge, and audio token counts are never converted to minutes. Unused/preconnection-failure reservations are released. Once connection was attempted and may have incurred usage, the hold remains `reconciliation_required`; confirmed provider response tokens do not establish total session minutes. A definitive rejected connection releases its unused hold. The UI identifies a reservation as pending usage, not a charge. There is no client action that can declare unknown usage reconciled. The approved commercial minute definition and an administrator/provider reconciliation process remain required before real billing; repeated connected sessions can exhaust the available reserved allowance until that work exists.
+
+### Configuration
+
+| Setting | Default | Behavior |
+|---|---|---|
+| `OPENAI_API_KEY` | None | Required server secret; absent means no provider request or voice reservation |
+| `OPENAI_REALTIME_MODEL` | `gpt-realtime-2.1` | Must be available to the configured API project |
+| `OPENAI_REALTIME_VOICE` | `marin` | Consistent spoken voice |
+| `OPENAI_TRANSCRIPTION_MODEL` | `gpt-4o-mini-transcribe` | Separately metered input transcription |
+| `AGENTDESK_VOICE_MAX_SECONDS` | `600` | Integer 60–600; further reduced by remaining allowance |
+| `AGENTDESK_VOICE_MAX_TOOL_CALLS` | `32` | Integer 1–64; each response allows at most four |
+
+Realtime output is capped at 2,048 tokens per response. Secrets, raw audio and SDP are not persisted or logged. Transcripts and authorized tool results remain in the same employee-owned conversation used by Copilot. Persisted job/task identifiers allow normal dashboards and later text conversations to continue work.
 
 ### Acceptance
 
-Use a real API project, HTTPS or localhost, an available Realtime model and a microphone. Verify two-way audio, interruption, a contextual follow-up, a real task or research job, reconnect/error handling and complete microphone teardown. Until this test occurs, describe the feature as an implemented integration path awaiting live validation. Never present dictation or simulated responses as live voice.
+Automated coverage uses a mocked authenticated provider transport. It verifies secret custody, scoped connection/status/termination, trusted call IDs, single-use connection attempts, duplicate event behavior, persisted tasks/transcripts, interrupted function calls, provider token receipts, unknown usage, setup release versus uncertain holds, late receipts after cancellation, remote limits, context/template revocation, bounded tool loops, credential expiry and late setup cancellation. Original orchestration/workflow regressions remain required.
+
+No live key was available during Phase 4 implementation, so real speech, microphone hardware, account/model access, barge-in quality, mobile audio routing and provider-side hangup were not live-verified. Use an authorized API project, HTTPS or localhost and a microphone for the acceptance run: two-way audio, interruption, contextual follow-up, a real internal task/research job, temporary disconnect, background shutdown and full microphone teardown. Until that run occurs, this is an implemented integration awaiting live validation. Background continuity is intentionally not promised; changing apps or locking the screen ends this browser session.
 
 ## Conversation/call notes
 
@@ -63,4 +90,4 @@ Background job completion and due work create persisted notifications. The initi
 
 ## Remaining work
 
-Live API/browser validation; production identity; authoritative voice usage; robust long-call/reconnect tests; consent-aware telephone integration; organization-approved external channel; provider webhook tests; secure linking/revocation; opt-in notification delivery; SMS entitlement/billing controls.
+Live API/browser and physical-mobile validation; production identity; approved minute semantics and authoritative financial reconciliation; durable remote-session cleanup after a process crash; consent-aware telephone integration; organization-approved external channel; provider webhook tests; secure linking/revocation; opt-in notification delivery; SMS entitlement/billing controls.

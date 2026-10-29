@@ -2,6 +2,17 @@
 
 Completion evidence belongs in [PROGRESS](PROGRESS.md). This roadmap describes gates, not claims of finished implementation.
 
+## Phase 4 development directive — intelligence activation
+
+The October 29 Phase 4 directive takes priority over the historical numbering below. Preserve the Phase 1–3 workflows and commercial simulator while completing these gates:
+
+1. **Text and existing services:** configurable Responses integration; complete conversation replay; durable request/tool receipts; bounded usage; current scope, paid entitlement and human-approval enforcement. Mocked provider regression coverage passes as part of the 188-test suite. Live acceptance requires a real API project and representative multi-turn/tool conversations.
+2. **Two-way voice:** WebRTC audio, trusted server-side tool execution, interruption/turn-taking, lifecycle cleanup and shared history. The sideband path is implemented for validation; microphone permission, audible responses, interruption and reconnect require a live account/browser walkthrough.
+3. **External Hunter:** explicitly selected web-search research, bounded asynchronous jobs, provider source metadata, transparent uncertainty, duplicate checks and reviewable local CRM import. The fictional provider remains a separate choice. Acceptance needs a real source-backed run; public-source business contact text must not be labeled verified contact data.
+4. **Integration and demonstration:** finish targeted regressions, required type/lint/test/build checks, isolated HTTP smoke and browser/mobile review; update the demonstration procedure and create a verified source checkpoint. No live connectivity or production-readiness claim follows from mocked tests.
+
+Remaining setup includes the server-side OpenAI key and model access, a deliberate research provider selection plus a conservative cost estimate, and a browser/microphone for live voice validation. Licensed transaction data and independent business-contact verification remain later provider gates. Production identity, remote hosting, Salesforce writes, payments, messaging and outreach are outside this phase.
+
 ## Phase 2 directive checkpoint and next sequence
 
 The numbered phases below are the original architecture roadmap. The October 29 **Phase 2 development directive** adds an operational slice across those phases: investor intelligence/access, disclosure gating, releases, composer, debriefs, calling queue, briefings and enhanced matching. These are implemented locally; their external data and communication providers remain disconnected. Do not treat the roadmap's later stages as evidence of completed production integration.
