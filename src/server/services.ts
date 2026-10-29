@@ -1,0 +1,295 @@
+import { z } from 'zod';
+import type { Actor, Artifact, Bootstrap, Conversation, Investor, Message, NoteSummary, Notification, Property, ProposedAction, ResearchInput, ResearchJob, Role, Settings, Task } from '../lib/contracts';
+import { AppError, assertActor, audit, getDb, insertRecord, newId, now, requireRole, scopedGet, scopedRows, updateRecord } from './db';
+import { specialists } from './registry';
+import { classifyDuplicate, normalizeCounty, researchInputSchema, strategiesMatch, syntheticResearchProvider } from './research';
+import { extractNotes } from './notes';
+
+export { AppError, assertActor, demoActor } from './db';
+export { specialists } from './registry';
+
+const idSchema=z.string().min(1).max(150);
+const titleSchema=z.string().trim().min(1).max(300);
+const settingsSchema=z.object({guidance:z.enum(['concise','guided']),notifications:z.boolean(),quietHoursStart:z.number().int().min(0).max(23),quietHoursEnd:z.number().int().min(0).max(23)}).strict();
+const defaultSettings:Settings={guidance:'guided',notifications:true,quietHoursStart:21,quietHoursEnd:8};
+const researchRoles:Role[]=['dispositions','manager'];
+
+export function listInvestors(actor:Actor) { return scopedRows<Investor>(actor,'investors'); }
+export function getInvestor(actor:Actor,id:string) { return scopedGet<Investor>(actor,'investors',idSchema.parse(id)); }
+export function listProperties(actor:Actor) { return scopedRows<Property>(actor,'properties'); }
+function refreshDuplicateStatus(actor:Actor,job:ResearchJob):ResearchJob {
+ if(job.status!=='completed')return job;
+ const investors=listInvestors(actor);
+ const prospects=job.prospects.map(prospect=>({...prospect,...classifyDuplicate(prospect,investors)}));
+ return {...job,prospects,stage:`Completed: ${prospects.length} synthetic candidates (${prospects.filter(item=>item.duplicateStatus==='net_new').length} currently new within your authorized CRM scope). Dataset contains 12 candidates.`};
+}
+export function listJobs(actor:Actor) { return scopedRows<ResearchJob>(actor,'research_jobs').map(job=>refreshDuplicateStatus(actor,job)); }
+export function listTasks(actor:Actor) { return scopedRows<Task>(actor,'tasks'); }
+export function listApprovals(actor:Actor) { return scopedRows<ProposedAction>(actor,'proposed_actions'); }
+
+export function recordUsage(actor:Actor,kind:string,quantity:number) {
+ assertActor(actor);
+ const value=z.object({kind:z.string().min(1).max(100),quantity:z.number().finite().min(0).max(1_000_000_000)}).parse({kind,quantity});
+ getDb().prepare('INSERT INTO usage_events VALUES(?,?,?,?,?,?,?)').run(newId('usage'),actor.organizationId,actor.officeId,actor.id,value.kind,value.quantity,now());
+}
+export function getSettings(actor:Actor):Settings {
+ assertActor(actor);
+ const row=getDb().prepare('SELECT data FROM user_settings WHERE organization_id=? AND office_id=? AND owner_id=?').get(actor.organizationId,actor.officeId,actor.id) as {data:string}|undefined;
+ return row?settingsSchema.parse(JSON.parse(row.data)):{...defaultSettings};
+}
+export function updateSettings(actor:Actor,partial:Partial<Settings>):Settings {
+ assertActor(actor); const value={...getSettings(actor),...settingsSchema.partial().parse(partial)};
+ getDb().prepare('INSERT INTO user_settings VALUES(?,?,?,?) ON CONFLICT(organization_id,office_id,owner_id) DO UPDATE SET data=excluded.data').run(actor.organizationId,actor.officeId,actor.id,JSON.stringify(value));
+ audit(actor,'preferences.updated'); return value;
+}
+function notificationsAllowed(actor:Actor):boolean {
+ const settings=getSettings(actor);
+ if(!settings.notifications) return false;
+ const hour=Number(new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',hour:'numeric',hourCycle:'h23'}).format(new Date()));
+ const start=settings.quietHoursStart,end=settings.quietHoursEnd;
+ return start===end || !(start<end?hour>=start&&hour<end:hour>=start||hour<end);
+}
+function notify(actor:Actor,dedupeKey:string,title:string,body:string,link:string) {
+ if(!notificationsAllowed(actor))return;
+ const count=getDb().prepare("SELECT COUNT(*) AS n FROM notifications WHERE organization_id=? AND office_id=? AND owner_id=? AND json_extract(data,'$.createdAt')>=?").get(actor.organizationId,actor.officeId,actor.id,new Date(Date.now()-86400000).toISOString()) as {n:number};
+ if(count.n>=10)return;
+ const item:Notification={id:newId('notice'),title,body,read:false,createdAt:now(),link};
+ getDb().prepare('INSERT OR IGNORE INTO notifications(id,organization_id,office_id,owner_id,dedupe_key,data) VALUES(?,?,?,?,?,?)').run(item.id,actor.organizationId,actor.officeId,actor.id,dedupeKey,JSON.stringify(item));
+}
+export function processNotifications(actor:Actor) {
+ assertActor(actor);
+ for(const task of scopedRows<Task>(actor,'tasks',true))if(task.status==='open'&&task.dueAt&&Date.parse(task.dueAt)<=Date.now())notify(actor,`task-due:${task.id}`,'Follow-up is due',task.title,'queue');
+ for(const job of scopedRows<ResearchJob>(actor,'research_jobs',true))if(job.status==='completed')notify(actor,`research-done:${job.id}`,'Your research is ready',`${job.prospects.length} synthetic prospects for ${job.input.address}. Review evidence and duplicates before importing.`,'hunter');
+}
+/** Scheduler entry point: reminders do not depend on an active research job or open browser. */
+export function processAllNotifications():number {
+ const members=getDb().prepare('SELECT m.organization_id,m.office_id,m.user_id,u.name,m.role FROM memberships m JOIN users u ON u.id=m.user_id').all() as {organization_id:string;office_id:string;user_id:string;name:string;role:Role}[];
+ for(const member of members)processNotifications({id:member.user_id,name:member.name,organizationId:member.organization_id,officeId:member.office_id,role:member.role});
+ return members.length;
+}
+export function readNotification(actor:Actor,id:string) {
+ const item=scopedGet<Notification>(actor,'notifications',idSchema.parse(id),true);
+ return updateRecord(actor,'notifications',{...item,read:true},true);
+}
+
+export function createConversation(actor:Actor,title='New conversation'):Conversation {
+ assertActor(actor);
+ const conversation:Conversation={id:newId('conversation'),title:titleSchema.parse(title),createdAt:now(),updatedAt:now(),messages:[]};
+ insertRecord(actor,'conversations',conversation); audit(actor,'conversation.created',conversation.id); return conversation;
+}
+export function getConversation(actor:Actor,id:string):Conversation {
+ const conversation=scopedGet<Conversation>(actor,'conversations',idSchema.parse(id),true);
+ const rows=getDb().prepare('SELECT data FROM messages WHERE conversation_id=? AND organization_id=? AND office_id=? AND owner_id=? ORDER BY sequence ASC').all(conversation.id,actor.organizationId,actor.officeId,actor.id) as {data:string}[];
+ return {...conversation,messages:rows.map(row=>JSON.parse(row.data) as Message)};
+}
+export function listConversations(actor:Actor):Conversation[] {
+ return scopedRows<Conversation>(actor,'conversations',true).slice(0,50).map(item=>getConversation(actor,item.id)).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt));
+}
+const messageSchema=z.object({role:z.enum(['user','assistant']),content:z.string().trim().min(1).max(50000),specialistIds:z.array(z.string().max(100)).max(16).optional(),artifacts:z.array(z.object({type:z.enum(['job','approval','notes','task','investors','guidance']),id:z.string().max(150).optional(),title:z.string().max(300),data:z.unknown().optional()})).max(20).optional()}).strict();
+export function addMessage(actor:Actor,conversationId:string,input:{role:'user'|'assistant';content:string;specialistIds?:string[];artifacts?:Artifact[]}):Message {
+ const parsed=messageSchema.parse(input);
+ return getDb().transaction(()=>{
+  const conversation=getConversation(actor,conversationId);
+  const message:Message={id:newId('message'),role:parsed.role,content:parsed.content,specialistIds:parsed.specialistIds??[],artifacts:parsed.artifacts??[],createdAt:now()};
+  const sequence=(getDb().prepare('SELECT COALESCE(MAX(sequence),0)+1 AS sequence FROM messages WHERE conversation_id=?').get(conversation.id) as {sequence:number}).sequence;
+  getDb().prepare('INSERT INTO messages VALUES(?,?,?,?,?,?,?)').run(message.id,actor.organizationId,actor.officeId,actor.id,conversation.id,JSON.stringify(message),sequence);
+  updateRecord(actor,'conversations',{...conversation,messages:[],updatedAt:now(),title:conversation.title==='New conversation'&&parsed.role==='user'?parsed.content.slice(0,70):conversation.title},true);
+  return message;
+ })();
+}
+
+export function createResearchJob(actor:Actor,input:ResearchInput):ResearchJob {
+ requireRole(actor,researchRoles); const parsed=researchInputSchema.parse(input);
+ const active=listJobs(actor).filter(job=>job.ownerId===actor.id&&(job.status==='queued'||job.status==='running'));
+ if(active.length>=5)throw new AppError(429,'Finish or cancel an active research job before starting another.');
+ const missing=!parsed.county||!parsed.price||!parsed.strategy;
+ const job:ResearchJob={id:newId('research'),input:parsed,status:missing?'awaiting_input':'queued',progress:0,stage:missing?'Add county, price and investment strategy to continue.':'Waiting for the local research worker',provider:syntheticResearchProvider.id,prospects:[],error:null,createdAt:now(),updatedAt:now(),ownerId:actor.id,attempt:0};
+ insertRecord(actor,'research_jobs',job); audit(actor,'research.queued',job.id,{provider:job.provider,target:parsed.limit}); return job;
+}
+export function getResearchJob(actor:Actor,id:string) { return refreshDuplicateStatus(actor,scopedGet<ResearchJob>(actor,'research_jobs',idSchema.parse(id))); }
+export function cancelJob(actor:Actor,id:string):ResearchJob {
+ const job=getResearchJob(actor,id);
+ if(job.status==='canceled')return job;
+ if(job.status==='completed'||job.status==='failed')throw new AppError(409,'Only queued, running or awaiting-input jobs can be canceled.');
+ const value=updateRecord(actor,'research_jobs',{...job,status:'canceled' as const,stage:'Canceled by employee',updatedAt:now()});
+ audit(actor,'research.canceled',id);return value;
+}
+export function retryJob(actor:Actor,id:string,input?:ResearchInput):ResearchJob {
+ requireRole(actor,researchRoles); const job=getResearchJob(actor,id);
+ if(!['failed','canceled','awaiting_input'].includes(job.status))throw new AppError(409,'Only failed, canceled or awaiting-input jobs can be retried.');
+ const parsed=input?researchInputSchema.parse(input):job.input;
+ if(!parsed.county||!parsed.price||!parsed.strategy)throw new AppError(422,'Provide county, price and strategy before resuming research.');
+ const value=updateRecord(actor,'research_jobs',{...job,input:parsed,status:'queued' as const,progress:0,stage:'Queued for retry',error:null,prospects:[],updatedAt:now()});
+ getDb().prepare('UPDATE research_jobs SET lease_until=NULL,next_attempt_at=NULL WHERE id=?').run(id);
+ audit(actor,'research.retried',id);return value;
+}
+export function actorForMember(organizationId:string,officeId:string,userId:string):Actor {
+ const member=getDb().prepare('SELECT u.name,m.role FROM memberships m JOIN users u ON u.id=m.user_id WHERE m.organization_id=? AND m.office_id=? AND m.user_id=?').get(organizationId,officeId,userId) as {name:string;role:Role}|undefined;
+ if(!member)throw new AppError(403,'The job owner is no longer an authorized employee.');
+ return {id:userId,name:member.name,organizationId,officeId,role:member.role};
+}
+/** One transaction per stage makes multiple local workers safe; providers currently run locally. */
+export function processQueuedJobs(actor?:Actor):number {
+ if(actor)assertActor(actor);
+ const stamp=now();
+ const rows=getDb().prepare(`SELECT id,organization_id,office_id,owner_id FROM research_jobs WHERE status IN ('queued','running') AND (lease_until IS NULL OR lease_until<=?) AND (next_attempt_at IS NULL OR next_attempt_at<=?)${actor?' AND organization_id=? AND office_id=? AND owner_id=?':''} ORDER BY rowid LIMIT 20`)
+  .all(...(actor?[stamp,stamp,actor.organizationId,actor.officeId,actor.id]:[stamp,stamp])) as {id:string;organization_id:string;office_id:string;owner_id:string}[];
+ let processed=0;
+ for(const row of rows){
+  const owner=actorForMember(row.organization_id,row.office_id,row.owner_id);
+  getDb().transaction(()=>{
+   const claim=getDb().prepare("UPDATE research_jobs SET lease_until=? WHERE id=? AND status IN ('queued','running') AND (lease_until IS NULL OR lease_until<=?) AND (next_attempt_at IS NULL OR next_attempt_at<=?)").run(new Date(Date.now()+30000).toISOString(),row.id,stamp,stamp);
+   if(!claim.changes)return;
+   const job=getResearchJob(owner,row.id);
+   try{
+    requireRole(owner,researchRoles);
+    let next:ResearchJob;
+    if(job.status==='queued')next={...job,status:'running',progress:20,stage:'Analyzing supplied property criteria · synthetic dataset',attempt:job.attempt+1,updatedAt:now()};
+    else if(job.progress<50)next={...job,progress:50,stage:'Scoring fictional buying-activity evidence',updatedAt:now()};
+    else if(job.progress<80)next={...job,progress:80,stage:'Checking duplicates against your authorized demo CRM records',updatedAt:now()};
+    else{
+     const investors=listInvestors(owner);
+     const prospects=syntheticResearchProvider.discover(job.input).map(prospect=>({...prospect,...classifyDuplicate(prospect,investors)}));
+     next={...job,status:'completed',progress:100,stage:`Completed: ${prospects.length} synthetic candidates (${prospects.filter(item=>item.duplicateStatus==='net_new').length} new within your authorized CRM scope). Dataset contains 12 candidates.`,prospects,updatedAt:now()};
+     recordUsage(owner,'research_jobs',1);audit(owner,'research.completed',job.id,{count:prospects.length,synthetic:true});
+    }
+    updateRecord(owner,'research_jobs',next);
+    getDb().prepare('UPDATE research_jobs SET lease_until=NULL,next_attempt_at=? WHERE id=?').run(new Date(Date.now()+1000).toISOString(),job.id);
+    processed++;
+   }catch(error){
+    const failure=error instanceof AppError?error.message:'The research provider failed. Retry this job; no CRM changes occurred.';
+    updateRecord(owner,'research_jobs',{...job,status:'failed',error:failure,stage:'Research failed',updatedAt:now()});
+    getDb().prepare('UPDATE research_jobs SET lease_until=NULL WHERE id=?').run(job.id);audit(owner,'research.failed',job.id);
+   }
+  }).immediate();
+  processNotifications(owner);
+ }
+ return processed;
+}
+export const tickJobs=processQueuedJobs;
+
+export function summarizeNotes(actor:Actor,transcript:string):NoteSummary {
+ assertActor(actor); const result=extractNotes(transcript); recordUsage(actor,'transcript_characters',transcript.length); audit(actor,'notes.extracted',null,{characters:transcript.length,mode:result.mode});return result;
+}
+const noteSummarySchema=z.object({proposedNote:z.string().trim().min(1).max(15000),summary:z.string().max(2000),source:z.literal('employee_transcript'),mode:z.enum(['local_extraction','model']),sourceExcerpts:z.array(z.string().max(10000)).max(30)}).passthrough();
+export function proposeNote(actor:Actor,investorId:string,summary:NoteSummary):ProposedAction {
+ const investor=getInvestor(actor,investorId); const parsed=noteSummarySchema.parse(summary);
+ const action:ProposedAction={id:newId('action'),kind:'crm_note',title:`Add reviewed call note to ${investor.name}`,status:'pending',payload:{investorId:investor.id,note:parsed.proposedNote,source:parsed.source,sourceExcerpts:parsed.sourceExcerpts,synthetic:investor.synthetic},createdAt:now(),executedAt:null,ownerId:actor.id,error:null};
+ insertRecord(actor,'proposed_actions',action);audit(actor,'approval.proposed',action.id,{kind:action.kind});return action;
+}
+export function proposeImport(actor:Actor,jobId:string,prospectIds:string[]):ProposedAction {
+ requireRole(actor,researchRoles);
+ const ids=z.array(idSchema).min(1).max(100).parse(prospectIds);
+ if(new Set(ids).size!==ids.length)throw new AppError(422,'Choose each prospect only once.');
+ const job=getResearchJob(actor,jobId);
+ if(job.status!=='completed')throw new AppError(409,'Complete the research job before preparing an import.');
+ const selected=ids.map(id=>job.prospects.find(item=>item.id===id));
+ if(selected.some(item=>!item||item.duplicateStatus!=='net_new'))throw new AppError(422,'Only identified net-new prospects can be prepared for import. Review duplicates first.');
+ const action:ProposedAction={id:newId('action'),kind:'crm_import',title:`Import ${ids.length} fictional prospect${ids.length===1?'':'s'} into the demo CRM`,status:'pending',payload:{jobId:job.id,prospectIds:ids,prospects:selected,synthetic:true},createdAt:now(),executedAt:null,ownerId:actor.id,error:null};
+ insertRecord(actor,'proposed_actions',action);audit(actor,'approval.proposed',action.id,{kind:action.kind,count:ids.length});return action;
+}
+const investorChangesSchema=z.object({counties:z.array(z.string().trim().min(1).max(100)).min(1).max(20).optional(),strategy:z.string().trim().min(1).max(100).optional(),budgetMin:z.number().finite().min(0).max(100000000).optional(),budgetMax:z.number().finite().min(0).max(100000000).optional(),financing:z.string().trim().min(1).max(300).optional(),rehab:z.string().trim().min(1).max(300).optional(),timeframe:z.string().trim().min(1).max(300).optional()}).strict();
+export function proposeInvestorUpdate(actor:Actor,investorId:string,changes:Record<string,unknown>):ProposedAction {
+ const investor=getInvestor(actor,investorId);const parsed=investorChangesSchema.parse(changes);
+ if(!Object.keys(parsed).length)throw new AppError(422,'Supply at least one qualification field.');
+ const merged={...investor,...parsed};if(merged.budgetMin>merged.budgetMax)throw new AppError(422,'Minimum budget cannot exceed maximum budget.');
+ const action:ProposedAction={id:newId('action'),kind:'crm_update',title:`Update ${investor.name}’s qualification details`,status:'pending',payload:{investorId,changes:parsed,before:Object.fromEntries(Object.keys(parsed).map(key=>[key,investor[key as keyof Investor]]))},createdAt:now(),executedAt:null,ownerId:actor.id,error:null};
+ insertRecord(actor,'proposed_actions',action);audit(actor,'approval.proposed',action.id,{kind:action.kind});return action;
+}
+/** Only the authenticated approval route calls this function. It is intentionally absent from AI tool registries. */
+export function decideAction(actor:Actor,id:string,decision:'approve'|'reject'):ProposedAction {
+ z.enum(['approve','reject']).parse(decision);
+ return getDb().transaction(()=>{
+ const initial=scopedGet<ProposedAction>(actor,'proposed_actions',idSchema.parse(id));
+ if(initial.status==='executed'&&decision==='approve'||initial.status==='rejected'&&decision==='reject')return initial;
+ if(initial.status!=='pending')throw new AppError(409,'This action has already been decided.');
+ if(decision==='reject'){
+  const rejected=updateRecord(actor,'proposed_actions',{...initial,status:'rejected' as const});audit(actor,'approval.rejected',id);return rejected;
+ }
+ try{return getDb().transaction(()=>{
+  const action=scopedGet<ProposedAction>(actor,'proposed_actions',id);
+  if(action.status!=='pending')throw new AppError(409,'This action has already been decided.');
+  const owner=actorForMember(actor.organizationId,actor.officeId,action.ownerId);
+  if(action.kind==='crm_note'){
+   const payload=z.object({investorId:idSchema,note:z.string().min(1).max(15000)}).parse(action.payload);
+   const investor=getInvestor(actor,payload.investorId);
+   updateRecord(actor,'investors',{...investor,notes:`${investor.notes}\n\n[Reviewed local note · ${now()}]\n${payload.note}`});
+  }else if(action.kind==='crm_update'){
+   const payload=z.object({investorId:idSchema,changes:investorChangesSchema,before:z.record(z.string(),z.unknown())}).parse(action.payload);
+   const investor=getInvestor(actor,payload.investorId);
+   if(Object.entries(payload.before).some(([key,value])=>JSON.stringify(investor[key as keyof Investor])!==JSON.stringify(value)))throw new AppError(409,'The record changed after this proposal. Prepare a new update from the current record.');
+   updateRecord(actor,'investors',{...investor,...payload.changes});
+  }else if(action.kind==='crm_import'){
+   const payload=z.object({jobId:idSchema,prospectIds:z.array(idSchema).min(1).max(100)}).parse(action.payload);
+   const job=getResearchJob(actor,payload.jobId);const existing=listInvestors(actor);
+   for(const prospectId of payload.prospectIds){
+    const candidate=job.prospects.find(item=>item.id===prospectId);
+    if(!candidate||classifyDuplicate(candidate,existing).duplicateStatus!=='net_new')throw new AppError(409,'A prospect is now a duplicate or unavailable. Review the current CRM and prepare a new import.');
+    const investor:Investor={id:newId('investor'),name:candidate.name,company:candidate.company,counties:[candidate.county],strategy:candidate.strategy,budgetMin:0,budgetMax:0,financing:null,rehab:null,timeframe:null,email:null,phone:null,notes:`Imported fictional research fixture. Typical synthetic transaction price: $${candidate.typicalPrice}; this is not a confirmed budget. Contact details and buying intent are unverified. Research job ${job.id}.`,lastContactAt:null,ownerId:owner.id,synthetic:true};
+    insertRecord(owner,'investors',investor);existing.push(investor);
+   }
+  }else throw new AppError(422,'This action kind is not executable.');
+  const executed=updateRecord(actor,'proposed_actions',{...action,status:'executed' as const,executedAt:now(),error:null});
+  audit(actor,'approval.approved',id);audit(actor,'crm.demo_write.executed',id,{kind:action.kind});return executed;
+ })();}catch(error){
+  const message=error instanceof AppError?error.message:'The local CRM change failed. No partial changes were applied.';
+  const failed=updateRecord(actor,'proposed_actions',{...initial,status:'failed' as const,error:message});audit(actor,'crm.demo_write.failed',id);return failed;
+ }
+ }).immediate();
+}
+
+const taskSchema=z.object({title:titleSchema,dueAt:z.string().datetime({offset:true}).nullable().optional(),investorId:idSchema.nullable().optional()}).strict();
+export function createTask(actor:Actor,input:{title:string;dueAt?:string|null;investorId?:string|null}):Task {
+ assertActor(actor);const parsed=taskSchema.parse(input);
+ if(parsed.investorId)getInvestor(actor,parsed.investorId);
+ const task:Task={id:newId('task'),title:parsed.title,dueAt:parsed.dueAt?new Date(parsed.dueAt).toISOString():null,investorId:parsed.investorId??null,status:'open',ownerId:actor.id,createdAt:now()};
+ getDb().prepare('INSERT INTO tasks(id,organization_id,office_id,owner_id,investor_id,data) VALUES(?,?,?,?,?,?)').run(task.id,actor.organizationId,actor.officeId,actor.id,task.investorId,JSON.stringify(task));
+ audit(actor,'task.created',task.id);return task;
+}
+export function completeTask(actor:Actor,id:string):Task {
+ const task=scopedGet<Task>(actor,'tasks',idSchema.parse(id));
+ if(task.status==='completed')return task;
+ const completed=updateRecord(actor,'tasks',{...task,status:'completed' as const});audit(actor,'task.completed',id);return completed;
+}
+
+export function getGuidance(actor:Actor,investorId?:string) {
+ const available=investorId?[]:listInvestors(actor);
+ const investor=investorId?getInvestor(actor,investorId):available.length===1?available[0]:undefined;
+ if(!investor)return {investor:null,missing:['investor identity'],nextAction:'Select or add an authorized investor before preparing next-step guidance.',followingStep:'Review their qualification information.',explanation:'Investor-specific guidance needs a confirmed record.',source:'Generic demo qualification checklist; not approved New Western procedures.'};
+ const missing:string[]=[];
+ if(!investor.budgetMax)missing.push('confirmed acquisition budget');if(!investor.counties.length)missing.push('target counties');if(!investor.strategy)missing.push('investment strategy');if(!investor.financing)missing.push('cash or financing');if(!investor.rehab)missing.push('rehab capacity');if(!investor.timeframe)missing.push('purchase timeline');
+ return {investor,missing,nextAction:missing.length?`Confirm ${missing[0]} with ${investor.name.split(' ')[0]}.`:`Review properties within ${investor.name.split(' ')[0]}’s budget and target counties.`,followingStep:missing.length?'Prepare the confirmed qualification update for review, then match available properties.':'Prepare a source-grounded property summary and review it before outreach.',explanation:missing.length?'This information changes which opportunities are relevant. Only confirmed details should become CRM facts.':'The core demo qualification fields are recorded. Property fit still requires human review.',source:'Generic demo qualification checklist; not approved New Western procedures.'};
+}
+export function matchBuyers(actor:Actor,propertyId?:string) {
+ requireRole(actor,researchRoles);
+ const property=propertyId?scopedGet<Property>(actor,'properties',propertyId):listProperties(actor)[0];
+ if(!property)throw new AppError(404,'No authorized property is available to match.');
+ const matches=listInvestors(actor).map(investor=>{
+  let score=0;const reasons:string[]=[];
+  if(investor.counties.some(county=>normalizeCounty(county)===normalizeCounty(property.county))){score+=40;reasons.push('Target county matches');}
+  if(property.price>=investor.budgetMin&&property.price<=investor.budgetMax){score+=35;reasons.push('Asking price is within recorded budget');}
+  if(strategiesMatch(investor.strategy,property.strategy)){score+=25;reasons.push('Investment strategy matches');}
+  return {investor,score,reasons};
+ }).filter(item=>item.score>0).sort((a,b)=>b.score-a.score);
+ return {property,matches};
+}
+export function getDailyBrief(actor:Actor) {
+ const tasks=listTasks(actor).filter(task=>task.status==='open');
+ const overdue=tasks.filter(task=>task.dueAt&&Date.parse(task.dueAt)<Date.now());
+ const pendingApprovals=listApprovals(actor).filter(action=>action.status==='pending');
+ const activeJobs=listJobs(actor).filter(job=>['queued','running','awaiting_input'].includes(job.status));
+ const dormantInvestors=listInvestors(actor).filter(investor=>!investor.lastContactAt||Date.now()-new Date(investor.lastContactAt).getTime()>14*86400000);
+ return {tasks,overdue,pendingApprovals,activeJobs,dormantInvestors,summary:`You have ${tasks.length} open task${tasks.length===1?'':'s'}, ${overdue.length} overdue, ${pendingApprovals.length} pending approval${pendingApprovals.length===1?'':'s'} and ${activeJobs.length} active research job${activeJobs.length===1?'':'s'}.`};
+}
+export function getManagementOverview(actor:Actor) {
+ requireRole(actor,['manager']);
+ const brief=getDailyBrief(actor);
+ const usage=getDb().prepare('SELECT kind,SUM(quantity) AS quantity FROM usage_events WHERE organization_id=? AND office_id=? GROUP BY kind').all(actor.organizationId,actor.officeId) as {kind:string;quantity:number}[];
+ return {...brief,usage,scope:'Authorized office only',synthetic:true};
+}
+export function getBootstrap(actor:Actor):Bootstrap {
+ assertActor(actor);processNotifications(actor);
+ const organization=getDb().prepare('SELECT o.name,f.name AS office FROM organizations o JOIN offices f ON f.organization_id=o.id WHERE o.id=? AND f.id=?').get(actor.organizationId,actor.officeId) as {name:string;office:string};
+ const usage=getDb().prepare('SELECT kind,SUM(quantity) AS quantity FROM usage_events WHERE organization_id=? AND office_id=? AND owner_id=? GROUP BY kind').all(actor.organizationId,actor.officeId,actor.id) as {kind:string;quantity:number}[];
+ return {actor,organization,investors:listInvestors(actor),properties:listProperties(actor),tasks:listTasks(actor),jobs:listJobs(actor),approvals:listApprovals(actor),notifications:scopedRows<Notification>(actor,'notifications',true).slice(0,100),conversations:listConversations(actor),specialists,settings:getSettings(actor),integrations:{openai:!!process.env.OPENAI_API_KEY,voice:!!process.env.OPENAI_API_KEY,crm:'demo',research:'synthetic',auth:'local_demo'},usage};
+}

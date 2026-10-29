@@ -1,0 +1,45 @@
+# Implementation roadmap
+
+Completion evidence belongs in [PROGRESS](PROGRESS.md). This roadmap describes gates, not claims of finished implementation.
+
+## Phase 1: reproducible foundation
+
+Initialize Node/Next.js/React/TypeScript, shared contracts and lint/test configuration. Establish the premium responsive shell, local database migrations, fictional organization/office/users, scoped records and demonstration access. Exit when setup is repeatable and the first build serves without broken navigation.
+
+## Phase 2: persistent assistant and policy
+
+Implement conversations, message artifacts, common specialist definitions, direct services and validated tool dispatch. Add signed local sessions, role/record scoping, usage and audit foundation. Exit when refresh preserves history and tests reject cross-tenant/office/owner access.
+
+## Phase 3: flagship vertical workflows
+
+Research: create job → persist progress → produce synthetic evidence/rank → check duplicates → export → prepare import → approve once. Notes: text → structured extraction → review source excerpts → prepare note → approve → verify local CRM state. Guidance: read investor context → identify missing criteria → suggest next action. Exit when the whole flow works through the UI and API smoke suite.
+
+## Phase 4: mobile, voice and proactivity
+
+Add installable metadata, a microphone entry point, WebRTC setup, shared conversation/tool context and truthful connection errors. Build persisted reminders, preferences and event notifications. Exit voice only after a valid API account and browser microphone test; absent credentials, record integration as implemented but unverified.
+
+## Phase 5: authorized pilot integrations
+
+Dependencies: customer sponsor and administrator authorization, approved procedures, test users, selected licensed research provider, verified contact source and Salesforce sandbox. Implement External Client App OAuth with PKCE, encrypted token custody, organization/field mapping, record ownership, throttling and sandbox contract tests. Replace synthetic evidence with actually fetched source records and evaluate identities/contact accuracy. Exit when real records can be read and proposed writes reviewed in a sandbox with approved permissions.
+
+## Phase 6: production operations
+
+Replace demo login with SSO, implement provisioning and revocation, migrate to PostgreSQL, supervise workers, establish backups and restoration tests, retention/deletion controls, alerts and incident response. Add provider budgets, robust idempotency and request replay protection. Commission security/access testing. Exit only after explicit production launch authorization.
+
+## Phase 7: workforce breadth
+
+Make the remaining catalog specialists operational against permitted data. Prioritize relationship preparation, qualification updates, marketing drafts and acquisition handoffs before speculative autonomous actions. Add document/transaction versioning and approved knowledge retrieval. Evaluate each specialist on its own evidence quality and completed workflow, not catalog presence.
+
+## Phase 8: channels and commercial controls
+
+Implement one organization-approved non-SMS channel with signed/replay-safe webhooks and expiring account linking. Add SMS only with consent, entitlements, spend limits and provider registration. Add seat subscriptions and usage reporting through an external billing service; do not store payment details. Expand office permissions and CRM adapters after proving one pilot.
+
+## Immediate remaining inputs
+
+- API project key and text/voice model access for live validation.
+- Customer authorization, Salesforce sandbox, admin owner and object/field mapping.
+- Licensed source provider and coverage/cost evaluation for Georgia transactions.
+- Approved qualification/workflow documents and customer communication policy.
+- Hosting/identity/retention decisions before any real customer information is ingested.
+
+These inputs do not block fictional local demonstration development. They do block claims of connected production readiness.
