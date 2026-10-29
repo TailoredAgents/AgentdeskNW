@@ -14,6 +14,7 @@ const channel=z.enum(['email','sms','personal_text','imessage','slack']);
 const text=z.string().max(10000);
 const list=z.array(z.string().min(1).max(150)).max(100);
 
+// Legacy capability flags describe investor package distribution; employee Copilot channels use /messaging.
 export function getPhaseTwoState(actor:Actor):PhaseTwoState{
   assertActor(actor);
   const members=getDb().prepare('SELECT u.id,u.name,m.role FROM memberships m JOIN users u ON u.id=m.user_id WHERE m.organization_id=? AND m.office_id=? ORDER BY u.name').all(actor.organizationId,actor.officeId) as PhaseTwoState['members'];

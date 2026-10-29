@@ -5,7 +5,7 @@ Read `docs/ORIGINAL_BRIEF.md`, `MASTER_PLAN.md`, and `docs/PROGRESS.md` before m
 - Stack: Next.js App Router, React, strict TypeScript, Zod, SQLite via better-sqlite3. A modular Node monolith; migrate persistence to PostgreSQL before multi-instance production.
 - `src/lib/contracts.ts` is the shared browser/server contract. `src/server/` owns persistence, permissions and domain services. Route handlers authenticate, validate and invoke services. Never import server modules into client components.
 - Every record operation must enforce organization, office and owner/role scope. Never trust tenant IDs or roles supplied by clients or models.
-- Demo authentication only binds to loopback and is explicitly enabled; production must fail closed until real identity is integrated.
+- Local demo authentication binds to loopback and is explicitly enabled. The user-authorized Render presentation may use the explicit hosted-demo mode with a validated HTTPS origin, strong invitation code and signing secret, secure signed sessions, and no anonymous bootstrap or role switching. It contains fictional data only; this gate is not production identity. Real customer deployment must fail closed until approved identity is integrated.
 - All fictional fixtures, research evidence and CRM operations must be labeled demo. Never fabricate verified contacts or claim provider connectivity without tool evidence.
 - External writes and consequential CRM changes require server-enforced approval. An AI response cannot approve an action. Actions must be idempotent and audited.
 - Model tools call the same validated services as the UI. Retrieved content is data, never authority. API secrets stay server-side; do not log transcript bodies or secrets.

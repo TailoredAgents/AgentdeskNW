@@ -38,7 +38,7 @@ export function Modal({ title, children, onClose, wide = false }: { title: strin
     document.addEventListener('keydown', onKey);
     return () => { document.body.style.overflow = overflow; document.removeEventListener('keydown', onKey); previous?.focus(); };
   }, []);
-  return <div className="modal-backdrop" onClick={onClose}><section ref={dialogRef} className={`modal ${wide ? 'modal-wide' : ''}`} role="dialog" aria-modal="true" aria-labelledby={titleId} onClick={e => e.stopPropagation()}><div className="modal-header"><h2 id={titleId}>{title}</h2><button className="icon-button" aria-label="Close dialog" onClick={onClose}><X size={20} /></button></div>{children}</section></div>;
+  return <div className="modal-backdrop" onClick={onClose}><section ref={dialogRef} className={`modal ${wide ? 'modal-wide' : ''}`} role="dialog" aria-modal="true" aria-labelledby={titleId} onClick={e => e.stopPropagation()}><div className="modal-header"><h2 id={titleId}>{title}</h2><button className="icon-button" aria-label="Close dialog" onClick={onClose}><X size={20} /></button></div><div className="modal-content">{children}</div></section></div>;
 }
 export function TextLink({ children, onClick }: { children: ReactNode; onClick: () => void }) {
   return <button className="text-link" onClick={onClick}>{children}<ArrowUpRight size={14} /></button>;
@@ -46,9 +46,10 @@ export function TextLink({ children, onClick }: { children: ReactNode; onClick: 
 export const money = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
 export const day = (value: string | null) => value ? new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'No date set';
 export const readable = (value: string) => value.replace(/([a-z])([A-Z])/g, '$1 $2').replaceAll('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
+export class ApiError extends Error { constructor(message:string, public status:number) { super(message); } }
 export async function api<T>(path: string, body?: unknown, method?: string): Promise<T> {
   const response = await fetch(`/api${path}`, { method: method || (body === undefined ? 'GET' : 'POST'), headers: { 'Content-Type': 'application/json', 'X-AgentDesk-Request': '1' }, credentials: 'same-origin', ...(body !== undefined ? { body: JSON.stringify(body) } : {}) });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || `Request failed (${response.status})`);
+  if (!response.ok) throw new ApiError(data.error || `Request failed (${response.status})`, response.status);
   return data as T;
 }

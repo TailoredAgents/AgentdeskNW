@@ -53,7 +53,7 @@ export function updateSettings(actor:Actor,partial:Partial<Settings>):Settings {
  getDb().prepare('INSERT INTO user_settings VALUES(?,?,?,?) ON CONFLICT(organization_id,office_id,owner_id) DO UPDATE SET data=excluded.data').run(actor.organizationId,actor.officeId,actor.id,JSON.stringify(value));
  audit(actor,'preferences.updated'); return value;
 }
-function notificationsAllowed(actor:Actor):boolean {
+export function notificationsAllowed(actor:Actor):boolean {
  const settings=getSettings(actor);
  if(!settings.notifications) return false;
  const hour=Number(new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',hour:'numeric',hourCycle:'h23'}).format(new Date()));
@@ -110,7 +110,7 @@ export function getConversation(actor:Actor,id:string):Conversation {
  return {...conversation,title:messages.some(message=>message.content.startsWith('This historical message is withheld'))?'Conversation with restricted history':conversation.title,messages};
 }
 export function listConversations(actor:Actor):Conversation[] {
- return scopedRows<Conversation>(actor,'conversations',true).slice(0,50).map(item=>getConversation(actor,item.id)).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt));
+ return scopedRows<Conversation>(actor,'conversations',true).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt)).slice(0,50).map(item=>getConversation(actor,item.id));
 }
 const messageSchema=z.object({role:z.enum(['user','assistant']),content:z.string().trim().min(1).max(50000),specialistIds:z.array(z.string().max(100)).max(16).optional(),artifacts:z.array(z.object({type:z.enum(['job','approval','notes','task','investors','guidance','package','debrief','release','calling_queue','briefing','marketplace']),id:z.string().max(150).optional(),title:z.string().max(300),data:z.unknown().optional()})).max(20).optional()}).strict();
 export function addMessage(actor:Actor,conversationId:string,input:{role:'user'|'assistant';content:string;specialistIds?:string[];artifacts?:Artifact[]},context?:{investors:{id:string}[];properties:{id:string}[]}):Message {

@@ -11,7 +11,7 @@ if(process.env.SMOKE_BASE_URL){
  if(!existsSync('.next/BUILD_ID'))throw new Error('Build the application first with npm run build. The smoke suite uses a disposable local database and the built app.');
  const port=await new Promise((resolve,reject)=>{const listener=createServer();listener.once('error',reject);listener.listen(0,'127.0.0.1',()=>{const address=listener.address();listener.close(()=>resolve(address.port));});});
  const directory=mkdtempSync(join(tmpdir(),'agentdesk-smoke-'));
- const env={...process.env,AGENTDESK_DB_PATH:join(directory,'smoke.sqlite'),AGENTDESK_DEMO:'true',AGENTDESK_ALLOW_PRODUCTION_DEMO:'true',OPENAI_API_KEY:'',SMOKE_BASE_URL:`http://127.0.0.1:${port}`};
+ const env={...process.env,AGENTDESK_DB_PATH:join(directory,'smoke.sqlite'),AGENTDESK_DEMO:'true',AGENTDESK_ALLOW_PRODUCTION_DEMO:'true',OPENAI_API_KEY:'',AGENTDESK_CHANNELS_ENABLED:'false',AGENTDESK_CHANNEL_SEND_ENABLED:'false',SMOKE_BASE_URL:`http://127.0.0.1:${port}`};
  const children=[spawn(process.execPath,['node_modules/next/dist/bin/next','start','--hostname','127.0.0.1','--port',String(port)],{stdio:['ignore','ignore','inherit'],env}),spawn(process.execPath,['--import','tsx','scripts/worker.ts'],{stdio:['ignore','ignore','inherit'],env})];
  try{
   let ready=false;

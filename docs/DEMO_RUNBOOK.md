@@ -1,4 +1,6 @@
-# Monday demonstration runbook — Phase 3
+# AgentDesk NW — detailed demonstration reference
+
+**Current presentation:** use [the concise Monday walkthrough](MONDAY_DEMO.md). The latest local workspace has explicit 14-day presentation trials, a light interface, and Settings → Demonstration personas. Earlier checkpoint-specific examples below are preserved for reference. Repository creation, commits/pushes and Render launch are deferred until the owner requests them.
 
 All accounts, subscriptions and activity below are local fictional demonstrations. No New Western payment, investor message or external account change occurs.
 
@@ -53,7 +55,7 @@ Core can still extract recaps, propose reviewed CRM changes and create reminders
 1. Follow the [README](../README.md). Double-click **Start AgentDesk.command**, keep its Terminal window open, and open [the local workspace](http://127.0.0.1:3000) after Ready appears. The launcher starts the app and worker together; keep both running for research and reminders.
 2. Check [PROGRESS](PROGRESS.md) for the final verification checkpoint. Before the meeting, run the documented type, lint, test, build and smoke checks if the source has changed. The default smoke runner uses a disposable database and does not alter meeting records. Do not set `SMOKE_BASE_URL` for this preparation unless intentionally adding fixtures to the active workspace.
 3. Preserve the active `data/agentdesk.sqlite` database. Phase 1 is checkpointed at `cded4cd`; `data/phase1-checkpoint.sqlite` is a recovery backup, not a file to restore before the demo. Do not reset the database or erase earlier work.
-4. Confirm the fixed fictional identities under **Settings → Local demonstration identity → Demo user role**: **Alex Morgan** (dispositions), **Jordan Lee** (acquisitions), and **Taylor Reed** (manager). Use the manager briefly for release management, then Alex for the main relationship story. This switcher is a local demo feature, not production sign-in.
+4. Confirm the fixed fictional identities under **Settings → Demonstration personas → Demo user role**: **Alex Morgan** (dispositions), **Jordan Lee** (acquisitions), and **Taylor Reed** (manager). Use the manager briefly for release management, then Alex for the main relationship story. This switcher is a local demo feature, not production sign-in.
 5. Open **Calling queue**, **Property releases**, **Post-call debrief**, **Deal packages**, **Investor Hunter**, **Work queue**, and **Deals & investors** once. On a narrow screen, the navigation menu opens the full workspace; Calls and Debrief also appear in the bottom navigation.
 6. Optional voice: set the authorized API key only in the ignored `.env.local`, restart the server, and test the actual account, selected model, audio device and browser microphone permission in advance. The key stays server-side. A ChatGPT subscription does not supply an API key. Without validated credentials, demonstrate typed workflows and the honest voice setup state.
 

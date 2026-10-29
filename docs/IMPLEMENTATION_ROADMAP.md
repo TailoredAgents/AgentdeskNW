@@ -24,7 +24,7 @@ Next work, in priority order:
 3. Connect approved release/media sources and a real disclosure evidence provider. Manual link attestation must be replaced or supplemented by actual recipient access checks where supported.
 4. Evaluate a licensed Georgia transaction/contact source using labeled examples; preserve uncertainty and private duplicate checks.
 5. Validate configured live text/voice on actual devices. Harden identity, retention, worker supervision and cross-device sessions before any real-data pilot.
-6. Confirm Slack is actually used, then implement authorized installation, expiring identity linking, replay-safe webhook ingress and app-linked approvals. Add SMS later as a metered, consent-aware entitlement; Telegram remains optional.
+6. Employee Slack/SMS adapters are implemented with expiring account linking, signed/deduplicated ingress, a shared Copilot thread, optional reminders and app-based approvals. Complete actual Slack installation and Twilio number/recipient setup, then verify real delivery. General multi-workspace OAuth and investor outreach remain future work; Telegram is optional. See MESSAGING_SETUP.md.
 7. Add advanced comps, valuation and richer transaction/management analytics only when the required evidence and customer policy are available.
 
 ## Phase 1: reproducible foundation

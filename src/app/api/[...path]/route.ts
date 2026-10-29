@@ -1,12 +1,14 @@
+import { messagingRoute } from '@/server/messaging-api';
 import { billingRoute } from '@/server/billing-api';
 import { EntitlementError } from '@/server/billing';
 import { NextRequest,NextResponse } from 'next/server';
 import { z } from 'zod';
 import * as service from '@/server/services';
-import { assertLocalDemo,getActor,setSession,rateLimit } from '@/server/auth';
+import { assertLocalDemo,getActor,setSession,rateLimit,verifyDemoAccess } from '@/server/auth';
 import { chat,researchSchema,qualificationChangesSchema } from '@/server/orchestrator';
 import { createVoiceSession,connectVoiceSession,getVoiceStatus,endVoiceSession } from '@/server/voice';
 import { providerStatus } from '@/server/providers';
+import { hostedDemo } from '@/server/demo-config';
 import { phaseTwoRoute } from '@/server/phase-two-api';
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -22,15 +24,24 @@ function json(value:unknown,status=200){return NextResponse.json(value,{status,h
 function csvCell(value:unknown){let text=String(value??'');if(/^\s*[=+@\-\t\r]/.test(text))text=`'${text}`;return `"${text.replaceAll('"','""')}"`;}
 async function route(request:NextRequest,{params}:{params:Promise<{path:string[]}>}){
   try{
-    assertLocalDemo(request);
     const {path}=await params;const [resource,id,operation]=path;const method=request.method;
-    if(resource==='health'&&method==='GET')return json({status:'ok',mode:'local-demo'});
+    // Health checks expose no workspace data and do not initialize the database.
+    if(resource==='health'&&path.length===1&&method==='GET')return json({status:'ok'});
+    assertLocalDemo(request);
+    if(resource==='access'&&path.length===1){
+      if(method==='GET')return json({required:hostedDemo()&&!getActor(request)});
+      if(method==='POST'){
+        const {code}=z.object({code:z.string().min(1).max(256)}).strict().parse(await body(request));
+        verifyDemoAccess(code);const response=json({ok:true});setSession(response,'dispositions');return response;
+      }
+    }
+    if(hostedDemo()&&!getActor(request))throw new service.AppError(401,'Enter your access code to open the private demonstration.');
     if(resource==='session'&&method==='POST'){
       const {role}=z.object({role:z.enum(['dispositions','acquisitions','manager'])}).strict().parse(await body(request));
       const actor=service.demoActor(role);const response=json({actor});setSession(response,role);return response;
     }
     let actor=getActor(request);const newSession=!actor;
-    if(!actor&&resource==='bootstrap'&&method==='GET')actor=service.demoActor();
+    if(!hostedDemo()&&!actor&&resource==='bootstrap'&&method==='GET')actor=service.demoActor();
     if(!actor)throw new service.AppError(401,'Open the workspace to start a local demo session.');
     rateLimit(actor,'all',300);
     if(method!=='GET')rateLimit(actor,resource,resource==='chat'?20:resource==='voice'?90:60);
@@ -40,6 +51,7 @@ async function route(request:NextRequest,{params}:{params:Promise<{path:string[]
     }
     if(resource==='providers'&&method==='GET')return json(providerStatus(actor));
     if(resource==='voice'&&id==='status'&&method==='GET')return json(getVoiceStatus(actor,idSchema.parse(request.nextUrl.searchParams.get('voiceSessionId'))));
+    const messaging=await messagingRoute(request,actor,path,()=>body(request));if(messaging)return messaging;
     const billing=await billingRoute(request,actor,path,()=>body(request));if(billing)return billing;
     const phaseTwo=await phaseTwoRoute(request,actor,path,()=>body(request));if(phaseTwo)return phaseTwo;
     if(resource==='chat'&&method==='POST'){

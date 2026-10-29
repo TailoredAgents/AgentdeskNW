@@ -40,3 +40,7 @@ Completion may return fewer candidates than requested. Public web claims, compan
 Settings → Provider verification and authenticated `/api/providers` show the latest 100 employee-scoped operations, usage totals, unresolved operations, cost coverage and source boundaries. Usage & billing shows current-period consumed/reserved allowance. Provider receipts are a bounded operational view, not a complete monthly cost/profit report. Pricing decisions need full-period aggregation, provider invoice reconciliation, real task success rates and cost per qualified lead.
 
 The proposed $49 Core and $79 Hunter prices have not been validated against actual provider costs. No live provider was exercised during this credential-free implementation run. All payment, SMS and subscription lifecycle events remain simulations.
+
+## Employee SMS receipts (October 29)
+
+Employee Copilot SMS now reserves a conservative Unicode segment count before dispatch and reconciles the trusted Twilio receipt to actual usage. Signed inbound receipts also record actual segments; they can reflect already-incurred usage after entitlement expiry. Queued/provider-zero estimates do not settle a reservation. Definitive request rejection releases it; ambiguous delivery retains it until a trusted receipt resolves it. Duplicate receipts cannot double-charge; inconsistent settled quantities fail for review. Provider monetary cost remains null rather than estimated as an invoice. The commercial ledger remains a demonstration and never collects payment. See MESSAGING_SETUP.md.

@@ -1,0 +1,87 @@
+# Employee messaging — AgentDesk NW
+
+Implemented locally on October 29, 2026. Provider credentials are not installed yet; no actual Slack message or SMS round-trip is claimed. The owner created `TailoredAgents/AgentdeskNW` and authorized committing and pushing this project on October 29. Render deployment remains deferred until requested.
+
+## What the employee gets
+
+- A private Slack DM or SMS reaches the same Copilot and guarded specialist tools used in the dashboard.
+- An employee pairs their own external identity using a single-use, ten-minute linking message from Settings. Unlinked contacts cannot access CRM data or operate tools.
+- Slack, SMS and the **Your ongoing Copilot** dashboard conversation share saved history. Other dashboard conversations remain separate.
+- Tasks created by messages appear in Work queue. Due-task and completed/failed-research reminders are optional per connection and respect notification settings and quiet hours (America/New_York).
+- CRM changes still need review in the dashboard. Investor outreach, deal-package distribution, group channels, attachments and voice notes are not enabled by this integration.
+- SMS uses the existing optional SMS entitlement and combined inbound/outbound segment allowance. Demo administrators can explicitly grant an SMS trial using the existing billing controls; normal presentation preparation does not grant it automatically.
+
+## Slack: start locally without a public server
+
+1. Create an app in your chosen Slack workspace using `integrations/slack-app-manifest.json`. The app is named **AgentDesk NW** and subscribes only to private `message.im` events, with `chat:write` and `im:history` bot scopes.
+2. Install it in that workspace. Enable the Messages tab and allow users to message the app (the manifest already requests this).
+3. Create an app-level token with `connections:write` for Socket Mode. Configure these server environment values in ignored `.env.local`:
+
+   - `SLACK_TRANSPORT=socket`
+   - `SLACK_TEAM_ID` — the installed workspace ID
+   - `SLACK_APP_ID` — the app's ID
+   - `SLACK_BOT_TOKEN` — installed bot token
+   - `SLACK_APP_TOKEN` — app-level Socket Mode token
+   - `AGENTDESK_CHANNELS_ENABLED=true`
+   - `AGENTDESK_CHANNEL_SEND_ENABLED=true`
+
+4. Run `npm run channels:check` for a read-only bot/workspace/scope probe. Start the application normally with `npm run dev` (which also starts its worker).
+5. In Settings, select **Get linking code** under Slack and send the entire `LINK …` command as a private DM to the app. Return to Settings to see **Linked**, then enable reminders if desired.
+6. Send “Create a task to rehearse the Monday demo.” Confirm the reply in Slack, the task in Work queue, and the same conversation under **Open ongoing Copilot conversation**.
+
+Socket Mode works locally and on the prepared single-instance Render service. Keep exactly one AgentDesk worker for the configured app/database; do not run a local worker against the same Slack app as a deployed demonstration. One app/workspace is configured per deployment. A general multi-workspace OAuth installation flow is future work.
+
+Alternative HTTP Events transport: set `SLACK_TRANSPORT=http`, configure `SLACK_SIGNING_SECRET`, disable Socket Mode in Slack, and set the Events Request URL to `https://YOUR-ORIGIN/api/webhooks/slack`. Slack's verification challenge and events use the signed public endpoint. The app verifies the signature/timestamp, app ID and workspace ID before accepting work.
+
+## Twilio SMS
+
+1. Use a Twilio account and SMS-capable number that can deliver to your test phone. For US numbers, check the account's applicable number registration/verification status before promising a Monday live SMS demonstration. Trial accounts restrict messaging to verified recipients. Provider approvals and carrier delivery timing are external dependencies.
+2. Configure:
+
+   - `TWILIO_ACCOUNT_SID`
+   - `TWILIO_AUTH_TOKEN`
+   - `TWILIO_PHONE_NUMBER` — full E.164 number, including `+`
+   - `AGENTDESK_CHANNEL_PUBLIC_ORIGIN=https://YOUR-ORIGIN` — HTTPS origin only, no path/query. When omitted, the app uses `AGENTDESK_APP_ORIGIN` or Render's `RENDER_EXTERNAL_URL`.
+   - `AGENTDESK_CHANNELS_ENABLED=true`
+   - `AGENTDESK_CHANNEL_SEND_ENABLED=true`
+
+3. Point the number's **A message comes in** webhook to `https://YOUR-ORIGIN/api/webhooks/twilio`, using HTTP POST. If a Messaging Service overrides that number's incoming-message settings, configure the same callback there. Advanced Opt-Out's signed `OptOutType` is supported when enabled by the service.
+4. Run `npm run channels:check`. It only verifies credentials and that the number belongs to the account and supports SMS; it cannot establish carrier acceptance or recipient eligibility.
+5. Give the demonstration employee SMS access through the existing billing UI (an explicit temporary SMS trial is sufficient). Request a linking code in Settings and text it from that employee's own test phone to the configured Twilio number.
+6. Outbound requests automatically include the signed status-callback URL `/api/webhooks/twilio/status?delivery=...`; no manually created delivery ID is needed. Settings distinguishes queued, accepted, delivered, failed and unconfirmed delivery.
+7. Test a question and a task, then enable reminders and create a task due shortly. Confirm actual handset delivery. Text **STOP** and verify that replies/reminders stop; **START** resumes eligibility but does not re-enable reminders automatically.
+
+Twilio needs a reachable HTTPS callback URL. During local testing, an explicitly configured HTTPS tunnel can forward to the local server. If the same public origin should also open the dashboard from a phone, enable the existing private hosted-demo invitation mode and configure its canonical origin, access code and signing secret. Normal loopback-only local demo authentication intentionally does not expose the dashboard through arbitrary public hosts. Socket Mode Slack does not need a tunnel.
+
+## Delivery behavior and operating limits
+
+Provider ingress verifies authentication before recording work and acknowledges before invoking the AI. A durable inbox deduplicates provider event IDs. The worker routes messages into the existing idempotent Copilot dispatcher. A durable outbox rechecks employee membership, entitlement, link consent and current record visibility immediately before dispatch. The model does not choose recipients or grant permissions.
+
+Replies are concise; responses that exceed channel limits point to their full saved conversation rather than silently truncating important details. With no configured public origin, Slack asks the employee to open that conversation in the dashboard. Slack acceptance does not mean delivery/read confirmation. Twilio delivery status comes only from authenticated provider responses or callbacks.
+
+Default limits: 12 accepted AI requests per linked identity per minute, 50 outbound messages per provider account per rolling 24 hours (configurable `AGENTDESK_CHANNEL_DAILY_LIMIT`, maximum 200), and 10 reminder notices per connection per rolling 24 hours. SMS allowance is enforced separately; Unicode-safe conservative segment reservations precede sending. Verified actual inbound and outbound segments settle the ledger without inventing provider dollar costs. An inbound SMS may already have incurred provider usage even when its AI request is refused.
+
+Interrupted/ambiguous outbound requests are not automatically resent. They show **Unknown** until a trusted receipt resolves them. Never blindly replay an unconfirmed message. Known Twilio message IDs are periodically reconciled; unresolved usage stays reserved. Interrupted AI work requires checking the saved conversation before requesting another action. A busy dashboard conversation defers channel work until its current turn finishes.
+
+STOP disables all queued outgoing messages for that SMS identity, disables reminders and cancels queued AI work. Disconnect cancels queued work too; reconnecting requires another linking code. Reminders are not backfilled from notifications created before the connection's reminder preference was enabled. A currently overdue task can still generate a new notice after enabling reminders. Completed tasks, read notices and newly inaccessible records are checked again before delivery. Other notification kinds (such as property-release/package-review notices) remain in-app for this version.
+
+The app does not implement multi-instance dispatch leases, multi-workspace OAuth, automatic retry of ambiguous sends, or production employee SSO. The invitation demo shares fictional personas; it is not production identity. Run web and worker together using the existing start scripts and persistent disk. Keep messaging flags off in any environment that should not receive or send real messages.
+
+## Local verification and Monday acceptance
+
+Automated: `npm test`, `npm run typecheck`, `npm run lint`, `npm run build`, `npm run test:smoke`, `npm run test:hosted`, and `npm run test:messaging`. The messaging HTTP suite boots a disposable compiled server with fictional provider credentials, signed events, shared-task checks, delivery callbacks, STOP and restart persistence. Outbound provider requests are mocked. It does not prove Slack installation, Socket Mode connectivity, carrier delivery or live conversational quality.
+
+Monday acceptance still requires the chosen accounts and test recipient: read-only credential probe; real Slack DM round-trip; real SMS round-trip; a due reminder on both channels; STOP; reconnect; a task visible in the dashboard; an approval that remains pending until reviewed; and checking the actual deployed Render origin after deployment is authorized.
+
+## Official references
+
+- [Slack Socket Mode](https://docs.slack.dev/apis/events-api/using-socket-mode/)
+- [Slack app manifest](https://docs.slack.dev/reference/app-manifest/)
+- [Slack App Home and messages](https://docs.slack.dev/surfaces/app-home/)
+- [Slack message posting](https://docs.slack.dev/reference/methods/chat.postMessage/)
+- [Twilio webhook verification](https://www.twilio.com/docs/usage/webhooks/webhooks-security)
+- [Twilio incoming messaging webhooks](https://www.twilio.com/docs/usage/webhooks/messaging-webhooks)
+- [Twilio message records and statuses](https://www.twilio.com/docs/messaging/api/message-resource)
+- [Twilio trial recipient restrictions](https://www.twilio.com/docs/usage/tutorials/how-to-use-your-free-trial-account)
+- [Twilio US A2P 10DLC registration](https://www.twilio.com/docs/messaging/compliance/a2p-10dlc)
+- [OpenAI tools and application-owned function execution](https://developers.openai.com/api/docs/guides/tools)

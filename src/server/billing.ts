@@ -66,7 +66,7 @@ export function featureAccess(actor:Actor,id:string):FeatureAccess {
  if(source==='none'&&t?.active&&t.features.includes(id))source='trial';
  const entitled=source!=='none',role=roleAllowed(actor,id)||id==='core',implemented=id==='core'||id==='sms'||spec?.status!=='planned'&&!!spec;
  const restricted=policy.restricted.includes(id),coreActive=sub.status==='active'||coreFeatures.every(f=>sponsored.includes(f));
- const reason=restricted?'Restricted by organization policy.':!role?'Your role does not permit this capability.':!coreActive?'An active Core subscription or company-sponsored Core seat is required.':!entitled?`${spec?.name??id} is available as an optional upgrade in the AI Employee Marketplace.`:!implemented?'In development. Selection does not enable an unfinished capability.':id==='sms'?'Entitled; live SMS provider remains disconnected.':'Available in the local demo.';
+ const reason=restricted?'Restricted by organization policy.':!role?'Your role does not permit this capability.':!coreActive?'An active Core subscription or company-sponsored Core seat is required.':!entitled?`${spec?.name??id} is available as an optional upgrade in the AI Employee Marketplace.`:!implemented?'In development. Selection does not enable an unfinished capability.':id==='sms'?'SMS entitlement active; manage the employee messaging connection in Settings.':'Available in the local demo.';
  return {id,name:id==='core'?'AgentDesk Core':id==='sms'?'Optional SMS':spec?.name??id,source,entitled,roleAllowed:role,implemented,allowed:entitled&&role&&implemented&&!restricted&&coreActive,reason,implementation:spec?.status??'foundation'};
 }
 export class EntitlementError extends AppError {constructor(public featureId:string,message:string,status=402){super(status,message);}}

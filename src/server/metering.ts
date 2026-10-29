@@ -39,6 +39,17 @@ export function settleUsage(actor:Actor,category:MeterCategory,operationId:strin
  }).immediate();
 }
 export function releaseUsage(actor:Actor,category:MeterCategory,operationId:string){assertActor(actor);return getDb().transaction(()=>{const prior=findUsage(actor,category,operationId);if(prior?.status==='reserved')return saveUsage(actor,{...prior,status:'released',billingStatus:'not_billable'});return prior;}).immediate();}
+/** Only verified Twilio receipts call this; receipt quantities are not admission estimates. */
+export function recordSmsReceipt(actor:Actor,operationId:string,quantity:number){
+ assertActor(actor);z.number().int().min(0).max(1000).parse(quantity);
+ return getDb().transaction(()=>{
+  const prior=findUsage(actor,'sms_segments',operationId);
+  if(prior?.status==='consumed'){if(prior.quantity!==quantity)throw new AppError(409,'SMS receipt conflicts with recorded usage.');return prior;}
+  const sub=subscription(actor),balance=usageBalances(actor).find(b=>b.category==='sms_segments')!;
+  const value:MeterRecord=prior??{id:newId('meter'),feature:'sms',operationId,category:'sms_segments',quantity,unit:'segments',allowanceId:null,providerCostCents:null,status:'reserved',billingStatus:'not_billable',createdAt:now(),periodStart:sub.periodStart,source:'Verified Twilio receipt'};
+  return saveUsage(actor,{...value,quantity,status:'consumed',providerCostCents:null,billingStatus:balance.included!==null&&balance.consumed+quantity>balance.included?'simulated_overage':'simulated_included'});
+ }).immediate();
+}
 // Only trusted server receipts reconcile provider work. Actual usage can exceed an admission estimate;
 // record the full amount so the next request is blocked rather than silently discarding consumption.
 export function reconcileTextUsage(actor:Actor,operationId:string){

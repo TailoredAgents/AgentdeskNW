@@ -1,5 +1,45 @@
 # AgentDesk progress log
 
+## October 29, 2026 — New GitHub repository publishing authorized
+
+The owner created `https://github.com/TailoredAgents/AgentdeskNW` and explicitly authorized committing and pushing the current local project. The destination was verified as an empty repository with `main` as its default branch. This checkpoint includes the presentation refresh, private hosted-demo preparation, Render blueprint, employee Slack/Twilio implementation, tests and setup documentation, preserving the existing development history. The older `TailoredAgents/AgentDesk` repository is not a push destination.
+
+The prior verification remains current: 220 automated tests, 103 workflow HTTP checks, 15 hosted-demo checks, 17 messaging HTTP checks, typecheck, lint and production build passed. The only subsequent changes update repository/setup documentation. Local credentials, SQLite files, dependencies, build output and screenshots remain ignored. Working files and reachable Git history were checked for configured secrets before publishing. Render deployment and live Slack/Twilio account acceptance remain separate next steps.
+
+---
+
+## October 29, 2026 — Employee Slack and Twilio messaging implemented locally
+
+**Owner direction:** one ongoing Copilot conversation across SMS, Slack and the dashboard. The owner has Slack/Twilio accounts and will log in later tonight. Live account setup and real delivery acceptance are deferred until then. No repository, commit, push or deployment was created; this remains AgentDesk NW, separate from the older AgentDesk project.
+
+**Implemented:** expiring single-use employee identity linking; private Slack DM ingress via signed HTTP events or the official Socket Mode SDK; Twilio signed inbound/status webhooks validated against the configured canonical HTTPS origin; durable deduplicated inbox/outbox; shared scoped history; existing guarded specialist dispatch; optional due-task and research reminders; STOP/START handling; disconnect cancellation; fresh permission checks before sending; daily message caps; conservative SMS allowance reservations and verified actual-segment reconciliation. Ambiguous sends are not retried automatically. Delivery status distinguishes provider acceptance from confirmed SMS delivery. Incoming work interrupted before its reply appears in Settings for review. Long research jobs run independently of the messaging loop, and each messaging cycle completes one AI turn before delivering its reply.
+
+**Interface and setup:** a mobile-friendly Settings card shows provider configuration, personal links, reminder preferences, linking messages, delivery activity and the shared-conversation shortcut. Recent conversation ordering now keeps an older active messaging thread visible. Added a Slack app manifest, a read-only account-check command, a compiled-server messaging smoke suite, environment examples and a setup/acceptance guide in MESSAGING_SETUP.md. Render messaging stays explicitly off until configured. Investor package distribution remains reviewed copy-only; these channels serve the employee, not investor outreach.
+
+**Verification:** 220 tests across 11 files (25 new messaging tests), 103 workflow HTTP checks, 15 hosted-demo HTTP checks and 17 signed messaging HTTP checks passed. Typecheck, lint and the optimized build passed. The messaging HTTP checks use fictional credentials and mocked outbound transports; they verify task creation, shared history, signed callbacks, STOP and process-restart persistence without sending external messages or making billable AI calls. Desktop and 390×844 Settings inspections showed no horizontal overflow; the shared-conversation button opened the correct saved thread, and no browser errors were captured. The verification image is in ignored `artifacts/presentation/messaging-settings.png`. Temporary preview servers/tabs were closed.
+
+**Data preservation:** migration 009 was applied to the active local database. All pre-existing IDs were preserved: 6 investors, 3 properties, 4 tasks, 6 conversations, 12 messages, 1 research job, 5 proposed actions, 1 release, 2 packages and 1 debrief. Existing provider credentials and receipts were not replaced. The prior ignored presentation backup remains available.
+
+**Still required for actual connectivity:** Slack app installation/tokens/workspace, Twilio credentials/number and recipient eligibility, reachable HTTPS callbacks for SMS, explicit SMS demo access for the linked employee, and real message/reminder round-trips. The read-only configuration command confirms that current Slack/SMS setup is incomplete and outbound sending is off. No live Slack connection, handset delivery or Monday carrier readiness is claimed. General multi-workspace OAuth, enterprise identity and investor outreach remain future work.
+
+---
+
+## October 29, 2026 — Presentation refresh and private hosted-demo preparation
+
+**Target clarified:** This project is **AgentDesk NW**, separate from the older `TailoredAgents/AgentDesk` repository. The owner confirmed the light workspace with an ink sidebar and restrained green accents. Monday's objective is an impressive, working fictional-data demonstration on Render. Real New Western systems remain intentionally deferred until customer approval.
+
+**Presentation:** light workspace and forest navigation, consistent semantic colors throughout the existing screens, refreshed Copilot dashboard with actual next-call/task counts, improved typography/controls/status badges, padded dialogs, corrected chat viewport sizing, navigation scroll reset, priority ordering, and mobile navigation. Added an invitation entrance, a six-step in-app demo guide, and manager panels showing actual sample employee workload and property activity. All 16 specialist definitions and existing service boundaries remain intact.
+
+**Repeatable scenario:** explicit `demo:prepare` command and opt-in hosted startup grant 14-day role-appropriate trials through the normal billing services. Fresh databases receive a fictional release, sample disclosure evidence, draft packages and a debrief with pending CRM proposals. Setup is transactional and marked once; reruns preserve work and trial expiration. It sends no messages, takes no payments and applies no CRM proposals. The active local workspace also received presentation trials; prior records and live-provider receipts were preserved. An ignored SQLite backup is saved as `data/presentation-20261029.sqlite`. Browser QA used a separate disposable database with its OpenAI key disabled.
+
+**Hosted demonstration:** HTTPS-origin-scoped Secure/HttpOnly invitation sessions, global login throttling, guarded bootstrap/role switching, same-origin mutation checks, fail-closed configuration, a minimal health endpoint, and a one-instance Render web/worker startup with persistent SQLite storage. The blueprint proposes 1 CPU / 2 GB and a 1 GB disk; no paid Render service has been created. Enterprise SSO remains out of scope for the demonstration. Invited presenters share the same fictional workspace.
+
+**Verification:** 195 automated tests, 103 workflow HTTP checks and 15 compiled-server hosted checks passed, including save/restart/persistence and unchanged trial expiration. Typecheck, lint and production build passed. Browser walkthrough covered the main workspace views at 1280×720 and 390×844 with no document horizontal overflow. The hosted invitation screen was inspected from the compiled build. A browser Copilot rehearsal returned the correct overdue task and pending-approval counts; its task artifact opened the work queue. No browser console errors were captured in that workspace. Screenshots are in ignored `artifacts/presentation/`. The hosted rehearsal uses HTTP with HTTPS proxy headers; public Render TLS/disk/runtime and actual voice audio still need acceptance after deployment.
+
+**Deployment status:** The owner has a Render account and explicitly chose local-first development. Creating the new AgentDesk NW repository, committing/pushing, and using the prepared Blueprint on Render are deferred until the owner instructs us later. The older AgentDesk repository was inspected read-only and was not changed. No live Render URL is claimed. See `RENDER_DEMO.md` and `MONDAY_DEMO.md`.
+
+---
+
 ## October 29, 2026 — Live OpenAI credential and acceptance checks
 
 The supplied API key is configured in ignored `.env.local`. OpenAI model discovery returned HTTP 200 and listed `gpt-6-astra`, `gpt-realtime-2.1` and `gpt-4o-mini-transcribe`.

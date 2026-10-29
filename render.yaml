@@ -1,0 +1,57 @@
+# Single-instance fictional demonstration; web and worker share one persistent disk.
+services:
+  - type: web
+    name: agentdesk-nw
+    runtime: node
+    plan: 1c-2g
+    region: virginia
+    numInstances: 1
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm run start:render
+    healthCheckPath: /api/health
+    autoDeployTrigger: "off"
+    disk:
+      name: agentdesk-nw-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_VERSION
+        value: 22.22.0
+      - key: NODE_ENV
+        value: production
+      - key: AGENTDESK_DEMO
+        value: "true"
+      - key: AGENTDESK_HOSTED_DEMO
+        value: "true"
+      - key: AGENTDESK_PREPARE_DEMO
+        value: "true"
+      - key: AGENTDESK_DB_PATH
+        value: /var/data/agentdesk.sqlite
+      - key: AGENTDESK_SESSION_SECRET
+        generateValue: true
+      - key: AGENTDESK_DEMO_ACCESS_CODE
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-6-astra
+      - key: OPENAI_REASONING_EFFORT
+        value: low
+      - key: AGENTDESK_TEXT_MAX_OUTPUT_TOKENS
+        value: "3000"
+      - key: OPENAI_REALTIME_MODEL
+        value: gpt-realtime-2.1
+      - key: OPENAI_TRANSCRIPTION_MODEL
+        value: gpt-4o-mini-transcribe
+      - key: AGENTDESK_RESEARCH_PROVIDER
+        value: synthetic-fixtures-v1
+      # Enable employee messaging after installing the Slack app / Twilio setup.
+      # Add provider secrets manually; deployment does not silently activate sends.
+      - key: AGENTDESK_CHANNELS_ENABLED
+        value: "false"
+      - key: AGENTDESK_CHANNEL_SEND_ENABLED
+        value: "false"
+      - key: AGENTDESK_CHANNEL_DAILY_LIMIT
+        value: "50"
+      - key: SLACK_TRANSPORT
+        value: socket

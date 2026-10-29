@@ -1,10 +1,18 @@
-# AgentDesk
+# AgentDesk NW
 
 **One assistant. A coordinated AI workforce.**
 
-AgentDesk is a local, persistent demonstration of Tailored Agents’ real estate workforce platform. It is a concept for a prospective New Western Georgia office pilot, not an official New Western product, partnership, or authorized production integration. Initial demonstration target: **Monday, November 2, 2026**.
+AgentDesk is a persistent demonstration of Tailored Agents’ real estate workforce platform. It is a concept for a prospective New Western Georgia office pilot, not an official New Western product, partnership, or authorized production integration. Initial demonstration target: **Monday, November 2, 2026**.
 
 The application centers on one Copilot that coordinates investor intelligence, property releases, calling priorities, post-call debriefs, deal packages, research, reminders, and reviewable CRM actions. All 16 proposed specialist roles share a registry and permission model. Unimplemented specialists are explicitly marked planned.
+
+## Monday presentation build
+
+The workspace now has a light professional interface, forest sidebar, refreshed dashboard, consistent dialogs/forms/tables, phone layouts, a six-step demo guide, and a sample office workload view. Existing workflows and live AI remain available.
+
+Prepare a repeatable presentation scenario with `npm run demo:prepare`. This adds role-scoped 14-day trials and reviewable fictional work once; it preserves existing records and never renews the trial on restart. This has been applied to the prepared local workspace.
+
+A private hosted demo entrance and Render blueprint are implemented. **Repository: [TailoredAgents/AgentdeskNW](https://github.com/TailoredAgents/AgentdeskNW). GitHub publishing is authorized; Render deployment remains a separate next step.** See [Render setup](docs/RENDER_DEMO.md) and the [Monday walkthrough](docs/MONDAY_DEMO.md). Real company data is intentionally deferred until customer approval.
 
 ## Local setup
 
@@ -41,6 +49,7 @@ npm run lint
 npm test
 npm run build
 npm run test:smoke
+npm run test:hosted
 ```
 
 The smoke suite requires the compiled build. By default it starts the built application and worker on a temporary loopback port with a disposable SQLite database, disables model credentials, runs HTTP workflow checks, then stops the processes and removes its temporary database. No manually started server is needed, and your demonstration data is unchanged.
@@ -53,7 +62,7 @@ For a local compiled build, `npm run build` followed by `AGENTDESK_ALLOW_PRODUCT
 
 Phase 2 extends the existing application and database. The working local flow connects a versioned property release to permitted buyer matches, calling priorities, a pre-call briefing, a post-call recap, reviewed investor updates, and a disclosure-gated package for manual handoff. The existing Copilot, research, tasks, approvals, transcript path and all 16 specialist definitions remain available.
 
-Investor profiles now support multiple structured buy boxes, source statements, revision history, relationship access and synthetic disclosure evidence. The mobile workspace exposes calling and debriefing directly. Slack is the next external messaging candidate; it remains unconfigured. SMS is a planned optional metered add-on, with Telegram later.
+Investor profiles now support multiple structured buy boxes, source statements, revision history, relationship access and synthetic disclosure evidence. The mobile workspace exposes calling and debriefing directly. Private Slack and SMS Copilot adapters are implemented; account configuration and live delivery verification remain pending. See `docs/MESSAGING_SETUP.md`. SMS uses the optional metered add-on; Telegram remains deferred.
 
 See [PROGRESS](docs/PROGRESS.md) for the latest test counts and verification results, [the Phase 2 report](docs/PHASE_2_REPORT.md) for the delivery assessment, and [the demonstration runbook](docs/DEMO_RUNBOOK.md) for the actual persisted examples. Local browser verification does not certify live OpenAI/voice, Salesforce, research providers, messaging delivery or production identity.
 
@@ -74,8 +83,8 @@ Phase 1 is preserved at Git checkpoint `cded4cd`, with a local database backup a
 | CRM | Fictional SQLite records with server-enforced approval for notes, imports and criteria changes | Salesforce authorization, identity, mappings, sync and sandbox tests |
 | Voice | Browser WebRTC with server-held ephemeral credentials, trusted sideband tools and token receipts | API access, microphone/device validation, minute reconciliation; no cellular-call recording |
 | Tasks and notifications | Persistent tasks, due reminders, release events and in-app notifications | Reliable deployed scheduler and approved push/delivery policy |
-| Enterprise access | Scoped loopback-only demo users, ownership controls and permission tests | SSO, provisioning, PostgreSQL, retention and operational review |
-| Slack, optional SMS, billing | Unconfigured Slack boundary and documented messaging/entitlement direction; Telegram deferred | Provider setup, implementation, organization approval and delivery evidence |
+| Enterprise access | Scoped local demo users, private hosted invitation mode, ownership controls and permission tests | SSO, provisioning, PostgreSQL, retention and operational review |
+| Employee Slack & optional SMS | Private Copilot messaging, shared history, opt-in reminders, verified webhooks, Socket Mode and delivery ledger; see `docs/MESSAGING_SETUP.md` | Account configuration and real delivery acceptance; Telegram and investor distribution deferred |
 
 All seeded investor, property, research, disclosure and package examples are fictional. Optional external research is labeled separately as public-source, unverified evidence. Media permission is an employee-entered assertion; AgentDesk has not checked live Google Drive access. A copied package is never reported as a sent message.
 
@@ -98,7 +107,7 @@ AgentDesk now includes the AI Employee Marketplace, My AI Workforce, subscriptio
 
 Premium access is enforced by the same backend services used by API requests, text/voice tools and worker stages. Removing an add-on preserves saved work. Core remains independently useful for notes, CRM approvals, daily coordination and workflow guidance.
 
-Read [pricing](docs/PRICING_AND_PACKAGES.md), [billing architecture](docs/BILLING_ARCHITECTURE.md), [marketplace](docs/AI_EMPLOYEE_MARKETPLACE.md), [usage metering](docs/USAGE_METERING.md), and the updated [demo runbook](docs/DEMO_RUNBOOK.md). The provider boundary is prepared, but Stripe, live OpenAI/voice, external research, production Salesforce, Slack and Twilio remain disconnected. Production identity, provider receipts, payment webhooks, taxes/proration and the four planned specialists remain future work.
+Read [pricing](docs/PRICING_AND_PACKAGES.md), [billing architecture](docs/BILLING_ARCHITECTURE.md), [marketplace](docs/AI_EMPLOYEE_MARKETPLACE.md), [usage metering](docs/USAGE_METERING.md), and the updated [demo runbook](docs/DEMO_RUNBOOK.md). At the Phase 3 checkpoint, the commercial provider boundary was prepared and external providers were disconnected. The later live connection follow-up below supersedes that checkpoint for OpenAI text and voice setup. Payment collection, production identity, taxes/proration and the four planned specialists remain future work.
 
 Migration 005 is additive. The ignored pre-migration backup is `data/phase2-checkpoint.sqlite`; Phase 2 source remains `de77fac`. No dependencies were added or updated for Phase 3.
 
@@ -108,10 +117,12 @@ The Responses manager uses `gpt-6-astra` with supported configurable reasoning e
 
 Two-way voice uses browser WebRTC, server-held short-lived credentials, and an authenticated server WebSocket sideband for tools, transcripts and usage. Browser-provided tool calls or usage are rejected. External Hunter uses OpenAI Responses web search as a separate opt-in provider; it saves public-source candidates with citations and unverified claims. It does not verify recorded ownership or contacts and does not silently substitute demo fixtures.
 
-No API key was present during implementation. Text, voice and research protocols are tested with mocks; live model access, actual speech, interruption/device behavior and external findings remain unverified. Settings shows configuration separately from provider receipt evidence. Production Salesforce, outreach, payment collection and production identity remain disconnected.
+No API key was present during initial Phase 4 implementation. Subsequent live text and voice-session setup checks passed, as recorded below. Actual speech, interruption/device behavior and external findings remain unverified. Settings shows configuration separately from provider receipt evidence. Production Salesforce, outreach, payment collection and production identity remain disconnected.
 
 See `.env.example`, [provider setup and demonstration](docs/DEMO_RUNBOOK.md#phase-4-conversation-demonstration), [official API references](docs/OPENAI_PROVIDER_REFERENCES.md), [voice](docs/VOICE_AND_MESSAGING.md), [research](docs/INVESTOR_HUNTER.md), and [usage limitations](docs/USAGE_METERING.md). Migrations 006–008 are additive; `data/phase4-before.sqlite` preserves the pre-change data. Keep configured secrets only in ignored `.env.local`; restart the web app and worker after changing configuration.
 
 ### Live connection follow-up
 
 The configured OpenAI project now passes authentication, live Responses tool execution and persisted conversation-memory checks. Realtime session credential setup also passed; microphone/audio, interruption and live voice tools still need a device walkthrough. External research remains off. See [live provider verification](docs/LIVE_PROVIDER_CHECK.md). Restart the launcher after changing `.env.local` so both app and worker load the configuration.
+
+Employee messaging setup: [Slack and Twilio guide](docs/MESSAGING_SETUP.md). Read-only account probes: `npm run channels:check`. Isolated signed-event verification: `npm run test:messaging`.

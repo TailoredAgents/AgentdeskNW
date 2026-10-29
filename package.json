@@ -1,5 +1,5 @@
 {
-  "name": "agentdesk",
+  "name": "agentdesk-nw",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -11,14 +11,21 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:smoke": "node scripts/smoke-runner.mjs",
-    "worker": "node --env-file=.env.local --import tsx scripts/worker.ts"
+    "worker": "node --env-file=.env.local --import tsx scripts/worker.ts",
+    "start:render": "node scripts/run.mjs render",
+    "demo:prepare": "node --import tsx scripts/prepare-demo.ts",
+    "test:hosted": "node scripts/hosted-smoke.mjs",
+    "channels:check": "node --import tsx scripts/check-messaging.ts",
+    "test:messaging": "node --import tsx scripts/messaging-smoke.ts"
   },
   "dependencies": {
+    "@slack/socket-mode": "3.1.0",
     "better-sqlite3": "11.10.0",
     "lucide-react": "1.64.0",
     "next": "16.4.3",
     "react": "19.3.1",
     "react-dom": "19.3.1",
+    "twilio": "6.2.0",
     "ws": "8.22.0",
     "zod": "4.6.7"
   },

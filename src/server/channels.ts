@@ -1,3 +1,4 @@
+import { channelConfigured } from './messaging-config';
 import { hasFeature,requireFeature } from './billing';
 import { usageBalances } from './metering';
 import { createHmac, timingSafeEqual } from 'node:crypto';
@@ -6,7 +7,7 @@ import type { Actor } from '../lib/contracts';
 import { AppError, assertActor, audit, getDb, requireRole } from './db';
 import { actorForMember } from './services';
 
-/** Foundation only. No HTTP ingress or Slack send adapter is enabled. See official Slack signing docs. */
+/** Verify the exact signed body before accepting Slack HTTP events. */
 export function verifySlackSignature(rawBody:string,timestamp:string,signature:string,secret=process.env.SLACK_SIGNING_SECRET,currentTime=Date.now()):boolean {
  if(!secret||!/^\d{10}$/.test(timestamp)||!/^v0=[a-f0-9]{64}$/.test(signature)||Buffer.byteLength(rawBody)>1_000_000)return false;
  if(Math.abs(currentTime/1000-Number(timestamp))>300)return false;
@@ -32,11 +33,11 @@ export function resolveDemoSlackRequest(input:{rawBody:string;timestamp:string;s
 }
 export function getSmsEntitlement(actor:Actor) {
  assertActor(actor);const balance=usageBalances(actor).find(item=>item.category==='sms_segments')!;
- return {enabled:hasFeature(actor,'sms'),monthlyLimit:balance.included??0,used:balance.consumed,remaining:balance.remaining??0,providerConfigured:false,source:'Employee subscription allowance; combined incoming/outgoing segments. No SMS has been sent.'};
+ return {enabled:hasFeature(actor,'sms'),monthlyLimit:balance.included??0,used:balance.consumed,remaining:balance.remaining??0,providerConfigured:channelConfigured('sms'),source:'Employee subscription allowance; combined incoming/outgoing segments. Investor package delivery remains copy-only.'};
 }
 export function requestSmsDelivery(actor:Actor) {
  if(!hasFeature(actor,'sms'))throw new AppError(402,'SMS requires a separately enabled paid add-on and available allowance.');
  requireFeature(actor,'sms');const entitlement=getSmsEntitlement(actor);
  if(!entitlement.enabled||!entitlement.remaining)throw new AppError(402,'SMS requires a separately enabled paid add-on and available allowance.');
- throw new AppError(503,'SMS delivery is not configured. Prepare a reviewed copy-only draft in AgentDesk.');
+ throw new AppError(503,'Investor SMS delivery is not configured. Prepare a reviewed copy-only draft in AgentDesk.');
 }

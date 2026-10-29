@@ -1756,11 +1756,11 @@ export function PackagesPanel({
                   <option value="personal_text">Personal text · copy</option>
                   <option value="imessage">iMessage · copy</option>
                   <option value="sms">SMS format · copy only</option>
-                  <option value="slack">Slack format · unconfigured</option>
+                  <option value="slack">Slack format · copy only</option>
                 </select>
               </label>
               <p className="subtle-note">
-                Local demo templates. Slack is unconfigured; connected SMS is a planned paid add-on.
+                Local demo templates for reviewed investor outreach. Employee Slack and SMS conversations are managed in Settings.
               </p>
               <button className="button primary full-width" disabled={busy || !investorId || !releaseId}>
                 {busy ? (
