@@ -1,3 +1,4 @@
+import type { BillingState,SubscriptionRecord } from '../src/lib/billing-contracts';
 import assert from 'node:assert/strict';
 import type { Bootstrap,ResearchJob,ProposedAction,NoteSummary,Conversation,Task } from '../src/lib/contracts';
 import type { PhaseTwoState,PropertyRelease,DealPackage,Debrief,DebriefProposal,InvestorIntelligence,CallBriefing } from '../src/lib/intelligence-contracts';
@@ -12,6 +13,27 @@ async function request<T>(path:string,method='GET',value?:unknown,expected=200):
 const start=await request<Bootstrap>('bootstrap');assert.equal(start.specialists.length,16);assert.equal(start.integrations.crm,'demo');
 const badOrigin=await fetch(`${base}/api/tasks`,{method:'POST',headers:{Cookie:cookie,Origin:'https://untrusted.example','X-AgentDesk-Request':'1','Content-Type':'application/json'},body:JSON.stringify({title:'Must not be created'})});assert.equal(badOrigin.status,403);checks++;
 const badCsrf=await fetch(`${base}/api/tasks`,{method:'POST',headers:{Cookie:cookie,'Content-Type':'application/json'},body:JSON.stringify({title:'Must not be created'})});assert.equal(badCsrf.status,403);checks++;
+// Phase 3: use the real authenticated API, with no test-only entitlement bypass.
+let billing=await request<BillingState>('billing');assert.equal(billing.quote.personalCents,4900);assert.equal(billing.access.filter(a=>a.allowed).length,4);
+const unauth=await fetch(`${base}/api/billing`);assert.equal(unauth.status,401);checks++;
+await request('billing/admin','GET',undefined,403);
+await request('billing/trial','POST',{userId:start.actor.id,features:['investor-hunter']},403);
+const researchInput={address:'123 Example Street',county:'Cobb',price:235000,strategy:'Fix & flip',limit:25};
+await request('research','POST',researchInput,402);
+const denied=await request<{conversation:Conversation}>('chat','POST',{message:'Find me 100 new investors for this property.'});assert(denied.conversation.messages.at(-1)!.artifacts.some(a=>a.type==='marketplace'));
+const activated=await request<SubscriptionRecord>('billing/subscription','POST',{selection:{planId:'core',addons:['investor-hunter','deal-marketing']},expectedVersion:billing.subscription.version,eventKey:'smoke-activate',timing:'now'});
+billing=await request<BillingState>('billing');assert.equal(billing.quote.personalCents,14700);
+const revokedJob=await request<ResearchJob>('research','POST',researchInput,201);
+await request('billing/subscription','POST',{selection:{planId:'core',addons:[]},expectedVersion:activated.version,eventKey:'smoke-remove',timing:'now'});
+await request('research','POST',researchInput,402);
+await request(`research/${revokedJob.id}`); // Existing work remains readable.
+const originalCookie=cookie;
+await request('session','POST',{role:'manager'});
+const adminBootstrap=await request<Bootstrap>('bootstrap');
+for(const [userId,role] of [[start.actor.id,start.actor.role],['user-taylor','manager']] as const){
+ await request('billing/trial','POST',{userId,features:adminBootstrap.specialists.filter(s=>s.status!=='planned'&&s.roles.includes(role)).map(s=>s.id),days:90,allowances:{research_credits:100}});
+}
+cookie=originalCookie;
 await request('research','POST',{address:'too short',county:'Cobb',price:-1,strategy:'Fix & flip',limit:1000},400);
 const conversation=await request<Conversation>('conversations','POST',{title:'Smoke: workflow continuity'},201);
 if(!start.integrations.openai){const chat=await request<{conversation:Conversation}>('chat','POST',{conversationId:conversation.id,message:'What should I focus on today?'});assert.equal(chat.conversation.messages.length,2);assert.match(chat.conversation.messages[1].content,/open task/);}
@@ -73,4 +95,4 @@ await request('research','POST',{address:'123 Example Street',county:'Cobb',pric
 await request(`conversations/${conversation.id}`,'GET',undefined,404);
 cookie=ownCookie;
 assert.equal((await request<Conversation>(`conversations/${conversation.id}`)).id,conversation.id);
-console.info(`PASS: ${checks} HTTP checks. Research and approvals; recap → reviewed criteria → multiple buy boxes; calling and briefing; release replay/versioning; disclosure/media-gated package review/handoff; withdrawal scrubbing; role boundaries, request protection, CSV, and voice configuration.`);
+console.info(`PASS: ${checks} HTTP checks. Billing authentication, $147 pricing, direct entitlement denial, assistant upgrade link, removal/history preservation, secured trials; research and approvals; recap → reviewed criteria → multiple buy boxes; calling and briefing; release replay/versioning; disclosure/media-gated package review/handoff; withdrawal scrubbing; role boundaries, request protection, CSV, and voice configuration.`);

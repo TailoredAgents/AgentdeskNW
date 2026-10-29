@@ -1,3 +1,4 @@
+import { hasFeature } from './billing';
 import { NextRequest,NextResponse } from 'next/server';
 import { z } from 'zod';
 import type { Actor } from '@/lib/contracts';
@@ -16,7 +17,7 @@ const list=z.array(z.string().min(1).max(150)).max(100);
 export function getPhaseTwoState(actor:Actor):PhaseTwoState{
   assertActor(actor);
   const members=getDb().prepare('SELECT u.id,u.name,m.role FROM memberships m JOIN users u ON u.id=m.user_id WHERE m.organization_id=? AND m.office_id=? ORDER BY u.name').all(actor.organizationId,actor.officeId) as PhaseTwoState['members'];
-  return {intelligence:intelligence.listInvestorIntelligence(actor),releases:workflows.listReleases(actor),callingQueue:intelligence.getCallingQueue(actor),packages:workflows.listPackages(actor),debriefs:debrief.listDebriefs(actor),templates:workflows.listTemplates(actor),members,policy:intelligence.getDisclosurePolicy(actor),capabilities:{slack:'unconfigured',sms:'paid_addon_planned',delivery:'copy_only'}};
+  return {intelligence:intelligence.listInvestorIntelligence(actor),releases:workflows.listReleases(actor),callingQueue:hasFeature(actor,'daily-coordinator')?intelligence.getCallingQueue(actor):[],packages:workflows.listPackages(actor),debriefs:debrief.listDebriefs(actor),templates:workflows.listTemplates(actor),members,policy:intelligence.getDisclosurePolicy(actor),capabilities:{slack:'unconfigured',sms:'paid_addon_planned',delivery:'copy_only'}};
 }
 
 /** Shares the authenticated route's CSRF, rate limits, body bound and error handling. */

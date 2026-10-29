@@ -1,4 +1,46 @@
-# Monday demonstration runbook — Phase 2
+# Monday demonstration runbook — Phase 3
+
+All accounts, subscriptions and activity below are local fictional demonstrations. No New Western payment, investor message or external account change occurs.
+
+## Start
+
+1. Double-click `Start AgentDesk.command` in the project folder, or run `npm run start` after `npm run build`.
+2. Open `http://127.0.0.1:3000`. The existing worker starts with the app. Use Settings to select **Alex Morgan / Dispositions** if needed.
+3. Preserve `data/agentdesk.sqlite`. Backups `data/phase1-checkpoint.sqlite` and `data/phase2-checkpoint.sqlite` are recovery copies, not files to restore during setup. Phase 2 source is checkpoint `de77fac`.
+4. Open Marketplace. If practicing repeatedly, select Core, remove personally selected add-ons, and save the simulated subscription. Do not delete research/history. Verify no trial or company sponsorship is active if demonstrating the exact personal prices below.
+
+## Twelve-step subscription story
+
+1. Open **AI Employee Marketplace** and show the **$49 Core** foundation, its four employees and included allowances.
+2. Browse role filters and cards. Explain **local/demo**, **active**, **included** and **in development** separately.
+3. Click **Add to plan** on Investor Hunter. The quote becomes **$128**.
+4. Add Deal Marketing. The quote becomes **$147**. Save the simulated subscription; the sidebar increases from four to six capabilities.
+5. Open **My AI Workforce** to show both selected premium capabilities. All return to the same Copilot/workflows.
+6. In Copilot, say “Find 25 new investors for 123 Example Street.” This uses the one research credit, runs the synthetic worker and returns at most 12 fictional candidates. Do not promise 25 verified contacts. A second run requires a new-period allowance or demo credit grant.
+7. Return to Marketplace, remove Investor Hunter and save. The personal total becomes **$68**, with Deal Marketing still selected.
+8. In the same Copilot, say “Find me 100 new investors for this property.” It explains the upgrade and provides **Review AI Employee Marketplace**. Existing research remains readable in Investor Hunter/Work queue.
+9. Open **Usage & billing**. Explain consumed/reserved/remaining balances and simulated invoices. An old $49 period-start invoice is not a new $147 charge: immediate changes update the future monthly rate without simulated proration.
+10. In Marketplace choose **Dispositions Complete**: **$179**, with no separate charge for included Hunter or Deal Marketing. Investment Deal Analyst still says **In development**.
+11. Optionally save a next-period downgrade or cancellation and show its pending status and simulated renewal date.
+12. Finish with the desired demo selection, or return Alex to Core only. No money was collected.
+
+## Organization story
+
+In Settings choose **Taylor Reed / Manager**, then **Usage & billing**. Taylor is the explicitly assigned local billing administrator. Expand Dispositions in the organization policy area, sponsor Core and save. Return to Alex: his selected Hunter + Deal Marketing configuration shows **$98 personal + $49 company**. Revert sponsorship after the demonstration unless intentionally keeping that fixture.
+
+Taylor can grant one or multiple selected specialists for the configurable 14-day trial, grant extra research credits, simulate usage success/failure/cancellation, and simulate payment failure/recovery or advance renewal for a selected organization employee. A new trial grant replaces the prior trial; expiration never silently buys add-ons. Do not confuse this local role switch with production identity/security.
+
+## Replaying the Phase 2 workflow
+
+Core can still extract recaps, propose reviewed CRM changes and create reminders. To demonstrate the full older workflow, grant or activate Buyer Matchmaker, Investor Relationship and Deal Marketing for Alex, and Acquisition-to-Disposition for Jordan/Taylor. Hunter also needs available credits. No live provider is required. The detailed Phase 2 walkthrough below remains applicable after that access preparation.
+
+## Verification
+
+`npm run test:smoke` creates a disposable database and local server. Do not set `SMOKE_BASE_URL` unless intentionally testing and mutating that target. The Phase 3 suite activates/grants access through authenticated billing APIs; it has no runtime test bypass. See PROGRESS for the final recorded counts and browser evidence.
+
+---
+
+# Phase 2 workflow demonstration (preserved)
 
 **Meeting target:** Monday, November 2, 2026, prospective New Western Georgia office pilot.
 

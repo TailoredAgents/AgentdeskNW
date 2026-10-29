@@ -1,3 +1,5 @@
+import { billingRoute } from '@/server/billing-api';
+import { EntitlementError } from '@/server/billing';
 import { NextRequest,NextResponse } from 'next/server';
 import { z } from 'zod';
 import * as service from '@/server/services';
@@ -35,6 +37,7 @@ async function route(request:NextRequest,{params}:{params:Promise<{path:string[]
       await service.tickJobs(actor);
       const response=json(service.getBootstrap(actor));if(newSession)setSession(response,actor.role);return response;
     }
+    const billing=await billingRoute(request,actor,path,()=>body(request));if(billing)return billing;
     const phaseTwo=await phaseTwoRoute(request,actor,path,()=>body(request));if(phaseTwo)return phaseTwo;
     if(resource==='chat'&&method==='POST'){
       const input=z.object({conversationId:idSchema.optional(),message:z.string().trim().min(1).max(12000)}).strict().parse(await body(request));
@@ -87,6 +90,7 @@ async function route(request:NextRequest,{params}:{params:Promise<{path:string[]
     throw new service.AppError(404,'This endpoint is not available.');
   }catch(error){
     if(error instanceof z.ZodError)return json({error:error.issues.map(x=>`${x.path.join('.')||'Input'}: ${x.message}`).slice(0,4).join('; ')},400);
+    if(error instanceof EntitlementError)return json({error:error.message,featureId:error.featureId,upgrade:'marketplace'},error.status);
     if(error instanceof service.AppError)return json({error:error.message},error.status);
     console.error(JSON.stringify({event:'request_failed',errorType:error instanceof Error?error.name:'unknown'}));return json({error:'The operation could not be completed. Please try again.'},500);
   }

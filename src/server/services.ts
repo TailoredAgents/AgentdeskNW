@@ -2,6 +2,8 @@ import { z } from 'zod';
 import type { Actor, Artifact, Bootstrap, Conversation, Investor, Message, NoteSummary, Notification, ProposedAction, ResearchInput, ResearchJob, Role, Settings, Task } from '../lib/contracts';
 import { AppError, assertActor, audit, getDb, insertRecord, newId, now, requireRole, scopedGet, scopedRows, updateRecord } from './db';
 import { specialists } from './registry';
+import { hasFeature,requireFeature } from './billing';
+import { reserveUsage,releaseUsage,settleUsage,recordMeter,researchCredits } from './metering';
 import { researchInputSchema, syntheticResearchProvider } from './research';
 import { classifyAuthorizedDuplicate, readInvestor, readInvestorRow, readInvestors, readProperty, readProperties, writableInvestor } from './access';
 import { addRelationshipEvent, applyBuyBoxApproval, listBuyBoxes, matchProperty, syncPrimaryBuyBox } from './intelligence';
@@ -74,7 +76,7 @@ export function processNotifications(actor:Actor) {
   const release=JSON.parse(row.data) as {status:string;version:number;authorizedUserIds:string[];property:{address:string;id:string}};
   const key=`release:${row.id}:${release.version}`;
   if(release.status!=='released'||!release.authorizedUserIds.includes(actor.id)||getDb().prepare('SELECT 1 FROM notifications WHERE organization_id=? AND office_id=? AND owner_id=? AND dedupe_key=?').get(actor.organizationId,actor.officeId,actor.id,key))continue;
-  const matches=matchProperty(actor,release.property.id);notify(actor,key,'Demo property release',`${release.property.address}: ${matches.filter(match=>match.score>0).length} matches among your permitted investors. Review fit and disclosure before preparing details.`,'properties');
+  const matches=hasFeature(actor,'buyer-matchmaker')?matchProperty(actor,release.property.id):[];notify(actor,key,'Demo property release',`${release.property.address}: ${matches.filter(match=>match.score>0).length} matches among your permitted investors. Review fit and disclosure before preparing details.`,'properties');
  }
  for(const row of getDb().prepare("SELECT data FROM deal_packages WHERE organization_id=? AND office_id=? AND owner_id=? AND json_extract(data,'$.status')='draft'").all(actor.organizationId,actor.officeId,actor.id) as {data:string}[]){
   const item=JSON.parse(row.data) as {id:string;investorId:string;releaseId:string};
@@ -93,6 +95,7 @@ export function readNotification(actor:Actor,id:string) {
 }
 
 export function createConversation(actor:Actor,title='New conversation'):Conversation {
+ requireFeature(actor,'core');
  assertActor(actor);
  const conversation:Conversation={id:newId('conversation'),title:titleSchema.parse(title),createdAt:now(),updatedAt:now(),messages:[]};
  insertRecord(actor,'conversations',conversation); audit(actor,'conversation.created',conversation.id); return conversation;
@@ -106,7 +109,7 @@ export function getConversation(actor:Actor,id:string):Conversation {
 export function listConversations(actor:Actor):Conversation[] {
  return scopedRows<Conversation>(actor,'conversations',true).slice(0,50).map(item=>getConversation(actor,item.id)).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt));
 }
-const messageSchema=z.object({role:z.enum(['user','assistant']),content:z.string().trim().min(1).max(50000),specialistIds:z.array(z.string().max(100)).max(16).optional(),artifacts:z.array(z.object({type:z.enum(['job','approval','notes','task','investors','guidance','package','debrief','release','calling_queue','briefing']),id:z.string().max(150).optional(),title:z.string().max(300),data:z.unknown().optional()})).max(20).optional()}).strict();
+const messageSchema=z.object({role:z.enum(['user','assistant']),content:z.string().trim().min(1).max(50000),specialistIds:z.array(z.string().max(100)).max(16).optional(),artifacts:z.array(z.object({type:z.enum(['job','approval','notes','task','investors','guidance','package','debrief','release','calling_queue','briefing','marketplace']),id:z.string().max(150).optional(),title:z.string().max(300),data:z.unknown().optional()})).max(20).optional()}).strict();
 export function addMessage(actor:Actor,conversationId:string,input:{role:'user'|'assistant';content:string;specialistIds?:string[];artifacts?:Artifact[]},context?:{investors:{id:string}[];properties:{id:string}[]}):Message {
  const parsed=messageSchema.parse(input);
  return getDb().transaction(()=>{
@@ -122,12 +125,12 @@ export function addMessage(actor:Actor,conversationId:string,input:{role:'user'|
 }
 
 export function createResearchJob(actor:Actor,input:ResearchInput):ResearchJob {
- requireRole(actor,researchRoles); const parsed=researchInputSchema.parse(input);
+ requireRole(actor,researchRoles); requireFeature(actor,'investor-hunter'); const parsed=researchInputSchema.parse(input);
  const active=listJobs(actor).filter(job=>job.ownerId===actor.id&&(job.status==='queued'||job.status==='running'));
  if(active.length>=5)throw new AppError(429,'Finish or cancel an active research job before starting another.');
  const missing=!parsed.county||!parsed.price||!parsed.strategy;
  const job:ResearchJob={id:newId('research'),input:parsed,status:missing?'awaiting_input':'queued',progress:0,stage:missing?'Add county, price and investment strategy to continue.':'Waiting for the local research worker',provider:syntheticResearchProvider.id,prospects:[],error:null,createdAt:now(),updatedAt:now(),ownerId:actor.id,attempt:0};
- insertRecord(actor,'research_jobs',job); audit(actor,'research.queued',job.id,{provider:job.provider,target:parsed.limit}); return job;
+ return getDb().transaction(()=>{if(!missing)reserveUsage(actor,{category:'research_credits',operationId:job.id,quantity:researchCredits(actor,parsed.limit),source:'Synthetic research target reservation'});insertRecord(actor,'research_jobs',job); audit(actor,'research.queued',job.id,{provider:job.provider,target:parsed.limit});return job;}).immediate();
 }
 export function getResearchJob(actor:Actor,id:string) { return refreshDuplicateStatus(actor,scopedGet<ResearchJob>(actor,'research_jobs',idSchema.parse(id))); }
 export function cancelJob(actor:Actor,id:string):ResearchJob {
@@ -135,13 +138,14 @@ export function cancelJob(actor:Actor,id:string):ResearchJob {
  if(job.status==='canceled')return job;
  if(job.status==='completed'||job.status==='failed')throw new AppError(409,'Only queued, running or awaiting-input jobs can be canceled.');
  const value=updateRecord(actor,'research_jobs',{...job,status:'canceled' as const,stage:'Canceled by employee',updatedAt:now()});
- audit(actor,'research.canceled',id);return value;
+ releaseUsage(actorForMember(actor.organizationId,actor.officeId,job.ownerId),'research_credits',id);audit(actor,'research.canceled',id);return value;
 }
 export function retryJob(actor:Actor,id:string,input?:ResearchInput):ResearchJob {
- requireRole(actor,researchRoles); const job=getResearchJob(actor,id);
+ requireRole(actor,researchRoles);requireFeature(actor,'investor-hunter'); const job=getResearchJob(actor,id);
  if(!['failed','canceled','awaiting_input'].includes(job.status))throw new AppError(409,'Only failed, canceled or awaiting-input jobs can be retried.');
  const parsed=input?researchInputSchema.parse(input):job.input;
  if(!parsed.county||!parsed.price||!parsed.strategy)throw new AppError(422,'Provide county, price and strategy before resuming research.');
+ const owner=actorForMember(actor.organizationId,actor.officeId,job.ownerId);reserveUsage(owner,{category:'research_credits',operationId:job.id,quantity:researchCredits(owner,parsed.limit),source:'Synthetic research target reservation'});
  const value=updateRecord(actor,'research_jobs',{...job,input:parsed,status:'queued' as const,progress:0,stage:'Queued for retry',error:null,prospects:[],updatedAt:now()});
  getDb().prepare('UPDATE research_jobs SET lease_until=NULL,next_attempt_at=NULL WHERE id=?').run(id);
  audit(actor,'research.retried',id);return value;
@@ -165,7 +169,7 @@ export function processQueuedJobs(actor?:Actor):number {
    if(!claim.changes)return;
    const job=getResearchJob(owner,row.id);
    try{
-    requireRole(owner,researchRoles);
+    requireRole(owner,researchRoles);requireFeature(owner,'investor-hunter');reserveUsage(owner,{category:'research_credits',operationId:job.id,quantity:researchCredits(owner,job.input.limit),source:'Synthetic research target reservation'});
     let next:ResearchJob;
     if(job.status==='queued')next={...job,status:'running',progress:20,stage:'Analyzing supplied property criteria · synthetic dataset',attempt:job.attempt+1,updatedAt:now()};
     else if(job.progress<50)next={...job,progress:50,stage:'Scoring fictional buying-activity evidence',updatedAt:now()};
@@ -173,13 +177,13 @@ export function processQueuedJobs(actor?:Actor):number {
     else{
      const prospects=syntheticResearchProvider.discover(job.input).map(prospect=>({...prospect,...classifyAuthorizedDuplicate(owner,prospect)}));
      next={...job,status:'completed',progress:100,stage:`Completed: ${prospects.length} synthetic candidates (${prospects.filter(item=>item.duplicateStatus==='net_new').length} eligible as new after privacy-preserving CRM duplicate checks). Dataset contains 12 candidates.`,prospects,updatedAt:now()};
-     recordUsage(owner,'research_jobs',1);audit(owner,'research.completed',job.id,{count:prospects.length,synthetic:true});
+     settleUsage(owner,'research_credits',job.id);recordMeter(owner,{category:'research_jobs',operationId:job.id,quantity:1,source:'Completed synthetic research; provider cost unknown'});recordUsage(owner,'research_jobs',1);audit(owner,'research.completed',job.id,{count:prospects.length,synthetic:true});
     }
     updateRecord(owner,'research_jobs',next);
     getDb().prepare('UPDATE research_jobs SET lease_until=NULL,next_attempt_at=? WHERE id=?').run(new Date(Date.now()+1000).toISOString(),job.id);
     processed++;
    }catch(error){
-    const failure=error instanceof AppError?error.message:'The research provider failed. Retry this job; no CRM changes occurred.';
+    releaseUsage(owner,'research_credits',job.id);const failure=error instanceof AppError?error.message:'The research provider failed. Retry this job; no CRM changes occurred.';
     updateRecord(owner,'research_jobs',{...job,status:'failed',error:failure,stage:'Research failed',updatedAt:now()});
     getDb().prepare('UPDATE research_jobs SET lease_until=NULL WHERE id=?').run(job.id);audit(owner,'research.failed',job.id);
    }
@@ -191,15 +195,18 @@ export function processQueuedJobs(actor?:Actor):number {
 export const tickJobs=processQueuedJobs;
 
 export function summarizeNotes(actor:Actor,transcript:string):NoteSummary {
+ requireFeature(actor,'call-notetaker');
  assertActor(actor); const result=extractNotes(transcript); recordUsage(actor,'transcript_characters',transcript.length); audit(actor,'notes.extracted',null,{characters:transcript.length,mode:result.mode});return result;
 }
 const noteSummarySchema=z.object({proposedNote:z.string().trim().min(1).max(15000),summary:z.string().max(2000),source:z.literal('employee_transcript'),mode:z.enum(['local_extraction','model']),sourceExcerpts:z.array(z.string().max(10000)).max(30)}).passthrough();
 export function proposeNote(actor:Actor,investorId:string,summary:NoteSummary):ProposedAction {
+ requireFeature(actor,'salesforce-assistant');
  const investor=writableInvestor(actor,investorId); const parsed=noteSummarySchema.parse(summary);
  const action:ProposedAction={id:newId('action'),kind:'crm_note',title:`Add reviewed call note to ${investor.name}`,status:'pending',payload:{investorId:investor.id,note:parsed.proposedNote,source:parsed.source,sourceExcerpts:parsed.sourceExcerpts,synthetic:investor.synthetic},createdAt:now(),executedAt:null,ownerId:actor.id,error:null};
  insertRecord(actor,'proposed_actions',action);audit(actor,'approval.proposed',action.id,{kind:action.kind});return action;
 }
 export function proposeImport(actor:Actor,jobId:string,prospectIds:string[]):ProposedAction {
+ requireFeature(actor,'salesforce-assistant');
  requireRole(actor,researchRoles);
  const ids=z.array(idSchema).min(1).max(100).parse(prospectIds);
  if(new Set(ids).size!==ids.length)throw new AppError(422,'Choose each prospect only once.');
@@ -212,6 +219,7 @@ export function proposeImport(actor:Actor,jobId:string,prospectIds:string[]):Pro
 }
 const investorChangesSchema=z.object({counties:z.array(z.string().trim().min(1).max(100)).min(1).max(20).optional(),strategy:z.string().trim().min(1).max(100).optional(),budgetMin:z.number().finite().min(0).max(100000000).optional(),budgetMax:z.number().finite().min(0).max(100000000).optional(),financing:z.string().trim().min(1).max(300).optional(),rehab:z.string().trim().min(1).max(300).optional(),timeframe:z.string().trim().min(1).max(300).optional()}).strict();
 export function proposeInvestorUpdate(actor:Actor,investorId:string,changes:Record<string,unknown>):ProposedAction {
+ requireFeature(actor,'salesforce-assistant');
  const investor=writableInvestor(actor,investorId);const parsed=investorChangesSchema.parse(changes);listBuyBoxes(actor,investorId);
  if(!Object.keys(parsed).length)throw new AppError(422,'Supply at least one qualification field.');
  const merged={...investor,...parsed};if(merged.budgetMin>merged.budgetMax)throw new AppError(422,'Minimum budget cannot exceed maximum budget.');
@@ -220,6 +228,7 @@ export function proposeInvestorUpdate(actor:Actor,investorId:string,changes:Reco
 }
 /** Only the authenticated approval route calls this function. It is intentionally absent from AI tool registries. */
 export function decideAction(actor:Actor,id:string,decision:'approve'|'reject'):ProposedAction {
+ requireFeature(actor,'salesforce-assistant');
  z.enum(['approve','reject']).parse(decision);
  return getDb().transaction(()=>{
  const initial=getApproval(actor,idSchema.parse(id));
@@ -266,6 +275,7 @@ export function decideAction(actor:Actor,id:string,decision:'approve'|'reject'):
 
 const taskSchema=z.object({title:titleSchema,dueAt:z.string().datetime({offset:true}).nullable().optional(),investorId:idSchema.nullable().optional()}).strict();
 export function createTask(actor:Actor,input:{title:string;dueAt?:string|null;investorId?:string|null}):Task {
+ requireFeature(actor,'daily-coordinator');
  assertActor(actor);const parsed=taskSchema.parse(input);
  if(parsed.investorId){const investorRow=readInvestorRow(actor,parsed.investorId);if(investorRow.office_id!==actor.officeId)throw new AppError(403,'A linked task must use an investor in your office.');}
  const task:Task={id:newId('task'),title:parsed.title,dueAt:parsed.dueAt?new Date(parsed.dueAt).toISOString():null,investorId:parsed.investorId??null,status:'open',ownerId:actor.id,createdAt:now()};
@@ -273,12 +283,14 @@ export function createTask(actor:Actor,input:{title:string;dueAt?:string|null;in
  audit(actor,'task.created',task.id);return task;
 }
 export function completeTask(actor:Actor,id:string):Task {
+ requireFeature(actor,'daily-coordinator');
  const task=scopedGet<Task>(actor,'tasks',idSchema.parse(id));
  if(task.status==='completed')return task;
  const completed=updateRecord(actor,'tasks',{...task,status:'completed' as const});audit(actor,'task.completed',id);return completed;
 }
 
 export function getGuidance(actor:Actor,investorId?:string) {
+ requireFeature(actor,'workflow-navigator');
  const available=investorId?[]:listInvestors(actor);
  const investor=investorId?getInvestor(actor,investorId):available.length===1?available[0]:undefined;
  if(!investor)return {investor:null,missing:['investor identity'],nextAction:'Select or add an authorized investor before preparing next-step guidance.',followingStep:'Review their qualification information.',explanation:'Investor-specific guidance needs a confirmed record.',source:'Generic demo qualification checklist; not approved New Western procedures.'};
@@ -302,6 +314,7 @@ export function getDailyBrief(actor:Actor) {
  return {tasks,overdue,pendingApprovals,activeJobs,dormantInvestors,summary:`You have ${tasks.length} open task${tasks.length===1?'':'s'}, ${overdue.length} overdue, ${pendingApprovals.length} pending approval${pendingApprovals.length===1?'':'s'} and ${activeJobs.length} active research job${activeJobs.length===1?'':'s'}.`};
 }
 export function getManagementOverview(actor:Actor) {
+ requireFeature(actor,'team-performance');
  requireRole(actor,['manager']);
  const brief=getDailyBrief(actor);
  const usage=getDb().prepare('SELECT kind,SUM(quantity) AS quantity FROM usage_events WHERE organization_id=? AND office_id=? GROUP BY kind').all(actor.organizationId,actor.officeId) as {kind:string;quantity:number}[];

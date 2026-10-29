@@ -1,3 +1,5 @@
+import { hasFeature,requireFeature } from './billing';
+import { usageBalances } from './metering';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { z } from 'zod';
 import type { Actor } from '../lib/contracts';
@@ -29,14 +31,12 @@ export function resolveDemoSlackRequest(input:{rawBody:string;timestamp:string;s
  return actorForMember(link.organization_id,link.office_id,link.user_id);
 }
 export function getSmsEntitlement(actor:Actor) {
- assertActor(actor);const row=getDb().prepare('SELECT settings FROM organizations WHERE id=?').get(actor.organizationId) as {settings:string};const settings=JSON.parse(row.settings) as {smsAddonEnabled?:boolean;smsMonthlyLimit?:number};
- const month=new Date();month.setUTCDate(1);month.setUTCHours(0,0,0,0);
- const used=(getDb().prepare("SELECT COALESCE(SUM(quantity),0) AS used FROM usage_events WHERE organization_id=? AND kind='sms_provider_segments' AND created_at>=?").get(actor.organizationId,month.toISOString()) as {used:number}).used;
- const limit=Number.isFinite(settings.smsMonthlyLimit)?Math.max(0,settings.smsMonthlyLimit!):0;
- return {enabled:settings.smsAddonEnabled===true,monthlyLimit:limit,used,remaining:Math.max(0,limit-used),providerConfigured:false,source:'Local entitlement foundation; no billable SMS has been sent.'};
+ assertActor(actor);const balance=usageBalances(actor).find(item=>item.category==='sms_segments')!;
+ return {enabled:hasFeature(actor,'sms'),monthlyLimit:balance.included??0,used:balance.consumed,remaining:balance.remaining??0,providerConfigured:false,source:'Employee subscription allowance; combined incoming/outgoing segments. No SMS has been sent.'};
 }
 export function requestSmsDelivery(actor:Actor) {
- const entitlement=getSmsEntitlement(actor);
+ if(!hasFeature(actor,'sms'))throw new AppError(402,'SMS requires a separately enabled paid add-on and available allowance.');
+ requireFeature(actor,'sms');const entitlement=getSmsEntitlement(actor);
  if(!entitlement.enabled||!entitlement.remaining)throw new AppError(402,'SMS requires a separately enabled paid add-on and available allowance.');
  throw new AppError(503,'SMS delivery is not configured. Prepare a reviewed copy-only draft in AgentDesk.');
 }

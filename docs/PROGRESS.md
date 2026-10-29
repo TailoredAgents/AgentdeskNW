@@ -1,4 +1,21 @@
-# Development progress
+# AgentDesk progress log
+
+## October 29, 2026 — Phase 3 verified commercial simulator
+
+**Final verification:** `npm run typecheck`, `npm run lint` (zero warnings), `npm test` (**117 tests in five files**, including all 85 Phase 2 regressions), `npm run build`, `npm run test:smoke` (**93 HTTP checks**) and `git diff --check` passed. The isolated smoke runner uses a disposable database, authenticates billing changes through the real API, and leaves the meeting database unchanged. No dependencies changed and no fresh dependency-audit claim is made.
+
+**Delivered:** role-filtered AI Employee Marketplace; live quote and configurable catalog/price snapshots; five plans, twelve specialist add-ons and optional SMS; My AI Workforce; personal/company totals; required/sponsored/restricted policies; explicit billing admins and organization seats; selected 14-day configurable trials; immediate/scheduled subscription changes; cancellation, failure/recovery and renewal simulation; simulated invoices/events; usage reservations, settlement, release, period credits and idempotency. Core remains useful independently. Premium API/tool/voice execution and each research-worker stage use service-side entitlement checks. Saved work remains accessible under normal permissions after removal.
+
+**Browser walkthrough:** default $49 Core; Hunter + Deal Marketing saved at $147; workforce count changed from four to six; Dispositions Complete quoted $179 with redundant add-ons removed; Hunter removal saved $68 and Copilot returned a usable marketplace link; company Core sponsorship changed Alex's $68 to $19 personal + $49 company and was then reverted. Desktop and 390×844 mobile layouts were inspected; mobile had no horizontal overflow. Browser warning/error capture was empty. Evidence is saved in `docs/screenshots/phase3-*.png`.
+
+**Data and demo preparation:** additive migration 005; Phase 2 source checkpoint `de77fac`; ignored pre-migration database backup `data/phase2-checkpoint.sqlite`. A read-only comparison found zero missing prior IDs across investors (6), properties (3), tasks (4), research jobs (1), conversations (2), proposed actions (5), releases (1), packages (2) and debriefs (1). Browser QA added two conversations and simulated billing events without deleting earlier work. Alex is left on Core only at $49, with no sponsored capabilities or active trial; Jordan/Taylor/Robin also have default Core. The prior research, reviewed CRM changes and package examples remain. The retained database is local and ignored by Git. A consistent completed-data backup is saved as `data/phase3-checkpoint.sqlite`.
+
+**Disconnected:** Stripe payment collection/webhooks, live OpenAI text and Realtime voice, external research/data providers, production Salesforce, live Slack and Twilio. No real money, investor communication, New Western account modification or deployment occurred. Four specialists remain in development regardless of simulated selection. Voice elapsed estimates/provider receipt reconciliation, missing text usage reconciliation, real checkout and signed webhook handling, taxes/proration/refunds and production identity remain future integration work. See the billing architecture and usage documents for exact limits.
+
+**Documentation:** added PRICING_AND_PACKAGES, BILLING_ARCHITECTURE, AI_EMPLOYEE_MARKETPLACE and USAGE_METERING; updated README, DEMO_RUNBOOK and AGENTS subscription rules. The Phase 3 source checkpoint is the commit containing this entry, with subject `Implement Phase 3 AI workforce marketplace and billing simulator`; its exact hash is reported in the delivery response.
+
+---
+
 
 ## October 29, 2026 — Phase 2 verified local milestone
 

@@ -1,3 +1,4 @@
+import { grantLegacyTestWorkforce } from './fixtures';
 import { beforeEach,afterEach,describe,expect,it,vi } from 'vitest';
 import { NextRequest,NextResponse } from 'next/server';
 import { mkdtempSync,rmSync } from 'node:fs';
@@ -11,7 +12,7 @@ import { createVoiceSession,executeVoiceTool,saveVoiceTranscript,endVoiceSession
 import { listDebriefs } from '../src/server/debrief';
 import { getInvestorIntelligence } from '../src/server/intelligence';
 
-beforeEach(()=>{closeDb();process.env.AGENTDESK_DB_PATH=':memory:';delete process.env.OPENAI_API_KEY;process.env.AGENTDESK_DEMO='true';process.env.AGENTDESK_ALLOW_PRODUCTION_DEMO='true';});
+beforeEach(()=>{closeDb();process.env.AGENTDESK_DB_PATH=':memory:';delete process.env.OPENAI_API_KEY;process.env.AGENTDESK_DEMO='true';process.env.AGENTDESK_ALLOW_PRODUCTION_DEMO='true';grantLegacyTestWorkforce();});
 afterEach(()=>{closeDb();vi.unstubAllGlobals();});
 describe('manager and tools',()=>{
  it('registers strict tool schemas without any approval or external send tool',()=>{
@@ -37,7 +38,7 @@ describe('manager and tools',()=>{
  });
  it('recovers conversations and queued work after closing and reopening the database',async()=>{
    const directory=mkdtempSync(join(tmpdir(),'agentdesk-persistence-'));closeDb();process.env.AGENTDESK_DB_PATH=join(directory,'workspace.sqlite');
-   try{const actor=services.demoActor();const conversation=services.createConversation(actor,'Durability check');services.addMessage(actor,conversation.id,{role:'user',content:'Resume this work after restart.'});const job=services.createResearchJob(actor,{address:'123 Example Street',county:'Cobb',price:235000,strategy:'Fix & flip',limit:10});closeDb();expect(services.getConversation(actor,conversation.id).messages[0].content).toContain('after restart');expect(services.getResearchJob(actor,job.id).status).toBe('queued');}
+   try{const actor=services.demoActor();grantLegacyTestWorkforce();const conversation=services.createConversation(actor,'Durability check');services.addMessage(actor,conversation.id,{role:'user',content:'Resume this work after restart.'});const job=services.createResearchJob(actor,{address:'123 Example Street',county:'Cobb',price:235000,strategy:'Fix & flip',limit:10});closeDb();expect(services.getConversation(actor,conversation.id).messages[0].content).toContain('after restart');expect(services.getResearchJob(actor,job.id).status).toBe('queued');}
    finally{closeDb();rmSync(directory,{recursive:true,force:true});}
  });
  it('requires declared tool names, valid parameters, and authorized roles',async()=>{

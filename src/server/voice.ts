@@ -1,3 +1,5 @@
+import { requireFeature } from './billing';
+import { reserveUsage,releaseUsage,settleUsage,usageBalances } from './metering';
 import { createHash } from 'node:crypto';
 import type { Actor, ToolResult } from '@/lib/contracts';
 import { getDb,newId,now,audit } from './db';
@@ -15,21 +17,29 @@ function voiceSession(actor:Actor,id:string,allowEnded=false):VoiceSession{
 }
 
 export async function createVoiceSession(actor:Actor,conversationId?:string){
+  requireFeature(actor,'core');
+  for(const old of getDb().prepare('SELECT id FROM voice_sessions WHERE organization_id=? AND user_id=? AND ended_at IS NULL AND started_at<?').all(actor.organizationId,actor.id,new Date(Date.now()-600000).toISOString()) as {id:string}[])endVoiceSession(actor,old.id);
   if(!process.env.OPENAI_API_KEY)throw new service.AppError(503,'Live voice needs a server-side OpenAI API key. Configure OPENAI_API_KEY and restart the app.');
   const conversation=conversationId?service.getConversation(actor,conversationId):service.createConversation(actor,'Voice conversation');
   const context=service.getBootstrap(actor);
   const instructions=`${assistantInstructions(actor)}\nSpeak naturally and briefly. Use tools for all work and status checks. Never say a task was saved until its tool succeeds. Ask permission to start new tasks when the user has not requested them. Authorized context: ${JSON.stringify({investors:context.investors,properties:context.properties,tasks:context.tasks,history:conversation.messages.slice(-12)})}`;
+  const id=newId('voice'),minutes=Math.min(10,usageBalances(actor).find(item=>item.category==='voice_minutes')?.remaining??0);
+  if(minutes<=0)throw new service.AppError(402,'Your live voice allowance is exhausted. Review Usage & billing.');
+  reserveUsage(actor,{category:'voice_minutes',operationId:id,quantity:minutes,source:'Voice connection elapsed-time estimate; provider cost unknown'});
+  try{
   const response=await fetch('https://api.openai.com/v1/realtime/client_secrets',{method:'POST',headers:{Authorization:`Bearer ${process.env.OPENAI_API_KEY}`,'Content-Type':'application/json','OpenAI-Safety-Identifier':createHash('sha256').update(`${actor.organizationId}:${actor.id}`).digest('hex')},body:JSON.stringify({expires_after:{anchor:'created_at',seconds:60},session:{type:'realtime',model:process.env.OPENAI_REALTIME_MODEL||'gpt-realtime-2.1',instructions,tools:toolDefinitions().map(tool=>({type:tool.type,name:tool.name,description:tool.description,parameters:tool.parameters})),tool_choice:'auto',audio:{input:{transcription:{model:'gpt-4o-mini-transcribe'},turn_detection:{type:'server_vad',interrupt_response:true,create_response:true}},output:{voice:'marin'}}}}),signal:AbortSignal.timeout(20_000)});
   if(!response.ok)throw new service.AppError(502,`Voice provider could not start a session (${response.status}). Check your key and Realtime model access.`);
   const data=await response.json() as {value?:string;expires_at?:number};
   if(!data.value)throw new service.AppError(502,'Voice provider returned an invalid session credential.');
-  const id=newId('voice');getDb().prepare('INSERT INTO voice_sessions VALUES(?,?,?,?,?,?,NULL)').run(id,actor.organizationId,actor.officeId,actor.id,conversation.id,now());
+  getDb().prepare('INSERT INTO voice_sessions VALUES(?,?,?,?,?,?,NULL)').run(id,actor.organizationId,actor.officeId,actor.id,conversation.id,now());
   service.addMessage(actor,conversation.id,{role:'assistant',content:'Live voice session started with your currently authorized workspace context.'},context);
   service.recordUsage(actor,'voice_sessions_started',1);audit(actor,'voice.started',id);
-  return {value:data.value,expiresAt:data.expires_at,voiceSessionId:id,conversationId:conversation.id,maxSeconds:600};
+  return {value:data.value,expiresAt:data.expires_at,voiceSessionId:id,conversationId:conversation.id,maxSeconds:Math.floor(minutes*60)};
+  }catch(error){releaseUsage(actor,'voice_minutes',id);throw error;}
 }
 
 export async function executeVoiceTool(actor:Actor,sessionId:string,callId:string,name:string,args:unknown):Promise<ToolResult>{
+  requireFeature(actor,'core');
   const session=voiceSession(actor,sessionId);
   const prior=getDb().prepare('SELECT status,result FROM voice_calls WHERE session_id=? AND call_id=?').get(sessionId,callId) as {status:string;result:string|null}|undefined;
   if(prior){if(prior.result)return {specialistIds:[],message:prior.status==='completed'?'This tool call was already completed. Open the current workflow to review its authorized state; no action was repeated.':'This tool call previously failed. No action was repeated.',artifacts:[],data:{duplicate:true,completed:prior.status==='completed'}};throw new service.AppError(409,'This voice tool call is already processing.');}
@@ -62,6 +72,8 @@ export function endVoiceSession(actor:Actor,sessionId:string){
       const update=getDb().prepare('UPDATE voice_sessions SET ended_at=? WHERE id=? AND ended_at IS NULL').run(now(),sessionId);
       if(!update.changes)return;
       const seconds=Math.min(600,Math.max(0,Math.round((Date.now()-Date.parse(session.started_at))/1000)));
+      const receipt=getDb().prepare("SELECT quantity FROM billing_usage WHERE organization_id=? AND user_id=? AND category='voice_minutes' AND operation_id=?").get(actor.organizationId,actor.id,sessionId) as {quantity:number}|undefined;
+      if(receipt)settleUsage(actor,'voice_minutes',sessionId,Math.min(receipt.quantity,seconds/60));
       service.recordUsage(actor,'voice_elapsed_seconds_estimate',seconds);audit(actor,'voice.ended',sessionId,{seconds,metering:'elapsed_estimate_not_provider_billing'});
     })();
   }

@@ -1,3 +1,4 @@
+import { grantLegacyTestWorkforce } from './fixtures';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Actor, ResearchInput } from '../src/lib/contracts';
 import { closeDb, getDb } from '../src/server/db';
@@ -11,7 +12,7 @@ const input:ResearchInput={address:'123 Example Street, Marietta, GA',county:'Co
 const other:Actor={id:'user-other',name:'Casey Sample',organizationId:'org-isolation',officeId:'office-other',role:'dispositions'};
 const savannah:Actor={id:'user-savannah',name:'Robin Sample',organizationId:'org-demo',officeId:'office-savannah',role:'dispositions'};
 let actor:Actor;
-beforeEach(()=>{closeDb();process.env.AGENTDESK_DB_PATH=':memory:';actor=demoActor();});
+beforeEach(()=>{closeDb();process.env.AGENTDESK_DB_PATH=':memory:';actor=demoActor();grantLegacyTestWorkforce();});
 afterEach(()=>{closeDb();vi.useRealTimers();vi.restoreAllMocks();});
 function finishJob(id:string){for(let n=0;n<4;n++){getDb().prepare('UPDATE research_jobs SET next_attempt_at=NULL,lease_until=NULL WHERE id=?').run(id);processQueuedJobs(actor);}return getResearchJob(actor,id);}
 

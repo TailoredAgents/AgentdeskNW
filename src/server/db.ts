@@ -25,7 +25,7 @@ export function getDb(): Database.Database {
   database.pragma('journal_mode = WAL');
   database.pragma('busy_timeout = 5000');
   database.exec('CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL)');
-  for (const [version, file] of [[1,'001_initial.sql'],[2,'002_voice.sql'],[3,'003_investor_intelligence.sql'],[4,'004_workflows.sql']] as const) {
+  for (const [version, file] of [[1,'001_initial.sql'],[2,'002_voice.sql'],[3,'003_investor_intelligence.sql'],[4,'004_workflows.sql'],[5,'005_billing.sql']] as const) {
     const migrationPath=resolve(process.cwd(), 'src/server/migrations',file);
     if (!existsSync(migrationPath)) continue;
     if (!database.prepare('SELECT 1 FROM schema_migrations WHERE version=?').get(version)) {
@@ -38,6 +38,7 @@ export function getDb(): Database.Database {
   }
   seed(database);
   seedPrivateDuplicate(database);
+  database.prepare("INSERT OR IGNORE INTO billing_admins SELECT organization_id,user_id FROM memberships WHERE organization_id='org-demo' AND user_id='user-taylor' AND role='manager'").run();
   return database;
 }
 

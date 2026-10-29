@@ -1,3 +1,4 @@
+import { hasFeature,requireFeature } from './billing';
 import { z } from 'zod';
 import type { Actor, Investor, ProposedAction, Task } from '../lib/contracts';
 import type { BuyBox, BuyerMatch, CallBriefing, CallPriority, Disclosure, InvestorIntelligence, PropertyRelease, RelationshipEvent } from '../lib/intelligence-contracts';
@@ -63,6 +64,7 @@ export function getInvestorIntelligence(actor:Actor,investorId:string):InvestorI
 }
 export function listInvestorIntelligence(actor:Actor) {return readInvestors(actor).map(investor=>getInvestorIntelligence(actor,investor.id));}
 export function proposeBuyBox(actor:Actor,investorId:string,input:BuyBoxInput|Record<string,unknown>,existingId?:string):ProposedAction {
+ requireFeature(actor,'salesforce-assistant');
  const investor=writableInvestor(actor,investorId);const parsed=buyBoxInputSchema.parse(input);const boxes=listBuyBoxes(actor,investorId);
  const existing=existingId?boxes.find(box=>box.id===existingId):undefined;
  if(existingId&&!existing)throw new AppError(404,'This buy box is not in the authorized investor profile.');
@@ -167,7 +169,9 @@ function scoreBox(investor:Investor,box:BuyBox,context:ReturnType<typeof propert
  if(conflicts.some(item=>item.includes('excluded area')))score=0;
  return {investorId:investor.id,investorName:investor.name,propertyId:property.id,buyBoxId:box.id,buyBoxLabel:box.label,score,reasons,conflicts,missing,disclosureReady:isDisclosureReady(disclosure),engagementScore:engagement(investor,data)};
 }
-export function matchProperty(actor:Actor,propertyId:string):BuyerMatch[] {
+export function matchProperty(actor:Actor,propertyId:string):BuyerMatch[] {requireFeature(actor,'buyer-matchmaker');return compareProperty(actor,propertyId);}
+/** Shared computation for already-authorized workflows; not a public endpoint or model tool. */
+export function compareProperty(actor:Actor,propertyId:string):BuyerMatch[] {
  const context=propertyContext(actor,propertyId);
  return readInvestors(actor).map(investor=>{
  const data=initialize(actor,investor.id);const disclosure=getDisclosure(actor,investor.id);
@@ -179,7 +183,7 @@ export function getCallingQueue(actor:Actor,options:{propertyId?:string;includeD
  assertActor(actor);
  const releases=authorizedReleases(actor).filter(release=>release.status==='released');
  const propertyIds=options.propertyId?[options.propertyId]:releases.map(release=>release.propertyId);
- const allMatches=propertyIds.flatMap(id=>matchProperty(actor,id));
+ requireFeature(actor,'daily-coordinator');const allMatches=hasFeature(actor,'buyer-matchmaker')?propertyIds.flatMap(id=>compareProperty(actor,id)):[];
  const tasks=scopedRows<Task>(actor,'tasks',true).filter(task=>task.status==='open');
  const queue=readInvestors(actor).filter(investor=>investor.ownerId===actor.id).map(investor=>{
  const data=initialize(actor,investor.id),disclosure=getDisclosure(actor,investor.id);
@@ -203,6 +207,7 @@ export function getCallingQueue(actor:Actor,options:{propertyId?:string;includeD
  return queue.map((item,index)=>({...item,rank:index+1}));
 }
 export function setCallPriority(actor:Actor,investorId:string,input:{dismissed?:boolean;manualPriority?:number}) {
+ requireFeature(actor,'daily-coordinator');
  const investor=writableInvestor(actor,investorId);if(investor.ownerId!==actor.id)throw new AppError(403,'Calling priorities belong to the relationship owner.');
  const parsed=z.object({dismissed:z.boolean().optional(),manualPriority:z.number().int().min(-100).max(100).optional()}).strict().parse(input);
  const previous=getDb().prepare('SELECT data FROM call_priorities WHERE organization_id=? AND office_id=? AND owner_id=? AND investor_id=?').get(actor.organizationId,actor.officeId,actor.id,investorId) as {data:string}|undefined;
@@ -210,15 +215,16 @@ export function setCallPriority(actor:Actor,investorId:string,input:{dismissed?:
  getDb().prepare('INSERT INTO call_priorities VALUES(?,?,?,?,?) ON CONFLICT(organization_id,office_id,owner_id,investor_id) DO UPDATE SET data=excluded.data').run(actor.organizationId,actor.officeId,actor.id,investorId,JSON.stringify(value));audit(actor,'calling_priority.updated',investorId);return value;
 }
 export function getCallBriefing(actor:Actor,investorId:string,propertyId?:string):CallBriefing {
- const data=getInvestorIntelligence(actor,investorId);
+ requireFeature(actor,'investor-relationship');const data=getInvestorIntelligence(actor,investorId);
  const commitments=scopedRows<Task>(actor,'tasks',true).filter(task=>task.status==='open'&&task.investorId===investorId);
  const ids=propertyId?[propertyId]:authorizedReleases(actor).filter(item=>item.status==='released').map(item=>item.propertyId);
- const matches=ids.flatMap(id=>matchProperty(actor,id)).filter(match=>match.investorId===investorId).sort((a,b)=>b.score-a.score);
+ const matches=ids.flatMap(id=>compareProperty(actor,id)).filter(match=>match.investorId===investorId).sort((a,b)=>b.score-a.score);
  const missing=[...(!data.investor.financing?['Confirmed funding']:[]),...(!data.investor.timeframe?['Current purchase timing']:[]),...(!data.investor.phone?['Verified phone number']:[]),...(!data.buyBoxes.some(box=>box.active)?['Active buy box']:[])];
  return {investor:data.investor,buyBoxes:data.buyBoxes,disclosure:data.disclosure,lastConversation:data.history.find(event=>event.kind==='debrief'||event.kind==='call'&&!/^(no answer|left message)/.test(event.summary))?.summary??(data.investor.notes.trim()?`Stored CRM notes (legacy; call date unverified): ${data.investor.notes}`:null),lastOutcome:data.lastOutcome,commitments,matches,objective:commitments[0]?`Resolve the outstanding commitment: ${commitments[0].title}`:matches[0]?.score?'Confirm current buying intent and review the strongest authorized property match.':'Confirm current buying criteria and the next follow-up.',missing,source:'Permitted local demo CRM, reviewed criteria, and employee-entered relationship history; no external call recording.'};
 }
 export const callOutcomeSchema=z.object({outcome:z.enum(['connected','no_answer','left_message','interested','not_interested','paused']),notes:z.string().trim().max(5000).optional(),followUpAt:z.string().datetime({offset:true}).nullable().optional()}).strict();
 export function recordCallOutcome(actor:Actor,investorId:string,input:unknown) {
+ requireFeature(actor,'salesforce-assistant');
  const investor=writableInvestor(actor,investorId);const parsed=callOutcomeSchema.parse(input);
  return getDb().transaction(()=>{
  const data=initialize(actor,investorId);const connected=['connected','interested','not_interested','paused'].includes(parsed.outcome);

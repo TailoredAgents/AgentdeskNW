@@ -1,3 +1,5 @@
+import { grantTrial,changeSubscription,subscription } from '../src/server/billing';
+import { grantLegacyTestWorkforce } from './fixtures';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createHmac } from 'node:crypto';
 import type { Actor, Investor } from '../src/lib/contracts';
@@ -14,7 +16,7 @@ let actor:Actor,manager:Actor,acquisitions:Actor;
 const other:Actor={id:'user-other',name:'Casey Sample',organizationId:'org-isolation',officeId:'office-other',role:'dispositions'};
 const savannah:Actor={id:'user-savannah',name:'Robin Sample',organizationId:'org-demo',officeId:'office-savannah',role:'dispositions'};
 const input=(change:Partial<ReleaseInput>={}):ReleaseInput=>({propertyId:'property-maple',status:'released',source:'Fictional acquisition email supplied by employee',eventKey:'event-one',propertyType:'Single-family',description:'Fictional three-bedroom renovation opportunity.',notes:'Review supplied assumptions.',mediaUrl:'https://drive.google.com/drive/folders/demo-only',mediaAccess:'public_confirmed',arv:null,repairEstimate:null,economicsSource:'',showingInstructions:'Arrange a demo walkthrough.',authorizedUserIds:['user-alex'],upstreamParty:'Fictional referring wholesaler',upstreamStage:'Under review',downstreamStage:'Released for review',closingStructure:'double',closingAt:null,...change});
-beforeEach(()=>{closeDb();process.env.AGENTDESK_DB_PATH=':memory:';actor=demoActor();manager=demoActor('manager');acquisitions=demoActor('acquisitions');updateSettings(actor,{quietHoursStart:0,quietHoursEnd:0});});
+beforeEach(()=>{closeDb();process.env.AGENTDESK_DB_PATH=':memory:';actor=demoActor();manager=demoActor('manager');acquisitions=demoActor('acquisitions');updateSettings(actor,{quietHoursStart:0,quietHoursEnd:0});grantLegacyTestWorkforce();});
 afterEach(()=>{closeDb();vi.useRealTimers();vi.restoreAllMocks();vi.unstubAllGlobals();vi.unstubAllEnvs();});
 function release(){return saveRelease(acquisitions,input());}
 function compose(investorId='investor-mike'){return composePackage(actor,{investorId,releaseId:release().id,channel:'personal_text'});}
@@ -45,7 +47,7 @@ describe('versioned and scoped property release events',()=>{
  });
  it('does not disclose other employees’ investors in matches, recipient permissions or notifications',()=>{
   getDb().prepare('INSERT INTO users VALUES(?,?)').run('user-b','Blake Demo');getDb().prepare('INSERT INTO memberships VALUES(?,?,?,?)').run(actor.organizationId,actor.officeId,'user-b','dispositions');
-  const second:Actor={...actor,id:'user-b',name:'Blake Demo'};const privateInvestor:Investor={...getInvestor(actor,'investor-mike'),id:'private-blake',name:'Private Blake Investor',ownerId:second.id};insertRecord(second,'investors',privateInvestor);updateSettings(second,{quietHoursStart:0,quietHoursEnd:0});
+  const second:Actor={...actor,id:'user-b',name:'Blake Demo'};grantTrial(manager,{userId:second.id,features:['buyer-matchmaker']});const privateInvestor:Investor={...getInvestor(actor,'investor-mike'),id:'private-blake',name:'Private Blake Investor',ownerId:second.id};insertRecord(second,'investors',privateInvestor);updateSettings(second,{quietHoursStart:0,quietHoursEnd:0});
   const value=saveRelease(manager,input({authorizedUserIds:[actor.id,second.id],mediaAccess:'recipient_confirmed',permittedMediaInvestorIds:['investor-mike','private-blake']}));
   expect(getRelease(actor,value.id).matches.some(match=>match.investorId==='private-blake')).toBe(false);expect(getRelease(actor,value.id).permittedMediaInvestorIds).toEqual(['investor-mike']);
   expect(getRelease(second,value.id).matches.map(match=>match.investorId)).toEqual(['private-blake']);
@@ -137,7 +139,7 @@ describe('channel boundaries remain disconnected',()=>{
   expect(()=>linkDemoSlackIdentity(manager,{userId:other.id,workspaceId:'TOTHER',externalId:'UOTHER'})).toThrow('no longer an authorized');
  });
  it('cannot send or incur SMS charges without entitlement or provider',()=>{
-  expect(getSmsEntitlement(actor).providerConfigured).toBe(false);expect(()=>requestSmsDelivery(actor)).toThrow('paid add-on');getDb().prepare('UPDATE organizations SET settings=? WHERE id=?').run(JSON.stringify({smsAddonEnabled:true,smsMonthlyLimit:100}),actor.organizationId);expect(()=>requestSmsDelivery(actor)).toThrow('not configured');expect(getSmsEntitlement(actor).used).toBe(0);expect(getDisclosure(actor,'investor-mike').synthetic).toBe(true);
+  expect(getSmsEntitlement(actor).providerConfigured).toBe(false);expect(()=>requestSmsDelivery(actor)).toThrow('paid add-on');changeSubscription(actor,{selection:{planId:'core',addons:['sms']},expectedVersion:subscription(actor).version,eventKey:'sms-test',timing:'now'});expect(()=>requestSmsDelivery(actor)).toThrow('not configured');expect(getSmsEntitlement(actor).used).toBe(0);expect(getDisclosure(actor,'investor-mike').synthetic).toBe(true);
  });
 });
 

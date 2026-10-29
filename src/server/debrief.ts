@@ -1,3 +1,4 @@
+import { hasFeature,requireFeature } from './billing';
 import { z } from 'zod';
 import type { Actor, Investor, Property, ProposedAction } from '../lib/contracts';
 import type { Debrief, DebriefProposal } from '../lib/intelligence-contracts';
@@ -91,14 +92,14 @@ export function listDebriefs(actor:Actor):Debrief[] {
  assertActor(actor);return (getDb().prepare('SELECT id FROM debriefs WHERE organization_id=? AND office_id=? AND owner_id=? ORDER BY rowid DESC').all(actor.organizationId,actor.officeId,actor.id) as {id:string}[]).flatMap(row=>{try{return [getDebriefRow(actor,row.id).value];}catch(error){if(error instanceof AppError&&error.status===404)return [];throw error;}});
 }
 export function createDebrief(actor:Actor,input:{recap:string;investorId?:string;propertyId?:string}):Debrief {
- requireRole(actor,['dispositions','manager']);const parsed=createSchema.parse(input);const value:Debrief={...buildDebrief(actor,parsed.recap,parsed.investorId,parsed.propertyId),id:newId('debrief'),createdAt:now(),proposedActionIds:[]};
+ requireRole(actor,['dispositions','manager']);requireFeature(actor,'call-notetaker');const parsed=createSchema.parse(input);const value:Debrief={...buildDebrief(actor,parsed.recap,parsed.investorId,parsed.propertyId),id:newId('debrief'),createdAt:now(),proposedActionIds:[]};
  return getDb().transaction(()=>{
   if(value.investorId){writableInvestor(actor,value.investorId);addRelationshipEvent(actor,value.investorId,'debrief',`Unreviewed employee recap: ${value.summary.summary}`,'Employee-supplied recap; not independently verified. Capture time is not a phone-call timestamp.');}
   getDb().prepare('INSERT INTO debriefs VALUES(?,?,?,?,?,NULL)').run(value.id,actor.organizationId,actor.officeId,actor.id,JSON.stringify(value));audit(actor,'debrief.created',value.id,{status:value.status,extractedFields:Object.keys(value.extractedChanges)});return value;
  })();
 }
 export function proposeDebrief(actor:Actor,debriefId:string,input:{investorId?:string;propertyId?:string;createFollowUp?:boolean}):DebriefProposal {
- requireRole(actor,['dispositions','manager']);const parsed=z.object({investorId:id.optional(),propertyId:id.optional(),createFollowUp:z.boolean().optional()}).strict().parse(input);
+ requireRole(actor,['dispositions','manager']);requireFeature(actor,'call-notetaker');const parsed=z.object({investorId:id.optional(),propertyId:id.optional(),createFollowUp:z.boolean().optional()}).strict().parse(input);
  return getDb().transaction(()=>{
   const row=getDebriefRow(actor,debriefId);
   if(row.proposal_result){const previous=JSON.parse(row.proposal_result) as DebriefProposal;return {...previous,package:previous.package?listPackages(actor).find(item=>item.id===previous.package!.id)??null:null};}
@@ -113,7 +114,7 @@ export function proposeDebrief(actor:Actor,debriefId:string,input:{investorId?:s
   }
   const tasks=parsed.createFollowUp&&debrief.suggestedFollowUpAt?[createTask(actor,{title:`Follow up with ${getInvestor(actor,debrief.investorId).name} about the reviewed recap`,investorId:debrief.investorId,dueAt:debrief.suggestedFollowUpAt})]:[];
   let prepared:DebriefProposal['package']=null;
-  if(debrief.propertyId&&/\b(photo|details|send|link)\b/i.test(debrief.recap)){
+  if(hasFeature(actor,'deal-marketing')&&debrief.propertyId&&/\b(photo|details|send|link)\b/i.test(debrief.recap)){
    const release=listReleases(actor).find(item=>item.propertyId===debrief.propertyId&&item.status==='released');
    if(release)prepared=composePackage(actor,{investorId:debrief.investorId,releaseId:release.id,channel:'personal_text'});
   }

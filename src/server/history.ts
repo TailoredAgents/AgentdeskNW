@@ -26,7 +26,7 @@ export function collectHistoryReferences(actor:Actor,artifacts:Artifact[],inheri
    }else visit(item,depth+1);
   }
  };
- visit(artifacts);
+ visit(artifacts.filter(artifact=>artifact.type!=='marketplace'));
  for(const artifact of artifacts){
   if(artifact.type==='briefing'&&artifact.id)refs.investors.push(artifact.id);
   if(artifact.type==='approval'&&artifact.id){const row=getDb().prepare('SELECT data FROM proposed_actions WHERE id=? AND organization_id=? AND office_id=? AND owner_id=?').get(artifact.id,actor.organizationId,actor.officeId,actor.id) as {data:string}|undefined;if(row)visit(JSON.parse(row.data));}

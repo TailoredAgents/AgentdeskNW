@@ -1,10 +1,11 @@
+import { hasFeature,requireFeature } from './billing';
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import type { Actor } from '../lib/contracts';
 import type { DealPackage, PropertyRelease, ReleaseInput } from '../lib/intelligence-contracts';
 import { AppError, assertActor, audit, getDb, newId, now, requireRole } from './db';
 import { actorForMember, getInvestor, notify } from './services';
-import { getDisclosure, getDisclosurePolicy, isDisclosureReady, matchProperty } from './intelligence';
+import { getDisclosure, getDisclosurePolicy, isDisclosureReady, compareProperty } from './intelligence';
 import { criteriaFingerprint } from './history';
 import { readProperty } from './access';
 
@@ -20,7 +21,7 @@ function releaseView(actor:Actor,row:ReleaseRow):PropertyRelease {
  const release=JSON.parse(row.data) as PropertyRelease;
  const permittedMediaInvestorIds=release.permittedMediaInvestorIds?.filter(investorId=>{try{getInvestor(actor,investorId);return true;}catch(error){if(error instanceof AppError&&(error.status===403||error.status===404))return false;throw error;}});
  // Match identities are always calculated for the requesting employee, never stored on a shared release.
- return {...release,permittedMediaInvestorIds,matches:release.status==='released'&&actor.role!=='acquisitions'?matchProperty(actor,release.propertyId):[]};
+ return {...release,permittedMediaInvestorIds,matches:release.status==='released'&&actor.role!=='acquisitions'&&hasFeature(actor,'buyer-matchmaker')?compareProperty(actor,release.propertyId):[]};
 }
 export function listReleases(actor:Actor):PropertyRelease[] {
  assertActor(actor);
@@ -33,6 +34,7 @@ export function getRelease(actor:Actor,releaseId:string):PropertyRelease {
  return releaseView(actor,row);
 }
 export function saveRelease(actor:Actor,input:ReleaseInput):PropertyRelease {
+ requireFeature(actor,'acquisition-disposition');
  requireRole(actor,['acquisitions','manager']);const parsed=releaseInputSchema.parse(input);
  return getDb().transaction(()=>{
   const property=readProperty(actor,parsed.propertyId);
@@ -60,7 +62,7 @@ export function saveRelease(actor:Actor,input:ReleaseInput):PropertyRelease {
    const value=blockPackage(JSON.parse(packageRow.data) as DealPackage,['The property release changed. Compose and review a new package.']);
    getDb().prepare('UPDATE deal_packages SET data=?,canonical_body=?,canonical_subject=? WHERE id=?').run(JSON.stringify(value),'','',value.id);
   }
-  if(stored.status==='released')for(const userId of audience){const recipient=actorForMember(actor.organizationId,actor.officeId,userId);const matches=matchProperty(recipient,property.id);notify(recipient,`release:${stored.id}:${stored.version}`,'Demo property release',`${property.address}: ${matches.filter(match=>match.score>0).length} matches among your permitted investors. Review fit and disclosure before preparing details.`,'properties');}
+  if(stored.status==='released')for(const userId of audience){const recipient=actorForMember(actor.organizationId,actor.officeId,userId);const matches=hasFeature(recipient,'buyer-matchmaker')?compareProperty(recipient,property.id):[];notify(recipient,`release:${stored.id}:${stored.version}`,'Demo property release',`${property.address}: ${matches.filter(match=>match.score>0).length} matches among your permitted investors. Review fit and disclosure before preparing details.`,'properties');}
   audit(actor,'property.release.saved',stored.id,{version:stored.version,status:stored.status,recipients:audience.length,synthetic:true});
   return getRelease(actor,stored.id);
  }).immediate();
@@ -72,6 +74,7 @@ export function listTemplates(actor:Actor):PackageTemplate[] {
  return [...saved,...channel.options.map(format=>({id:`demo-${format}-v1`,name:`Demo ${format.replaceAll('_',' ')} template`,channel:format,intro:'Here are the property details for your review.',closing:'Please confirm your interest and any questions.',status:'demo_approved' as const,source:'Tailored Agents demonstration template; not corporate-approved policy.',version:1}))];
 }
 export function saveTemplate(actor:Actor,input:{id?:string;name:string;channel:DealPackage['channel'];intro:string;closing:string;approved:boolean}):PackageTemplate {
+ requireFeature(actor,'deal-marketing');
  requireRole(actor,['manager']);const parsed=z.object({id:id.optional(),name:z.string().trim().min(1).max(120),channel,intro:z.string().trim().max(400),closing:z.string().trim().max(400),approved:z.boolean()}).strict().parse(input);
  // Template copy is introductory language only; property facts must come from the authorized release.
  for(const copy of [parsed.intro,parsed.closing])if(/https?:|\$|\d|\{\{|\b(guarantee|guaranteed|signed|verified|delivered)\b/i.test(copy))throw new AppError(422,'Use introductory language without property facts, links, placeholders or verification claims.');
@@ -111,6 +114,7 @@ export function listPackages(actor:Actor):DealPackage[] {
  assertActor(actor);return (getDb().prepare('SELECT data FROM deal_packages WHERE organization_id=? AND office_id=? AND owner_id=? ORDER BY rowid DESC').all(actor.organizationId,actor.officeId,actor.id) as {data:string}[]).map(row=>recheckPackage(actor,JSON.parse(row.data) as DealPackage));
 }
 export function composePackage(actor:Actor,input:{investorId:string;releaseId:string;channel:DealPackage['channel']}):DealPackage {
+ requireFeature(actor,'deal-marketing');
  requireRole(actor,['dispositions','manager']);const parsed=z.object({investorId:id,releaseId:id,channel}).strict().parse(input);
  return getDb().transaction(()=>{
   const check=eligibility(actor,parsed.investorId,parsed.releaseId);const {release,disclosure}=check;
@@ -121,7 +125,8 @@ export function composePackage(actor:Actor,input:{investorId:string;releaseId:st
    const investor=getInvestor(actor,parsed.investorId);const property=release.property;const money=(n:number)=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(n);
    const missing=[!release.description?'deal description':null,!release.mediaUrl?'photo/media link':null,release.arv===null?'ARV assumption':null,release.repairEstimate===null?'repair assumption':null,!release.showingInstructions?'showing instructions':null,!release.economicsSource&&(release.arv!==null||release.repairEstimate!==null)?'economics source':null].filter((item):item is string=>!!item);
    const lines=['DEMONSTRATION ONLY — fictional property; no message has been sent.',`Hi ${investor.name.split(' ')[0]},`,template.intro,`${property.address}, ${property.city} · ${property.county} County`,`Asking price: ${money(property.price)}`,`${property.beds} beds · ${property.baths} baths · ${property.sqft.toLocaleString('en-US')} sq ft`,release.propertyType?`Property type: ${release.propertyType}`:'',`Recorded rehab: ${property.rehab}`,release.description,release.notes?`Deal notes: ${release.notes}`:'',release.arv!==null?`Supplied ARV assumption: ${money(release.arv)}`:'',release.repairEstimate!==null?`Supplied repair assumption: ${money(release.repairEstimate)}`:'',release.economicsSource?`Economics source: ${release.economicsSource}`:'',release.mediaUrl?`Photos: ${release.mediaUrl}`:'',release.mediaUrl?'Media permission was confirmed by an employee; AgentDesk has not tested live access.':'',release.showingInstructions?`Showing / next steps: ${release.showingInstructions}`:'',template.closing,`Source: ${release.source} · release version ${release.version}`].filter(Boolean);
-   const comparison=release.matches.find(match=>match.investorId===investor.id);
+   // Package personalization is shared computation inside Deal Marketing, not a second paid matching operation.
+   const comparison=compareProperty(actor,release.propertyId).find(match=>match.investorId===investor.id);
    if(comparison){const beforeSource=lines.length-1;lines.splice(beforeSource,0,...(comparison.reasons.length?[`Recorded profile comparison: ${comparison.reasons.join(' ')}`]:[]),...(comparison.conflicts.length?[`Fit cautions: ${comparison.conflicts.join(' ')}`]:[]));}
    const compact=['sms','personal_text','imessage'].includes(parsed.channel);
    value={...value,subject:parsed.channel==='email'?`Demo property details: ${property.address}`:'Property details for review',body:lines.join(compact?'\n':'\n\n'),missing,criteriaFingerprint:criteriaFingerprint(actor,investor.id)};
@@ -135,6 +140,7 @@ function validateEdits(body:string,subject:string,canonicalBody:string,canonical
  if(!canonicalBody||!lines.includes(canonicalBody.split('\n')[0])||lines.some(line=>line.trim()&&!allowed.has(line))||!['',canonicalSubject,'Property details for review'].includes(subject))throw new AppError(422,'Keep factual wording from the source package. You can remove or reorder complete lines; revise property facts in the release before composing again.');
 }
 export function updatePackage(actor:Actor,packageId:string,input:{body?:string;subject?:string}):DealPackage {
+ requireFeature(actor,'deal-marketing');
  requireRole(actor,['dispositions','manager']);return getDb().transaction(()=>{
  const parsed=z.object({body:z.string().min(1).max(20000).optional(),subject:z.string().max(200).optional()}).strict().parse(input);const row=packageRow(actor,packageId);const current=recheckPackage(actor,row.value);
  if(current.status==='blocked')throw new AppError(409,'Resolve eligibility and compose a new package before editing.');
@@ -143,6 +149,7 @@ export function updatePackage(actor:Actor,packageId:string,input:{body?:string;s
  }).immediate();
 }
 export function approvePackage(actor:Actor,packageId:string):DealPackage {
+ requireFeature(actor,'deal-marketing');
  requireRole(actor,['dispositions','manager']);return getDb().transaction(()=>{
  const row=packageRow(actor,packageId);const value=recheckPackage(actor,row.value);
  if(value.status==='blocked')throw new AppError(409,'This package is blocked. Resolve eligibility and compose a new package.');
@@ -152,6 +159,7 @@ export function approvePackage(actor:Actor,packageId:string):DealPackage {
  }).immediate();
 }
 export function handoffPackage(actor:Actor,packageId:string):{package:DealPackage;text:string;subject:string} {
+ requireFeature(actor,'deal-marketing');
  requireRole(actor,['dispositions','manager']);return getDb().transaction(()=>{
  const row=packageRow(actor,packageId);const value=recheckPackage(actor,row.value);
  if(!['approved','handed_off'].includes(value.status))throw new AppError(409,'Review and approve an eligible package before copying.');

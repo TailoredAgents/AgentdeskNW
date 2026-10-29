@@ -49,7 +49,7 @@ For an intentional check against an existing local instance, set `SMOKE_BASE_URL
 
 For a local compiled build, `npm run build` followed by `AGENTDESK_ALLOW_PRODUCTION_DEMO=true npm start` explicitly allows the local demonstration identity under Next.js production mode. This remains bound to loopback and is **not a production authentication strategy**.
 
-## Current milestone — Phase 2 local workflows
+## Preserved milestone — Phase 2 local workflows
 
 Phase 2 extends the existing application and database. The working local flow connects a versioned property release to permitted buyer matches, calling priorities, a pre-call briefing, a post-call recap, reviewed investor updates, and a disclosure-gated package for manual handoff. The existing Copilot, research, tasks, approvals, transcript path and all 16 specialist definitions remain available.
 
@@ -91,3 +91,13 @@ All investor, property, research, disclosure and package examples are fictional.
 - `docs`: product, implementation, integration and operational source of truth.
 
 Start with [MASTER_PLAN](MASTER_PLAN.md), [DEMO_RUNBOOK](docs/DEMO_RUNBOOK.md), and [PROGRESS](docs/PROGRESS.md). The supplied specifications are retained in [ORIGINAL_BRIEF](docs/ORIGINAL_BRIEF.md) and [PHASE_2_DIRECTIVE](docs/PHASE_2_DIRECTIVE.md). Discovery observations and unresolved corporate questions are separated in [NEW_WESTERN_DISCOVERY](docs/NEW_WESTERN_DISCOVERY.md).
+
+## Current milestone — Phase 3 commercial simulator
+
+AgentDesk now includes the AI Employee Marketplace, My AI Workforce, subscription configurator, organization sponsorship/required policies, temporary trials, usage ledger and simulated billing lifecycle. Core is $49 proposed monthly; Core + Hunter + Deal Marketing is $147. All prices/allowances are configurable records, all payments are simulated, and planned specialists remain unavailable.
+
+Premium access is enforced by the same backend services used by API requests, text/voice tools and worker stages. Removing an add-on preserves saved work. Core remains independently useful for notes, CRM approvals, daily coordination and workflow guidance.
+
+Read [pricing](docs/PRICING_AND_PACKAGES.md), [billing architecture](docs/BILLING_ARCHITECTURE.md), [marketplace](docs/AI_EMPLOYEE_MARKETPLACE.md), [usage metering](docs/USAGE_METERING.md), and the updated [demo runbook](docs/DEMO_RUNBOOK.md). The provider boundary is prepared, but Stripe, live OpenAI/voice, external research, production Salesforce, Slack and Twilio remain disconnected. Production identity, provider receipts, payment webhooks, taxes/proration and the four planned specialists remain future work.
+
+Migration 005 is additive. The ignored pre-migration backup is `data/phase2-checkpoint.sqlite`; Phase 2 source remains `de77fac`. No dependencies were added or updated for Phase 3.

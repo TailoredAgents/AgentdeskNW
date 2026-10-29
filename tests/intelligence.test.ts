@@ -1,3 +1,4 @@
+import { grantLegacyTestWorkforce } from './fixtures';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Actor, ResearchInput } from '../src/lib/contracts';
 import type { ReleaseInput } from '../src/lib/intelligence-contracts';
@@ -12,7 +13,7 @@ import { readProperties, readProperty } from '../src/server/access';
 let actor:Actor,manager:Actor,acquisitions:Actor;
 const other:Actor={id:'user-other',name:'Casey Sample',organizationId:'org-isolation',officeId:'office-other',role:'dispositions'};
 const savannah:Actor={id:'user-savannah',name:'Robin Sample',organizationId:'org-demo',officeId:'office-savannah',role:'dispositions'};
-beforeEach(()=>{closeDb();process.env.AGENTDESK_DB_PATH=':memory:';vi.useFakeTimers();vi.setSystemTime(new Date('2026-10-29T16:00:00.000Z'));actor=demoActor();manager=demoActor('manager');acquisitions=demoActor('acquisitions');});
+beforeEach(()=>{closeDb();process.env.AGENTDESK_DB_PATH=':memory:';vi.useFakeTimers();vi.setSystemTime(new Date('2026-10-29T16:00:00.000Z'));actor=demoActor();manager=demoActor('manager');acquisitions=demoActor('acquisitions');grantLegacyTestWorkforce();});
 afterEach(()=>{closeDb();vi.useRealTimers();});
 function releaseInput(overrides:Partial<ReleaseInput>={}):ReleaseInput {return {propertyId:'property-maple',status:'released',source:'Synthetic release test',eventKey:'release-fixture-1',propertyType:'Single-family',description:'Fictional investment property.',notes:'Demo condition description.',mediaUrl:null,mediaAccess:'unverified',arv:350000,repairEstimate:40000,economicsSource:'Fictional demo estimate',showingInstructions:'Coordinate a demo showing',authorizedUserIds:[actor.id],upstreamParty:'Fictional wholesaler',upstreamStage:'Contract position reviewed',downstreamStage:'Finding end buyer',closingStructure:'same_day',closingAt:null,...overrides};}
 

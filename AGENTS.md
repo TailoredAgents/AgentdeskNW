@@ -13,6 +13,16 @@ Read `docs/ORIGINAL_BRIEF.md`, `MASTER_PLAN.md`, and `docs/PROGRESS.md` before m
 - Run `npm run typecheck`, `npm run lint`, `npm test`, `npm run build`, and the smoke suite after major changes. Write tests for tenant/permission boundaries, approval enforcement, durable jobs and core workflows.
 - Update `docs/PROGRESS.md` and affected specifications with actual behavior, verification and remaining setup. Do not publish, contact investors or mutate third-party accounts without authorization.
 
+## Subscription and usage rules
+
+- Preserve the Phase 3 service-level entitlement checks. UI, Copilot/voice tools, direct APIs and each durable worker stage must use the same authorization decisions; a model response or client assertion cannot grant paid access.
+- Keep subscription entitlement, role/company permission, implementation readiness, usage allowance and provider connectivity separate. Planned specialists remain unavailable after simulated selection.
+- Core workflows must remain independently useful. Shared matching/CRM/notes infrastructure inside an authorized capability must not accidentally require a second specialist purchase.
+- All pricing and allowances are provisional versioned catalog records. Quotes use integer cents, remove bundle/sponsorship duplicates, and separate company and personal totals. Never activate real payment collection, external messaging or providers as part of routine billing work.
+- Reserve/settle/release usage with scoped idempotent operation IDs. Do not invent provider costs or consume research credits twice on retries. Failed/canceled work releases unused reservations. Preserve historical work after a subscription ends.
+- Billing administrators require explicit assignment beyond manager role. Trials cannot bypass roles/restrictions and must expire without automatic paid conversion. Production payment events require verified signatures, tenant binding and replay protection before changing entitlements.
+- Include billing regressions and the isolated HTTP smoke suite in required checks. See docs/PRICING_AND_PACKAGES.md, docs/BILLING_ARCHITECTURE.md and docs/USAGE_METERING.md before changing commercial behavior.
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 ## This is NOT the Next.js you know
