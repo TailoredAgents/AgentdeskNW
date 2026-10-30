@@ -16,7 +16,9 @@
     "demo:prepare": "node --import tsx scripts/prepare-demo.ts",
     "test:hosted": "node scripts/hosted-smoke.mjs",
     "channels:check": "node --import tsx scripts/check-messaging.ts",
-    "test:messaging": "node --import tsx scripts/messaging-smoke.ts"
+    "test:messaging": "node --import tsx scripts/messaging-smoke.ts",
+    "test:intelligence": "node scripts/smoke-runner.mjs intelligence",
+    "test:conversation": "node scripts/smoke-runner.mjs conversation"
   },
   "dependencies": {
     "@slack/socket-mode": "3.1.0",

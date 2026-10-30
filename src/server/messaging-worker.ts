@@ -1,18 +1,21 @@
-import type { Actor,Notification,ResearchJob,Task } from '../lib/contracts';
+import type { Actor,Notification,ResearchJob } from '../lib/contracts';
 import { AppError,getDb,now,scopedGet } from './db';
 import { chat } from './orchestrator';
-import { getConversation,getInvestor,notificationsAllowed } from './services';
+import { getConversation,notificationsAllowed } from './services';
 import { messagingConversation,queueOutbound,requireMessagingLink,type MessagingLink,type Outbox } from './messaging';
 import { channelConfigured,conversationLink,dailyMessageLimit,messagingEnabled,sendingEnabled } from './messaging-config';
 import { releaseUsage,reserveUsage } from './metering';
 import { applyTwilioReceipt,DeliveryRejected,fetchTwilioReceipt,sendChannelMessage } from './messaging-providers';
+import { taskForReminder } from './task-actions';
+import { confirmConversationFocusDelivery,setConversationFocus } from './conversation-focus';
 
-interface Inbox {id:string;link_id:string;body:string}
+interface Inbox {id:string;link_id:string;body:string;received_at:string}
 export async function processMessagingInbox(){
  if(!messagingEnabled())return;
+ recordConfirmedReminderFocus();
  const db=getDb();
  db.prepare("UPDATE messaging_inbox SET status='unknown',error_code='interrupted_review_required',updated_at=? WHERE status='processing' AND updated_at<?").run(now(),new Date(Date.now()-25*60_000).toISOString());
- const rows=db.prepare("SELECT id,link_id,body FROM messaging_inbox WHERE status='queued' ORDER BY received_at,rowid LIMIT 10").all() as Inbox[];
+ const rows=db.prepare("SELECT id,link_id,body,received_at FROM messaging_inbox WHERE status='queued' ORDER BY received_at,rowid LIMIT 10").all() as Inbox[];
  for(const row of rows){
   let conversationId:string;
   try{
@@ -20,7 +23,7 @@ export async function processMessagingInbox(){
    // A dashboard turn can be using the same conversation. Wait without consuming this message.
    if(db.prepare("SELECT 1 FROM assistant_turns WHERE conversation_id=? AND status='running' AND started_at>?").get(conversationId,new Date(Date.now()-20*60_000).toISOString()))continue;
    if(!db.prepare("UPDATE messaging_inbox SET status='processing',updated_at=? WHERE id=? AND status='queued'").run(now(),row.id).changes)continue;
-   await chat(actor,row.body,conversationId,`channel:${row.id}`,link.provider);
+   await chat(actor,row.body,conversationId,`channel:${row.id}`,link.provider,{receivedAt:row.received_at});
    const fresh=requireMessagingLink(row.link_id);
    const turn=db.prepare('SELECT result FROM assistant_turns WHERE organization_id=? AND office_id=? AND user_id=? AND request_id=?').get(actor.organizationId,actor.officeId,actor.id,`channel:${row.id}`) as {result:string};
    const answer=JSON.parse(turn.result) as {messageId:string};if(!answer.messageId)throw new Error('Missing answer');
@@ -36,9 +39,8 @@ function noticeText(actor:Actor,id:string){
  const notice=scopedGet<Notification>(actor,'notifications',id,true);if(notice.read)return null;
  const row=getDb().prepare('SELECT dedupe_key FROM notifications WHERE id=?').get(id) as {dedupe_key:string};
  if(row.dedupe_key.startsWith('task-due:')){
-  const task=scopedGet<Task>(actor,'tasks',row.dedupe_key.slice(9),true);if(task.status!=='open'||!task.dueAt||Date.parse(task.dueAt)>Date.now())return null;
-  if(task.investorId)getInvestor(actor,task.investorId);
-  return `Reminder: ${task.title}`;
+  const task=taskForReminder(actor,id);if(!task)return null;
+  return `Reminder: ${task.title}\nReply “done”, “snooze 2 hours”, or “move it to tomorrow at 9am”. If several reminders are active, include the task name.`;
  }
  if(row.dedupe_key.startsWith('research-done:')){const job=scopedGet<ResearchJob>(actor,'research_jobs',row.dedupe_key.slice(14),true);if(job.status==='completed')return 'Your research is ready. Open AgentDesk NW to review the saved results and evidence.';}
  if(row.dedupe_key.startsWith('research-stopped:')){const job=scopedGet<ResearchJob>(actor,'research_jobs',row.dedupe_key.slice(17).split(':')[0],true);if(job.status==='failed')return 'Your research needs attention. Open AgentDesk NW to review its status and saved work.';}
@@ -61,8 +63,27 @@ export function queueMessagingReminders(){
 export function smsReservation(body:string){return body.length<=70?1:Math.ceil(body.length/67);}
 export function formatChannelReply(text:string,provider:'sms'|'slack',conversationId:string){
  const url=conversationLink(conversationId),limit=provider==='sms'?700:3500;
- if(text.length>limit)return `Your Copilot response is ready in AgentDesk NW.${url?` Open it here: ${url}`:' Open your ongoing Copilot conversation in the dashboard.'}`;
- return `${text}${url?`\n\n${url}`:''}`;
+ const complete=`${text}${url?`\n\n${url}`:''}`;if(complete.length<=limit)return complete;
+ const suffix=url?`\n\nFull reply: ${url}`:'\n\nOpen your ongoing Copilot conversation for the full reply.';
+ const prefix='Excerpt:\n',budget=limit-prefix.length-suffix.length;
+ // Keep complete paragraphs or sentences. Never cut a URL, amount, task name or caution mid-sentence.
+ const blocks=text.trim().split(/\n\s*\n/);let excerpt='';
+ for(const block of blocks){const next=excerpt?`${excerpt}\n\n${block}`:block;if(next.length>budget)break;excerpt=next;}
+ if(!excerpt){const sentences=blocks[0].match(/[^.!?]+[.!?](?=\s|$)/g)??[];for(const sentence of sentences){const next=excerpt?`${excerpt} ${sentence.trim()}`:sentence.trim();if(next.length>budget)break;excerpt=next;}}
+ return excerpt?`${prefix}${excerpt}${suffix}`:`Your Copilot response is ready.${suffix}`;
+}
+
+/** Confirmed transport receipts establish a referent; queued/unknown/failed deliveries never do. */
+export function recordConfirmedReminderFocus(){
+ const db=getDb();
+ const rows=db.prepare(`SELECT o.* FROM messaging_outbox o WHERE o.kind='notice' AND o.status IN ('accepted','delivered') AND o.updated_at>=?
+   AND NOT EXISTS(SELECT 1 FROM conversation_focus_events f WHERE f.event_key='reminder:'||o.id) ORDER BY o.updated_at,o.rowid LIMIT 100`)
+   .all(new Date(Date.now()-24*60*60_000).toISOString()) as Outbox[];
+ for(const row of rows){
+  try{const {actor}=requireMessagingLink(row.link_id);if(!row.reference_id)continue;const task=taskForReminder(actor,row.reference_id);if(!task)continue;
+   setConversationFocus(actor,messagingConversation(actor),{kind:'task',id:task.id,version:task.version??0,source:'reminder',sourceEventId:row.id,eventKey:`reminder:${row.id}`});
+  }catch{/* Access changes or superseded reminders cannot create reply context. */}
+ }
 }
 function deliveryBody(row:Outbox,actor:Actor,link:MessagingLink){
  const conversationId=messagingConversation(actor);
@@ -100,6 +121,8 @@ export async function processMessagingOutbox(send=sendChannelMessage){
    const receipt=await send(link,{...row,segments_reserved:segments},body);
    if(link.provider==='sms')applyTwilioReceipt(row.id,{sid:receipt.id,accountSid:link.account_id,from:process.env.TWILIO_PHONE_NUMBER!,to:link.address,status:receipt.status,numSegments:receipt.segments});
    else db.prepare("UPDATE messaging_outbox SET status='accepted',provider_id=?,provider_status=?,updated_at=? WHERE id=? AND status='dispatching'").run(receipt.id,receipt.status,now(),row.id);
+   confirmConversationFocusDelivery(actor,messagingConversation(actor));
+   recordConfirmedReminderFocus();
   }catch(error){
    const definitive=error instanceof DeliveryRejected||error instanceof AppError&&[402,403,404].includes(error.status);
    if(definitive&&actor)releaseUsage(actor,'sms_segments',`sms:out:${row.id}`);
@@ -113,4 +136,4 @@ export async function reconcileMessagingDeliveries(fetchReceipt=fetchTwilioRecei
  const rows=db.prepare("SELECT o.* FROM messaging_outbox o JOIN messaging_links l ON l.id=o.link_id WHERE l.provider='sms' AND l.account_id=? AND o.provider_id IS NOT NULL AND (o.status IN ('accepted','unknown') OR o.segments_actual IS NULL) AND COALESCE(o.reconcile_at,o.updated_at)<? ORDER BY COALESCE(o.reconcile_at,o.updated_at) LIMIT 3").all(process.env.TWILIO_ACCOUNT_SID,cutoff) as Outbox[];
  for(const row of rows){db.prepare('UPDATE messaging_outbox SET reconcile_at=? WHERE id=?').run(now(),row.id);try{const receipt=await fetchReceipt(row.provider_id!);applyTwilioReceipt(row.id,receipt);}catch{/* Retain unresolved usage and never infer delivery or retry a send. */}}
 }
-export async function processMessaging(){await processMessagingInbox();queueMessagingReminders();await processMessagingOutbox();await reconcileMessagingDeliveries();}
+export async function processMessaging(){await processMessagingInbox();queueMessagingReminders();await processMessagingOutbox();await reconcileMessagingDeliveries();recordConfirmedReminderFocus();}

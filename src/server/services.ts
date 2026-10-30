@@ -11,6 +11,7 @@ import { classifyAuthorizedDuplicate, readInvestor, readInvestorRow, readInvesto
 import { addRelationshipEvent, applyBuyBoxApproval, listBuyBoxes, matchProperty, syncPrimaryBuyBox } from './intelligence';
 import { extractNotes } from './notes';
 import { collectHistoryReferences, readHistoryMessage, type StoredMessage } from './history';
+import { listPersonalTasks, mutateTask, taskReminderKey } from './task-actions';
 
 export { AppError, assertActor, demoActor } from './db';
 export { specialists } from './registry';
@@ -69,7 +70,7 @@ export function notify(actor:Actor,dedupeKey:string,title:string,body:string,lin
 }
 export function processNotifications(actor:Actor) {
  assertActor(actor);
- for(const task of scopedRows<Task>(actor,'tasks',true))if(task.status==='open'&&task.dueAt&&Date.parse(task.dueAt)<=Date.now())notify(actor,`task-due:${task.id}`,'Follow-up is due',task.title,'queue');
+ if(hasFeature(actor,'core')&&hasFeature(actor,'daily-coordinator'))for(const task of listPersonalTasks(actor))if(task.status==='open'&&task.dueAt&&Date.parse(task.dueAt)<=Date.now())notify(actor,taskReminderKey(task),'Follow-up is due',task.title,'queue');
  for(const job of scopedRows<ResearchJob>(actor,'research_jobs',true))if(job.status==='completed')notify(actor,`research-done:${job.id}`,'Your research is ready',`${job.prospects.length} ${job.provider===syntheticResearchProvider.id?'synthetic prospects':'public-source candidates; identities and purchases unverified'} for ${job.input.address}. Review evidence and duplicates before importing.`,'hunter');
  for(const job of scopedRows<ResearchJob>(actor,'research_jobs',true))if(job.status==='failed'&&job.provider===externalResearchProviderId)notify(actor,`research-stopped:${job.id}:${job.attempt}`,'External research stopped',`${job.prospects.length} saved candidates remain available. Review the job for its stop reason and remaining scope.`,'hunter');
  if(!notificationsAllowed(actor))return;
@@ -296,15 +297,13 @@ export function createTask(actor:Actor,input:{title:string;dueAt?:string|null;in
  requireFeature(actor,'daily-coordinator');
  assertActor(actor);const parsed=taskSchema.parse(input);
  if(parsed.investorId){const investorRow=readInvestorRow(actor,parsed.investorId);if(investorRow.office_id!==actor.officeId)throw new AppError(403,'A linked task must use an investor in your office.');}
- const task:Task={id:newId('task'),title:parsed.title,dueAt:parsed.dueAt?new Date(parsed.dueAt).toISOString():null,investorId:parsed.investorId??null,status:'open',ownerId:actor.id,createdAt:now()};
+ const stamp=now();
+ const task:Task={id:newId('task'),title:parsed.title,dueAt:parsed.dueAt?new Date(parsed.dueAt).toISOString():null,investorId:parsed.investorId??null,status:'open',ownerId:actor.id,createdAt:stamp,updatedAt:stamp,version:1};
  getDb().prepare('INSERT INTO tasks(id,organization_id,office_id,owner_id,investor_id,data) VALUES(?,?,?,?,?,?)').run(task.id,actor.organizationId,actor.officeId,actor.id,task.investorId,JSON.stringify(task));
  audit(actor,'task.created',task.id);return task;
 }
 export function completeTask(actor:Actor,id:string):Task {
- requireFeature(actor,'daily-coordinator');
- const task=scopedGet<Task>(actor,'tasks',idSchema.parse(id));
- if(task.status==='completed')return task;
- const completed=updateRecord(actor,'tasks',{...task,status:'completed' as const});audit(actor,'task.completed',id);return completed;
+ return mutateTask(actor,id,{action:'complete'});
 }
 
 export function getGuidance(actor:Actor,investorId?:string) {

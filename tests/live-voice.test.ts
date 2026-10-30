@@ -9,6 +9,7 @@ import { usageBalances } from '../src/server/metering';
 import { simulateLifecycle, subscription } from '../src/server/billing';
 import { recordDemoDisclosure, DISCLOSURE_VERSION } from '../src/server/intelligence';
 import { saveTemplate } from '../src/server/workflows';
+import { forgetEmployeeMemory,saveEmployeeMemory } from '../src/server/memory';
 
 interface FakeSocket {url:string;options:{headers:{Authorization:string}};readyState:number;send:ReturnType<typeof vi.fn>;emit:(name:string,value?:unknown)=>void;close:()=>void;terminate:()=>void}
 const sockets=vi.hoisted(()=>({instances:[] as FakeSocket[]}));
@@ -109,6 +110,41 @@ describe('trusted Realtime voice boundary',()=>{
     const prepared=await connected();service.createTask(actor,{title:'Normal work should not end voice'});expect(getVoiceStatus(actor,prepared.voiceSessionId).status).toBe('connected');
     saveTemplate(manager,{id:template.id,name:template.name,channel:template.channel,intro:template.intro,closing:template.closing,approved:false});
     expect(getVoiceStatus(actor,prepared.voiceSessionId)).toMatchObject({status:'ended',reason:expect.stringContaining('Protected workspace')});
+  });
+  it.each(['edit','forget'] as const)('requires voice reconnect after a preference %s and excludes previous style history from the next session',async(change)=>{
+    vi.useFakeTimers({toFake:['Date']});vi.setSystemTime(new Date('2026-10-29T18:00:00Z'));
+    saveEmployeeMemory(actor,{tone:'direct',length:'concise',sourceText:'obsolete-voice-preference-source'});
+    vi.setSystemTime(new Date('2026-10-29T18:01:00Z'));const conversation=service.createConversation(actor,'Voice preference continuity');
+    service.addMessage(actor,conversation.id,{role:'user',content:'Please keep the obsolete-voice-style-history for this message.'});
+    const prepared=await createVoiceSession(actor,conversation.id);await connectVoiceSession(actor,prepared.voiceSessionId,offer);
+    const initial=JSON.parse(fetchMock.mock.calls[0][1].body).session.instructions as string;expect(initial).toContain('obsolete-voice-preference-source');expect(initial).toContain('obsolete-voice-style-history');
+    vi.setSystemTime(new Date('2026-10-29T18:02:00Z'));
+    if(change==='edit')saveEmployeeMemory(actor,{tone:'warm',length:'detailed',expectedVersion:1});else forgetEmployeeMemory(actor,1);
+    expect(getVoiceStatus(actor,prepared.voiceSessionId)).toMatchObject({status:'ended',reason:expect.stringContaining('Reconnect voice')});await drain();
+    expect(fetchMock.mock.calls.some(call=>String(call[0]).endsWith('/rtc_trusted123/hangup'))).toBe(true);
+    vi.setSystemTime(new Date('2026-10-29T18:03:00Z'));await createVoiceSession(actor,conversation.id);
+    const calls=fetchMock.mock.calls.filter(call=>String(call[0]).endsWith('/client_secrets'));
+    const refreshed=JSON.parse(calls.at(-1)![1].body).session.instructions as string;
+    expect(refreshed).toContain(change==='edit'?'"tone":"warm"':'"tone":null');expect(refreshed).toContain('"version":2');expect(refreshed).not.toContain('obsolete-voice-preference-source');expect(refreshed).not.toContain('obsolete-voice-style-history');
+    expect(JSON.stringify(service.getConversation(actor,conversation.id))).toContain('obsolete-voice-style-history');
+  });
+  it('rejects a connection whose preference context was forgotten while the provider call was pending',async()=>{
+    saveEmployeeMemory(actor,{tone:'direct'});const prepared=await createVoiceSession(actor);let release!:(value:Response)=>void;
+    fetchMock.mockImplementationOnce(()=>new Promise<Response>(resolve=>{release=resolve;}));
+    const pending=connectVoiceSession(actor,prepared.voiceSessionId,offer);forgetEmployeeMemory(actor,1);
+    release(new Response('v=0\r\no=stale-memory-answer',{headers:{Location:'/v1/realtime/calls/rtc_stale_memory'}}));
+    await expect(pending).rejects.toThrow(/changed|Reconnect|current/i);await drain();
+    expect(getVoiceStatus(actor,prepared.voiceSessionId).status).toBe('failed');expect(fetchMock.mock.calls.some(call=>String(call[0]).endsWith('/rtc_stale_memory/hangup'))).toBe(true);
+    expect(service.getConversation(actor,prepared.conversationId).messages.some(message=>message.content==='Live voice connected. Tool actions and transcripts are saved in this conversation.')).toBe(false);
+  });
+  it('releases unused voice setup if preferences change while its credential is pending',async()=>{
+    saveEmployeeMemory(actor,{tone:'direct'});let release!:(value:Response)=>void;
+    fetchMock.mockImplementationOnce(()=>new Promise<Response>(resolve=>{release=resolve;}));
+    const pending=createVoiceSession(actor);saveEmployeeMemory(actor,{tone:'warm',expectedVersion:1});release(new Response(JSON.stringify({value:'discarded-stale-credential'})));
+    await expect(pending).rejects.toThrow(/changed|Reconnect|current/i);
+    expect(voiceBalance()).toMatchObject({reserved:0,consumed:0});expect(fetchMock.mock.calls.some(call=>String(call[0]).endsWith('/calls'))).toBe(false);
+    expect(JSON.stringify(getDb().prepare('SELECT * FROM voice_live_sessions').all())).not.toContain('discarded-stale-credential');
+    expect(getDb().prepare('SELECT status FROM voice_live_sessions').get()).toEqual({status:'failed'});
   });
   it('caps tool chains per response and across the entire session',async()=>{
     vi.stubEnv('AGENTDESK_VOICE_MAX_TOOL_CALLS','1');const prepared=await connected();const output=(call:string,title:string)=>({type:'function_call',call_id:call,name:'create_task',arguments:JSON.stringify({title,dueAt:null,investorId:null})});

@@ -1,5 +1,17 @@
 # AgentDesk master plan
 
+## Conversational follow-through — October 29, 2026
+
+Typed Copilot and linked employee Slack/SMS can now finish, cancel, snooze and reschedule personal tasks, and explicitly resolve a named investor concern with the employee's explanation. The dashboard defaults to the ongoing channel conversation; separate chats remain deliberate. Structured task references, versions, delivery receipts and numbered clarification keep short replies attached to the intended work. The Work queue exposes the same task services with history and rescheduling controls. See `docs/CONVERSATION_WORKFLOWS.md` for supported commands and the presentation sequence.
+
+A bounded live text rehearsal verified creation → reschedule → snooze → completion → replay on one fictional task. The follow-through steps required no additional model requests. Mocked paired-channel tests cover SMS → reminder → Slack → SMS, but actual Slack/Twilio account setup and real delivery acceptance remain pending. New task edits use typed messages; spoken edit commands, calendar/email/file integrations, recurring workflows and broader autonomous execution remain expansion work. This milestone and the preceding memory/journey changes are included in the owner-authorized repository update; deploying that revision to Render is a separate step.
+
+## Relationship intelligence — October 29, 2026
+
+The first differentiation milestone now combines explicit employee preferences, a sourced investor journey and recommendations that respond to new concerns and linked resolutions. Copilot, dashboard and linked employee messaging use the same private memory and scoped relationship services. Settings exposes preference sources, correction and forgetting; investor profiles/briefings show a useful next action, draft, unknowns and supporting records. Migrations 010/011 are additive. See `docs/INTELLIGENCE_MILESTONE.md` for the demonstration and specialist standard.
+
+A two-turn live Responses rehearsal used fictional records and confirmed that a new repair concern and writing correction affected the next answer. This is functional evidence, not a generic-AI superiority benchmark or a measured sales/retention improvement. Next differentiation work is broader blinded evaluations, reviewable learning from draft corrections, richer relationship reasoning and standards for the remaining specialists. Real New Western data remains deferred until approval.
+
 ## Phase 2 implementation — existing application preserved
 
 The October 29 discovery expands the working local build into a connected investor-to-property workflow. Phase 1 is checkpointed at `cded4cd`; conversations, tasks, research, approvals and local data must survive forward migrations.

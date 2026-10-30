@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import type { Actor } from '@/lib/contracts';
+import { getEmployeeMemory } from './memory';
 import { getDb } from './db';
 import { getOwnershipPolicy, readInvestorRow } from './access';
 import { getDisclosurePolicy, getInvestorIntelligence, isDisclosureReady } from './intelligence';
@@ -11,10 +12,11 @@ export function voiceContextSnapshot(actor:Actor):Record<string,string> {
   const result:Record<string,string>={};
   const add=(key:string,value:unknown)=>{result[key]=createHash('sha256').update(JSON.stringify(value)).digest('hex');};
   add('scope',{organization:actor.organizationId,office:actor.officeId,user:actor.id,role:actor.role,ownership:getOwnershipPolicy(actor),disclosure:getDisclosurePolicy(actor)});
+  add('employeeMemory',getEmployeeMemory(actor));
   const releases=listReleases(actor);
   for(const investor of listInvestors(actor)) {
     const row=readInvestorRow(actor,investor.id),profile=getInvestorIntelligence(actor,investor.id);
-    add(`investor:${investor.id}`,{office:row.office_id,owner:row.owner_id,visibility:profile.visibility,sharedWith:profile.sharedWith,buyBoxes:profile.buyBoxes,disclosure:profile.disclosure,disclosureReady:isDisclosureReady(profile.disclosure)});
+    add(`investor:${investor.id}`,{journey:getDb().prepare('SELECT data FROM journey_observations WHERE organization_id=? AND investor_id=? ORDER BY rowid').all(actor.organizationId,investor.id),office:row.office_id,owner:row.owner_id,visibility:profile.visibility,sharedWith:profile.sharedWith,buyBoxes:profile.buyBoxes,disclosure:profile.disclosure,disclosureReady:isDisclosureReady(profile.disclosure)});
   }
   for(const property of listProperties(actor)) {
     const row=getDb().prepare('SELECT owner_id FROM properties WHERE organization_id=? AND office_id=? AND id=?').get(actor.organizationId,actor.officeId,property.id);

@@ -46,6 +46,7 @@ import {
   Spinner,
 } from './ui';
 import { NotesPanel } from './WorkPanels';
+import { JourneyPanel } from './JourneyPanel';
 
 export type IntelligenceCommon = {
   data: Bootstrap;
@@ -188,12 +189,16 @@ export function BuyBoxCard({ box }: { box: BuyBox }) {
 export function BriefingModal({
   investorId,
   propertyId,
+  actor,
+  onChange,
   onClose,
   onPackage,
   onDebrief,
 }: {
   investorId: string;
   propertyId?: string;
+  actor: Bootstrap['actor'];
+  onChange?: () => Promise<void>;
   onClose: () => void;
   onPackage: (selection: PackageSelection) => void;
   onDebrief: (selection: DebriefSelection) => void;
@@ -241,6 +246,10 @@ export function BriefingModal({
             </div>
             <DisclosureBadge disclosure={brief.disclosure} />
           </div>
+          <JourneyPanel key={`${actor.id}-${investorId}`} investorId={investorId} propertyId={propertyId} onChange={onChange} canEdit={actor.role === 'manager' || (actor.role === 'dispositions' && brief.investor.ownerId === actor.id)} />
+          <details className="briefing-record-details">
+            <summary>Review full pre-call context</summary>
+            <div className="intelligence-stack">
           <div className="call-objective">
             <p className="eyebrow">YOUR CALL OBJECTIVE</p>
             <p>{brief.objective}</p>
@@ -296,6 +305,8 @@ export function BriefingModal({
           <p className="subtle-note">
             {brief.source} · Fictional relationship data. Contact details are not verified.
           </p>
+            </div>
+          </details>
           <div className="intelligence-actions">
             <button className="button primary" onClick={() => onDebrief({ investorId, propertyId })}>
               <FileText size={15} />
@@ -690,6 +701,9 @@ export function InvestorIntelligenceSection({
           Prepare deal package
         </button>
       </div>
+      <JourneyPanel key={`${data.actor.id}-${profile.investor.id}`} investorId={profile.investor.id} onChange={onChange} canEdit={canEdit && data.actor.role !== 'acquisitions'} />
+      <details className="profile-record-details">
+        <summary>Investor criteria and CRM records</summary>
       <dl className="intelligence-facts">
         <div>
           <dt>Relationship owner</dt>
@@ -857,6 +871,7 @@ export function InvestorIntelligenceSection({
         ) : (
           <p className="muted">No relationship events recorded yet.</p>
         )}
+      </details>
       </details>
     </section>
   );

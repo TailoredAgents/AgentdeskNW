@@ -3,9 +3,12 @@ import { existsSync,mkdtempSync,rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createServer } from 'node:net';
+const suite=process.argv[2]||'workflows';
+if(!['workflows','intelligence','conversation'].includes(suite))throw new Error('Unknown smoke suite.');
+const script=suite==='conversation'?'scripts/conversation-smoke.ts':suite==='intelligence'?'scripts/intelligence-smoke.ts':'scripts/smoke.ts';
 
 if(process.env.SMOKE_BASE_URL){
- const child=spawn(process.execPath,['--import','tsx','scripts/smoke.ts'],{stdio:'inherit',env:process.env});
+ const child=spawn(process.execPath,['--import','tsx',script],{stdio:'inherit',env:process.env});
  process.exitCode=await new Promise(resolve=>child.on('exit',code=>resolve(code??1)));
 }else{
  if(!existsSync('.next/BUILD_ID'))throw new Error('Build the application first with npm run build. The smoke suite uses a disposable local database and the built app.');
@@ -17,7 +20,7 @@ if(process.env.SMOKE_BASE_URL){
   let ready=false;
   for(let attempt=0;attempt<60;attempt++){try{const response=await fetch(`${env.SMOKE_BASE_URL}/api/health`);if(response.ok){ready=true;break;}}catch{}await new Promise(resolve=>setTimeout(resolve,250));}
   if(!ready)throw new Error('The isolated smoke server did not become ready.');
-  const test=spawn(process.execPath,['--import','tsx','scripts/smoke.ts'],{stdio:'inherit',env});
+  const test=spawn(process.execPath,['--import','tsx',script],{stdio:'inherit',env});
   process.exitCode=await new Promise(resolve=>test.on('exit',code=>resolve(code??1)));
  }finally{
   await Promise.all(children.map(child=>new Promise(resolve=>{if(child.exitCode!==null){resolve();return;}child.once('exit',resolve);child.kill('SIGTERM');})));

@@ -1,4 +1,6 @@
 import { messagingRoute } from '@/server/messaging-api';
+import { getPersonalTask, listPersonalTasks, mutateTask, taskMutationSchema } from '@/server/task-actions';
+import { memoryJourneyRoute } from '@/server/memory-journey-api';
 import { billingRoute } from '@/server/billing-api';
 import { EntitlementError } from '@/server/billing';
 import { NextRequest,NextResponse } from 'next/server';
@@ -53,6 +55,7 @@ async function route(request:NextRequest,{params}:{params:Promise<{path:string[]
     if(resource==='voice'&&id==='status'&&method==='GET')return json(getVoiceStatus(actor,idSchema.parse(request.nextUrl.searchParams.get('voiceSessionId'))));
     const messaging=await messagingRoute(request,actor,path,()=>body(request));if(messaging)return messaging;
     const billing=await billingRoute(request,actor,path,()=>body(request));if(billing)return billing;
+    const memoryJourney=await memoryJourneyRoute(request,actor,path,()=>body(request));if(memoryJourney)return memoryJourney;
     const phaseTwo=await phaseTwoRoute(request,actor,path,()=>body(request));if(phaseTwo)return phaseTwo;
     if(resource==='chat'&&method==='POST'){
       const input=z.object({conversationId:idSchema.optional(),requestId:idSchema.optional(),message:z.string().trim().min(1).max(12000)}).strict().parse(await body(request));
@@ -88,6 +91,8 @@ async function route(request:NextRequest,{params}:{params:Promise<{path:string[]
     if(resource==='investors'&&id&&method==='PATCH'){
       const {changes}=z.object({changes:qualificationChangesSchema}).strict().parse(await body(request));return json(service.proposeInvestorUpdate(actor,id,changes),201);
     }
+    if(resource==='tasks'&&method==='GET'&&path.length<=2)return json(id?getPersonalTask(actor,id):listPersonalTasks(actor));
+    if(resource==='tasks'&&id&&method==='PATCH'&&path.length===2)return json(mutateTask(actor,id,taskMutationSchema.parse(await body(request))));
     if(resource==='tasks'&&method==='POST'){
       if(id&&operation==='complete')return json(service.completeTask(actor,id));
       const input=z.object({title:z.string().trim().min(3).max(240),dueAt:z.string().datetime({offset:true}).nullable().optional(),investorId:idSchema.nullable().optional()}).strict().parse(await body(request));return json(service.createTask(actor,input),201);
@@ -110,4 +115,4 @@ async function route(request:NextRequest,{params}:{params:Promise<{path:string[]
     console.error(JSON.stringify({event:'request_failed',errorType:error instanceof Error?error.name:'unknown'}));return json({error:'The operation could not be completed. Please try again.'},500);
   }
 }
-export { route as GET,route as POST,route as PATCH };
+export { route as GET,route as POST,route as PATCH,route as DELETE };

@@ -1,0 +1,82 @@
+/* Inspectable personal memory and sourced relationship guidance. */
+.employee-memory,.journey-panel{min-width:0;overflow-wrap:anywhere;}
+.employee-memory .panel-description,.journey-panel .panel-description{margin-top:0;line-height:1.75;}
+.intelligence-loading{padding:22px 0;color:var(--muted);font-size:12px;}
+.intelligence-message{font-size:12px;line-height:1.65;border:1px solid var(--border);border-radius:9px;padding:12px 14px;margin:16px 0;overflow-wrap:anywhere;}
+.intelligence-message p{margin:0 0 5px;}
+.intelligence-message-error{background:#fff5f0;border-color:#eedbd0;color:#904e35;}
+.intelligence-message-success{display:flex;align-items:flex-start;gap:8px;background:#edf7ef;border-color:#d4e9d7;color:#347149;}
+.intelligence-message-success svg{flex-shrink:0;margin-top:2px;}
+.memory-state{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin:20px 0;}
+.memory-state>span:last-child:not(.badge){font-size:10px;color:var(--muted);}
+.memory-form fieldset,.journey-observation-form fieldset{border:0;padding:0;margin:0;min-width:0;display:grid;gap:18px;}
+.memory-form label,.journey-observation-form label{display:grid;gap:8px;font-size:12px;font-weight:550;color:#455e52;min-width:0;}
+.memory-form input,.memory-form select,.memory-form textarea,.journey-observation-form input,.journey-observation-form select,.journey-observation-form textarea{width:100%;min-width:0;box-sizing:border-box;font:inherit;font-weight:400;line-height:1.6;padding:10px 12px;color:var(--text);}
+.memory-form textarea,.journey-observation-form textarea{resize:vertical;min-height:86px;}
+.memory-style-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;}
+.memory-field-help{color:#7b8c81;font-size:10px;font-weight:400;}
+.memory-actions{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-top:20px;}
+.memory-conversation-tip{display:flex;gap:10px;padding:16px;background:#f3f7f0;border:1px solid #e0e9d9;border-radius:11px;margin-top:24px;}
+.memory-conversation-tip>svg{flex-shrink:0;color:#6c8c5c;margin-top:2px;}
+.memory-conversation-tip strong{display:block;color:#42603e;font-size:11px;font-weight:600;}
+.memory-conversation-tip p{font-size:12px;line-height:1.75;color:#456743;margin:6px 0;}
+.memory-conversation-tip span{display:block;font-size:10px;line-height:1.7;color:#7a8b70;}
+.memory-sources{border-top:1px solid var(--border);margin-top:20px;padding-top:16px;}
+.memory-sources summary,.journey-evidence summary,.journey-observation summary{cursor:pointer;font-size:12px;color:#4d7259;line-height:1.7;}
+.memory-sources>div{display:grid;gap:13px;margin-top:15px;}
+.memory-sources strong{font-size:11px;font-weight:600;}
+.memory-sources p{font-size:12px;line-height:1.65;margin:3px 0;overflow-wrap:anywhere;}
+.memory-sources span{font-size:10px;color:var(--muted);}
+.journey-header-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:12px 0 18px;}
+.journey-summary{font-size:13px;line-height:1.85;color:#395343;white-space:pre-wrap;}
+.journey-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:20px;}
+.journey-fact{background:#f7faf5;border:1px solid #e2eade;border-radius:11px;padding:15px;min-width:0;}
+.journey-fact h3{display:flex;gap:7px;align-items:center;font-size:12px;letter-spacing:0;margin:0 0 10px;color:#49654e;}
+.journey-fact ul,.journey-unknowns ul,.journey-reasons{padding-left:17px;margin:0;}
+.journey-fact li,.journey-reasons li,.journey-unknowns li{font-size:12px;line-height:1.75;margin:5px 0;overflow-wrap:anywhere;}
+.journey-fact>p{font-size:12px;line-height:1.75;color:var(--muted);margin:0;}
+.journey-next-action{margin-top:23px;padding:21px;border-radius:12px;background:#edf5e9;border:1px solid #d7e6cf;}
+.journey-next-action .eyebrow{display:flex;align-items:center;gap:7px;margin:0 0 10px;color:#658758;}
+.journey-next-action h3{font-size:18px;font-weight:550;line-height:1.5;letter-spacing:-.3px;color:#315136;margin:0 0 10px;overflow-wrap:anywhere;}
+.journey-next-action>p{font-size:12px;line-height:1.75;color:#567250;margin:8px 0;}
+.journey-next-action .journey-reasons{color:#4c6748;margin-top:10px;}
+.journey-recommendation-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:20px 0;}
+.journey-unknowns{margin-top:17px;padding:15px 17px;border-radius:10px;border:1px solid #eee3c8;background:#fffbf0;color:#866b32;}
+.journey-unknowns h3{font-size:12px;display:flex;align-items:center;gap:7px;margin:0 0 8px;color:#866b32;}
+.journey-draft{border:1px solid var(--border);border-radius:12px;padding:19px;margin-top:20px;}
+.journey-draft-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
+.journey-draft-heading h3{display:flex;align-items:center;gap:8px;margin:0;font-size:13px;}
+.journey-draft pre{font-family:inherit;font-size:13px;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.85;margin:0;padding:16px;background:#f7f9f5;border-radius:9px;color:#395343;}
+.journey-style-note{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:12px;}
+.journey-style-note span{font-size:10px;color:#718168;}
+.journey-draft .subtle-note{line-height:1.75;margin:13px 0 0;}
+.journey-evidence{margin-top:20px;border-top:1px solid var(--border);padding-top:16px;}
+.journey-evidence-list{display:grid;gap:12px;margin-top:14px;}
+.journey-evidence-item{padding-left:12px;border-left:2px solid #d8e5d2;}
+.journey-evidence-item>div{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.journey-evidence-item strong{font-size:11px;color:#4a6550;}
+.journey-evidence-item p{font-size:12px;line-height:1.75;margin:7px 0 4px;overflow-wrap:anywhere;}
+.journey-evidence-item small{font-size:10px;color:#7a8a7b;}
+.journey-observation{border-top:1px solid var(--border);padding-top:16px;margin-top:20px;}
+.journey-observation-form{margin-top:15px;}
+.journey-observation-form>.button{margin-top:16px;}
+.journey-observation .panel-description{font-size:12px;margin:12px 0 16px;}
+.journey-observation-list{display:grid;gap:10px;margin-top:17px;}
+.journey-observation-item{border:1px solid var(--border);border-radius:10px;padding:13px 15px;background:#fafcf8;}
+.journey-observation-item>div{display:flex;gap:8px;align-items:center;justify-content:space-between;}
+.journey-observation-item p{font-size:12px;line-height:1.75;margin:8px 0;overflow-wrap:anywhere;}
+.journey-observation-item small{font-size:10px;color:var(--muted);}
+@media(max-width:600px){.memory-style-grid,.journey-facts{grid-template-columns:minmax(0,1fr)}.memory-actions{align-items:stretch;flex-direction:column}.memory-actions>.button{width:100%}.memory-state{align-items:flex-start}.journey-next-action{padding:17px}.journey-next-action h3{font-size:16px}.journey-draft{padding:15px}.journey-draft pre{padding:13px;font-size:12px}.journey-recommendation-actions>.button{width:100%}.journey-draft-heading .button{min-height:34px}.memory-form select,.memory-form textarea,.journey-observation-form select,.journey-observation-form textarea{font-size:16px}}
+.memory-undo{margin-left:9px;font-size:12px;text-decoration:underline;}
+.journey-method{border-top:1px solid var(--border);padding-top:15px;margin-top:18px;}
+.journey-method>strong{font-size:11px;color:#4a6550;}
+.journey-due{color:var(--muted);}
+.profile-intelligence>.journey-panel{margin:22px 0;}
+.profile-record-details,.briefing-record-details{border:1px solid var(--border);border-radius:11px;padding:16px 18px;background:#fafcf8;}
+.profile-record-details>summary,.briefing-record-details>summary{cursor:pointer;color:#42644b;font-size:12px;font-weight:550;line-height:1.75;}
+.profile-record-details[open]>summary,.briefing-record-details[open]>summary{margin-bottom:22px;}
+.briefing-record-details>.intelligence-stack{margin-top:18px;}
+@media(max-width:600px){.profile-record-details,.briefing-record-details{padding:14px}.journey-panel>.section-head h2{font-size:16px}.memory-state>span:last-child:not(.badge){font-size:11px}.memory-field-help{font-size:11px}}
+
+/* Quick task changes use the same services as Copilot. */
+.task-row-copy{min-width:0;flex:1}.task-actions-menu{position:relative;flex-shrink:0}.task-actions-menu>summary{cursor:pointer;list-style:none;border-radius:7px;padding:7px;color:var(--muted)}.task-actions-menu>summary::-webkit-details-marker{display:none}.task-actions-menu[open]>summary{background:#edf3e9;color:#315136}.task-actions-menu>div{position:absolute;z-index:8;right:0;top:36px;min-width:170px;border:1px solid var(--border);border-radius:10px;padding:5px;background:white;box-shadow:0 8px 24px #16362b16}.task-actions-menu button{display:flex;gap:9px;align-items:center;width:100%;padding:10px;border:0;background:none;text-align:left;color:#395343;font:inherit;font-size:12px;border-radius:6px;cursor:pointer}.task-actions-menu button:hover{background:#f1f6ed}.task-actions-menu button:disabled{opacity:.5;cursor:wait}.task-reschedule-label{display:grid;gap:10px;font-size:13px}.task-reschedule-label input{width:100%;padding:12px;font:inherit}.queue-task>.task-row-copy strong{overflow-wrap:anywhere}@media(max-width:600px){.queue-task{gap:10px}.queue-task>.badge{font-size:9px}.task-reschedule-label input{font-size:16px}.task-actions-menu>div{min-width:164px}}
