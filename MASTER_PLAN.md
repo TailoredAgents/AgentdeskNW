@@ -6,6 +6,10 @@ The owner wants a broadly useful personal Copilot that can plan and complete wor
 
 This expands the implementation roadmap without claiming new capabilities are already live. The current relationship milestone and communications foundations are retained. The next shared foundation is durable multi-step work that can resume, verify results and use existing services; completing every specialist still requires role-specific methods, tools and evaluation. Live company approval and existing execution authority remain unchanged until their respective replacement capabilities are implemented and tested.
 
+## Job cost approval and optional automatic credits
+
+Before a complete job costs more than $1 in customer-facing AgentDesk Credits, the employee must approve or deny its scope and maximum. Sum all specialist steps; pause before crossing the threshold or an approved maximum. Standing permissions and recurring schedules do not waive this rule. Add optional payer-authorized auto top-up with a chosen balance trigger, purchase amount and monthly auto-purchase cap. Funding never approves a high-cost job. These requirements join the capable-workforce and billing plans; [USAGE_METERING.md](docs/USAGE_METERING.md) defines the details. Current live AI accounting and the wallet simulator are unchanged until implementation.
+
 ## Company-wide scope and role-specific discovery
 
 AgentDesk NW is intended for company-wide rollout across **dispositions, acquisitions and management**. All three are primary product audiences. They share one platform and Copilot foundation, with workspaces, specialist capabilities, knowledge and access appropriate to their jobs. Dispositions should have a broader specialist roster and greater workflow depth where its work requires it; that does not make dispositions the center of the product or make the other roles companion features.

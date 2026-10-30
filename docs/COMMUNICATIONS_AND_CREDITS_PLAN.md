@@ -10,6 +10,12 @@ An employee uses one personal Copilot to coordinate the available workforce. Con
 
 The personal assistant conversation and external investor correspondence remain separate records with different authority. An investor's email/text is evidence, never an employee command. Sources, uncertain identity matches, permissions, reviewed CRM changes and delivery outcomes remain explicit.
 
+## Added requirement — job approvals and automatic top-ups
+
+The owner requires employee approval/denial before a complete job costs more than $1 in customer-facing credits. The threshold includes its delegated substeps; growth beyond the threshold or an approved maximum pauses for a revised approval. Scheduled work and standing action permissions do not waive this spending decision. Add optional payer-authorized auto top-up with a chosen low-balance threshold, purchase amount and monthly auto-purchase cap. Top-ups fund the wallet without approving expensive work or raising spending limits. See [USAGE_METERING.md](USAGE_METERING.md) for exact semantics and acceptance cases.
+
+Implement the job gate and top-up settings/outcomes with fictional accounting first, then connect real usage and payment settlement in Phase 6 below. Current manual simulated top-ups and sample-work reviews remain unchanged; these requirements are not claims of live enforcement or payment collection.
+
 ## Working commercial decisions
 
 | Component | Working direction | Status |
@@ -102,7 +108,7 @@ Acceptance: authorized test number sends and receives with trusted receipts, cor
 
 Connect live provider usage to versioned cost/rate calculations and wallet admission/settlement. Handle cached/input/output/audio/tool fees separately, retain unknown-cost states, reconcile invoices, set retry/refund rules and measure complete task cost. Validate allowances and the 5× target using observed usage; do not multiply expensive third-party data blindly. Ordinary navigation and deterministic internal actions remain free of AI wallet debits.
 
-Implement authorized payment checkout, server-bound customer/payer identities, verified payment webhooks, refunds, top-up settlement and purchased-credit terms. Introduce managed identity, PostgreSQL, durable distributed workers, backup/recovery, monitoring and support before broad deployment. Establish company seat commitments, sponsorship, employee spending controls, departure policies and communication-data ownership.
+Implement authorized payment checkout, server-bound customer/payer identities, verified payment webhooks, refunds, top-up settlement and purchased-credit terms. Include opt-in automatic top-ups with explicit recurring-payment authority, pending-purchase deduplication, failure handling and monthly purchase caps. Enforce the separate whole-job $1 approval rule on real customer-credit admission and settlement. Introduce managed identity, PostgreSQL, durable distributed workers, backup/recovery, monitoring and support before broad deployment. Establish company seat commitments, sponsorship, employee spending controls, departure policies and communication-data ownership.
 
 Acceptance: a small approved pilot proves payments/usage reconcile, retries are safe, budget limits work, account departure is handled, and support can diagnose failures. Expand seat counts based on observed reliability and adoption rather than the opportunity estimate.
 

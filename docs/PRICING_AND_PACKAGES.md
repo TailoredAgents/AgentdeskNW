@@ -35,6 +35,12 @@ One dollar of AgentDesk Credits represents one dollar of retail usage value, not
 
 The demonstration uses server-owned fictional cost scenarios with a versioned 5× multiplier. These are examples for testing the experience, not measured provider costs or proven margins. It does not debit real AI, research, voice or SMS activity yet. Existing operational allowances/receipts remain separate until real usage settlement is integrated in Phase 6. Ordinary navigation and deterministic task controls do not debit the wallet.
 
+## Planned spending controls
+
+Jobs above $1 of customer-facing AgentDesk Credit usage require employee approval of a quoted scope and maximum. Aggregate the complete job across agents and tool steps, and pause before a growing job crosses that threshold or its approved maximum. This uses the retail credit value the employee consumes, not the underlying provider cost. Approval applies to included as well as purchased credits.
+
+Optional auto top-up will let the authorized payer choose a balance trigger, purchase amount and monthly automatic-purchase cap. It is off until explicitly enabled. A recharge does not approve jobs, increase their maximum or raise the separate monthly usage-spending limit. These are planned requirements; manual demo purchases and the current simulation remain unchanged. See [USAGE_METERING.md](USAGE_METERING.md).
+
 ## Versions and historical migration
 
 Prices and allowances remain versioned catalog records; subscriptions store snapshots. Existing simulated legacy subscriptions migrate once to the workforce offering while retaining ID, status, calendar period, history and valid SMS selection. Original subscription snapshots are preserved in `billing_subscription_migrations`, and old invoice rows retain their original amounts. Specialist add-ons are absorbed into the workforce. Retired plan/component records remain for history and historical quote compatibility; new subscriptions cannot select them.

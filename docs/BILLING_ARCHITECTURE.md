@@ -1,5 +1,11 @@
 # Billing architecture — workforce and credits
 
+## Planned job budget and automatic purchase services
+
+Add a server-owned budget per complete work run, aggregating specialist calls and reservations. Above $1 of customer-facing credit use, require an employee-bound quote approval before dispatch; changed scope/maximum needs renewed approval. This cost authority is separate from standing business-action permissions, wallet funding and subscription access. Every dispatch surface and worker must use the same gate. Retain approval, denial, expiration, actual usage and unresolved provider outcomes.
+
+Auto top-up requires its own explicit payer settings and idempotent purchase lifecycle. Deduplicate pending purchases, include them in the monthly automatic-purchase cap, credit only verified successful settlement, and preserve company/personal payer separation. A model cannot enable it, choose a payer or authorize a more expensive job. Simulation precedes live integration. Detailed rules and boundary cases are in [USAGE_METERING.md](USAGE_METERING.md); neither new feature is currently enforced for live provider billing.
+
 ## Current workforce extension
 
 Migrations 014/015 extend the existing simulator. `billing_enterprise_seats` stores explicit administrator assignments and agreement labels. `billing_subscription_migrations` preserves original and migrated subscription snapshots. `wallet_accounts`, `wallet_quotes`, `wallet_operations`, `wallet_ledger` and `wallet_events` hold scoped balances, reviewed estimates, operations and immutable ledger/idempotency records. One wallet binds organization and employee across their authorized office memberships, consistent with subscription ownership. Ledger actions retain office provenance; each operation validates current membership and owner scope. Corporate base-seat assignment also binds organization and employee.

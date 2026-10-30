@@ -2,6 +2,34 @@
 
 The local subscription simulator and real provider evidence are separate ledgers. Proposed subscription rates are not actual charges. No customer payment is collected. Unknown provider expense remains `null`.
 
+## Planned job cost approval and automatic top-ups
+
+Owner requirement, October 30, 2026: before a job will cost **more than $1**, the employee must be able to approve or deny it. Add optional automatic credit top-ups. These are new implementation requirements; the current wallet remains a simulator and live provider activity still does not debit it. Its existing sample-work reviews are unchanged.
+
+### Job approval rule
+
+- Interpret $1 as the customer-facing usage value deducted from the employee's AgentDesk Credits, including included credits, rather than raw provider expense before AgentDesk pricing. Show dollars to the employee; token counts can be secondary detail. Include every billable part of the job in its quote so tool/research fees cannot create a hidden extra charge.
+- Apply the threshold to the complete job, including planning, specialist substeps, delegated work, verification and chargeable retries. Do not evade approval by splitting one assignment into several requests below $1. Recurring executions are individually identifiable jobs; a run above the threshold requires approval for that run, even if its schedule/actions have standing authorization.
+- A job with a defensible total maximum of $1.00 or less can proceed under otherwise valid authority and available budget. If its estimate or supported upper bound exceeds $1.00, ask before beginning that job's paid execution. If a reliable bound is unavailable, prepare a limited scope and price for review rather than guessing it is below the threshold. The approved limit must cover the entire job, not only the next model call.
+- Present the scope, estimated cost, maximum authorized charge, payer/credit balance and **Approve / Deny** controls in the current supported channel. Bind approval to the employee, job, scope and versioned quote. A model or background worker cannot approve the charge. Declining or an expired/unanswered request must not start the quoted paid work.
+- Reserve budget before dispatch. If a job initially below the threshold grows, pause before a further step could take the aggregate above $1.00. If already approved, pause before exceeding the approved maximum. Explain what changed, what is already spent/reserved, the revised total and the additional amount requested. Approval of one maximum is not permission for unlimited research.
+- Account for concurrent substeps, pending provider outcomes and retries atomically. Use fixed-precision rate calculations before display rounding; per-step rounding must not hide aggregate usage. Do not release uncertain reservations and then spend the same budget again. Record actual provider expense separately from customer billing; an unexpected provider overrun cannot silently increase the employee's authorized charge.
+- Exact $1.00 does not trigger this particular greater-than threshold. Other account permissions, available balance and monthly spending limits still apply. The $1 approval rule remains in effect regardless of wallet balance, company sponsorship, a routine's standing permission or automatic top-up settings.
+
+### Automatic credit top-ups
+
+Make auto top-up explicitly opt-in and initially off. The authorized payer chooses the available-credit trigger, amount to purchase per top-up and a monthly auto-purchase cap. Display the payer/payment method and the selected settings clearly, allow disabling/changing them, and notify after each completed purchase or payment failure. These values are settings, not automatically chosen purchase commitments.
+
+Calculate available credit after existing reservations. Permit at most one pending top-up for the same wallet/trigger cycle. Count completed and pending automatic purchases against the monthly cap, and use idempotent payment requests and verified settlement events so worker retries or webhook duplicates cannot charge twice or grant credit twice. A pending, failed or unknown payment does not create spendable credit; stop retry loops and surface the status.
+
+Keep the automatic-purchase cap separate from the existing monthly usage-spending limit. A top-up increases available funds; it does not approve a job above $1, increase its authorized maximum, raise a spending cap, grant a subscription or change role permissions. Company-paid seats do not authorize charging an employee's payment method, and employee auto top-ups do not authorize spending company funds. Recurring payment authorization must come from the actual payer.
+
+Implement/test settings, job gates and top-up outcomes first with explicit fictional rates/payment simulation. Actual off-session charges and real provider usage settlement remain part of the approved live billing phase. Do not label these new settings or the $1 rule as enforced for current live AI requests before that integration is complete.
+
+### Required acceptance
+
+Cover $0.99, exactly $1.00, and $1.01 whole-job bounds; multiple substeps totaling more than $1; parallel reservations; estimated growth mid-job; increased approved maximum; denial, expiration and changed quotes; dashboard/SMS/Slack approval identity; each expensive scheduled run; and attempts to bypass approval with a top-up or task split. Test low balance, explicit opt-in, payer isolation, monthly purchase/spending caps, pending/failed/duplicate payment results, disablement and recovery. Report actual costs and unknown outcomes without presenting an estimate as a provider receipt.
+
 ## Current retail-credit wallet
 
 The workforce plans include $15 of simulated retail credits per billing period. Purchased simulated top-ups of $10/$25/$50/$100 roll over separately. `wallet.ts` performs scoped, transaction-bound estimates, reservations, sample settlement/release, pending/unknown handling and spending-limit checks. Monetary arithmetic uses integer cents, and the ledger/events are append-only. Monthly credit is spent before purchased credit. Expired included credit cannot be recreated by canceling an old reservation in a newer period.

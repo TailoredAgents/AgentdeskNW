@@ -1,5 +1,15 @@
 # AgentDesk progress log
 
+## October 30, 2026 — One-dollar job approval and automatic credit top-up requirements
+
+**Owner addition:** require approve/deny before any job exceeds $1 of token/credit usage, and include automatic top-ups. The plan interprets this as the customer-facing credit debit, aggregates the entire job across specialists and retries, and requires a revised decision before crossing $1 or an approved maximum. Standing action permissions, scheduled runs and wallet balance cannot bypass the approval.
+
+**Auto top-up design:** explicit payer opt-in, low-balance trigger, purchase amount, monthly automatic-purchase cap, current spending-cap preservation, one pending purchase per wallet/trigger and verified replay-safe settlement. Adding funds does not approve a costly task. Updated workforce, master, metering, pricing, billing architecture and communications/credits plans with acceptance cases and simulation-before-live boundaries.
+
+**Status and verification:** requirements/documentation only; no new threshold enforcement, automatic charge, live provider call, wallet mutation or deployment occurred. Checked documentation links/consistency and the diff. Existing sample-wallet behavior and live provider accounting remain unchanged; application tests were not rerun for this prose update. Commit/push follows the owner's standing instruction.
+
+---
+
 ## October 30, 2026 — Broad Copilot capability and autonomy plan
 
 **Owner direction:** complete a highly capable workforce for all three roles, with convenient dashboard/SMS/Slack use, connected tools, persistent business context, autonomous follow-through and fewer unnecessary approval interruptions. The competitive reference is Grok Bot and ChatGPT's agent/task experiences. Alex's dispositions example supplies an end-to-end buyer-search, reply, briefing and title-coordination acceptance journey.

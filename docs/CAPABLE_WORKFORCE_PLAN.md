@@ -60,6 +60,14 @@ Use these product behaviors:
 
 This preserves useful autonomy while keeping employees in control of what the assistant does in their name. Authority is configurable; source truth, identity and confirmed execution are not optional.
 
+## Job spending approval and automatic credit top-ups
+
+The owner adds a mandatory approval point for any job costing **more than $1 in customer-facing AgentDesk Credits**. Quote the entire job across its specialist steps, show an estimate and a maximum, and ask the employee to approve or deny before paid execution. Exact $1.00 is within this threshold; other permissions and account caps still apply. A growing job must pause before crossing $1 or an already approved maximum. Standing task authorization, scheduling and splitting work into smaller calls cannot bypass this rule.
+
+Add optional auto top-up with explicit payer opt-in, a chosen low-balance trigger, purchase amount and monthly auto-purchase cap. Buying credits never authorizes an expensive job. Settings and payment results must be visible and replay-safe. The detailed policy, implementation boundaries and required tests are in [USAGE_METERING.md](USAGE_METERING.md).
+
+Phase A must include job-wide cost state, estimates/reservations and a waiting-for-cost-approval state using fictional accounting first. Subsequent autonomy and scheduled work reuse that service. Add simulated auto-top-up settings/outcomes to the wallet work; Phase E connects verified real usage/payment settlement. These requirements are not yet enforced by the current live provider path.
+
 ## Alex's dispositions acceptance journey
 
 1. The employee asks for buyers for a named available property and a geographic area. Copilot identifies the exact current property and checks its availability.
@@ -86,7 +94,7 @@ All three tracks must have end-to-end acceptance examples and a visible readines
 
 | Phase | Work | Exit condition |
 | --- | --- | --- |
-| A Shared work execution | Durable work plans, capability discovery, resumable steps, channel continuity and clear outcomes | One useful multi-step task per role completes on fictional data, survives restart/changed instructions, and avoids duplicate actions |
+| A Shared work execution | Durable work plans, capability discovery, resumable steps, channel continuity and clear outcomes | One useful multi-step task per role completes on fictional data, survives restart/changed instructions, avoids duplicate actions and respects whole-job cost approval |
 | B Specialist knowledge and business context | Context retrieval, deal/party/document records, reviewable employee learning, versioned specialist methods and examples | Each priority specialist produces a supported result on varied cases; missing evidence changes its answer and corrections affect future work |
 | C Complete role workflows and delegated actions | Build remaining specialists, expand existing tools, connect each role's journey, add tested standing authorizations and conversational reviews | Each role completes its agreed day-to-day workflows; routine authorized work proceeds without repetitive prompts and exceptions ask a precise question |
 | D Proactive follow-through | Scheduled/event-driven work, reply tracking, deal watchers, configured briefings and corrective updates | Work runs with the app closed, follows changed facts, respects stop/revoke settings, and reports relevant results without duplicate noise |
