@@ -2,9 +2,9 @@
 
 [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) is the sole authority for completion status and development order. This document records schema contracts and historical preservation evidence, not permission to apply migrations to the active database.
 
-## Written shared-work/mobile migrations — unaccepted C1/C2 source
+## Shared-work/mobile migrations — local acceptance
 
-Migrations 022–024 and their services exist in the uncommitted working tree. Integrated HTTP acceptance and migration-preservation acceptance for this group remain incomplete; writing or registering a migration does not establish that it was applied to a deployed or active database. The active local database remains at schema 009 and was not changed by this work. Prior copy-based migration evidence below does not validate these new migrations.
+Migrations 022–024 passed integrated HTTP checks and preservation acceptance on a disposable schema-021 copy: all **266 prior rows across 82 tables** remained byte-for-byte unchanged by migration, excluding the migration journal. Existing drafts, wallet operations and holds survived; new pairing, job completion, generic notice and revocation checks passed. Integrity checks passed and no provider call was added. The active schema-009 local database remained untouched with its file checksum unchanged. Evidence: ignored `artifacts/mobile/migration-preservation.json`. This does not establish deployed schema state.
 
 | Migration | Written schema and intended contract |
 | --- | --- |

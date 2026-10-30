@@ -12,7 +12,7 @@ App access is included in the workforce subscription. Employee-to-Copilot SMS is
 
 The owner has neither an Apple Developer nor a Google Play developer account and asked for local app preparation. Mixed-platform support remains required. Do not infer that no phones are available: no connected-device acceptance has been completed. Reviewable dictation is the first speech-input scope; actual live two-way voice remains a separate acceptance requirement.
 
-At the documentation freeze, `2d16665` is the committed application baseline. Later mobile, pairing, notification and conversation-control source is **uncommitted, frozen work in progress and unaccepted**. Local JavaScript exports do not establish installed-phone, push, speech, onboarding or production readiness. [MOBILE_DELIVERY_PLAN.md](MOBILE_DELIVERY_PLAN.md) holds subordinate mobile requirements and [mobile/README.md](../mobile/README.md) holds exact local evidence and limitations. Development resumes only through the canonical roadmap's checkpoints.
+The owner resumed implementation after the documentation reset. The October 30 mobile/shared-controls foundation has local integrated and phone-width browser acceptance, extending `2d16665`. JavaScript exports and local tests do not establish installed-phone push/speech, onboarding, specialist expertise or production readiness. [MOBILE_DELIVERY_PLAN.md](MOBILE_DELIVERY_PLAN.md) holds mobile requirements and [mobile/README.md](../mobile/README.md) records exact evidence and limitations. Follow the canonical roadmap for subsequent work.
 
 ## October 30 clarification — one company platform for three roles
 

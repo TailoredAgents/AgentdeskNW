@@ -1,0 +1,9 @@
+node_modules/
+.expo/
+dist/
+web-build/
+web-preview/
+android/
+ios/
+.env*
+!.env.example

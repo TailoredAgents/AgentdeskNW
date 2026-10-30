@@ -1,6 +1,43 @@
 # AgentDesk progress log
 
 
+## October 30, 2026 — Shared controls and mobile foundation accepted locally
+
+**Scope:** owner resumed implementation after documentation reset `407320e`. This source checkpoint accepts the preserved shared-controls/mobile foundation following runtime `2d16665`; C1/C2 remain partial. It includes the independent native package, additive migrations 022–024, shared server transport, scoped pairing, native Agent/Work/Settings, bounded employee job commands/cost decisions and opt-in notification infrastructure. GitHub source publication is authorized; no deployment or new live provider connection is part of this acceptance.
+
+**Shared work:** actual employee commands run before the model. Saved jobs have scoped W references; immutable A cost reviews bind the employee/conversation, plan, quote, expiry and maximum. Typed web/mobile and configured SMS/Slack share these services. Commands cover list/status/review/pause/resume/cancel and bounded dispositions-plan corrections. Models cannot approve; short channel decisions require the matching delivered review. General clarification, broad plan editing and live voice parity remain open.
+
+**Corrections made during acceptance:**
+
+- A withheld work artifact now keeps ambiguous “cancel it” in the job-selection flow instead of falling through to an older personal task. Restricted jobs are excluded from fresh choices. The regression verifies unchanged job/task state, no restricted investor identity and no model call.
+- Native request admission validates the actual Host with the request protocol, avoiding Next.js loopback normalization rejecting a legitimate `127.0.0.1` origin. Hosted origin matching and malformed/untrusted host rejection remain enforced and tested.
+- Phone setup names the actual Settings section. Empty-string conditional children and a literal newline in native pairing copy were corrected after the connected UI rehearsal.
+- Added the matching Expo SystemUI package/plugin, regenerated local native projects successfully and ignored `web-preview/`. Generated exports/native folders, credentials and local evidence remain outside source control.
+
+**Mobile:** an eight-digit single-use code from the signed-in fictional employee creates a revocable scoped device session; phones cannot select roles or issue pairing codes. Secure native storage, late-response guards, reviewed dictation source, saved Work/results/controls and exact simulated cost review reuse the existing backend. Browser preview storage is memory-only. Job push uses generic payloads, exact result links, opt-in, quiet hours, deduplication and current authorization. Queue/ticket/service-receipt/device-display outcomes remain distinct; actual sending defaults off.
+
+**Final local verification:**
+
+| Check | Result |
+| --- | --- |
+| Root typecheck, lint, production build | Passed |
+| Root automated tests | 583 passed across 31 files |
+| Mobile independent typecheck / client tests | Passed / 9 passed |
+| iOS and Android JavaScript exports | Both final-source bundles passed; approximately 1.8 MB each |
+| Web development export / native project generation | Passed / `expo prebuild --no-install` passed; no native binary built |
+| HTTP/workflow suites | 858 checks passed: workflows 109; intelligence 73; conversation 51; wallet 91; hosted 15; inbox 119; communications 61; company email 70; relationship 42; work 114; mobile 96; messaging 17 |
+| Relationship quality | 36/36 scenarios and 54/54 assertions passed |
+| Migration-copy preservation | 266 prior rows across 82 tables unchanged by migrations 022–024; integrity checks passed |
+| Documentation | Canonical roadmap and affected specifications reconciled; local links/anchors and whitespace checked |
+
+The mobile HTTP suite runs against the compiled application, exercises all three roles and uses a real local worker with fictional services/mock delivery. Tests cover ownership, pairing expiration/reuse, revocation/role changes, shared conversation, exact and stale cost decisions, notification boundaries and completion without an active phone request. Existing suites confirm preserved correspondence, wallet and relationship behavior. These are software checks, not actual provider or phone acceptance.
+
+**Connected interface acceptance:** at 390 × 844, paired from web Settings, started a six-step fictional dispositions job on the phone preview, reviewed its $3.25 maximum on the dashboard, approved that exact review on the phone, paused on the dashboard, resumed on the phone and observed worker completion for $2.25 simulated spend with no remaining hold. Results included existing buyers, relationship next step, 12 explicitly fictional research candidates and one personal follow-up. The cost modal keeps approve/deny controls visible while scope scrolls. Disabled phone notification transport explains installed-app requirements without blocking work. Web revocation returned the phone to pairing with private history removed; reconnecting recovered the same saved conversation/results. After the rendering correction, Agent/Work/Settings showed no application errors; Expo retains its expected web-only push-listener warning. Screenshots: ignored `artifacts/mobile/phone-cost-review.png` and `phone-completed-work.png`.
+
+**Preservation:** a read-only backup of the prior schema-021 acceptance copy was upgraded on a new disposable path through 024. Existing manual draft, wallet operations and holds survived. New pairing/job completion/notice/revocation succeeded. No provider operation was added. The active schema-009 database and its file checksum were unchanged. Evidence: ignored `artifacts/mobile/migration-preservation.json`.
+
+**Remaining limits:** neither native binary was compiled/installed; Xcode and connected Android test target were unavailable in inspected setup. Real microphone/dictation, secure storage lifecycle, closed-app push and exact-result opening still require both phone platforms. No Apple/Google account, EAS project, signing or store distribution was created. Eight inherited Expo tooling audit findings (3 high/5 low) remain for compatible upstream resolution before distribution; no breaking downgrade was applied. Final Expo dependency alignment used its local offline SDK map. No company data, external message, payment, actual spending enforcement or deployment was added/verified. Mobile Inbox, broader C1 continuation, deeper specialists, C5 initiative and C6 actual costs/top-up remain open. The canonical roadmap now names C3 Inbox/review continuity and C4 specialist methods as the next development work, with C2 device acceptance tracked separately.
+
 ## October 30, 2026 — Documentation reset and frozen mobile checkpoint
 
 **Owner request:** pause further building, reconcile the full conversation with actual source and documentation, remove conflicting directions and establish one clean roadmap to finish the product. Implementation remains paused after this reset; publishing the documents does not resume the feature work.

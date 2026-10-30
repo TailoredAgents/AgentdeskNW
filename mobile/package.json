@@ -1,0 +1,41 @@
+{
+  "name": "agentdesk-nw-mobile",
+  "version": "0.1.0",
+  "private": true,
+  "main": "index.ts",
+  "scripts": {
+    "start": "expo start --dev-client",
+    "ios": "expo run:ios",
+    "android": "expo run:android",
+    "web": "expo start --web",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test tests/*.test.ts",
+    "export": "expo export --platform ios --platform android",
+    "export:web": "expo export --platform web"
+  },
+  "engines": {
+    "node": "^22.13.0 || ^24.3.0 || ^26.0.0 || >=27.0.0"
+  },
+  "dependencies": {
+    "expo": "58.0.21",
+    "expo-constants": "~58.0.0",
+    "expo-crypto": "~58.0.0",
+    "expo-dev-client": "~58.0.0",
+    "expo-notifications": "~58.1.7",
+    "expo-secure-store": "~58.0.0",
+    "expo-speech-recognition": "58.0.1",
+    "expo-status-bar": "~58.0.4",
+    "expo-system-ui": "~58.0.7",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "react-native": "0.88.1",
+    "react-native-safe-area-context": "~5.10.1",
+    "react-native-web": "^0.21.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.0",
+    "@types/react": "~19.3.0",
+    "tsx": "4.23.15",
+    "typescript": "~6.0.3"
+  }
+}

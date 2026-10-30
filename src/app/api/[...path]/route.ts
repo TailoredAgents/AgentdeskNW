@@ -1,3 +1,5 @@
+import {assertMobileRequest,getMobileAuthentication,pairMobileDevice} from '@/server/mobile-auth';
+import {mobileRoute} from '@/server/mobile-api';
 import { workRoute } from '@/server/work-api';
 import { messagingRoute } from '@/server/messaging-api';
 import { getPersonalTask, listPersonalTasks, mutateTask, taskMutationSchema } from '@/server/task-actions';
@@ -32,7 +34,10 @@ async function route(request:NextRequest,{params}:{params:Promise<{path:string[]
     const {path}=await params;const [resource,id,operation]=path;const method=request.method;
     // Health checks expose no workspace data and do not initialize the database.
     if(resource==='health'&&path.length===1&&method==='GET')return json({status:'ok'});
+    if(resource==='mobile'&&id==='pair'&&path.length===2&&method==='POST'){assertMobileRequest(request);return json(pairMobileDevice(await body(request)),201);}
     assertLocalDemo(request);
+    const mobile=request.headers.has('authorization')?getMobileAuthentication(request):null;
+    if(mobile&&['session','access'].includes(resource))throw new service.AppError(403,'A phone connection cannot change employee identity.');
     if(resource==='access'&&path.length===1){
       if(method==='GET')return json({required:hostedDemo()&&!getActor(request)});
       if(method==='POST'){
@@ -56,6 +61,7 @@ async function route(request:NextRequest,{params}:{params:Promise<{path:string[]
     }
     if(resource==='providers'&&method==='GET')return json(providerStatus(actor));
     if(resource==='voice'&&id==='status'&&method==='GET')return json(getVoiceStatus(actor,idSchema.parse(request.nextUrl.searchParams.get('voiceSessionId'))));
+    const mobileResponse=await mobileRoute(request,actor,path,()=>body(request),mobile?.session);if(mobileResponse)return mobileResponse;
     const messaging=await messagingRoute(request,actor,path,()=>body(request));if(messaging)return messaging;
     const billing=await billingRoute(request,actor,path,()=>body(request));if(billing)return billing;
     const inbox=await communicationsRoute(request,actor,path,()=>body(request));if(inbox)return inbox;
@@ -65,7 +71,7 @@ async function route(request:NextRequest,{params}:{params:Promise<{path:string[]
     const phaseTwo=await phaseTwoRoute(request,actor,path,()=>body(request));if(phaseTwo)return phaseTwo;
     if(resource==='chat'&&method==='POST'){
       const input=z.object({conversationId:idSchema.optional(),requestId:idSchema.optional(),message:z.string().trim().min(1).max(12000)}).strict().parse(await body(request));
-      return json(await chat(actor,input.message,input.conversationId,input.requestId));
+      return json(await chat(actor,input.message,input.conversationId,input.requestId,mobile?'mobile':'web'));
     }
     if(resource==='conversations'){
       if(method==='GET')return json(id?service.getConversation(actor,id):service.listConversations(actor));

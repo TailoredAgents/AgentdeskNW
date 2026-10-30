@@ -10,11 +10,11 @@ The native app shares the existing server, employee conversation, scoped service
 
 The owner has neither an Apple Developer nor a Google Play developer account and authorized local preparation. No store release, account creation, cloud build, real company connection, investor delivery, payment activation or deployment follows from this specification.
 
-## Evidence boundary at the development freeze
+## Local checkpoint and remaining device acceptance
 
-The committed application baseline is **`2d16665`**. The mobile client, device pairing, notification transport and expanded conversational work controls are **uncommitted, frozen work in progress and unaccepted**. Existing source and earlier successful exports must not be described as a shipped or phone-tested app. Completion status and restart priorities belong only to the canonical roadmap.
+The October 30 shared-controls/mobile foundation has passed local integrated acceptance after baseline `2d16665`. It includes scoped device pairing, Agent/Work/Settings, the shared conversation, bounded controls, exact simulated cost decisions, reviewed dictation source and opt-in notification infrastructure. It is not a shipped or installed-phone-tested app; C1/C2 remain partial in the canonical roadmap.
 
-Local checks before the freeze produced JavaScript exports for iOS and Android, a web development export, generated native projects, nine passing mobile client tests and an earlier passing typecheck. The final lifecycle edits still need typecheck/tests/native exports rerun. No native binary was compiled or installed, no connected-device walkthrough or browser integration walkthrough was completed, and no real push or speech acceptance was established. See the technical README for exact evidence and tooling limits.
+Final-source checks passed: independent mobile typecheck, nine client tests, iOS/Android and web JavaScript exports, plus root typecheck/lint/build, 583 tests and 858 HTTP/workflow checks. Native project generation passed. Connected browser acceptance at phone width covered pairing, shared history, cross-surface approval/pause/resume, six-step worker completion and revocation. No native binary was compiled or installed, and no actual push/speech acceptance was established. See the technical README for tooling and device limits.
 
 ## Mobile requirements mapped to the canonical checkpoints
 

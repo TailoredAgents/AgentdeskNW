@@ -36,6 +36,6 @@ Preserve the selected light professional interface, ink sidebar and restrained g
 
 Build and test realistic fictional workflows until company access is approved. The owner has no Apple/Google developer accounts yet, so prepare the apps locally and distinguish exports from actual installed-phone acceptance. Salesforce approval need not block fictional specialist development or owner-account channel testing.
 
-There is a verified web/durable-work foundation and a frozen uncommitted mobile/shared-controls draft. Neither means the full vision is complete. Track fictional workflow completion, connected pilot readiness and company rollout readiness separately in the roadmap. Preserve the current application and records rather than rebuilding functioning services for the native client.
+There is a verified web/durable-work foundation and a locally verified mobile/shared-controls foundation. Neither means the full vision is complete. Track fictional workflow completion, connected pilot readiness and company rollout readiness separately in the roadmap. Preserve the current application and records rather than rebuilding functioning services for the native client.
 
-GitHub commit/push remains authorized. A repository update is not evidence of a Render deployment; report each separately. Implementation is currently paused for documentation reconciliation and resumes only when the owner asks to continue.
+GitHub commit/push remains authorized. A repository update is not evidence of a Render deployment; report each separately. The owner resumed implementation after documentation reconciliation. Follow the canonical roadmap and keep acceptance evidence current.

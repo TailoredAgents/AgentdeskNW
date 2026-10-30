@@ -13,7 +13,7 @@ The owner wants high capability, useful autonomy, easy messaging and routine ado
 
 ## How to use this specification
 
-Use the canonical roadmap for the seven checkpoints, frozen local work and release gates. The [specialist matrix](AI_EMPLOYEES.md#capability-depth-delivery-matrix) supplies declared scope and proof for all sixteen specialists. [WORK_EXECUTION.md](WORK_EXECUTION.md) separates the committed local engine from draft channel controls. Requirements below describe the target, not a claim of completion.
+Use the canonical roadmap for the seven checkpoints, current local acceptance and release gates. The [specialist matrix](AI_EMPLOYEES.md#capability-depth-delivery-matrix) supplies declared scope and proof for all sixteen specialists. [WORK_EXECUTION.md](WORK_EXECUTION.md) records the bounded local engine and shared channel controls. Requirements below describe the target, not a claim of completion.
 
 ## What exists and what must change
 
@@ -117,4 +117,4 @@ The proposed AgentDesk advantage is lower setup effort, immediately useful role 
 
 ## Implementation status reference
 
-Committed runtime `2d16665` contains bounded local execution with fictional budgets and role starters. Later conversation/native/notification source is frozen, uncommitted and not yet accepted as an integrated release. Current next-work instructions live only in [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md); detailed dated evidence remains in [PROGRESS.md](PROGRESS.md). No real company connection, payment, investor delivery or deployment is established by this design document.
+Runtime `2d16665` established bounded local execution with fictional budgets and role starters. The October 30 shared-controls/mobile foundation adds locally verified commands, pairing, native surfaces and notification infrastructure. Actual-device/transport acceptance and broader workforce expertise remain open. Current next-work instructions live only in [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md); detailed dated evidence remains in [PROGRESS.md](PROGRESS.md). No real company connection, payment, investor delivery or deployment is established by this design document.

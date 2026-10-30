@@ -18,8 +18,8 @@ Updated October 30, 2026. This index assigns each document a purpose; it is not 
 | Area | Documents | Purpose / roadmap home |
 | --- | --- | --- |
 | Workforce | [AI_EMPLOYEES](AI_EMPLOYEES.md), [CAPABLE_WORKFORCE_PLAN](CAPABLE_WORKFORCE_PLAN.md) | Sixteen-specialist scope/evidence matrix and master-agent design; C1/C4/C5/C7 |
-| Shared work | [WORK_EXECUTION](WORK_EXECUTION.md), [CONVERSATION_WORKFLOWS](CONVERSATION_WORKFLOWS.md) | Durable work and conversation contracts; committed versus frozen-draft limits; C1 |
-| Mobile | [MOBILE_DELIVERY_PLAN](MOBILE_DELIVERY_PLAN.md), [mobile README](../mobile/README.md) | Native client contract, local preparation and layered acceptance; C2/C3. Source is frozen/unpublished |
+| Shared work | [WORK_EXECUTION](WORK_EXECUTION.md), [CONVERSATION_WORKFLOWS](CONVERSATION_WORKFLOWS.md) | Durable work and conversation contracts; local acceptance versus remaining delivery limits; C1 |
+| Mobile | [MOBILE_DELIVERY_PLAN](MOBILE_DELIVERY_PLAN.md), [mobile README](../mobile/README.md) | Native client contract, local preparation and layered acceptance; C2/C3. Local foundation verified; actual-device acceptance pending |
 | Architecture/data/access | [SYSTEM_ARCHITECTURE](SYSTEM_ARCHITECTURE.md), [DATA_MODEL](DATA_MODEL.md), [SECURITY_AND_PERMISSIONS](SECURITY_AND_PERMISSIONS.md) | Shared server, records and authority; C1/C4/C7 |
 | Communications | [COMMUNICATIONS_AND_CREDITS_PLAN](COMMUNICATIONS_AND_CREDITS_PLAN.md), [COMMUNICATIONS_INBOX](COMMUNICATIONS_INBOX.md), [COMMUNICATIONS_WORKFLOW](COMMUNICATIONS_WORKFLOW.md), [COMPANY_EMAIL_DEMO](COMPANY_EMAIL_DEMO.md) | Domain contracts and preserved local milestones; C3/C4/C6/C7. Old numbered phases are local identifiers |
 | Channels | [VOICE_AND_MESSAGING](VOICE_AND_MESSAGING.md), [MESSAGING_SETUP](MESSAGING_SETUP.md) | Voice limits, employee SMS and optional Slack setup/acceptance; C1/C2/C5/C7 |
@@ -40,6 +40,6 @@ Updated October 30, 2026. This index assigns each document a purpose; it is not 
 
 ## Keeping this clean
 
-Each implementation slice updates the canonical checkpoint status and adds actual evidence to PROGRESS. Update affected domain specifications, identifying verified, frozen-draft, planned and external-acceptance states explicitly. Keep historical test totals attached to their revisions. No documentation change upgrades a feature's readiness, proves a deployment or authorizes a new provider connection.
+Each implementation slice updates the canonical checkpoint status and adds actual evidence to PROGRESS. Update affected domain specifications, identifying verified, working-draft, planned and external-acceptance states explicitly. Keep historical test totals attached to their revisions. No documentation change upgrades a feature's readiness, proves a deployment or authorizes a new provider connection.
 
-Record runtime scope, source revision, checks, remaining failures and outside inputs before calling a slice complete. For the current paused mobile work, consult the roadmap's immediate checklist and the mobile README; do not restart from the old A1–A3 instructions in historical logs.
+Record runtime scope, source revision, checks, remaining failures and outside inputs before calling a slice complete. For the accepted local mobile foundation and next work, consult the canonical roadmap and the mobile README; do not restart from the old A1–A3 instructions in historical logs.

@@ -1,3 +1,4 @@
+import {workConversationReference} from './work-conversation';
 import {z} from 'zod';
 import type {Actor,ToolResult} from '../lib/contracts';
 import type {WorkRun,WorkStepInput} from '../lib/work-contracts';
@@ -24,13 +25,13 @@ interface Command {conversationId:string;requestId:string;message:string}
 const requestsResearch=(text:string)=>/\bresearch\b|\bhunter\b|\bnew (?:investors|buyers)\b/i.test(text)&&!/\b(?:do not|don't|never|without|no)\b[\s\S]{0,60}\b(?:research|hunter|new (?:investors|buyers))\b/i.test(text);
 export function workResult(run:WorkRun):ToolResult {
  const maximum=(run.budget.maximumCents/100).toFixed(2),spent=(run.budget.spentCents/100).toFixed(2);
- return {specialistIds:[],message:`${run.title}: ${run.status.replaceAll('_',' ')}.\n${run.status==='waiting_cost_approval'?`Review the exact scope and approve or deny its $${maximum} simulated maximum in Work queue before it starts.\n`:''}Simulated credits used: $${spent}; quoted maximum: $${maximum}. These are fictional cost assumptions, not live AI charges.\n${run.steps.filter(step=>step.status==='completed'&&step.result).map(step=>step.result!.message).join('\n\n')}${run.lastError?`\nNeeds attention: ${run.lastError}`:''}`,data:run,artifacts:[{type:'work_run',id:run.id,title:run.title,data:{workRunId:run.id,workPlanVersion:run.planVersion}}]};
+ return {specialistIds:[],message:`${workConversationReference(run.id)} — ${run.title}: ${run.status.replaceAll('_',' ')}.\n${run.status==='waiting_cost_approval'?`Review the exact scope and approve or deny its $${maximum} simulated maximum in Work queue before it starts.\n`:''}Simulated credits used: $${spent}; quoted maximum: $${maximum}. These are fictional cost assumptions, not live AI charges.\n${run.steps.filter(step=>step.status==='completed'&&step.result).map(step=>step.result!.message).join('\n\n')}${run.lastError?`\nNeeds attention: ${run.lastError}`:''}`,data:run,artifacts:[{type:'work_run',id:run.id,title:run.title,data:{workRunId:run.id,workPlanVersion:run.planVersion}}]};
 }
 export function dispatchWorkTool(actor:Actor,name:string,raw:unknown,command?:Command):ToolResult {
  if(name==='work_capabilities')return {specialistIds:[],message:'These are the currently implemented local work capabilities. Their analysis prices are explicitly fictional; no live billing integration is implied.',data:{capabilities:listWorkCapabilities(actor)},artifacts:[]};
  if(name==='work_status'){
   const {runId}=workToolSchemas.work_status.parse(raw);if(runId)return workResult(getWorkRun(actor,runId));
-  const runs=listWorkRuns(actor).slice(0,8);return {specialistIds:[],message:runs.length?runs.map(run=>`${run.title}: ${run.status.replaceAll('_',' ')}`).join('\n'):'You have no saved Copilot jobs yet.',data:{runs:runs.map(run=>({id:run.id,title:run.title,status:run.status,contentRestricted:run.contentRestricted}))},artifacts:runs.map(run=>({type:'work_run',id:run.id,title:run.title,data:{workRunId:run.id,workPlanVersion:run.planVersion}}))};
+  const runs=listWorkRuns(actor).slice(0,8);return {specialistIds:[],message:runs.length?runs.map(run=>`${workConversationReference(run.id)} — ${run.title}: ${run.status.replaceAll('_',' ')}`).join('\n'):'You have no saved Copilot jobs yet.',data:{runs:runs.map(run=>({id:run.id,title:run.title,status:run.status,contentRestricted:run.contentRestricted}))},artifacts:runs.map(run=>({type:'work_run',id:run.id,title:run.title,data:{workRunId:run.id,workPlanVersion:run.planVersion}}))};
  }
  if(name!=='start_work'||!command)throw new AppError(400,'A new job must be attached to the employee’s current conversation request.');
  const input=workToolSchemas.start_work.parse(raw);

@@ -16,19 +16,19 @@ The target is a primary iPhone/Android app and a detailed desktop workspace, wit
 
 ## Current state
 
-**Last verified runtime: `2d16665`, committed and pushed.** It includes persistent Copilot conversations, relationship memory and corrections, buyer matching, property releases, calling/debrief workflows, reviewed CRM proposals, deal packages, a fictional Salesforce-first inbox, workforce/wallet simulation and eight composable local capabilities in durable jobs. Whole-job approval above $1 applies to fictional credits; live provider accounting remains separate. The worker can continue supported local jobs while the browser is closed.
+**Current local checkpoint: shared conversation controls and the first mobile foundation**, verified October 30, 2026. It extends the earlier `2d16665` web/work-engine baseline with Agent/Work/Settings, fictional employee pairing, shared typed conversation, saved jobs, bounded job commands and exact cost decisions, reviewable dictation source and opt-in notification infrastructure. The existing relationship memory, matching, releases, calling/debriefs, reviewed CRM proposals, deal packages, Salesforce-first fictional inbox and wallet demonstration remain intact.
 
-Verification for that revision: 522 automated tests, 762 HTTP/workflow checks, 36 relationship scenarios, type/lint/build checks, desktop/narrow-browser review and migration-copy preservation. These are recorded results, not new checks of the unfinished draft. Sixteen registered specialists currently comprise two locally ready, ten demo and four planned; this is not sixteen proven experts.
+Verification: **583 root tests, nine mobile client tests, 858 HTTP/workflow checks and 36 relationship scenarios / 54 assertions**; root typecheck/lint/production build, independent mobile typecheck, iOS/Android JavaScript exports, connected browser/phone-width walkthrough and migration-copy preservation. All 266 existing rows across 82 tables survived migrations 022–024. Sixteen registered specialists still comprise two locally ready, ten demo and four planned; this milestone does not establish sixteen expert agents.
 
-**A newer native app/shared-work/notification draft is local, uncommitted and frozen.** It includes Agent/Work/Settings, demonstration pairing, shared typed conversation, reviewable dictation, bounded job commands and opt-in push infrastructure. Targeted checks and JavaScript exports passed, but final integrated checks, native installation, real push and phone speech acceptance remain pending. [Mobile preparation notes](mobile/README.md) describe this unpublished source; a clean checkout of this documentation checkpoint does not yet contain the mobile runtime. Do not infer a released app from those instructions.
+**Mobile is prepared locally, not yet installed or released.** The phone-width browser rehearsal passed pairing, shared history, cross-surface cost approval, pause/resume, background worker completion and remote device revocation. Native binary builds, real phone speech/push and store distribution remain pending. [Mobile preparation notes](mobile/README.md) distinguish each acceptance layer. Whole-job costs remain fictional; live model/provider usage is separately metered.
 
-The owner requested a documentation reset before more implementation. The next development slice, when resumed, is to stabilize and verify that existing draft, then follow the roadmap. No implementation is resumed by this documentation update.
+The documentation reset is complete and implementation has resumed through the single roadmap. C1/C2 remain partial. Next: essential mobile Inbox/review work and specialist methods, alongside actual-device setup and acceptance when available.
 
 Repository: [TailoredAgents/AgentdeskNW](https://github.com/TailoredAgents/AgentdeskNW). The owner reported a Render deployment; the latest deployed revision has not been verified. Push and deployment are separate. Real company data, live mailboxes/investor delivery, actual payments, managed identity and broad expert autonomy remain unfinished.
 
 ## Local web setup
 
-Requirements: Node.js 20.19 or later and npm. SQLite is embedded. The native draft uses its own Node/dependency environment; see its README when that source checkpoint is available.
+Requirements: Node.js 20.19 or later and npm. SQLite is embedded. The native client uses its own Node/dependency environment; see its README.
 
 This prepared workspace has dependencies and private local configuration. Double-click **Start AgentDesk.command**, keep its Terminal open, and visit [the local workspace](http://127.0.0.1:3000) after Ready appears. For a new checkout:
 
@@ -49,7 +49,7 @@ For a compiled local demo, run `npm run build`, then `AGENTDESK_ALLOW_PRODUCTION
 
 ## Optional AI and voice
 
-Set `OPENAI_API_KEY` server-side in `.env.local` and restart. `OPENAI_MODEL` and `OPENAI_REALTIME_MODEL` select configured models. Without a key, deterministic tools and dedicated workflows remain usable and labeled as local demonstration behavior; voice shows its configuration state. Configuration is not live acceptance. Existing browser voice has narrower tool coverage than typed Copilot; native dictation is a separate draft feature. See [voice and messaging](docs/VOICE_AND_MESSAGING.md).
+Set `OPENAI_API_KEY` server-side in `.env.local` and restart. `OPENAI_MODEL` and `OPENAI_REALTIME_MODEL` select configured models. Without a key, deterministic tools and dedicated workflows remain usable and labeled as local demonstration behavior; voice shows its configuration state. Configuration is not live acceptance. Existing browser voice has narrower tool coverage than typed Copilot; native dictation is a separate integration awaiting device acceptance. See [voice and messaging](docs/VOICE_AND_MESSAGING.md).
 
 ## Engineering verification
 
@@ -70,10 +70,11 @@ npm run test:communications
 npm run test:company-email
 npm run test:relationship
 npm run test:work
+npm run test:mobile
 npm run test:relationship-quality -- --all
 ```
 
-The smoke runner normally starts the compiled app on a temporary loopback port with a disposable SQLite database and model credentials disabled. It stops its processes and removes that database afterward. Do not run against the active demo database casually: `SMOKE_BASE_URL` deliberately targets an existing instance and creates fictional records there. The work suite requires its own disposable database. The draft mobile HTTP smoke suite is authored but not run; its script/package change is part of the unpublished implementation.
+The smoke runner normally starts the compiled app on a temporary loopback port with a disposable SQLite database and model credentials disabled. It stops its processes and removes that database afterward. Do not run against the active demo database casually: `SMOKE_BASE_URL` deliberately targets an existing instance and creates fictional records there. The work suite requires its own disposable database. The mobile HTTP suite exercises the compiled backend and worker with mock notification transport and a disposable database.
 
 Existing employee-channel adapters have a separate mocked acceptance suite, `npm run test:messaging`. Account setup and real round-trips are still pending; see [messaging setup](docs/MESSAGING_SETUP.md). No suite result establishes Salesforce, payment or physical-phone acceptance unless that integration was actually tested.
 
@@ -86,7 +87,7 @@ Existing employee-channel adapters have a separate mocked acceptance suite, `npm
 | `src/server` | Scoped domain services, orchestration, persistence, workers and adapters |
 | `src/server/migrations` | Additive database migration source |
 | `scripts` and `tests` | Worker tooling and verification |
-| `mobile` | Independent native client draft; not a second backend; runtime source not yet committed |
+| `mobile` | Independent native client foundation; same backend; actual-device acceptance pending |
 | `docs` | Specifications and evidence, indexed in the documentation map |
 
 Use the verified [work walkthrough](docs/WORK_EXECUTION.md), [company-email demonstration](docs/COMPANY_EMAIL_DEMO.md) and [relationship quality evidence](docs/RELATIONSHIP_QUALITY.md) within their stated boundaries. Earlier presentation scripts and numbered phase reports are retained as historical references; check the current roadmap and deployed revision before using them.

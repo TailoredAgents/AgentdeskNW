@@ -1,6 +1,10 @@
 # Architecture decisions
 
 
+## October 30, 2026 — Resume the bounded mobile/shared-controls checkpoint
+
+The owner asked to proceed after the documentation reset. Complete and accept the preserved mobile/shared-controls foundation before another feature bundle, using the existing backend and fictional identities. Local integration, migration preservation, web/phone-width review and source publication are in scope. Native installation/speech/push, real providers, company data, payments and deployment remain separate acceptance gates. C1/C2 stay partial; next work follows the canonical roadmap: essential mobile Inbox/review continuity with C4 specialist method work alongside it, and actual-device validation when tooling/devices are ready.
+
 ## October 30, 2026 — Consolidated direction and documentation authority
 
 The owner asked to pause further implementation and reconcile the full conversation, existing source and conflicting documentation. Keep IMPLEMENTATION_ROADMAP.md as the only status/order/next-work authority, with seven current checkpoints C1–C7. MASTER_PLAN is a stable product brief; domain plans are specifications; PROGRESS and original phase material remain dated evidence/reference. The documentation reset does not resume development or upgrade unfinished code.

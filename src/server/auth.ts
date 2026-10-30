@@ -1,3 +1,4 @@
+import {getMobileAuthentication,assertMobileRequest} from './mobile-auth';
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import type { NextRequest, NextResponse } from 'next/server';
 import type { Actor, Role } from '@/lib/contracts';
@@ -11,6 +12,7 @@ const sign = (value: string) => createHmac('sha256', secret()).update(value).dig
 const loopback = (host: string) => ['localhost', '127.0.0.1', '[::1]'].includes(host);
 
 export function assertLocalDemo(request: NextRequest) {
+  if(request.headers.has('authorization')){assertMobileRequest(request);return;}
   let expectedOrigin: string;
   if (hostedDemo()) {
     try { validateHostedDemo(); expectedOrigin = demoOrigin(); } catch { throw new AppError(503, 'The private demonstration is being prepared. Please try again shortly.'); }
@@ -30,6 +32,7 @@ export function assertLocalDemo(request: NextRequest) {
 
 export function getActor(request: NextRequest): Actor | null {
   assertLocalDemo(request);
+  if(request.headers.has('authorization'))return getMobileAuthentication(request)?.actor??null;
   const token = request.cookies.get(COOKIE)?.value;
   if (!token) return null;
   const [data, signature, extra] = token.split('.');

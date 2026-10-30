@@ -29,7 +29,7 @@ The committed local job engine already enforces the fictional whole-job gate. Op
 | Included credits | $15 in retail AgentDesk usage value each billing period | Phase 1 wallet demonstration |
 | Purchased credits | $10, $25, $50 or $100; unused purchased balance rolls over | Phase 1 simulated top-ups, no payment collected |
 | AI pricing | Initial internal 5× cost target; versioned prices | Phase 1 server-owned sample scenarios; actual provider billing integration remains later work |
-| App / employee channels | Native and desktop access included; employee SMS provisional $19/month; Slack optional | Native source frozen/uncommitted; real device and messaging acceptance pending |
+| App / employee channels | Native and desktop access included; employee SMS provisional $19/month; Slack optional | Native foundation locally verified; real device and messaging acceptance pending |
 | Email | Company email through Salesforce first; optional Gmail/Workspace and Outlook/Microsoft 365 adapters | Underlying company mail service and permitted Salesforce capabilities require administrator discovery; packaging remains open |
 | Dedicated business line | Provisional $39/month plus a defined messaging allowance | Planned; no line is sold, provisioned or connected in Phase 1 |
 | Business calling/recording | Separate future extension | Planned after SMS acceptance and approved recording policies |

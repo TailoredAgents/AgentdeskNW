@@ -4,26 +4,26 @@ Updated October 30, 2026. **This is the only authority for current delivery stat
 
 ## Where we are now
 
-**A substantial fictional-data web demonstration and a bounded Copilot work engine are built. The complete business workforce, mobile product and connected company rollout are not finished.** Development is paused at the owner's request for this documentation reset. Preserve the unfinished local work; do not resume implementation merely because this document is updated.
+**A substantial fictional-data web demonstration and a bounded Copilot work engine are built. The complete business workforce, mobile product and connected company rollout are not finished.** The owner resumed development after the documentation reset. The bounded shared-controls/mobile foundation now has local integrated acceptance; actual-phone and live-provider acceptance remain pending.
 
 | State | Meaning |
 | --- | --- |
 | Verified foundation | Implemented and accepted for its stated local/demo scope at a recorded committed revision |
 | Partial | Useful foundations exist, but the checkpoint's full outcome has not passed |
-| Frozen working draft | Source is written locally, uncommitted and unpublished; targeted checks are not integrated acceptance |
+| Working draft | Source is written but has not passed its declared acceptance scope |
 | Planned | A requirement or design, not a working feature |
 | External acceptance pending | Requires a real device, account, authorized company source or employee review; mocks do not close it |
 
-**Last fully verified runtime baseline: `2d16665`**, committed and pushed to GitHub. Evidence: 522 automated tests across 28 files; 762 HTTP/workflow checks; 36 relationship scenarios / 54 assertions; typecheck, lint, production build, desktop and narrow-browser acceptance; all 228 prior rows across 75 tables preserved on a migrated copy. These are historical results for that revision, not new results for the mobile draft. The latest Render revision is unverified.
+**Current locally verified source checkpoint: October 30, 2026 — shared controls and mobile foundation**, following runtime `2d16665` and documentation reset `407320e`. Evidence: 583 root tests across 31 files, nine mobile client tests, 858 HTTP/workflow checks, 36 relationship scenarios / 54 assertions, root typecheck/lint/production build, independent mobile checks/exports, connected phone-width browser walkthrough and all 266 prior rows across 82 tables preserved on a migrated copy. Native binary builds, installed phones, real push/speech and the latest Render revision remain unverified. The older `2d16665` evidence is retained historically in PROGRESS.
 
 | Area | Verified foundation | Remaining gap |
 | --- | --- | --- |
-| Copilot and work | Persistent conversations; typed model tools; eight composable local capabilities; durable jobs, immutable plans, receipts, pause/resume/cancel and three role starters | Broader planning and tool coverage, general clarification/changed-instruction continuation, cross-channel acceptance, live voice parity |
+| Copilot and work | Persistent conversations; typed model tools; eight composable local capabilities; durable jobs, immutable plans, receipts, pause/resume/cancel and three role starters | Broader planning/tool coverage, general clarification/changed-instruction continuation, real SMS acceptance and live voice parity |
 | Business workflows | Investor criteria/journeys/corrections, matching, releases, calling priorities, debriefs, reviewed CRM proposals, deal-package handoff | Complete daily workflows for every role; actual transaction/document coordination and deeper judgment |
 | Specialists | 16 registered: 2 locally ready, 10 demo, 4 planned | All 16 require declared scope, methods/tools, varied quality cases and role acceptance; no expert or competitive-superiority claim is established |
 | Communications | Shared employee SMS/Slack adapters; private fictional Salesforce-first email/investor-text inbox; exact generated-reply simulation | Actual channel acceptance; editable sends, recipients/CC/files; approved company sync and delivery; dedicated investor numbers |
 | Costs | Workforce entitlements, simulated wallet and whole-job approval above $1 with holds and partial settlement | Actual provider-wide spending enforcement, optional automatic top-up and payments |
-| Mobile and notifications | Responsive web screens and existing in-app/task reminders | New native app, pairing, dictation, job commands and push are frozen local drafts; no installed-phone acceptance |
+| Mobile and notifications | Native Agent/Work/Settings foundation, scoped demo pairing, shared typed conversation/job controls, reviewed dictation source and opt-in job push infrastructure; connected browser rehearsal passed | Native binary installation, actual speech/push, full mobile Inbox and phone acceptance |
 | Company operation | Scoped fictional identities and hosted presentation entrance | Managed employee identity, approved data access, production persistence/workers, recovery, support and measured rollout |
 
 ## Confirmed product decisions
@@ -55,30 +55,36 @@ Checkpoint IDs **C1–C7 below are the current numbering**. Old `C1` in historic
 
 | ID | Outcome | Current status | Completion test |
 | --- | --- | --- | --- |
-| C1 | Shared conversation and reliable work controls | Partial; durable local jobs verified, new conversation controls frozen | Start in one channel, supply information/change instructions/control cost in another, finish once with one consistent result |
-| C2 | First iPhone and Android app | Frozen working draft; device acceptance pending | Speak a request, review/send it, close the app, receive a notification and open the correct saved result on both platforms |
-| C3 | Essential mobile work experience | Partial draft Work controls; mobile Inbox and full review flow planned | Finish a representative daily workflow entirely on the phone |
+| C1 | Shared conversation and reliable work controls | Partial; durable local jobs and bounded cross-surface commands verified locally | Start in one channel, supply information/change instructions/control cost in another, finish once with one consistent result |
+| C2 | First iPhone and Android app | Partial; local/browser foundation verified, device acceptance pending | Speak a request, review/send it, close the app, receive a notification and open the correct saved result on both platforms |
+| C3 | Essential mobile work experience | Partial; Work controls verified in browser preview, mobile Inbox and full review flow planned | Finish a representative daily workflow entirely on the phone |
 | C4 | Deep specialists and complete role workflows | Early foundations; most expertise and four specialist implementations planned | New facts/corrections change useful work; all 16 scopes and all three role journeys pass declared quality cases |
-| C5 | Proactive usefulness and SMS continuity | Task/channel foundations; job push draft; broader initiative planned | Relevant update reaches the chosen channel once and the employee acts on it immediately |
+| C5 | Proactive usefulness and SMS continuity | Task/channel foundations; job push mocked acceptance; broader initiative and actual delivery planned | Relevant update reaches the chosen channel once and the employee acts on it immediately |
 | C6 | Actual spending protection and optional auto top-up | Fictional job gate verified; actual integration/top-up planned | Whole-job limits, actual usage and purchases reconcile across channels without surprise authorization or duplicate charges |
 | C7 | Representative pilot, approved connections and rollout | Demonstration exists; company/device/production acceptance pending | Each role completes approved real work reliably, with evidence of usefulness and repeat use before expansion |
 
 **Dependency rules:** stabilize C1 before broadening channel execution. C2 and C3 reuse it. Start C4's knowledge/method work alongside C2/C3 rather than waiting for a finished app. C5 reuses the same work/permission/budget system. **C6 actual usage admission must pass before enabling broader live paid autonomous work**, even though it is numbered after C5. C7 identity/operations must pass before real company-data ingestion. Device and owner-account SMS tests do not need Salesforce approval. Quality and interface review accompany every checkpoint.
 
-## Immediate next checkpoint — stabilize the frozen draft
+## Accepted local checkpoint — shared controls and mobile foundation
 
-This is the next implementation work **when the owner resumes development**, not work authorized by the documentation reset itself. Do not start another feature bundle first.
+The owner resumed development after the documentation reset. This bounded source checkpoint has passed local integrated acceptance; it does not close all of C1/C2.
 
-- [ ] Inventory the uncommitted runtime diff and preserve all existing records; finish only the current shared-controls/mobile-foundation slice.
-- [ ] Fix the known ambiguous-reference edge case: after a work artifact becomes withheld, a bare “cancel it” must request a fresh selection rather than falling through to the older personal-task handler.
-- [ ] Run final root and independent mobile checks after the last edits. Earlier full test/build results predate some draft changes; do not present them as final acceptance.
-- [ ] Run the authored isolated mobile HTTP smoke suite against a fresh compiled server; it has not been run. Recheck existing workflows and browser-to-phone pairing/revocation, shared history and job decisions.
-- [ ] Verify additive migrations 022–024 on a disposable upgraded copy, preserving previous records, wallet holds and receipts. Active local schema-009 data remains untouched by the paused work.
-- [ ] Complete connected interface walkthroughs and stale-session/changed-source recovery. Separate mock notification tests, JavaScript exports, native builds and actual phone acceptance in the report.
-- [ ] Keep generated outputs out of source control, including currently unignored `mobile/web-preview/`; review mobile tooling advisories/configuration warnings described in [mobile/README.md](../mobile/README.md) before native release.
-- [ ] Commit/push the verified slice and record the exact remaining gaps. Verify any subsequently authorized Render deployment independently. Do not label C1 or C2 wholly complete merely because the bounded slice passes.
+- [x] Preserve and review the existing runtime/mobile slice; keep generated output out of Git.
+- [x] Fix withheld-job references: “cancel it” requests a fresh selection and cannot cancel an older personal task or reveal a revoked source.
+- [x] Run final root checks, all HTTP/workflow suites and independent mobile checks. Verify production compilation, iOS/Android JavaScript exports and native project generation separately.
+- [x] Rehearse connected browser/phone-width pairing, shared history, exact cross-surface cost approval, pause/resume, worker completion, unavailable-notification handling and device revocation.
+- [x] Preserve all 266 prior rows across 82 tables on a disposable schema-021 copy upgraded through 024, including drafts and wallet records. Leave active schema-009 data unchanged.
+- [x] Resolve local host normalization, empty-text rendering and system-style configuration issues; retain the recorded upstream tooling advisories for follow-up before distribution.
 
-**Frozen draft inventory:** native Agent/Work/Settings, scoped demo phone pairing, shared typed chat, reviewable dictation, bounded job commands/cost decisions/corrections and opt-in job-push infrastructure. Targeted tests passed for work commands (22 new), mobile auth (14), notifications (23) and the mobile client (9). An earlier full root run passed 572 tests before later edits. iOS/Android JavaScript exports and project generation succeeded; native binary builds, installation, real push, speech and integrated final acceptance did not occur. This draft is not in the verified runtime commit. [PROGRESS.md](PROGRESS.md) records the evidence limits.
+Evidence: 583 root tests; nine mobile tests; 858 HTTP/workflow checks; 36 relationship scenarios / 54 assertions. [PROGRESS.md](PROGRESS.md) records the release scope and [mobile/README.md](../mobile/README.md) separates local/browser evidence from native acceptance. GitHub source publication and any Render deployment must be reported independently.
+
+## Immediate next work
+
+1. **C3: native Inbox and review continuity.** Bring the existing private Salesforce-first fictional correspondence into the phone: source-aware thread list/detail, saved drafts, relationship context and exact eligible simulated-send review. Keep investor correspondence separate from the employee Agent conversation. Acceptance: inspect a reply, prepare/review a sourced response and save a follow-up entirely on the phone; revoked sources and changed drafts invalidate stale review.
+2. **C4 alongside C3: specialist methods and quality.** Begin the Investor Relationship Manager's versioned method/knowledge work and prepare provisional acquisitions and management cases. Preserve all three role tracks; Alex supplies dispositions evidence. New context/corrections must improve a subsequent recommendation in varied cases.
+3. **C2 device acceptance when local tooling/devices are available.** Compile/install development builds, then test dictation, secure storage, background/resume, push and exact result links on both platforms. Neither developer-store account exists; no distribution is implied. Track upstream mobile tooling advisories before a native release.
+
+General missing-fact continuation, broader plan edits and live voice parity remain C1 work. Actual spending protection remains a prerequisite to broader live paid autonomy. Do not wait for company data to deepen fictional workflows, and do not treat a phone-width browser test as actual-phone acceptance.
 
 ## C1 — Shared conversation and work controls
 
@@ -88,7 +94,7 @@ Required work:
 
 - Natural requests compose supported capabilities instead of selecting only fixed templates. Expose the specific missing capability when a task cannot run. Test paraphrases, ambiguous references and unsupported requests.
 - Start, status, result review, pause, resume, cancel, revised instructions and exact cost/action decisions work across typed app/web and configured SMS. Retained Slack uses the same contract. Dictation enters this same reviewed message path.
-- General missing-information continuation asks for the missing fact once, attaches the answer to the right job, invalidates obsolete plans/approvals and resumes. The draft currently supports only bounded dispositions-plan corrections.
+- General missing-information continuation asks for the missing fact once, attaches the answer to the right job, invalidates obsolete plans/approvals and resumes. Current conversational edits support only bounded dispositions-plan corrections.
 - Persist dependencies, partial results, leases and reconciliation through restart, failure, revoked access and uncertain provider outcomes. Do not repeat completed actions. A tool error cannot become a narrated success.
 - Share business authority with voice while preserving explicit reviewed decisions. Existing browser live voice excludes important work/inbox/edit tools; native dictation is not live conversational parity.
 
@@ -96,7 +102,7 @@ Acceptance includes cross-channel continuation, changed source/role/session, sta
 
 ## C2 — First iPhone and Android app
 
-Keep the existing server and domain services; build a purpose-designed native client. The frozen Expo/React Native project is a foundation, not a second backend. Prepare local development without store accounts.
+Keep the existing server and domain services; build a purpose-designed native client. The Expo/React Native project is a foundation, not a second backend. Prepare local development without store accounts.
 
 Required work: individual session lifecycle; Agent conversation; text; microphone dictation with transcript review/fallback; saved jobs; opt-in notifications and exact result links; loading/offline/interrupted/reconnect behavior; accessible mobile navigation. Demonstration pairing is scoped to a fictional employee, not production SSO. C7 supplies managed identity for real employees.
 
@@ -133,7 +139,7 @@ Begin Investor Relationship Manager's source/versioned method work from its veri
 
 Implement chosen topics/times/timezone for morning/afternoon or three-times-daily briefings; changes since last update; reply, deal, commitment and handoff watchers; meaningful reminders and requests for attention. Choose a preferred channel and quiet hours. Deduplicate/coalesce across app push and SMS, handle downtime/timezone changes, and stop obsolete/resolved alerts.
 
-The frozen push draft only covers certain job events with existing quiet hours, generic text and device limits. It does not complete scheduled briefs, reply monitoring, per-employee timezones or preferred-channel routing. Provider acceptance and phone display remain different outcomes.
+The current job-push foundation only covers certain job events with existing quiet hours, generic text and device limits. It does not complete scheduled briefs, reply monitoring, per-employee timezones or preferred-channel routing. Provider acceptance and phone display remain different outcomes.
 
 Add explicit standing-authority records for routine actions: actor, account/contact/deal/action/content, frequency, budget, expiry and revocation. Out-of-scope changes request a prepared decision; approved routine work does not repeatedly interrupt. Changed facts must update or withdraw obsolete recommendations. Every scheduled job still follows the C6 whole-job rule.
 

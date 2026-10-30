@@ -111,3 +111,11 @@
 @media (max-width: 760px) { .work-step-scope > div { grid-template-columns: 62px minmax(0, 1fr); gap: 8px; } }
 
 .approval-actions.work-cost-actions { bottom: 0; }
+
+.mobile-pairing-code { margin: 16px 0; padding: 18px; display: grid; gap: 9px; background: #f2f7f3; border: 1px solid #dce8df; border-radius: 12px; }
+.mobile-pairing-code span { font-size: 12px; color: #52665b; }
+.mobile-pairing-code strong { font-size: 29px; letter-spacing: .13em; color: #214a35; font-variant-numeric: tabular-nums; }
+.mobile-pairing-code small { color: #5a6e61; line-height: 1.6; }
+.mobile-device-list { margin-top: 12px; }
+.mobile-device-list .setting-row { gap: 12px; }
+.mobile-device-list strong { overflow-wrap: anywhere; }

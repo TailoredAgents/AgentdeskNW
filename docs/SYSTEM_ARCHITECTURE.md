@@ -1,9 +1,9 @@
 # System architecture
 
 
-**Document role:** architecture specification; [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) alone controls delivery status and sequencing. Verified runtime baseline: `2d16665`. The native/conversation/notification section below describes frozen, uncommitted source, not a released capability.
+**Document role:** architecture specification; [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) alone controls delivery status and sequencing. The October 30 shared-controls/mobile source checkpoint extends baseline `2d16665` and has local integrated acceptance. Installed-phone and live-provider acceptance remain pending.
 
-## Native client and shared command transport — frozen draft
+## Native client and shared command transport
 
 The `mobile/` Expo/React Native project has an independent dependency graph and Node version, reusing type-only shared contracts and the existing API. It does not move server secrets, SQLite or agent execution to the phone. `mobile-auth.ts` pairs a single-use code from a signed-in fictional employee with a revocable hashed bearer credential. Current membership/role is rechecked; native requests cannot switch demonstration persona or issue another device code. Existing browser cookie/origin controls remain unchanged for browser requests. Explicit private development origins are separate from the canonical hosted HTTPS origin. This is demonstration device access, not company SSO.
 
@@ -11,7 +11,7 @@ The `mobile/` Expo/React Native project has an independent dependency graph and 
 
 ## Durable local execution layer
 
-The verified bounded [shared-work foundation](IMPLEMENTATION_ROADMAP.md#c1--shared-conversation-and-work-controls) (legacy A1–A3) implementation adds private work runs, immutable versioned plans, steps/dependencies, events, leases and transactional receipts around existing domain services. `work-capabilities.ts` defines eight typed local capabilities; Copilot composes these through `start_work`, and Work queue offers role starters and pause/resume/cancel/exact cost decisions. `work-budget.ts` owns the fictional whole-job quote, hold and partial settlement, including child synthetic research. Original model context and immutable plan references are rechecked on execution, display and chat replay. See [WORK_EXECUTION.md](WORK_EXECUTION.md). The worker performs no additional model calls, real research or sending. Draft conversational controls await integrated acceptance; general continuation, automatic top-up and real provider cost integration remain pending. Roadmap C4–C7 add source/versioned methods, linked deal/party/document context, scheduling and tested standing action authority. Every surface reuses current scoped services and authoritative receipts.
+The verified bounded [shared-work foundation](IMPLEMENTATION_ROADMAP.md#c1--shared-conversation-and-work-controls) (legacy A1–A3) implementation adds private work runs, immutable versioned plans, steps/dependencies, events, leases and transactional receipts around existing domain services. `work-capabilities.ts` defines eight typed local capabilities; Copilot composes these through `start_work`, and Work queue offers role starters and pause/resume/cancel/exact cost decisions. `work-budget.ts` owns the fictional whole-job quote, hold and partial settlement, including child synthetic research. Original model context and immutable plan references are rechecked on execution, display and chat replay. See [WORK_EXECUTION.md](WORK_EXECUTION.md). The worker performs no additional model calls, real research or sending. Bounded conversational controls have local integrated acceptance; general continuation, automatic top-up and real provider cost integration remain pending. Roadmap C4–C7 add source/versioned methods, linked deal/party/document context, scheduling and tested standing action authority. Every surface reuses current scoped services and authoritative receipts.
 
 ## Company-email demonstration — communications Phase 4A
 

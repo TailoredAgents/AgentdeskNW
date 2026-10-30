@@ -8,3 +8,10 @@ data/*
 coverage/
 .DS_Store
 artifacts/
+
+# Independent native app build output
+mobile/.expo/
+mobile/dist/
+mobile/android/
+mobile/ios/
+mobile/coverage/
