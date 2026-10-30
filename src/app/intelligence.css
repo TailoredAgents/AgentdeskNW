@@ -80,3 +80,42 @@
 
 /* Quick task changes use the same services as Copilot. */
 .task-row-copy{min-width:0;flex:1}.task-actions-menu{position:relative;flex-shrink:0}.task-actions-menu>summary{cursor:pointer;list-style:none;border-radius:7px;padding:7px;color:var(--muted)}.task-actions-menu>summary::-webkit-details-marker{display:none}.task-actions-menu[open]>summary{background:#edf3e9;color:#315136}.task-actions-menu>div{position:absolute;z-index:8;right:0;top:36px;min-width:170px;border:1px solid var(--border);border-radius:10px;padding:5px;background:white;box-shadow:0 8px 24px #16362b16}.task-actions-menu button{display:flex;gap:9px;align-items:center;width:100%;padding:10px;border:0;background:none;text-align:left;color:#395343;font:inherit;font-size:12px;border-radius:6px;cursor:pointer}.task-actions-menu button:hover{background:#f1f6ed}.task-actions-menu button:disabled{opacity:.5;cursor:wait}.task-reschedule-label{display:grid;gap:10px;font-size:13px}.task-reschedule-label input{width:100%;padding:12px;font:inherit}.queue-task>.task-row-copy strong{overflow-wrap:anywhere}@media(max-width:600px){.queue-task{gap:10px}.queue-task>.badge{font-size:9px}.task-reschedule-label input{font-size:16px}.task-actions-menu>div{min-width:164px}}
+
+.relationship-record {margin:20px 0;padding:20px;border:1px solid var(--border);border-radius:14px;background:var(--surface,#fff)}
+.relationship-record-heading,.relationship-fact-heading {display:flex;align-items:center;justify-content:space-between;gap:14px}
+.relationship-record-heading h3 {font-size:19px;margin:4px 0 8px;letter-spacing:-.4px}
+.relationship-record-heading .eyebrow {margin:0}
+.relationship-record-stats {display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+.relationship-fact-list {display:grid;gap:12px;margin:14px 0}
+.relationship-fact {border:1px solid var(--border);border-radius:11px;padding:15px;min-width:0}
+.relationship-fact-heading h4 {margin:0;font-size:14px}
+.relationship-fact-heading span,.relationship-fact>small {font-size:11px;color:var(--text-muted)}
+.relationship-source-grid {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));gap:10px;margin:12px 0}
+.relationship-source {padding:12px;border-radius:9px;background:var(--bg-subtle,#f6f8f5);min-width:0;overflow-wrap:anywhere}
+.relationship-source>div {display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:11px;color:var(--text-muted)}
+.relationship-source>strong {display:block;margin:7px 0;font-size:14px}
+.relationship-source summary {font-size:11px;color:var(--text-muted);cursor:pointer}
+.relationship-source p {font-size:12px;line-height:1.6}
+.relationship-source small {font-size:10px;color:var(--text-muted)}
+.relationship-question {display:flex;align-items:flex-start;gap:8px;background:#fbf7eb;border-radius:8px;padding:11px;color:#735e28;font-size:12px;line-height:1.6}
+.relationship-question svg {flex:none;margin-top:3px}
+.relationship-all-facts>summary,.relationship-report-history>summary {font-size:12px;cursor:pointer;color:var(--text-muted);padding:10px 0}
+.relationship-report-history>summary svg {vertical-align:middle;margin-right:6px}
+.relationship-report-history article {padding:14px 0;border-bottom:1px solid var(--border);font-size:13px;overflow-wrap:anywhere}
+.relationship-report-history article>div {display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap}
+.relationship-report-history small {display:block;color:var(--text-muted);font-size:11px;margin-bottom:8px}
+.relationship-report-modal {display:grid;gap:14px;min-width:0;overflow-wrap:anywhere}
+.relationship-report-modal fieldset {display:grid;gap:16px;border:0;padding:0;margin:0}
+.relationship-report-modal label {display:grid;gap:7px;font-size:12px;font-weight:600}
+.relationship-report-modal input,.relationship-report-modal textarea,.relationship-report-modal select {width:100%;min-width:0;border:1px solid var(--border);border-radius:9px;padding:11px;background:#fff;font:inherit}
+.relationship-budget {display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.relationship-modal-actions {display:flex;justify-content:flex-end;gap:10px;padding-top:16px}
+.relationship-correction {border-left:3px solid #91a97c;padding:12px;background:#f4f7ef;border-radius:6px}
+@media(max-width:600px){
+ .relationship-record {padding:14px}
+ .relationship-record-heading,.relationship-fact-heading {align-items:flex-start;flex-direction:column;gap:6px}
+ .relationship-record-heading .button {width:100%;justify-content:center}
+ .relationship-budget {grid-template-columns:1fr}
+ .relationship-modal-actions {position:sticky;bottom:-24px;background:#fff;padding:14px 0;flex-wrap:wrap}
+ .relationship-modal-actions .button {flex:1}
+}

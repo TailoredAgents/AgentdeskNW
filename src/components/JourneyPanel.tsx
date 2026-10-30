@@ -1,4 +1,5 @@
 'use client';
+import {RelationshipRecordPanel} from './RelationshipRecordPanel';
 import { useCallback,useEffect,useRef,useState } from 'react';
 import { BookOpen,Check,Clipboard,ClipboardList,MessageSquare,Plus,RefreshCw,Sparkles,TriangleAlert } from 'lucide-react';
 import type { InvestorJourney,InvestorNextStep,JourneyEvidence,JourneyObservationKind,JourneyVerification } from '@/lib/journey-contracts';
@@ -62,6 +63,7 @@ export function JourneyPanel({investorId,propertyId,onChange,canEdit=true}:{inve
   {notice&&<p className="intelligence-message intelligence-message-success" role="status"><Check size={16}/>{notice}</p>}
   {loading?<div className="intelligence-loading"><Spinner label="Reading the relationship"/></div>:journey&&<>
    <div className="journey-header-meta"><Badge tone="green">{journey.activity==='unknown'?'Buying status unconfirmed':readable(journey.activity)}</Badge>{journey.synthetic&&<Badge>Fictional demo</Badge>}<span className="subtle-note">{journey.investorName}</span></div>
+   <RelationshipRecordPanel record={journey.record} buyBoxes={journey.buyBoxes} onSaved={async()=>{setNotice('Investor report saved. Recorded CRM criteria are unchanged.');await load();await onChange?.();}}/>
    {recommendationError&&<p className="intelligence-message intelligence-message-error" role="alert">{recommendationError}</p>}
    {recommendation&&<section className="journey-next-action"><p className="eyebrow"><Sparkles size={14}/>Recommended next step</p><h3>{recommendation.action.title}</h3><p>{recommendation.action.description}</p>{recommendation.why.length>0&&<ul className="journey-reasons">{recommendation.why.map((reason,index)=><li key={index}>{reason.replace(/\s*\(source [^)]+\)/g,'')}</li>)}</ul>}</section>}
    <div className="journey-recommendation-actions"><button className="button secondary" disabled={busy||loading} onClick={()=>void refreshRecommendation()}>{busy?<Spinner label="Updating"/>:<><RefreshCw size={14}/>{recommendation?'Refresh next step':'Prepare next step'}</>}</button><span className="subtle-note">Uses your current saved preferences.</span></div>

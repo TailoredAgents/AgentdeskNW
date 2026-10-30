@@ -22,7 +22,9 @@
     "test:wallet": "node scripts/smoke-runner.mjs wallet",
     "test:inbox": "node scripts/smoke-runner.mjs inbox",
     "test:communications": "node scripts/smoke-runner.mjs communications",
-    "test:company-email": "node scripts/smoke-runner.mjs company-email"
+    "test:company-email": "node scripts/smoke-runner.mjs company-email",
+    "test:relationship": "node scripts/smoke-runner.mjs relationship",
+    "test:relationship-quality": "node --import tsx scripts/relationship-benchmark.ts"
   },
   "dependencies": {
     "@slack/socket-mode": "3.1.0",

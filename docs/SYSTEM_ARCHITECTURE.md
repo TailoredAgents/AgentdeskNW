@@ -102,3 +102,9 @@ External research sends property criteria and prior public candidate names, not 
 ## Production transition
 
 Introduce managed OIDC/SSO and membership provisioning before remote exposure. Move schema to PostgreSQL, enforce tenant relationships at the database layer, and test cross-tenant access independently. Deploy a separately supervised queue worker, migrations, backup/restore, secrets manager, structured redacted telemetry, provider rate/cost budgets and retention operations. Do not deploy the local demo role switcher.
+
+## Investor understanding projection
+
+`src/server/relationship-record.ts` projects reviewed criteria and immutable employee reports into typed facts, differing-source questions, provisional reconfirmation flags and correction history. `relationship-record-contracts.ts` is the shared browser/server boundary. `GET /api/investors/:id/relationship-record` reads it; `POST /api/investors/:id/relationship-record/reports` validates and appends a reviewed employee report. Both use the existing authenticated/request-protected route and shared authorization services.
+
+Journey, recommendation, Inbox assistance and the existing Copilot journey tool reuse that projection. Saved relationship reports participate in protected model-context fingerprints and inbox review hashes; volatile generation timestamps do not create false stale reviews. Copilot has no report-write/approval tool. Comparison and this milestone's recommendations are deterministic; source-versioned domain methods and broader reasoning/equal-context model evaluations remain later stages in RELATIONSHIP_SPECIALIST_PLAN.md.

@@ -14,6 +14,10 @@ Prepare a repeatable presentation scenario with `npm run demo:prepare`. This add
 
 A private hosted demo entrance and Render blueprint are implemented. **Repository: [TailoredAgents/AgentdeskNW](https://github.com/TailoredAgents/AgentdeskNW). GitHub publishing is authorized; Render deployment remains a separate next step.** See [Render setup](docs/RENDER_DEMO.md) and the [Monday walkthrough](docs/MONDAY_DEMO.md). Real company data is intentionally deferred until customer approval.
 
+## Investor understanding
+
+The first specialist-depth milestone adds sourced investor updates, separate statement/capture dates, explicit corrections, and visible differences from approved buying criteria. Copilot and inbox suggestions ask for clarification when values differ. Open an investor profile → Relationship intelligence → **Record investor update** to demonstrate it. See [the staged plan](docs/RELATIONSHIP_SPECIALIST_PLAN.md) and [quality results and limits](docs/RELATIONSHIP_QUALITY.md). This establishes reliable record behavior; expert-level reasoning and a generic-AI advantage still require evaluation.
+
 ## Unified inbox preview
 
 Communications Phase 4A makes **Company email · Salesforce** the default fictional Inbox. Optional Gmail, Outlook and investor-text examples remain available, with their saved identities, messages and drafts preserved. Copilot can search the inbox and prepare a relationship reply grounded in source messages, investor history and saved writing preferences. The employee reviews exact content before simulated sending, then separately reviews a relationship note or personal follow-up. Custom drafts stay saved; only current generated relationship replies use the bounded simulator. No live mailbox or investor delivery is connected. See [Copilot workflow and walkthrough](docs/COMMUNICATIONS_WORKFLOW.md), [Inbox foundation](docs/COMMUNICATIONS_INBOX.md) and the [delivery plan](docs/COMMUNICATIONS_AND_CREDITS_PLAN.md).
@@ -61,6 +65,8 @@ npm run test:hosted
 npm run test:inbox
 npm run test:communications
 npm run test:company-email
+npm run test:relationship
+npm run test:relationship-quality -- --all
 ```
 
 The smoke suite requires the compiled build. By default it starts the built application and worker on a temporary loopback port with a disposable SQLite database, disables model credentials, runs HTTP workflow checks, then stops the processes and removes its temporary database. No manually started server is needed, and your demonstration data is unchanged.

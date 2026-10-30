@@ -1,0 +1,410 @@
+{
+  "implementationFingerprint": "cabb86df4c6684d342f9ccd04875af222bf165a6013cda6056c03f8f5c089c9b",
+  "uncommittedImplementation": true,
+  "version": "relationship-benchmark-v1",
+  "sourceRevision": "89f8c573511670fa1ad1aa2f9908106288d00e2b",
+  "mode": "structured relationship record",
+  "split": "reserved",
+  "generatedAt": "2026-10-30T16:10:04.920Z",
+  "cases": 12,
+  "passed": 12,
+  "failed": 0,
+  "checksPassed": 18,
+  "checks": 18,
+  "limits": "Authored application scenarios. Not an independent blinded trial, generic-AI comparison or sales-effectiveness measurement.",
+  "results": [
+    {
+      "id": "relationship-v1-01-3",
+      "family": "budget_difference",
+      "split": "reserved",
+      "investorId": "investor-david",
+      "variant": 2,
+      "scenario": "David, a renovation buyer: A reported budget differs from the reviewed buy box. Keep both values and request clarification.",
+      "expected": "A reported budget differs from the reviewed buy box. Keep both values and request clarification.",
+      "reports": [
+        {
+          "investorId": "investor-david",
+          "buyBoxId": "buybox-primary-investor-david",
+          "topic": "budget",
+          "value": {
+            "min": 100000,
+            "max": 230000
+          },
+          "statement": "Fictional employee report: investor now wants a lower purchase budget.",
+          "statedAt": "2026-10-29T16:10:04.768Z",
+          "supersedesId": null,
+          "expectedVersion": 0,
+          "expectedContext": "6bc33b48b57e1f239d65873988ec3f53af4de6110f99136b55020c3cfe051611",
+          "eventKey": "benchmark-1"
+        }
+      ],
+      "checks": [
+        {
+          "criterion": "Different budget is explicitly marked for clarification",
+          "passed": true
+        },
+        {
+          "criterion": "Canonical budget is preserved",
+          "passed": true
+        }
+      ],
+      "passed": true
+    },
+    {
+      "id": "relationship-v1-02-3",
+      "family": "timing_difference",
+      "split": "reserved",
+      "investorId": "investor-david",
+      "variant": 2,
+      "scenario": "David, a renovation buyer: Two reports disagree about buying timing. Do not select the most recently entered report as truth.",
+      "expected": "Two reports disagree about buying timing. Do not select the most recently entered report as truth.",
+      "reports": [
+        {
+          "investorId": "investor-david",
+          "buyBoxId": null,
+          "topic": "timing",
+          "value": [
+            "Next month"
+          ],
+          "statement": "Investor reported a next-month purchase window.",
+          "statedAt": "2026-10-29T16:10:04.794Z",
+          "supersedesId": null,
+          "expectedVersion": 0,
+          "expectedContext": "c398c1d79aefa3606635449a8d9de87d140b3ba7512feeee89532a4e2b13115b",
+          "eventKey": "benchmark-1"
+        },
+        {
+          "investorId": "investor-david",
+          "buyBoxId": null,
+          "topic": "timing",
+          "value": [
+            "Next year"
+          ],
+          "statement": "Investor also reported a next-year window; clarify the discrepancy.",
+          "statedAt": "2026-10-29T16:10:04.798Z",
+          "supersedesId": null,
+          "expectedVersion": 1,
+          "expectedContext": "7c1fa2965473a61097a12f187c781c62768fb197eb5aff4c02537a9ec2a459de",
+          "eventKey": "benchmark-2"
+        }
+      ],
+      "checks": [
+        {
+          "criterion": "Conflicting reports remain together",
+          "passed": true
+        }
+      ],
+      "passed": true
+    },
+    {
+      "id": "relationship-v1-03-3",
+      "family": "separate_buy_boxes",
+      "split": "reserved",
+      "investorId": "investor-david",
+      "variant": 2,
+      "scenario": "David, a renovation buyer: Two strategies have different budgets. A report about one box must not change or conflict with the other.",
+      "expected": "Two strategies have different budgets. A report about one box must not change or conflict with the other.",
+      "reports": [
+        {
+          "investorId": "investor-david",
+          "buyBoxId": "buybox-primary-investor-david",
+          "topic": "budget",
+          "value": {
+            "min": 100000,
+            "max": 230000
+          },
+          "statement": "Fictional employee report: investor now wants a lower purchase budget.",
+          "statedAt": "2026-10-29T16:10:04.808Z",
+          "supersedesId": null,
+          "expectedVersion": 0,
+          "expectedContext": "6f030c164ca720e4a4a4122fea4d7aa05b19c815b462987b65f7ea6906c8f51a",
+          "eventKey": "benchmark-1"
+        }
+      ],
+      "checks": [
+        {
+          "criterion": "Only the reported buy box needs clarification",
+          "passed": true
+        },
+        {
+          "criterion": "Second strategy retains its own budget",
+          "passed": true
+        }
+      ],
+      "passed": true
+    },
+    {
+      "id": "relationship-v1-04-3",
+      "family": "explicit_correction",
+      "split": "reserved",
+      "investorId": "investor-david",
+      "variant": 2,
+      "scenario": "David, a renovation buyer: The employee corrects an earlier report. Keep the original and identify its replacement.",
+      "expected": "The employee corrects an earlier report. Keep the original and identify its replacement.",
+      "reports": [
+        {
+          "investorId": "investor-david",
+          "buyBoxId": null,
+          "topic": "contact",
+          "value": [
+            "Morning calls"
+          ],
+          "statement": "Employee initially reports a preference for morning calls.",
+          "statedAt": "2026-10-29T16:10:04.818Z",
+          "supersedesId": null,
+          "expectedVersion": 0,
+          "expectedContext": "3cdf846f4f847d955605205c83c000469d929448bd6d591f6764aa8189ac31e4",
+          "eventKey": "benchmark-1"
+        },
+        {
+          "investorId": "investor-david",
+          "buyBoxId": null,
+          "topic": "contact",
+          "value": [
+            "Email only"
+          ],
+          "statement": "Correction: the employee confirms the earlier morning-call report was mistaken.",
+          "statedAt": "2026-10-29T16:10:04.822Z",
+          "supersedesId": "relationship_report_103623fb-c61f-4db9-b45a-0db815da8dc7",
+          "expectedVersion": 1,
+          "expectedContext": "92867076ca5fb999c45cc2106693ed01dea9b9d3f96c1e05b8162f67dfafc793",
+          "eventKey": "benchmark-2"
+        }
+      ],
+      "checks": [
+        {
+          "criterion": "Original report retained as superseded",
+          "passed": true
+        },
+        {
+          "criterion": "Only replacement is active",
+          "passed": true
+        }
+      ],
+      "passed": true
+    },
+    {
+      "id": "relationship-v1-05-3",
+      "family": "older_statement",
+      "split": "reserved",
+      "investorId": "investor-david",
+      "variant": 2,
+      "scenario": "David, a renovation buyer: An old statement is entered after a newer statement. Capture order must not decide which is true.",
+      "expected": "An old statement is entered after a newer statement. Capture order must not decide which is true.",
+      "reports": [
+        {
+          "investorId": "investor-david",
+          "buyBoxId": null,
+          "topic": "timing",
+          "value": [
+            "This quarter"
+          ],
+          "statement": "Investor reported this-quarter timing yesterday.",
+          "statedAt": "2026-10-29T16:10:04.831Z",
+          "supersedesId": null,
+          "expectedVersion": 0,
+          "expectedContext": "3bf75c3016c190530fcc76c1cdf4679d971b3f0695f99b4691b6dc78e8307326",
+          "eventKey": "benchmark-1"
+        },
+        {
+          "investorId": "investor-david",
+          "buyBoxId": null,
+          "topic": "timing",
+          "value": [
+            "Next year"
+          ],
+          "statement": "Historical recap from last year reported next-year timing.",
+          "statedAt": "2025-10-30T16:10:04.834Z",
+          "supersedesId": null,
+          "expectedVersion": 1,
+          "expectedContext": "aa9fabd2501ccb6f335dfa9267baedf2f28f04bb001cd53b582c9e5d01fe013a",
+          "eventKey": "benchmark-2"
+        }
+      ],
+      "checks": [
+        {
+          "criterion": "Earlier statement remains distinguishable despite later entry",
+          "passed": true
+        },
+        {
+          "criterion": "Neither report silently supersedes the other",
+          "passed": true
+        }
+      ],
+      "passed": true
+    },
+    {
+      "id": "relationship-v1-06-3",
+      "family": "unknown_statement_date",
+      "split": "reserved",
+      "investorId": "investor-david",
+      "variant": 2,
+      "scenario": "David, a renovation buyer: The date the investor said something is unknown. Do not substitute the capture time.",
+      "expected": "The date the investor said something is unknown. Do not substitute the capture time.",
+      "reports": [
+        {
+          "investorId": "investor-david",
+          "buyBoxId": null,
+          "topic": "contact",
+          "value": [
+            "Email"
+          ],
+          "statement": "Employee remembers an email preference but not when it was stated.",
+          "statedAt": null,
+          "supersedesId": null,
+          "expectedVersion": 0,
+          "expectedContext": "f0fea340dca1b169c4bee1b6fd8d3f41f0943fa6f9923f186e35ae608ae9ad16",
+          "eventKey": "benchmark-1"
+        }
+      ],
+      "checks": [
+        {
+          "criterion": "Unknown statement time stays unknown",
+          "passed": true
+        },
+        {
+          "criterion": "Capture time does not establish freshness",
+          "passed": true
+        }
+      ],
+      "passed": true
+    },
+    {
+      "id": "relationship-v1-07-3",
+      "family": "reconfirmation",
+      "split": "reserved",
+      "investorId": "investor-david",
+      "variant": 2,
+      "scenario": "David, a renovation buyer: An old financing statement needs reconfirmation without becoming false or disappearing.",
+      "expected": "An old financing statement needs reconfirmation without becoming false or disappearing.",
+      "reports": [
+        {
+          "investorId": "investor-david",
+          "buyBoxId": "buybox-primary-investor-david",
+          "topic": "financing",
+          "value": [
+            "Cash"
+          ],
+          "statement": "Old employee report of cash funding; reconfirm current arrangements.",
+          "statedAt": "2026-07-02T16:10:04.854Z",
+          "supersedesId": null,
+          "expectedVersion": 0,
+          "expectedContext": "a38960e58cc1eaec6786c114316fc56118ffa539686cce37cb0988fece4d5033",
+          "eventKey": "benchmark-1"
+        }
+      ],
+      "checks": [
+        {
+          "criterion": "Old financing report remains visible and due for review",
+          "passed": true
+        }
+      ],
+      "passed": true
+    },
+    {
+      "id": "relationship-v1-08-3",
+      "family": "source_trace",
+      "split": "reserved",
+      "investorId": "investor-david",
+      "variant": 2,
+      "scenario": "David, a renovation buyer: The reported value retains its original source statement and employee-reported status.",
+      "expected": "The reported value retains its original source statement and employee-reported status.",
+      "reports": [
+        {
+          "investorId": "investor-david",
+          "buyBoxId": null,
+          "topic": "contact",
+          "value": [
+            "Email before a call"
+          ],
+          "statement": "Fictional source statement relationship-v1-08-3: investor prefers email before scheduling a call.",
+          "statedAt": "2026-10-29T16:10:04.863Z",
+          "supersedesId": null,
+          "expectedVersion": 0,
+          "expectedContext": "546831ef620ce7c4a5c747498a56b11f59ebcba77c618b822ac4be2f50812d9e",
+          "eventKey": "benchmark-1"
+        }
+      ],
+      "checks": [
+        {
+          "criterion": "Exact source and report status survive",
+          "passed": true
+        }
+      ],
+      "passed": true
+    },
+    {
+      "id": "relationship-v1-09-3",
+      "family": "pause",
+      "split": "reserved",
+      "investorId": "investor-david",
+      "variant": 2,
+      "scenario": "David, a renovation buyer: A recorded buying pause takes priority over a new opportunity.",
+      "expected": "A recorded buying pause takes priority over a new opportunity.",
+      "reports": [],
+      "checks": [
+        {
+          "criterion": "Recorded pause is respected",
+          "passed": true
+        }
+      ],
+      "passed": true
+    },
+    {
+      "id": "relationship-v1-10-3",
+      "family": "objection",
+      "split": "reserved",
+      "investorId": "investor-david",
+      "variant": 2,
+      "scenario": "David, a renovation buyer: A recorded unresolved repair concern drives the next action without inventing a repair estimate.",
+      "expected": "A recorded unresolved repair concern drives the next action without inventing a repair estimate.",
+      "reports": [],
+      "checks": [
+        {
+          "criterion": "Repair concern drives the next step",
+          "passed": true
+        },
+        {
+          "criterion": "No repair number or available contractor is invented",
+          "passed": true
+        }
+      ],
+      "passed": true
+    },
+    {
+      "id": "relationship-v1-11-3",
+      "family": "commitment",
+      "split": "reserved",
+      "investorId": "investor-david",
+      "variant": 2,
+      "scenario": "David, a renovation buyer: Completing a personal follow-up does not prove an investor response or resolve a concern.",
+      "expected": "Completing a personal follow-up does not prove an investor response or resolve a concern.",
+      "reports": [],
+      "checks": [
+        {
+          "criterion": "Task completion preserves unresolved concern",
+          "passed": true
+        }
+      ],
+      "passed": true
+    },
+    {
+      "id": "relationship-v1-12-3",
+      "family": "private_scope",
+      "split": "reserved",
+      "investorId": "investor-david",
+      "variant": 2,
+      "scenario": "David, a renovation buyer: A separate employee cannot read an investor relationship without authorization.",
+      "expected": "A separate employee cannot read an investor relationship without authorization.",
+      "reports": [],
+      "checks": [
+        {
+          "criterion": "Unauthorized investor read blocked",
+          "passed": true
+        }
+      ],
+      "passed": true
+    }
+  ],
+  "outputStorage": "Compact checked-in case results; full synthetic snapshots are generated under ignored artifacts/relationship/. See RELATIONSHIP_QUALITY.md for reproduction and limits."
+}

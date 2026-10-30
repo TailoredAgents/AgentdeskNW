@@ -1,3 +1,4 @@
+import type { RelationshipRecord } from './relationship-record-contracts';
 import type { Task } from './contracts';
 import type { BuyBox, InvestorIntelligence } from './intelligence-contracts';
 import type { EmployeeMemory } from './memory-contracts';
@@ -6,7 +7,7 @@ export type JourneyVerification = 'seeded_demo' | 'reviewed_record' | 'employee_
 export interface JourneyEvidence {
   id: string;
   sourceRecordId: string;
-  kind: 'crm' | 'buy_box' | 'relationship' | 'observation' | 'debrief' | 'task' | 'property';
+  kind: 'crm' | 'buy_box' | 'relationship' | 'observation' | 'debrief' | 'task' | 'property' | 'relationship_report';
   label: string;
   text: string;
   recordedAt: string | null;
@@ -49,6 +50,7 @@ export interface InvestorJourney {
   synthetic: boolean;
   generatedAt: string;
   summary: string;
+  record: RelationshipRecord;
   activity: InvestorIntelligence['currentActivity'];
   lastOutcome: string | null;
   buyBoxes: BuyBox[];

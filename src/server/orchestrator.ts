@@ -67,7 +67,7 @@ const descriptions: Record<ToolName,string> = {
   list_my_tasks:'Read only this employee’s tasks/reminders with current versions and deadlines. Use a short query to find a named task. Do not treat office teammates’ tasks as this employee’s work.',
   manage_task:'Complete, cancel, reschedule or snooze a personal task when the current employee message explicitly requests it. Server resolves the employee’s exact request, dates and current task reference; model arguments cannot replace them. Ambiguous requests require clarification. No deletion or CRM mutation.',
   resolve_investor_concern:'Resolve one existing employee-reported concern when the current employee message explicitly identifies the investor/concern and supplies a resolution. The server records that exact employee statement and linked original. Does not independently verify it or update confirmed CRM criteria.',
-  investor_journey:'Read the authorized investor journey with evidence, reviewed buying criteria, reported concerns and private follow-up work. Reports are not verified customer facts. No memory or CRM writes.',
+  investor_journey:'Read the authorized investor journey with evidence, reviewed buying criteria, reported concerns, private follow-up work and a structured relationship record. Distinguish recorded criteria, differing reports, explicit corrections, statement dates and capture dates. A difference needs clarification; never silently choose the newest entry as truth. Reports are not verified customer facts. No memory or CRM writes.',
   relationship_recommendation:'Premium Investor Relationship Manager: retrieve a grounded next action and relationship-only draft using current journey and this employee’s saved preferences. Returns evidence and unknowns. For property distribution copy always use compose_deal_package instead. Nothing is sent.',
   qualification_review:'Premium Investor Qualification: review separate buy boxes, provenance and missing criteria for a verified investor.',
   transaction_context:'Premium Transaction Coordinator: summarize recorded upstream/downstream milestones and missing closing information, without legal conclusions.',
@@ -167,7 +167,7 @@ function dispatchToolSync(actor: Actor,name: string,raw:unknown,command?:TurnCom
     }
     case 'investor_journey': {
       const {investorId}=toolSchemas.investor_journey.parse(raw),journey=getInvestorJourney(actor,investorId);
-      result.data=journey;result.message=journey.summary;
+      result.data=journey;result.message=[journey.summary,...journey.record.conflicts.map(fact=>fact.scopeLabel+' · '+fact.question),...journey.record.facts.filter(fact=>fact.reports.length).map(fact=>fact.label+': '+fact.reports.map(source=>source.displayValue+' (employee reported; stated '+(source.statedAt??'date unknown')+')').join('; '))].join('\n\n');
       result.artifacts=[{type:'briefing',id:investorId,title:'Investor journey & evidence',data:{...journey,debriefs:journey.evidence.filter(item=>item.kind==='debrief').map(item=>({id:item.sourceRecordId}))}}];break;
     }
     case 'relationship_recommendation': {
@@ -415,8 +415,10 @@ export async function chat(actor:Actor,message:string,conversationId?:string,req
       // Any business permission/provenance change invalidates opaque model memory. Display history is freshly redacted by services.
       const currentScope=()=>{
         const current=service.getBootstrap(actor);
+        const visibleInvestorIds=new Set(current.investors.map(investor=>investor.id));
+        const relationshipReports=(db.prepare('SELECT investor_id,data FROM relationship_reports WHERE organization_id=? ORDER BY rowid').all(actor.organizationId) as {investor_id:string;data:string}[]).filter(report=>visibleInvestorIds.has(report.investor_id));
         const protectedState=['investor_intelligence','buy_boxes','property_releases','deal_packages','channel_templates','journey_observations','debriefs','tasks'].map(table=>db.prepare(`SELECT data FROM ${table} WHERE organization_id=? AND office_id=? ORDER BY rowid`).all(actor.organizationId,actor.officeId));
-        return {actor,employeeMemory:getEmployeeMemory(actor),investors:current.investors,properties:current.properties,protectedState,inbox:inboxContextFingerprint(actor),access:service.specialists.map(s=>featureAccess(actor,s.id)),withheld:service.getConversation(actor,conversation.id).messages.filter(m=>m.content.startsWith('This historical message is withheld')).map(m=>m.id)};
+        return {actor,employeeMemory:getEmployeeMemory(actor),investors:current.investors,properties:current.properties,protectedState,relationshipReports,inbox:inboxContextFingerprint(actor),access:service.specialists.map(s=>featureAccess(actor,s.id)),withheld:service.getConversation(actor,conversation.id).messages.filter(m=>m.content.startsWith('This historical message is withheld')).map(m=>m.id)};
       };
       const scope=currentScope();
       result=await runLiveText({actor,conversationId:conversation.id,requestId,message,instructions:assistantInstructions(actor)+(channel==='sms'?' This reply goes to the employee by SMS. Prefer a concise plain-text answer under 500 characters. Preserve essential caveats; the application adds a link to the full saved conversation.':channel==='slack'?' This reply goes to the employee in a private Slack DM. Be concise and use plain text.':''),context,scope,currentScope,history:currentPreferenceHistory(conversation,employeeMemory,24).map(m=>({role:m.role,content:m.content})),tools:toolDefinitions(),dispatch:(name,args)=>dispatchToolSync(actor,name,args,command),artifacts,specialists});

@@ -1,5 +1,9 @@
 # Implementation roadmap
 
+## Current differentiation priority
+
+Deepen Investor Relationship Manager one stage at a time. [Stages 1–2 are implemented](RELATIONSHIP_SPECIALIST_PLAN.md): measured quality baseline and sourced structured reports/corrections. Stage 3, working knowledge with explicit source/versioned methods, is next; stages 4–7 cover judgment, communication learning, follow-through and independent evaluation. [Current evidence and limits](RELATIONSHIP_QUALITY.md) remain separate from live-integration readiness. The communications sequence below is retained for its later approved connection work.
+
 ## Current authorized sequence
 
 The [communications and credits plan](COMMUNICATIONS_AND_CREDITS_PLAN.md) is the current sequence: (1) workforce subscription and simulated wallet; (2) fictional unified inbox; (3) reviewed Copilot communication workflow; (4A) fictional company-email presentation and capability boundaries; (4B) approved live company-email connection; (5) dedicated investor SMS; (6) real billing and controlled company rollout. Phases 1–3 and the Phase 4A company-email demonstration are implemented. Earlier milestones below retain their historical numbering.

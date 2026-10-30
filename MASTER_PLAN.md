@@ -1,5 +1,11 @@
 # AgentDesk master plan
 
+## Relationship specialist depth — stages 1 and 2 implemented
+
+The current owner-approved priority is to deepen one specialist at a time, beginning with Investor Relationship Manager. [The seven-stage plan](docs/RELATIONSHIP_SPECIALIST_PLAN.md) now has its first checkpoint: a measured baseline and structured investor reports with exact sources, statement/capture dates, explicit corrections, separate buy boxes, differing-value flags and provisional reconfirmation guidance. Dashboard, journey, Copilot and inbox suggestions use the same scoped record. Reports do not silently overwrite approved CRM criteria.
+
+[Quality results](docs/RELATIONSHIP_QUALITY.md) distinguish passing application scenarios from unproven expert reasoning or generic-AI superiority. Next is stage 3: working knowledge and source/versioned specialist methods, followed by deeper judgment, communication learning, follow-through and independent evaluation. Communications integration gates below remain pending. This checkpoint includes commit/push; deployment and live company connections are separate.
+
 ## Communications and credits — Phase 4A company-email demonstration implemented
 
 The owner-approved [delivery plan](docs/COMMUNICATIONS_AND_CREDITS_PLAN.md) now includes the workforce/wallet foundation (`414fb0d`), private fictional Inbox (`e9d21b2`) and Copilot's reviewed communications workflow. Employees can search/read their inbox through typed Copilot or linked employee channels, prepare a sourced relationship reply using saved preferences, review exact content before simulated delivery, and separately approve a source-linked relationship note and personal follow-up. The workflow respects recorded pauses, distinguishes new message evidence from older concerns, and preserves private mailbox ownership. Custom drafts remain saved; the simulator accepts only the current generated relationship reply, with no property distribution or attachments. Voice inbox access remains deferred.

@@ -4,8 +4,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createServer } from 'node:net';
 const suite=process.argv[2]||'workflows';
-if(!['workflows','intelligence','conversation','wallet','inbox','communications','company-email'].includes(suite))throw new Error('Unknown smoke suite.');
-const script=suite==='company-email'?'scripts/company-email-smoke.ts':suite==='communications'?'scripts/communications-workflow-smoke.ts':suite==='inbox'?'scripts/inbox-smoke.ts':suite==='wallet'?'scripts/wallet-smoke.ts':suite==='conversation'?'scripts/conversation-smoke.ts':suite==='intelligence'?'scripts/intelligence-smoke.ts':'scripts/smoke.ts';
+if(!['workflows','intelligence','conversation','wallet','inbox','communications','company-email','relationship'].includes(suite))throw new Error('Unknown smoke suite.');
+const script=suite==='relationship'?'scripts/relationship-smoke.ts':suite==='company-email'?'scripts/company-email-smoke.ts':suite==='communications'?'scripts/communications-workflow-smoke.ts':suite==='inbox'?'scripts/inbox-smoke.ts':suite==='wallet'?'scripts/wallet-smoke.ts':suite==='conversation'?'scripts/conversation-smoke.ts':suite==='intelligence'?'scripts/intelligence-smoke.ts':'scripts/smoke.ts';
 
 if(process.env.SMOKE_BASE_URL){
  const child=spawn(process.execPath,['--import','tsx',script],{stdio:'inherit',env:process.env});

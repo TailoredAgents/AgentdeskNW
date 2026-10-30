@@ -117,3 +117,9 @@ The initial local database is persistent and relational. Production requires str
 ## Assumptions requiring validation
 
 No actual Salesforce schema, office membership list, SOPs, provider contract, communication policy or billing agreement has been supplied. Proposed pricing and national seat estimates remain hypotheses. Product capability is not evidence of permission to use a customer system.
+
+## Investor Relationship Manager depth — first checkpoint
+
+Employees must be able to inspect recorded buying criteria beside sourced reported changes; preserve independent buy boxes; distinguish original statement dates from capture time; explicitly correct testimony without erasing history; see differing values and provisional reconfirmation flags; and receive a clarification next step from the same record in dashboard/Copilot/inbox. Reports require deliberate review and preserve canonical CRM approval boundaries. This is implemented for budget, geography, strategy, financing, renovation tolerance, timing and contact preference.
+
+The complete seven-stage specialist plan is RELATIONSHIP_SPECIALIST_PLAN.md. The first checkpoint's engineering benchmark and limitations are in RELATIONSHIP_QUALITY.md. No expert-agent, passive-learning, customer-effectiveness or generic-AI superiority claim is established by passing these application cases.

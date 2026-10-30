@@ -1,5 +1,23 @@
 # AgentDesk progress log
 
+## October 30, 2026 — Investor Relationship Manager depth, stages 1–2
+
+**Implemented:** a seven-stage specialist plan, executable quality cases and an append-only investor report ledger. Seven topics cover budget, target locations, strategy, financing, renovation tolerance, timing and contact preference. Criteria reports attach to an explicit approved buy box. The investor panel compares approved values with active reports, shows source/statement/capture dates, distinguishes undated and provisional reconfirmation flags, and preserves original reports when explicitly corrected. Existing CRM criteria and private employee preferences remain separate.
+
+**Connected behavior:** Journey and Copilot read the same record. After a recorded pause, differing values lead recommendations and inbox replies to ask for clarification. Reports participate in protected model-context and send-review fingerprints, including explicitly shared investors from another office. Mocked tests reject an in-flight answer after a report change and discard old opaque model context. Capture/generation timestamps cannot masquerade as investor statement dates or cause timestamp-only stale approvals. No automatic email extraction, report-writing model tool, passive learning, CRM update or message delivery was added.
+
+**Quality evidence:** original revision `89f8c57` passed 8/24 development cases (14/36 checks) using its observation interface. The structured version passed 24/24 (36/36 checks), plus 12/12 reserved variations (18/18 checks). Both receive the statements, but the new version also receives explicit structured values/scope/correction links. This is an application representation/regression comparison, not a generic-AI baseline or independent/blinded expertise trial. Case inputs/results are retained under `docs/evaluations/`; full synthetic snapshots are local under `artifacts/relationship/`. See [RELATIONSHIP_QUALITY.md](RELATIONSHIP_QUALITY.md).
+
+**Verification:** typecheck, lint, production build and **459 tests across 24 files** passed. **648 compiled HTTP checks** passed: 42 relationship-record plus the prior 606 across all nine existing suites. New coverage includes scoped read/write/replay, subscription rechecks, stale canonical/report context, correction lineage, separate buy boxes, unknown/old dates, compound-field provenance, unchanged criteria and inbox review invalidation. Providers were disabled or mocked; no live model/provider message or wallet debit occurred.
+
+**Browser acceptance:** desktop 1280×720 and phone 390×844 verified dated report entry, exact review, side-by-side differing budgets, changed next action, correction review/save, retained superseded history and corrected active values in typed Copilot. No document horizontal overflow or browser warning/error logs were observed. Native date entry preserved the exact displayed statement date. Screenshots are ignored under `artifacts/relationship/`.
+
+**Preservation:** copied the active schema-009 database into a disposable workspace, upgraded with the prior revision to schema 18, seeded existing company correspondence and a manual draft, then applied migration 019. All **220 previous rows across 74 tables** were preserved byte-for-byte. The draft survived, the new report/retry worked, and SQLite integrity was `ok`. The active database remains unchanged at schema 9.
+
+**Release and next boundary:** documentation and commit/push are included under the owner's standing instruction. No Render deployment or real account configuration is included. Stages 1–2 are complete; next is stage 3, source/versioned working knowledge for qualification, objections, reactivation and follow-through. Deeper judgment, communication learning and independent effectiveness comparisons remain later work. Company connection approval and actual employee Slack/Twilio acceptance remain separate.
+
+---
+
 ## October 30, 2026 — Company-email/Salesforce demonstration (communications Phase 4A)
 
 **Implemented:** the Inbox defaults to a separate fictional **Company email · Salesforce** source. Existing Gmail, Outlook and investor-text accounts, messages, drafts and receipts remain intact. Two additional sources demonstrate readable CRM activity without a sending route and headers-only activity without a captured subject/body. Source, coverage, transport, current access and capabilities are explicit; attachments remain unavailable. Company-specific Copilot commands search/read/prepare against company sources across the existing shared employee conversation. Unqualified inbox requests can still include optional sources; ambiguous people require a choice.

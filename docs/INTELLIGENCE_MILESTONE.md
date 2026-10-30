@@ -1,5 +1,11 @@
 # Relationship intelligence milestone
 
+## Latest extension — stronger investor understanding
+
+Stages 1–2 of [the relationship-specialist plan](RELATIONSHIP_SPECIALIST_PLAN.md) add typed investor reports, explicit corrections, source/date comparisons and provisional freshness flags. The investor panel now distinguishes recorded criteria from testimony and shows unresolved differences before suggesting new opportunities. This extends the memory/journey workflow described below; it does not add passive learning. See [record behavior and the review flow](INVESTOR_INTELLIGENCE.md) and [quality results](RELATIONSHIP_QUALITY.md).
+
+For a new demonstration, record Mike's budget as $120,000–$240,000 with a fictional source note and yesterday's statement date. Review/save, show the difference from $150,000–$320,000, then correct the report back to the original range. The original report remains in history; the next recommendation stops treating the superseded amount as current. This changes testimony only; CRM criteria remain unchanged.
+
 AgentDesk now demonstrates a coworker remembering an employee's explicit writing preferences, keeping a sourced investor journey, and changing its next recommendation when a concern is learned or resolved. This remains a fictional concept demonstration for a prospective customer; it does not imply New Western approval or access to its systems.
 
 ## What is implemented

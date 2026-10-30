@@ -1,3 +1,4 @@
+import {getRelationshipRecord,recordRelationshipReport,relationshipReportSchema} from './relationship-record';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import type { Actor } from '@/lib/contracts';
@@ -19,6 +20,12 @@ export async function memoryJourneyRoute(request: NextRequest, actor: Actor, pat
   }
   if (resource !== 'investors' || !investorId) return;
   id.parse(investorId);
+  if (action === 'relationship-record' && path.length === 3 && request.method === 'GET') return json(getRelationshipRecord(actor,investorId));
+  if (action === 'relationship-record' && child === 'reports' && path.length === 4 && request.method === 'POST') {
+    const body=z.record(z.string(),z.unknown()).parse(await readBody());
+    if('investorId' in body && body.investorId!==investorId) return json({error:'The report investor must match the selected record.'},400);
+    return json(recordRelationshipReport(actor,relationshipReportSchema.parse({...body,investorId})),201);
+  }
   if (action === 'journey' && path.length === 3 && request.method === 'GET') return json(getInvestorJourney(actor, investorId));
   if (action === 'recommendation' && path.length === 3 && request.method === 'POST') {
     const {propertyId} = z.object({propertyId: id.nullable().optional()}).strict().parse(await readBody());

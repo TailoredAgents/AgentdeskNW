@@ -1,3 +1,4 @@
+import { getRelationshipRecord } from './relationship-record';
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import type { Actor, Task } from '../lib/contracts';
@@ -87,6 +88,7 @@ export function getInvestorJourney(actor: Actor, investorId: string): InvestorJo
   requireFeature(actor, 'core');
   const intelligence = getInvestorIntelligence(actor, id.parse(investorId));
   const investor = intelligence.investor;
+  const record = getRelationshipRecord(actor, investorId, intelligence);
   const observations = observationsFor(actor, investorId);
   const buyBoxes = intelligence.buyBoxes.filter(box => box.provenance.reviewStatus === 'approved');
   const tasks = scopedRows<Task>(actor, 'tasks', true).filter(task => task.investorId === investorId);
@@ -141,9 +143,16 @@ export function getInvestorJourney(actor: Actor, investorId: string): InvestorJo
     considered.set(property.id, {propertyId:property.id, address:property.address, sourceIds:[...(previous?.sourceIds ?? []), source.id],
       status:source.pass || previous?.status === 'pass_reported' ? 'pass_reported' : 'mentioned'});
   }
+  for (const report of record.reports) evidence.push({
+    id:'relationship_report:'+report.id,sourceRecordId:report.id,kind:'relationship_report',
+    label:'Employee report · '+report.topic+(report.status==='superseded'?' · superseded':''),
+    text:report.statement,recordedAt:report.recordedAt,verification:'employee_reported',
+    source:'Deliberately recorded relationship report. Statement date: '+(report.statedAt??'not supplied')+'. Capture time is separate; CRM criteria are unchanged.',
+    propertyId:null,
+  });
   const openIssues = observations.filter(item => item.status === 'open' && (item.kind === 'objection' || item.kind === 'property_pass'));
   const activeBoxes = buyBoxes.filter(box => box.active);
-  const unknowns: string[] = [];
+  const unknowns: string[] = record.conflicts.map(fact=>fact.scopeLabel+' · '+fact.question);
   if (intelligence.currentActivity === 'unknown') unknowns.push('Current buying activity has not been confirmed.');
   if (!investor.timeframe) unknowns.push('Purchase timing has not been recorded.');
   if (!activeBoxes.length) unknowns.push('No active, reviewed buy box is available.');
@@ -153,7 +162,7 @@ export function getInvestorJourney(actor: Actor, investorId: string): InvestorJo
   const criteria = activeBoxes.map(box => `${box.label}: ${box.strategies.join(' / ') || 'strategy unrecorded'}; ${[...box.counties,...box.cities].join(', ') || 'geography unrecorded'}`).join('. ');
   return {investorId, investorName:investor.name, synthetic:investor.synthetic, generatedAt:now(),
     summary:`${investor.name}. ${criteria || 'No active, reviewed buying criteria.'}. Activity: ${intelligence.currentActivity.replaceAll('_',' ')}. ${openIssues.length} unresolved employee-reported concern${openIssues.length === 1 ? '' : 's'}; ${commitments.length} open personal follow-up task${commitments.length === 1 ? '' : 's'}.`,
-    activity:intelligence.currentActivity, lastOutcome:intelligence.lastOutcome, buyBoxes, observations, openIssues, commitments, completedTasks,
+    record, activity:intelligence.currentActivity, lastOutcome:intelligence.lastOutcome, buyBoxes, observations, openIssues, commitments, completedTasks,
     consideredProperties:[...considered.values()], evidence, unknowns};
 }
 
@@ -242,6 +251,11 @@ export function recommendInvestorNextStep(actor: Actor, investorId: string, prop
   if (journey.activity === 'paused') {
     action = {kind:'confirm_timing', title:'Respect the recorded pause', description:'Confirm a suitable future check-in before proposing more properties.'};
     why.push('The current activity record is paused. A property match does not override that preference.');
+  } else if (journey.record.conflicts.length) {
+    const conflict=journey.record.conflicts[0];
+    action={kind:'clarify_qualification',title:'Clarify the differing '+conflict.label.toLowerCase(),description:conflict.question!};
+    why.push(conflict.scopeLabel+': '+[...(conflict.recorded?[conflict.recorded]:[]),...conflict.reports].map(source=>source.label+' — '+source.displayValue).join('; '));
+    why.push('Reports remain employee testimony. Review the sources and confirm the current criteria; no CRM value has been changed.');
   } else if (issue) {
     action = issue.kind === 'property_pass'
       ? {kind:'review_pass', title:'Understand the recorded property pass', description:'Review the employee-reported reason for the pass before choosing the next opportunity.'}
@@ -279,6 +293,16 @@ export function recommendInvestorNextStep(actor: Actor, investorId: string, prop
     // Refuse a contradictory draft rather than deleting a necessary qualification or changing a factual name.
     reasons.push('A saved phrase preference conflicts with this draft. Review the wording or adjust that preference before preparing it.');
     draft = null;
+  }
+  if (journey.activity !== 'paused' && journey.record.conflicts.length) {
+    // Conflicting criteria must be clarified before producing property-specific distribution copy.
+    if(selectedPropertyId){reasons.push('Clarify the differing investor criteria before preparing property details.');draft=null;}
+    else if(draft){
+      const conflict=journey.record.conflicts[0];
+      const greeting=memory.tone==='direct'?journey.investorName.split(' ')[0]+',':'Hi '+journey.investorName.split(' ')[0]+',';
+      draft=greeting+'\n\nCould you confirm your current '+conflict.label.toLowerCase()+'? I have differing information recorded and want to clarify it before suggesting the next step.';
+      if(memory.avoidPhrases.some(phrase=>draft!.toLowerCase().includes(phrase.toLowerCase()))){reasons.push('A saved phrase preference conflicts with this clarification.');draft=null;}
+    }
   }
   return {investorId, propertyId:selectedPropertyId, generatedAt:now(), action, why, evidence, unknowns:[...new Set(unknowns)], draft,
     draftEligibility:{allowed:draft !== null, reasons, scope:selectedPropertyId ? 'property_specific' : 'relationship_only'},

@@ -105,3 +105,9 @@ The existing investor JSON and IDs remain intact. Reviewed `crm_update` actions 
 `organizations.settings.ownershipPolicy` contains `organizationVisibility`, `crossOfficeSharing` and `managerAssignment`. Defaults are false, false and true respectively. Visibility is enforced by the access service; sharing grants reads, while mutations require the owner or a manager in the owning office. Assignment currently changes owner within the same office and clears explicit sharing; it does not migrate tasks, historical events or remote Salesforce records to another office.
 
 Timestamps distinguish call attempts, actual connected contact, recap creation, approval, release and copy/compose handoff. Package `deliveryStatus` remains `not_sent` because no provider-delivery integration is active. `synthetic` flags and `demo:` disclosure references are not real evidence.
+
+## Structured relationship reports — migration 019
+
+`relationship_reports` is an append-only, tenant/office/author/investor-scoped ledger. Each JSON report records topic, typed value, optional approved buy-box scope, exact source note, optional original statement time, server capture time and author. Corrections reference a previous report; a unique correction index prevents branches. Update/delete triggers preserve originals. Current active/superseded state is projected from correction links, not rewritten into old rows.
+
+Writes require an expected report count and a hash of current investor/buy-box/contact/activity/report context, with scoped event keys and payload hashes for exact retries. Canonical criteria, private employee memory and private correspondence remain separate. No provider event, wallet debit or automatic CRM proposal follows from adding a report. Migration 019 adds the ledger without rewriting existing records. See RELATIONSHIP_QUALITY.md for preservation verification.

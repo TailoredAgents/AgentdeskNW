@@ -85,3 +85,9 @@ Property access and investor access are separate. Base inventory inherits releas
 The local disclosure policy conservatively requires the current demo version. Only managers may enter synthetic disclosure fixtures; a signed fixture requires a `demo:` evidence reference and current version. Expiry is checked when read. This is not signature verification and cannot be used to self-declare a real investor signed. No provider can be treated as active without credentials and verified integration evidence.
 
 Packages are drafts until explicit review; copy/compose handoff records preparation, never delivery. No Gmail, personal SMS, iMessage or Slack send occurs. Paid SMS and Slack dispatch remain unconfigured/planned adapter work. Formal disclosure rules, authoritative signed-document sources, property-release authority and corporate sharing rules remain customer confirmation gates.
+
+## Structured investor testimony
+
+Relationship reports follow current investor visibility; only the owner or authorized manager of the owning office can add/correct them, with Core access checked again on exact retries. Shared readers cannot write. The API binds the path investor, rejects client identity fields, validates active approved buy-box scope and requires the current record/context version. Corrections must target an active report for that same investor, field and buy box. Reused keys with changed payloads and stale reviews fail.
+
+The review screen explicitly identifies the report as shared employee testimony. Reports never import private email automatically or expose an employee's private preferences/tasks. They do not change canonical CRM criteria, grant access, create delivery authority or debit credits. Captured notes and original statements stay in the record; audit entries contain metadata only. The model can read authorized reports but has no new write or approval tool.

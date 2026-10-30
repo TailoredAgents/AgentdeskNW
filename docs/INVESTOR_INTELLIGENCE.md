@@ -1,5 +1,15 @@
 # Investor Intelligence — implemented local demonstration
 
+## Structured relationship reports — October 30, 2026
+
+Relationship intelligence now includes **Investor understanding**: recorded criteria beside employee-reported updates. Seven topics cover budget, geography, strategy, financing, renovation tolerance, purchase timing and contact preference. The first five require an explicit active, approved buy box; timing/contact apply to the whole relationship. Separate buy boxes never merge. Personal employee writing preferences remain in private memory.
+
+An employee enters a value and exact source note, optionally supplies the date the investor stated it, reviews the shared report, then saves. Capture time is separate. Corrections explicitly reference an active earlier report in the same field/scope, preserve the original as superseded and replace only that report in the active comparison. Reports are immutable employee testimony; canonical criteria still use the existing separate CRM approval flow.
+
+Different normalized values trigger clarification rather than silently choosing the newest. Comparison normalizes list ordering/case/whitespace; it does not establish semantic contradiction. Provisional reconfirmation intervals are 90 days for budget/geography/strategy/rehab, 30 for financing/timing and 180 for contact. Unknown statement dates stay unknown; older data remains visible. Compound canonical fields use their oldest contributing capture date and preserve each field's source text; that capture is not an investor statement date. Canonical timing/contact lack a captured date in the existing schema and remain undated.
+
+A recorded pause takes priority. Otherwise unresolved differences lead relationship and inbox suggestions to ask for clarification. Inbox send reviews become stale when the record changes. Copilot reads the same active record through its existing journey tool; report entry/correction uses the dashboard, with no new model write tool. Automatic email extraction and passive learning remain later work. See [the depth plan](RELATIONSHIP_SPECIALIST_PLAN.md) and [measured results](RELATIONSHIP_QUALITY.md).
+
 Investor Intelligence extends the existing investor records and services; it does not replace Salesforce or introduce another AI Employee. The shared browser/server types are in `src/lib/intelligence-contracts.ts`. `src/server/intelligence.ts` owns reviewed buying criteria, relationship context, disclosure fixtures, matching, briefings and calling priorities. `src/server/access.ts` owns investor visibility and privacy-preserving duplicate checks.
 
 All sample investors, property characteristics, purchase evidence and disclosure records are fictional. Alex’s discovery observations inform the workflow but are not verified New Western corporate policies.
