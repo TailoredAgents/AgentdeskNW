@@ -13,7 +13,7 @@ Each method has an ID, version, effective date, active/withdrawn state, role sco
 | reactivation / 1 | A recorded buying pause | Honor the pause. Ask whether to address the present question or agree a later check-in. A new message or property match does not authorize restarting marketing. |
 | follow-through / 1 | An existing personal commitment | Inspect the existing task before adding a duplicate. Ask what happened and what response or next step was actually agreed. Task completion is not proof of investor agreement. |
 
-The selection preserves the current evidence hierarchy: pause, differing criteria, unresolved concern, existing follow-up, then property eligibility/fit and qualification. A missing property-sharing prerequisite does not receive a method that purports to waive it. Methods currently apply only within the authorized dispositions/management relationship workflow; management access still does not grant someone else's mailbox or personal tasks. Acquisitions needs its own methods, not a dispositions label attached to its work.
+The selection preserves the current evidence hierarchy: pause, differing criteria, unresolved concern, existing follow-up, then property eligibility/fit and qualification. A missing property-sharing prerequisite does not receive a method that purports to waive it. Methods currently apply only within the authorized dispositions/management relationship workflow; management access still does not grant someone else's mailbox or personal tasks. Acquisitions uses its own [provisional intake method](ACQUISITIONS_INTAKE.md), not a dispositions label attached to its work.
 
 ## Application and traceability
 
@@ -31,7 +31,7 @@ These are authored engineering cases over deterministic services, not independen
 
 ## Provisional cases for the other role tracks
 
-These cases are authored acceptance targets, not executed tests or confirmed company procedures. They require acquisitions and management practitioner review before role acceptance.
+These cases are provisional engineering targets, not confirmed company procedures. The three acquisitions cases now have bounded existing-inventory service/HTTP coverage in [ACQUISITIONS_INTAKE.md](ACQUISITIONS_INTAKE.md), including changed evidence and obsolete results; this does not complete acquisition intake/screening. The management workflow cases remain the next peer development target (existing private-mailbox boundaries already have regression coverage). Both roles still require practitioner review before role acceptance.
 
 | Role / case | Fictional input | Expected useful output |
 | --- | --- | --- |

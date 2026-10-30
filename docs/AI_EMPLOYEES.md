@@ -14,7 +14,7 @@ Dispositions, acquisitions and management are all primary audiences. The intende
 
 “Ready” for the notetaker means real local excerpt extraction, not audio recording or a claim of human-level transcript understanding. Daily Coordinator uses local work records, not external calendars.
 
-The first C4 [relationship working methods](RELATIONSHIP_METHODS.md) increment adds four versioned provisional methods to the Investor Relationship recommendation and Inbox assistance: qualification, objections, reactivation and follow-through. Useful questions and checks carry source/version and react to changed concerns. This does not change registry readiness or establish independent expertise. Company knowledge publishing, acquisitions/management methods and broader quality acceptance remain open; the same document records provisional cases for those role tracks.
+The first C4 [relationship working methods](RELATIONSHIP_METHODS.md) increment adds four versioned provisional methods to the Investor Relationship recommendation and Inbox assistance: qualification, objections, reactivation and follow-through. Useful questions and checks carry source/version and react to changed concerns. This does not change registry readiness or establish independent expertise. A subsequent [acquisitions intake](ACQUISITIONS_INTAKE.md) increment adds a provisional method for existing-property submissions, revised evidence, missing facts and internal handoff to the Acquisition-to-Disposition Coordinator and its saved-work review. The Acquisition Lead Assistant remains planned. Company knowledge publishing, management depth, broader acquisitions screening and independent quality acceptance remain open; the methods document records provisional role cases.
 
 ## Common contract
 

@@ -14,6 +14,10 @@ A released event evaluates matches separately for each recipient and creates a d
 
 The existing worker retries release and draft-review notices from durable current records after quiet hours or a notification limit prevents immediate display. It rechecks the current audience and skips withdrawn releases; an old version is not replayed after a newer version replaces it. Notification preferences are still respected. This is a local polling worker, not a production notification broker.
 
+## Structured wholesaler intake
+
+[Acquisitions intake](ACQUISITIONS_INTAKE.md) adds an optional structured submission to the same release/event history. The reviewed intake screen saves a new draft version, preserves legacy metadata/audience and invalidates prior packages; it does not publish or change inventory. Legacy release-editor saves preserve the submission when they omit the optional field. Publication rejects a supplied price that conflicts with inventory or a supplied repair estimate that conflicts with the release assumption until explicitly reconciled. Exact intake retries recover current authorized state instead of reviving a prior version. Changed source versions also withhold stale acquisitions work results and protected chat replay; a fresh review is required.
+
 ## Packages and revisions
 
 Any release revision invalidates associated packages, clears approval and removes their old restricted body. This includes withdrawal, a media-link change or audience change. Employees compose a new package from current data and review it again. Every package list/copy/approval also rechecks current release access, version, disclosure and media eligibility.

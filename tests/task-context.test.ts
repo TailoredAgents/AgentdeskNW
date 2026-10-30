@@ -1,0 +1,15 @@
+import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest';
+import {closeDb,demoActor,getDb} from '../src/server/db';
+import {createTask} from '../src/server/services';
+import {getPersonalTaskDetail} from '../src/server/task-context';
+import {getInboxState,getInboxThread,receiveDemoCommunication} from '../src/server/communications';
+import {createInboxFollowUp,getInboxAssistance} from '../src/server/communications-workflow';
+import {getInvestorJourney,recordJourneyObservation} from '../src/server/journey';
+import {mutateTask} from '../src/server/task-actions';
+beforeEach(()=>{closeDb();vi.stubEnv('AGENTDESK_DB_PATH',':memory:');vi.stubEnv('OPENAI_API_KEY','');vi.stubEnv('AGENTDESK_DEMO','true');vi.stubEnv('AGENTDESK_ALLOW_PRODUCTION_DEMO','true');});
+afterEach(()=>{closeDb();vi.unstubAllEnvs();});
+describe('personal follow-up context',()=>{
+ it('returns current personal details without granting managers another employee’s task',()=>{const actor=demoActor(),task=createTask(actor,{title:'Confirm Mike’s timing',investorId:'investor-mike'});expect(getPersonalTaskDetail(actor,task.id)).toMatchObject({task:{id:task.id},investor:{name:'Mike Bennett'},source:null,canEdit:true});expect(()=>getPersonalTaskDetail(demoActor('manager'),task.id)).toThrow('not found');expect(()=>getPersonalTaskDetail(demoActor('acquisitions'),task.id)).toThrow('not found');});
+ it('links reviewed Inbox follow-ups only while their source is accessible',()=>{const actor=demoActor(),state=getInboxState(actor),thread=state.threads.find(t=>t.accountId===state.preferredAccountId)!,detail=getInboxThread(actor,thread.id),suggestion=getInboxAssistance(actor,thread.id).suggestedFollowUp!;const result=createInboxFollowUp(actor,thread.id,{expectedVersion:detail.thread.version,eventKey:'phone-follow',messageId:suggestion.messageId,title:suggestion.title,dueAt:null});expect(getPersonalTaskDetail(actor,result.task.id).source?.threadId).toBe(thread.id);receiveDemoCommunication(actor,{scenarioId:'company-revoke-access',eventKey:'revoke'});const hidden=getPersonalTaskDetail(actor,result.task.id);expect(hidden.source).toBeNull();expect(hidden.sourceNotice).toContain('unavailable');expect(hidden.task.title).toBe(suggestion.title);});
+ it('completing the task leaves the sourced concern and CRM record unchanged',()=>{const actor=demoActor(),concern=recordJourneyObservation(actor,{investorId:'investor-mike',kind:'objection',text:'Repair sources still need review',eventKey:'concern'}),task=createTask(actor,{title:'Check repair evidence',investorId:'investor-mike'}),before=getDb().prepare('SELECT data FROM investors WHERE id=?').get('investor-mike');mutateTask(actor,task.id,{action:'complete',expectedVersion:task.version,eventKey:'done'});expect(getPersonalTaskDetail(actor,task.id).task.status).toBe('completed');expect(getInvestorJourney(actor,'investor-mike').openIssues.some(item=>item.id===concern.id)).toBe(true);expect(getDb().prepare('SELECT data FROM investors WHERE id=?').get('investor-mike')).toEqual(before);});
+});

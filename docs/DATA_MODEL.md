@@ -2,6 +2,10 @@
 
 [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) is the sole authority for completion status and development order. This document records schema contracts and historical preservation evidence, not permission to apply migrations to the active database.
 
+## October 30 follow-up and acquisitions intake increment
+
+No schema migration. Existing `tasks` and scoped `communication_workflow_actions` link a personal follow-up to its private Inbox source; the detail projection rechecks source access and never grants it through the task. Existing `property_releases.data` and immutable `release_events.data` accept optional `acquisitionSubmission`: source/contact/date, supplied price/repair assumption/scope/evidence, occupancy and comparable references. Legacy missing fields remain valid, and release saves that omit the submission preserve it. An explicit intake revision resets the release to draft and invokes existing package invalidation. History is retained; the review returns up to twenty revisions. Inventory and verified CRM facts remain unchanged. See [ACQUISITIONS_INTAKE.md](ACQUISITIONS_INTAKE.md) for authority, replay and source-version rules. Prior migration preservation counts below remain dated evidence, not a new migration run.
+
 ## Shared-work/mobile migrations — local acceptance
 
 Migrations 022–024 passed integrated HTTP checks and preservation acceptance on a disposable schema-021 copy: all **266 prior rows across 82 tables** remained byte-for-byte unchanged by migration, excluding the migration journal. Existing drafts, wallet operations and holds survived; new pairing, job completion, generic notice and revocation checks passed. Integrity checks passed and no provider call was added. The active schema-009 local database remained untouched with its file checksum unchanged. Evidence: ignored `artifacts/mobile/migration-preservation.json`. This does not establish deployed schema state.

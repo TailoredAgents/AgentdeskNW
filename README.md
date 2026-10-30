@@ -16,13 +16,13 @@ The target is a primary iPhone/Android app and a detailed desktop workspace, wit
 
 ## Current state
 
-**Current local checkpoint: native Inbox and the first versioned relationship methods**, verified October 30, 2026, extending shared-controls/mobile foundation `e03e381`. Agent/Work/Inbox/Settings reuse the existing server. The phone now presents Salesforce-first private fictional correspondence, shared saved drafts, source-aware assistance, exact generated-reply simulation, reviewed relationship notes and personal follow-ups. Draft comparison protects unsaved edits when the dashboard changes a conversation. Four explicitly provisional working methods add useful questions and source/version explanations to relationship recommendations and Inbox assistance.
+**Current local checkpoint: native follow-up controls and acquisitions intake**, verified October 30, 2026, extending Inbox/method checkpoint `ee9985a`. Employees can open an Inbox follow-up directly in native Work, change its reminder, complete/cancel it and revisit its source. Acquisitions employees and managers can record versioned wholesaler submissions for existing inventory, distinguish supplied facts from missing evidence, compare revisions and prepare internal handoffs. The existing acquisitions Copilot job uses that same review and withholds obsolete results when the source changes.
 
-Verification: **596 root tests, 15 mobile client tests, 934 HTTP/workflow checks and 36 relationship scenarios / 54 assertions**; root typecheck/lint/production build, independent mobile typecheck, iOS/Android JavaScript exports and a connected phone-width Inbox walkthrough. No schema/dependency change was added; the prior checkpoint's migration preservation evidence remains historical. Sixteen registered specialists still comprise two locally ready, ten demo and four planned; the new methods do not establish expert intelligence or company-approved procedures.
+Verification: **609 root tests, 19 mobile client tests, 1,004 HTTP/workflow checks and 36 relationship scenarios / 54 assertions**; root typecheck/lint/production build, independent mobile typecheck, iOS/Android JavaScript exports and connected phone-width/desktop walkthroughs. No schema/dependency change was added. Sixteen registered specialists still comprise two locally ready, ten demo and four planned. The Acquisition Lead Assistant remains planned; the new intake method is provisional, with no valuation, company-approved procedure or expert-intelligence claim.
 
 **Mobile is prepared locally, not yet installed or released.** The phone-width browser rehearsal passed pairing, shared history, cross-surface cost approval, pause/resume, background worker completion and remote device revocation. Native binary builds, real phone speech/push and store distribution remain pending. [Mobile preparation notes](mobile/README.md) distinguish each acceptance layer. Whole-job costs remain fictional; live model/provider usage is separately metered.
 
-Implementation follows the single roadmap. C1–C4 remain partial. Next: close the personal follow-up loop in native Work and deepen the acquisitions opportunity intake/missing-facts workflow, with actual-device acceptance when tooling/devices are available.
+Implementation follows the single roadmap. C1–C4 remain partial. Next: deepen management’s stalled-handoff/outcome workflow and shared missing-information continuation, with actual-device acceptance when tooling/devices are available.
 
 Repository: [TailoredAgents/AgentdeskNW](https://github.com/TailoredAgents/AgentdeskNW). The owner reported a Render deployment; the latest deployed revision has not been verified. Push and deployment are separate. Real company data, live mailboxes/investor delivery, actual payments, managed identity and broad expert autonomy remain unfinished.
 
@@ -72,6 +72,7 @@ npm run test:relationship
 npm run test:work
 npm run test:mobile
 npm run test:mobile-inbox
+npm run test:mobile-followthrough
 npm run test:relationship-quality -- --all
 ```
 

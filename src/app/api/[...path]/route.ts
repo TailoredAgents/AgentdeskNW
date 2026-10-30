@@ -1,6 +1,8 @@
+import {acquisitionInputSchema,recordAcquisitionSubmission,reviewAcquisition} from '@/server/acquisitions';
 import {assertMobileRequest,getMobileAuthentication,pairMobileDevice} from '@/server/mobile-auth';
 import {mobileRoute} from '@/server/mobile-api';
 import { workRoute } from '@/server/work-api';
+import { getPersonalTaskDetail } from '@/server/task-context';
 import { messagingRoute } from '@/server/messaging-api';
 import { getPersonalTask, listPersonalTasks, mutateTask, taskMutationSchema } from '@/server/task-actions';
 import { memoryJourneyRoute } from '@/server/memory-journey-api';
@@ -103,6 +105,11 @@ async function route(request:NextRequest,{params}:{params:Promise<{path:string[]
     if(resource==='investors'&&id&&method==='PATCH'){
       const {changes}=z.object({changes:qualificationChangesSchema}).strict().parse(await body(request));return json(service.proposeInvestorUpdate(actor,id,changes),201);
     }
+    if(resource==='acquisitions'&&id&&path.length===2){
+      if(method==='GET')return json(reviewAcquisition(actor,id));
+      if(method==='POST')return json(recordAcquisitionSubmission(actor,id,acquisitionInputSchema.parse(await body(request))));
+    }
+    if(resource==='tasks'&&id&&operation==='detail'&&method==='GET'&&path.length===3)return json(getPersonalTaskDetail(actor,id));
     if(resource==='tasks'&&method==='GET'&&path.length<=2)return json(id?getPersonalTask(actor,id):listPersonalTasks(actor));
     if(resource==='tasks'&&id&&method==='PATCH'&&path.length===2)return json(mutateTask(actor,id,taskMutationSchema.parse(await body(request))));
     if(resource==='tasks'&&method==='POST'){

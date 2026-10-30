@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowRight, ArrowUpRight, Check, CirclePause, Clock, FileText, Info, Play, Plus, RefreshCw, ShieldCheck, Sparkles, X } from 'lucide-react';
 import type { Artifact, Bootstrap } from '@/lib/contracts';
 import type { WorkRun, WorkRunStatus, WorkStep } from '@/lib/work-contracts';
+import {AcquisitionIntakePanel} from './AcquisitionIntakePanel';
 import { api, ApiError, Badge, EmptyState, Modal, Panel, readable, SectionHead, Spinner } from './ui';
 
 const dollars = (cents: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(cents / 100);
@@ -200,6 +201,7 @@ export function WorkRunsPanel({ data, initialRunId, onChange, onError, onArtifac
   const canCancel = !!detail && !['completed', 'canceled', 'reconciling'].includes(detail.status);
 
   return <section className="work-runs" aria-label="Saved Copilot jobs">
+    {data.actor.role!=='dispositions'&&<AcquisitionIntakePanel data={data} onChange={onChange}/>}
     <div className="work-runs-heading"><div><h2>Put a plan in motion.</h2><p>Keep the steps, results and spending decision together. Your job stays saved when you leave this page.</p></div><button className="button primary" disabled={busy} onClick={() => { setError(''); setCreating(true); }}><Plus size={16}/>New sample job</button></div>
     <div className="work-demo-notice"><Info size={17}/><span>Fictional records and simulated job costs. These jobs do not collect payment or contact investors. Live Copilot usage is not covered by this simulated job budget.</span></div>
     {notice && <p className="work-status-notice" role="status">{notice}</p>}

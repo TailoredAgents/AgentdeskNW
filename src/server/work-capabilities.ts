@@ -1,3 +1,4 @@
+import {acquisitionMethod,reviewAcquisition} from './acquisitions';
 import {z} from 'zod';
 import type {Actor,Role,ToolResult} from '../lib/contracts';
 import type {WorkStep,WorkStepInput} from '../lib/work-contracts';
@@ -67,6 +68,8 @@ export function estimateWorkStep(actor:Actor,step:WorkStepInput){const item=defi
 /** Historical results retain their receipt, but never retain access to another person's records. */
 export function validateStoredWorkOutput(actor:Actor,step:WorkStepInput,output:ToolResult):void {
  assertActor(actor);requireRole(actor,definition(step.capabilityId).roles);
+ const acquisition=(output.data as {acquisitionReview?:{property:{id:string};version:number;method:{version:number}}}|undefined)?.acquisitionReview;
+ if(acquisition){const current=reviewAcquisition(actor,acquisition.property.id);if(current.version!==acquisition.version||JSON.stringify(current.property)!==JSON.stringify(acquisition.property)||acquisition.method.version!==acquisitionMethod.version)throw new AppError(409,'The acquisition source changed. Prepare a fresh handoff review.');}
  const inspect=(value:unknown,depth=0)=>{
   if(!value||typeof value!=='object'||depth>14)return;
   if(Array.isArray(value)){value.forEach(item=>inspect(item,depth+1));return;}
@@ -100,10 +103,8 @@ export function executeWorkCapability(actor:Actor,step:WorkStepInput,_priorOutpu
   }
   case 'relationship_next_step':{const recommendation=recommendInvestorNextStep(actor,input.investorId as string);result.data={investorId:input.investorId,recommendation};result.message=`${recommendation.action.title}\n${recommendation.action.description}${recommendation.draft?`\n\nRelationship-only draft: ${recommendation.draft}`:''}\n${recommendation.unknowns.length?`Missing: ${recommendation.unknowns.join('; ')}\n`:''}Nothing has been sent.`;break;}
   case 'review_handoff':{
-   const property=readProperty(actor,input.propertyId as string),releases=listReleases(actor).filter(r=>r.propertyId===property.id);
-   const missing:string[]=[];if(!releases.length)missing.push('a sourced acquisition release');
-   for(const r of releases){if(!r.upstreamParty)missing.push('upstream wholesaler/source contact');if(!r.economicsSource)missing.push('source for the supplied economics');if(r.repairEstimate===null)missing.push('supported repair assumptions');if(!r.closingAt)missing.push('confirmed closing date');if(r.mediaAccess==='unverified')missing.push('recipient access to property media');}
-   result.data={propertyId:property.id,property,releases,missing:[...new Set(missing)]};result.message=`Handoff review for ${property.address}: ${releases.length} recorded release(s).\n${missing.length?`Clarify: ${[...new Set(missing)].join('; ')}.`:'The checked handoff fields are recorded; validate their source and current status before releasing the deal.'}\nThis is a fictional readiness review, not valuation or a published handoff.`;break;
+   const review=reviewAcquisition(actor,input.propertyId as string),releases=listReleases(actor).filter(r=>r.propertyId===review.property.id);
+   result.data={propertyId:review.property.id,property:review.property,releases,missing:review.questions.map(item=>item.reason),acquisitionReview:review};result.message=review.handoffDraft;break;
   }
   case 'office_priorities':{const overview=getManagementOverview(actor);result.data={overview};result.message=`${overview.summary}\n${overview.overdue.length?`Recorded overdue work: ${overview.overdue.slice(0,8).map(t=>t.title).join('; ')}.`:'No overdue tasks are recorded in this office view.'}\nLocal workload evidence only; no private mailbox access or verified sales-performance claim.`;break;}
   case 'create_followup':{const task=createTask(actor,input as {title:string;investorId:string|null;dueAt:string|null});result.data={taskId:task.id,task};result.message=`Saved your personal follow-up: ${task.title}.`;result.artifacts=[{type:'task',id:task.id,title:task.title}];break;}

@@ -1,0 +1,55 @@
+import assert from 'node:assert/strict';
+import {randomUUID} from 'node:crypto';
+import type {Conversation,Task} from '../src/lib/contracts';
+import type {PersonalTaskDetail} from '../src/lib/task-contracts';
+import type {AcquisitionReview} from '../src/lib/acquisition-contracts';
+import {emptySubmission} from '../src/lib/acquisition-contracts';
+import type {MobilePairing,MobilePairResult} from '../src/lib/mobile-contracts';
+import type {InboxState,InboxThreadDetail,InboxAssistance,InboxFollowUpResult} from '../src/lib/communications-contracts';
+import type {WorkRun} from '../src/lib/work-contracts';
+import {closeDb,getDb,demoActor} from '../src/server/db';
+import {processWorkRuns} from '../src/server/work-runs';
+if(process.env.AGENTDESK_MOBILE_SMOKE_ISOLATED!=='true'||!process.env.AGENTDESK_DB_PATH||!process.env.SMOKE_BASE_URL||process.env.OPENAI_API_KEY)throw new Error('Use the isolated mobile follow-through runner with providers disabled.');
+const base=process.env.SMOKE_BASE_URL;assert.equal(new URL(base).hostname,'127.0.0.1');let cookie='',token='',checks=0;
+async function request<T>(path:string,method='GET',body?:unknown,expected=200,web=false):Promise<T>{const response=await fetch(`${base}/api/${path}`,{method,headers:{...(web?{Cookie:cookie}:{Authorization:`Bearer ${token}`}), 'X-AgentDesk-Request':'1','Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body)});if(web&&response.headers.get('set-cookie'))cookie=response.headers.get('set-cookie')!.split(';')[0];const text=await response.text();assert.equal(response.status,expected,`${method} ${path}: ${text}`);checks++;return text?JSON.parse(text) as T:undefined as T;}
+const check=(value:unknown,message:string)=>{assert.ok(value,message);checks++;};
+const count=(table:string)=>(getDb().prepare(`SELECT COUNT(*) n FROM ${table}`).get() as {n:number}).n;
+async function pair(role:'dispositions'|'acquisitions'|'manager'){await request('session','POST',{role},200,true);const code=await request<MobilePairing>('mobile/pairing','POST',{},200,true);const result=await request<MobilePairResult>('mobile/pair','POST',{code:code.code,deviceName:`Follow-through ${role}`},201,true);token=result.token;return result;}
+try{
+ await request('bootstrap','GET',undefined,200,true);const alex=await pair('dispositions'),alexCookie=cookie;
+ const providersBefore=count('provider_operations'),crmBefore=getDb().prepare('SELECT id,data FROM investors ORDER BY id').all();
+ const inbox=await request<InboxState>('inbox'),thread=inbox.threads.find(item=>item.accountId===inbox.preferredAccountId)!;
+ const detail=await request<InboxThreadDetail>(`inbox/${thread.id}`),assist=await request<InboxAssistance>(`inbox/${thread.id}/assist`);assert.ok(assist.suggestedFollowUp);
+ const follow=await request<InboxFollowUpResult>(`inbox/${thread.id}/follow-up`,'POST',{expectedVersion:detail.thread.version,eventKey:randomUUID(),messageId:assist.suggestedFollowUp.messageId,title:'Review phone repair evidence',dueAt:null});
+ let task=follow.task;const context=await request<PersonalTaskDetail>(`tasks/${task.id}/detail`);check(context.source?.threadId===thread.id&&context.task.id===task.id,'Phone task opens the exact reviewed source');
+ check((await request<Task[]>('tasks')).some(item=>item.id===task.id),'Inbox follow-up appears in native task list');
+ const snooze={action:'snooze',minutes:120,expectedVersion:task.version,eventKey:randomUUID()};task=await request<Task>(`tasks/${task.id}`,'PATCH',snooze);const retry=await request<Task>(`tasks/${task.id}`,'PATCH',snooze);check(task.dueAt===retry.dueAt&&task.version===retry.version,'Snooze retry cannot move the deadline twice');
+ const oldVersion=task.version;task=await request<Task>(`tasks/${task.id}`,'PATCH',{action:'reschedule',dueAt:new Date(Date.now()+86400000).toISOString(),expectedVersion:task.version,eventKey:randomUUID()},200,true);
+ await request(`tasks/${task.id}`,'PATCH',{action:'complete',expectedVersion:oldVersion,eventKey:randomUUID()},409);
+ check((await request<PersonalTaskDetail>(`tasks/${task.id}/detail`)).task.dueAt===task.dueAt,'Desktop reschedule appears on phone after stale-review rejection');
+ const chat=await request<{conversation:Conversation}>('chat','POST',{conversationId:alex.conversationId,requestId:randomUUID(),message:'Snooze Review phone repair evidence for two hours.'},200,true);check(chat.conversation.messages.at(-1)?.content.toLowerCase().includes('snooz'),'Copilot edits the same named personal task');
+ task=(await request<PersonalTaskDetail>(`tasks/${task.id}/detail`)).task;
+ const done={action:'complete',expectedVersion:task.version,eventKey:randomUUID()};task=await request<Task>(`tasks/${task.id}`,'PATCH',done);await request(`tasks/${task.id}`,'PATCH',done);check(task.status==='completed'&&(await request<Task>(`tasks/${task.id}`,'GET',undefined,200,true)).status==='completed','Phone completion persists once in dashboard history');
+ await request(`tasks/${task.id}`,'PATCH',{action:'snooze',minutes:120,expectedVersion:task.version,eventKey:randomUUID()},409);
+ const second=await request<Task>('tasks','POST',{title:'Optional follow-up to cancel'},201,true);await request(`tasks/${second.id}`,'PATCH',{action:'cancel',expectedVersion:second.version,eventKey:randomUUID()});check((await request<Task[]>('tasks')).find(t=>t.id===second.id)?.status==='canceled','Canceled work is retained');
+ await request('inbox/receive-demo','POST',{scenarioId:'company-revoke-access',eventKey:randomUUID()},200,true);check((await request<PersonalTaskDetail>(`tasks/${task.id}/detail`)).source===null,'Revoked private source is not exposed through task links');
+ const jordan=await pair('acquisitions'),jordanCookie=cookie;await request(`tasks/${task.id}/detail`,'GET',undefined,404);await request(`tasks/${task.id}`,'PATCH',done,404);
+ let intake=await request<AcquisitionReview>('acquisitions/property-maple');check(intake.version===0&&intake.questions.some(q=>q.field==='submission'),'Acquisition intake identifies missing source');
+ const propertyBefore=intake.property,firstInput={expectedVersion:0,eventKey:randomUUID(),submission:{...emptySubmission,wholesaler:'Demo Wholesaler',sourceReference:'Fictional submitted email',askingPrice:intake.property.price,repairEstimate:30000}};
+ intake=await request<AcquisitionReview>('acquisitions/property-maple','POST',firstInput);check(intake.status==='draft'&&intake.questions.some(q=>q.field==='repairs'),'Unsupported repair amount prompts a useful evidence question');
+ check((await request<AcquisitionReview>('acquisitions/property-maple','GET',undefined,200,true)).version===1,'Desktop sees phone submission');
+ let run=await request<WorkRun>('work','POST',{presetId:'acquisitions',propertyId:'property-maple',requestId:randomUUID()},201);processWorkRuns(demoActor('acquisitions'),10);run=await request<WorkRun>(`work/${run.id}`);check(run.status==='completed'&&run.steps.some(step=>step.result?.message.includes('Demo Wholesaler')),'Durable acquisition handoff uses recorded source facts');
+ const secondInput={expectedVersion:1,eventKey:randomUUID(),submission:{...firstInput.submission,askingPrice:100000,reportedOn:'2026-10-29',repairScope:'Kitchen and roof',repairSource:'Fictional contractor range, October 29',occupancy:'vacant',comparableSources:'Fictional comparable report'}};
+ intake=await request<AcquisitionReview>('acquisitions/property-maple','POST',secondInput,200,true);check(intake.version===2&&intake.changes.some(change=>change.field==='askingPrice')&&intake.questions.some(q=>q.field==='askingPrice'),'Revision flags changed terms and inventory conflict');
+ check(!intake.questions.some(q=>q.field==='repairs')&&intake.history[1].submission?.repairScope==='','New evidence improves questions while history remains unchanged');
+ assert.deepEqual(intake.property,propertyBefore);checks++;
+ await request('acquisitions/property-maple','POST',secondInput);check((await request<AcquisitionReview>('acquisitions/property-maple')).history.length===2,'Exact submission replay is not duplicated');
+ await request('acquisitions/property-maple','POST',{...firstInput,eventKey:randomUUID()},409);await request('acquisitions/property-maple','POST',{...secondInput,submission:{...secondInput.submission,askingPrice:90000}},409);
+ run=await request<WorkRun>(`work/${run.id}`);check(run.contentRestricted&&!JSON.stringify(run).includes('Demo Wholesaler'),'Obsolete acquisition result is withheld pending fresh review');
+ await request('acquisitions/property-maple','POST',{...secondInput,ownerId:'forged'},400);
+ await pair('manager');await request(`tasks/${task.id}/detail`,'GET',undefined,404);check((await request<AcquisitionReview>('acquisitions/property-maple')).version===2,'Management sees scoped operational intake without private employee tasks');
+ cookie=alexCookie;token=alex.token;await request('acquisitions/property-maple','GET',undefined,403);await request('acquisitions/property-maple','POST',firstInput,403);
+ cookie=jordanCookie;token=jordan.token;await request(`mobile/devices/${jordan.sessionId}/revoke`,'POST',{},200,true);await request('acquisitions/property-maple','GET',undefined,401);
+ check(count('provider_operations')===providersBefore,'No provider call during follow-through or acquisition intake');assert.deepEqual(getDb().prepare('SELECT id,data FROM investors ORDER BY id').all(),crmBefore);checks++;
+ console.info(`PASS: ${checks} mobile follow-through HTTP/worker checks. Shared personal task controls and source links, exact retries and stale reviews, versioned acquisitions intake, improved questions, obsolete handoff suppression and role/device scope. Fictional data only.`);
+}finally{closeDb();}

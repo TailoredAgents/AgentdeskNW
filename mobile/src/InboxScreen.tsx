@@ -17,12 +17,12 @@ const tomorrow=()=>{const date=new Date();date.setDate(date.getDate()+1);date.se
 function Sheet({title,close,children,footer}:{title:string;close:()=>void;children:ReactNode;footer:ReactNode}){
  return <Modal visible transparent animationType="slide" onRequestClose={close}><KeyboardAvoidingView style={s.modalShade} behavior={Platform.OS==='ios'?'padding':undefined}><View style={s.modal}><View style={s.modalHeader}><View style={s.between}><Text style={[s.cardTitle,s.grow]}>{title}</Text><Pressable accessibilityRole="button" accessibilityLabel={`Close ${title}`} onPress={close} style={s.close}><Text style={s.cardTitle}>×</Text></Pressable></View></View><ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={s.body}>{children}</ScrollView><View style={s.modalFooter}>{footer}</View></View></KeyboardAvoidingView></Modal>;
 }
-export function InboxScreen({api,initialId,onAuthError,onGuard}:{api:ReturnType<typeof createApi>;initialId:string|null;onAuthError:(error:unknown)=>void;onGuard:(guard:Guard|null)=>void}){
+export function InboxScreen({api,initialId,onAuthError,onGuard,onTask}:{api:ReturnType<typeof createApi>;initialId:string|null;onAuthError:(error:unknown)=>void;onGuard:(guard:Guard|null)=>void;onTask:(id:string)=>void}){
  const [list,setList]=useState<InboxState|null>(null),[selected,setSelected]=useState(initialId),[detail,setDetail]=useState<InboxThreadDetail|null>(null);
  const [filter,setFilter]=useState<InboxFilter>('all'),[account,setAccount]=useState<string|undefined>(undefined),[query,setQuery]=useState(''),[search,setSearch]=useState('');
  const [editor,setEditor]=useState<InboxEditor|null>(null),[assistance,setAssistance]=useState<InboxAssistance|null>(null),[review,setReview]=useState<InboxSendReview|null>(null),[actionReview,setActionReview]=useState<ActionReview|null>(null);
  const [busy,setBusy]=useState(false),[loading,setLoading]=useState(true),[error,setError]=useState(''),[notice,setNotice]=useState(''),[showContext,setShowContext]=useState(false),[compare,setCompare]=useState(false);
- const [showSources,setShowSources]=useState(false);
+ const [showSources,setShowSources]=useState(false),[savedTask,setSavedTask]=useState<string|null>(null);
  const [dialog,setDialog]=useState<{title:string;text:string;confirmLabel:string;confirm:()=>void}|null>(null),[pending,setPending]=useState<Operation|null>(null),[clock,setClock]=useState(Date.now());
  const alive=useRef(true),generation=useRef(0),mutating=useRef(false),detailRef=useRef<InboxThreadDetail|null>(null);
  const dirty=editorDirty(editor),conflict=!!detail&&!!editor&&dirty&&editor.baseVersion!==detail.thread.version;
@@ -57,7 +57,7 @@ export function InboxScreen({api,initialId,onAuthError,onGuard}:{api:ReturnType<
   leave();
  }
  useEffect(()=>{onGuard(guard);return()=>onGuard(null);},[dirty,locked,detail]);
- function open(id:string|null){guard(()=>{generation.current++;detailRef.current=null;setSelected(id);setDetail(null);setEditor(null);clearReviews();setShowContext(false);setError('');setNotice('');});}
+ function open(id:string|null){guard(()=>{generation.current++;detailRef.current=null;setSelected(id);setDetail(null);setEditor(null);clearReviews();setShowContext(false);setError('');setNotice('');setSavedTask(null);});}
  async function run(operation:Operation){
   if(mutating.current)return;mutating.current=true;generation.current++;setPending(operation);setBusy(true);setError('');setNotice('');
   try{
@@ -66,6 +66,7 @@ export function InboxScreen({api,initialId,onAuthError,onGuard}:{api:ReturnType<
    setPending(null);
    if(operation.kind==='review'){clearReviews();setReview(result as InboxSendReview);}
    else {const next='detail'in result?result.detail:result as InboxThreadDetail;accept(next,true);setReview(null);setActionReview(null);setCompare(false);setDialog(null);}
+   if(operation.kind==='followup')setSavedTask((result as InboxFollowUpResult).task.id);
    setNotice(operation.kind==='send'?(result as InboxSendResult).receipt.notice:operation.notice);
    if(operation.path.endsWith('/prepare-reply')){try{const current=result as InboxThreadDetail;const next=await api<InboxAssistance>(`/inbox/${encodeURIComponent(current.thread.id)}/assist`);if(alive.current&&detailRef.current?.thread.id===next.threadId&&detailRef.current.thread.version===next.threadVersion)setAssistance(next);}catch{if(alive.current)setNotice('Reply saved. Refresh the conversation review to continue.');}}
   }catch(e){
@@ -94,6 +95,7 @@ export function InboxScreen({api,initialId,onAuthError,onGuard}:{api:ReturnType<
   <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={s.body} refreshControl={<RefreshControl refreshing={loading} onRefresh={()=>void refresh()}/>}>
    <View style={s.demo}><Text style={s.demoText}>Fictional email & investor texts · No live delivery</Text></View>
    {errorView}{Boolean(notice)&&<Text accessibilityLiveRegion="polite" style={s.copy}>{notice}</Text>}
+   {savedTask&&<Button secondary label="Open saved follow-up" disabled={locked} onPress={()=>onTask(savedTask)}/>}
    {pending&&!busy&&<View style={s.card}><Text style={s.cardTitle}>Outcome needs checking</Text><Text style={s.copy}>Retry the same action to recover its saved result. It keeps the original request identity.</Text><Button label="Retry the same inbox action" onPress={()=>void run(pending)}/></View>}
    {!detail?<>
     {selected&&<Button secondary label="Back to inbox" disabled={locked} onPress={()=>open(null)}/>}

@@ -4,11 +4,11 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createServer } from 'node:net';
 const suite=process.argv[2]||'workflows';
-if(!['workflows','intelligence','conversation','wallet','inbox','communications','company-email','relationship','work','mobile','mobile-inbox'].includes(suite))throw new Error('Unknown smoke suite.');
-const script=suite==='mobile-inbox'?'scripts/mobile-inbox-smoke.ts':suite==='mobile'?'scripts/mobile-smoke.ts':suite==='work'?'scripts/work-smoke.ts':suite==='relationship'?'scripts/relationship-smoke.ts':suite==='company-email'?'scripts/company-email-smoke.ts':suite==='communications'?'scripts/communications-workflow-smoke.ts':suite==='inbox'?'scripts/inbox-smoke.ts':suite==='wallet'?'scripts/wallet-smoke.ts':suite==='conversation'?'scripts/conversation-smoke.ts':suite==='intelligence'?'scripts/intelligence-smoke.ts':'scripts/smoke.ts';
+if(!['workflows','intelligence','conversation','wallet','inbox','communications','company-email','relationship','work','mobile','mobile-inbox','mobile-followthrough'].includes(suite))throw new Error('Unknown smoke suite.');
+const script=suite==='mobile-followthrough'?'scripts/mobile-followthrough-smoke.ts':suite==='mobile-inbox'?'scripts/mobile-inbox-smoke.ts':suite==='mobile'?'scripts/mobile-smoke.ts':suite==='work'?'scripts/work-smoke.ts':suite==='relationship'?'scripts/relationship-smoke.ts':suite==='company-email'?'scripts/company-email-smoke.ts':suite==='communications'?'scripts/communications-workflow-smoke.ts':suite==='inbox'?'scripts/inbox-smoke.ts':suite==='wallet'?'scripts/wallet-smoke.ts':suite==='conversation'?'scripts/conversation-smoke.ts':suite==='intelligence'?'scripts/intelligence-smoke.ts':'scripts/smoke.ts';
 
 if(process.env.SMOKE_BASE_URL){
- if(['work','mobile','mobile-inbox'].includes(suite))throw new Error('The work suite requires its own disposable database. Run without SMOKE_BASE_URL.');
+ if(['work','mobile','mobile-inbox','mobile-followthrough'].includes(suite))throw new Error('The work suite requires its own disposable database. Run without SMOKE_BASE_URL.');
  const child=spawn(process.execPath,['--import','tsx',script],{stdio:'inherit',env:process.env});
  process.exitCode=await new Promise(resolve=>child.on('exit',code=>resolve(code??1)));
 }else{
@@ -17,7 +17,7 @@ if(process.env.SMOKE_BASE_URL){
  const directory=mkdtempSync(join(tmpdir(),'agentdesk-smoke-'));
  const env={...process.env,AGENTDESK_DB_PATH:join(directory,'smoke.sqlite'),AGENTDESK_DEMO:'true',AGENTDESK_ALLOW_PRODUCTION_DEMO:'true',OPENAI_API_KEY:'',AGENTDESK_CHANNELS_ENABLED:'false',AGENTDESK_CHANNEL_SEND_ENABLED:'false',AGENTDESK_WORK_SMOKE_ISOLATED:suite==='work'?'true':'false',AGENTDESK_MOBILE_SMOKE_ISOLATED:suite.startsWith('mobile')?'true':'false',AGENTDESK_MOBILE_PUSH_SEND_ENABLED:'false',SMOKE_BASE_URL:`http://127.0.0.1:${port}`};
  // The work suite advances bounded worker steps itself to inspect exact partial/paused states.
- const children=[spawn(process.execPath,['node_modules/next/dist/bin/next','start','--hostname','127.0.0.1','--port',String(port)],{stdio:['ignore','ignore','inherit'],env}),...(['work','mobile','mobile-inbox'].includes(suite)?[]:[spawn(process.execPath,['--import','tsx','scripts/worker.ts'],{stdio:['ignore','ignore','inherit'],env})])];
+ const children=[spawn(process.execPath,['node_modules/next/dist/bin/next','start','--hostname','127.0.0.1','--port',String(port)],{stdio:['ignore','ignore','inherit'],env}),...(['work','mobile','mobile-inbox','mobile-followthrough'].includes(suite)?[]:[spawn(process.execPath,['--import','tsx','scripts/worker.ts'],{stdio:['ignore','ignore','inherit'],env})])];
  try{
   let ready=false;
   for(let attempt=0;attempt<60;attempt++){try{const response=await fetch(`${env.SMOKE_BASE_URL}/api/health`);if(response.ok){ready=true;break;}}catch{}await new Promise(resolve=>setTimeout(resolve,250));}

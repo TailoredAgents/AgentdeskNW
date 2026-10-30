@@ -1,3 +1,4 @@
+import {acquisitionSubmissionSchema} from './acquisition-schema';
 import { hasFeature,requireFeature } from './billing';
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
@@ -13,7 +14,7 @@ const id=z.string().trim().min(1).max(150);
 const text=z.string().trim().max(5000);
 const channel=z.enum(['email','sms','personal_text','imessage','slack']);
 const mediaUrl=z.string().url().max(2000).refine(value=>{const url=new URL(value);return url.protocol==='https:'&&!url.username&&!url.password;},'Use an HTTPS media URL without embedded credentials.').nullable();
-export const releaseInputSchema=z.object({propertyId:id,status:z.enum(['draft','released','withdrawn']),source:z.string().trim().min(1).max(500),eventKey:id,expectedVersion:z.number().int().positive().optional(),propertyType:z.string().trim().max(100),description:text,notes:text,mediaUrl,mediaAccess:z.enum(['unverified','recipient_confirmed','public_confirmed']),permittedMediaInvestorIds:z.array(id).max(500).optional(),arv:z.number().finite().nonnegative().max(1e9).nullable(),repairEstimate:z.number().finite().nonnegative().max(1e9).nullable(),economicsSource:z.string().max(500),showingInstructions:text,authorizedUserIds:z.array(id).max(500),upstreamParty:z.string().max(500),upstreamStage:z.string().max(150),downstreamStage:z.string().max(150),closingStructure:z.enum(['unspecified','single','double','same_day']),closingAt:z.string().datetime({offset:true}).nullable()}).strict();
+export const releaseInputSchema=z.object({acquisitionSubmission:acquisitionSubmissionSchema.optional(),propertyId:id,status:z.enum(['draft','released','withdrawn']),source:z.string().trim().min(1).max(500),eventKey:id,expectedVersion:z.number().int().positive().optional(),propertyType:z.string().trim().max(100),description:text,notes:text,mediaUrl,mediaAccess:z.enum(['unverified','recipient_confirmed','public_confirmed']),permittedMediaInvestorIds:z.array(id).max(500).optional(),arv:z.number().finite().nonnegative().max(1e9).nullable(),repairEstimate:z.number().finite().nonnegative().max(1e9).nullable(),economicsSource:z.string().max(500),showingInstructions:text,authorizedUserIds:z.array(id).max(500),upstreamParty:z.string().max(500),upstreamStage:z.string().max(150),downstreamStage:z.string().max(150),closingStructure:z.enum(['unspecified','single','double','same_day']),closingAt:z.string().datetime({offset:true}).nullable()}).strict();
 type StoredRelease=PropertyRelease & {permittedMediaInvestorIds?:string[]};
 type ReleaseRow={data:string;owner_id:string};
 function mayReadRelease(actor:Actor,row:ReleaseRow) {const release=JSON.parse(row.data) as PropertyRelease;return actor.role==='manager'||row.owner_id===actor.id||release.authorizedUserIds.includes(actor.id);}
@@ -44,6 +45,9 @@ export function saveRelease(actor:Actor,input:ReleaseInput):PropertyRelease {
   const row=getDb().prepare('SELECT data,owner_id FROM property_releases WHERE organization_id=? AND office_id=? AND property_id=?').get(actor.organizationId,actor.officeId,property.id) as ReleaseRow|undefined;
   if(row&&actor.role!=='manager'&&row.owner_id!==actor.id)throw new AppError(403,'Only the release owner or an office manager can revise this release.');
   const previous=row?JSON.parse(row.data) as StoredRelease:null;
+  const submission=parsed.acquisitionSubmission??previous?.acquisitionSubmission;
+  if(parsed.status==='released'&&submission?.askingPrice!==null&&submission?.askingPrice!==undefined&&submission.askingPrice!==property.price)throw new AppError(422,'The supplied asking price differs from inventory. Resolve that difference before publishing this release.');
+  if(parsed.status==='released'&&submission?.repairEstimate!==null&&submission?.repairEstimate!==undefined&&submission.repairEstimate!==parsed.repairEstimate)throw new AppError(422,'The supplied repair assumption differs from the release. Review and reconcile it before publishing.');
   if(previous&&parsed.expectedVersion!==previous.version)throw new AppError(409,'The release changed. Reload its current version before saving.');
   if(!previous&&parsed.expectedVersion)throw new AppError(409,'The specified release version does not exist.');
   const audience=[...new Set(parsed.authorizedUserIds)];
@@ -52,7 +56,7 @@ export function saveRelease(actor:Actor,input:ReleaseInput):PropertyRelease {
   for(const investorId of permitted){const exists=getDb().prepare('SELECT 1 FROM investors WHERE id=? AND organization_id=? AND office_id=?').get(investorId,actor.organizationId,actor.officeId);if(!exists)throw new AppError(422,'A media recipient is not in this office.');}
   if(parsed.mediaAccess==='recipient_confirmed'&&!permitted.length)throw new AppError(422,'Select the investors for whom media access was confirmed.');
   const stamp=now();
-  const release:StoredRelease={...parsed,id:previous?.id??newId('release'),propertyId:property.id,version:(previous?.version??0)+1,property,authorizedUserIds:audience,permittedMediaInvestorIds:permitted,createdAt:previous?.createdAt??stamp,updatedAt:stamp,releasedAt:parsed.status==='released'?stamp:null,matches:[],synthetic:true};
+  const release:StoredRelease={...parsed,...((parsed.acquisitionSubmission??previous?.acquisitionSubmission)?{acquisitionSubmission:parsed.acquisitionSubmission??previous?.acquisitionSubmission}:{}),id:previous?.id??newId('release'),propertyId:property.id,version:(previous?.version??0)+1,property,authorizedUserIds:audience,permittedMediaInvestorIds:permitted,createdAt:previous?.createdAt??stamp,updatedAt:stamp,releasedAt:parsed.status==='released'?stamp:null,matches:[],synthetic:true};
   // Event keys and optimistic versions belong to the command, not to the release record.
   const stored={...release} as StoredRelease & {eventKey?:string;expectedVersion?:number};delete stored.eventKey;delete stored.expectedVersion;
   if(previous)getDb().prepare('UPDATE property_releases SET data=? WHERE id=? AND organization_id=? AND office_id=?').run(JSON.stringify(stored),stored.id,actor.organizationId,actor.officeId);
