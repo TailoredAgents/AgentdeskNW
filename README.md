@@ -18,6 +18,8 @@ A private hosted demo entrance and Render blueprint are implemented. **Repositor
 
 The communications preview brings fictional Gmail, Outlook and investor-text accounts into one private Inbox. Copilot can search the inbox and prepare a relationship reply grounded in source messages, investor history and saved writing preferences. The employee reviews exact content before simulated sending, then separately reviews a relationship note or personal follow-up. Custom drafts stay saved; only current generated relationship replies use the bounded simulator. No live mailbox or investor delivery is connected. See [Copilot workflow and walkthrough](docs/COMMUNICATIONS_WORKFLOW.md), [Inbox foundation](docs/COMMUNICATIONS_INBOX.md) and the [delivery plan](docs/COMMUNICATIONS_AND_CREDITS_PLAN.md).
 
+The next integration priority is **company email through Salesforce**, reflecting Alex’s reported New Western workflow. Gmail and Outlook remain optional adapters. The current inbox is still fictional; Salesforce email capabilities and the company-approved delivery route must be confirmed before live connection. See [Salesforce discovery and design](docs/SALESFORCE_INTEGRATION.md).
+
 ## Local setup
 
 Requirements: Node.js 20.19 or later and npm. SQLite is embedded; no separate database server is required for the demonstration.

@@ -47,4 +47,4 @@ Verify full incoming → grounded draft → exact review → simulated receipt �
 
 Run typecheck, lint, automated tests, production build and isolated HTTP suites, including `npm run test:communications`. Inspect desktop and phone layouts, conflict/dirty-edit behavior and review states. Apply the additive migration to a disposable copy and confirm preserved business IDs and invoices. Record final evidence in PROGRESS.md before commit/push.
 
-Live Gmail/Microsoft consent/sync is Phase 4. Dedicated investor Twilio lines and actual delivery are Phase 5. Real cost settlement, payments and company rollout are Phase 6.
+Phase 4 now prioritizes a fictional Salesforce company-email workflow and administrator discovery, followed by the approved company source/delivery connection. Gmail/Microsoft remain optional adapters or approved underlying company infrastructure. Dedicated investor Twilio lines and actual delivery are Phase 5. Real cost settlement, payments and company rollout are Phase 6.

@@ -2,6 +2,20 @@
 
 Source: the founder's Phase 2 directive, recording a discovery session with Alex, a New Western dispositions agent, and insights from his earlier DealIQ concept. These are reported observations, not independently verified corporate policy. AgentDesk keeps its existing identity and architecture; no DealIQ code, design or brand is copied.
 
+## October 30 update — company email through Salesforce
+
+The founder reports that Alex said New Western agents use company-provided CRM email through Salesforce, and subsequently clarified that Alex opens this email **only inside Salesforce**. The owner wants that company workflow to be AgentDesk NW's primary email path, with optional external email connections retained. This supersedes a Gmail-first product priority for this customer. The reported user experience is established by this discovery; the company's mailbox provider, Salesforce configuration, API availability, sender permissions and approval to connect remain unverified.
+
+Plan the employee experience around **Company email / Salesforce**. Discover separately where correspondence can be read, which company-approved system sends it, and how the resulting activity returns to the investor's CRM history. A visible email activity must not be represented as a complete mailbox or authority to send. Gmail/Google Workspace and Outlook/Microsoft 365 remain optional adapters, and could also be an underlying company-approved transport if administrator discovery establishes that setup. No personal mailbox should be required merely to use the New Western workflow.
+
+Before customer access, add a clearly fictional Salesforce company-email demonstration to the existing Inbox and Copilot workflow. Preserve the current Gmail/Outlook examples as optional external accounts and keep every send simulated. A fictional Salesforce source must not imply a connected org or verified New Western schema. Live implementation follows administrator-confirmed capability and permissions; see [SALESFORCE_INTEGRATION.md](SALESFORCE_INTEGRATION.md).
+
+The three practical discovery questions are:
+
+1. Which configured service sends and receives the company email that Alex accesses inside Salesforce, and is it available to an approved integration?
+2. Which administrator can confirm the email/capture configuration, permitted email records, and an authorized sandbox or test account?
+3. Which sender identities and actions may AgentDesk use: read activity, read the mailbox, save drafts, send reviewed replies, and log results back to Salesforce?
+
 ## Reported operational observations
 
 - Agents manage their own investor relationships. Useful criteria are scattered across Salesforce, notes, spreadsheets, email, text messages and agents' knowledge.

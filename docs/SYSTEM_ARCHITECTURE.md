@@ -1,5 +1,9 @@
 # System architecture
 
+## Planned company-email integration — October 30 priority
+
+Prioritize the employee’s company-email workflow inside Salesforce. The current provider enum and demo account model are not a completed Salesforce email adapter. Extend the common correspondence boundary to distinguish source system, underlying mail/delivery service, delegated identity, provider IDs and explicit read/body/attachment/draft/send capabilities. Salesforce activity records and mailbox records may represent the same message; reconcile them without duplicate drafts, sends, activities or journey evidence. Keep the existing private mailbox policy; any company activity view requires its own approved visibility model and must not silently share an employee’s entire inbox. No implementation or live configuration is asserted by this plan. See SALESFORCE_INTEGRATION.md.
+
 ## Unified inbox and Copilot — communications Phases 2–3
 
 The private correspondence domain uses `communications.ts`, `communications-workflow.ts`, `communications-api.ts`, additive inbox/workflow migrations and `communications-contracts.ts`. Fictional Gmail, Outlook and business-text sources normalize to private accounts/threads/messages/drafts, independent of assistant chat and employee channel delivery. Typed Copilot tools call the same scoped assistance and draft services as the UI. Exact review, simulated delivery, reviewed journey observations and follow-ups use explicit employee API actions. The model cannot approve them. Private inbox fingerprints and history references invalidate stale assistant context; voice excludes inbox tools and inbox-derived history. There are no live adapters or background mailbox analysis. See COMMUNICATIONS_WORKFLOW.md and COMMUNICATIONS_INBOX.md.

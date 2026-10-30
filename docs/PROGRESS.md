@@ -1,5 +1,15 @@
 # AgentDesk progress log
 
+## October 30, 2026 — Salesforce company-email priority clarified
+
+**New discovery:** the owner reports that Alex uses company-provided CRM email only inside Salesforce. This establishes the reported employee workflow, not its underlying mail host, capture configuration, API capability or sending authorization. New Western approval and administrator discovery remain pending.
+
+**Plan change:** prioritize company email through Salesforce over independent Gmail-first onboarding. Phase 4A will add a clearly fictional company-email source/presentation and explicit capability discovery; Phase 4B connects the actual approved company source and delivery route. Keep Gmail/Outlook as optional adapters and possible underlying company infrastructure. Separate CRM activity reading from full mailbox access and sending. Preserve current private inbox records and review gates; do not relabel demo Gmail data as Salesforce-connected.
+
+**Evidence and scope:** reviewed current official Salesforce email setup and activity-sync guidance; concise citations and administrator questions are recorded in SALESFORCE_INTEGRATION.md. Updated discovery, master/delivery plans, requirements, architecture, README and current workflow handoff. This checkpoint changes documentation only; no adapter, fixture, provider account, application behavior or Render deployment changed. Verification is documentation/diff review; the preceding implementation’s test results remain recorded below. Commit/push follows the owner’s standing instruction.
+
+---
+
 ## October 30, 2026 — Reviewed Copilot inbox workflow (communications Phase 3)
 
 **Implemented:** typed Copilot and the shared employee SMS/Slack dispatcher now have four bounded private inbox tools: search, read/summarize, prepare a relationship reply and propose follow-through. Inbox artifacts open the exact conversation. The dashboard adds source/unknown/preference review, reply preview and preparation, exact simulated-send review, and separately editable journey-note and personal follow-up reviews. Its assistance uses a deterministic method over at most twelve selected-thread messages and relevant authorized relationship evidence; there is no background mailbox sweep or new wallet charge. Live Copilot chat retains its existing provider accounting and limits.

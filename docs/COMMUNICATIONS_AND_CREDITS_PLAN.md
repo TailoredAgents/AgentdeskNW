@@ -1,8 +1,8 @@
 # AgentDesk communications and credits delivery plan
 
-Owner: Tailored Agents. Approved direction: October 29, 2026.
+Owner: Tailored Agents. Approved direction: October 29, 2026; company-email priority updated October 30, 2026.
 
-This plan follows the owner's supplied email/business-line/pricing discussion and supersedes the individually purchased specialist model for new simulated subscriptions. Phase 1 is implemented and pushed as `414fb0d`; Phase 2 is pushed as `e9d21b2`. The owner has now authorized **Phase 3**, Copilot's inbox workflow, with updated documentation and commit/push to `TailoredAgents/AgentdeskNW`. Phases 4–6 remain planned. No live payment collection, phone-number purchase, investor message or Render deployment is part of this work.
+This plan follows the owner's supplied email/business-line/pricing discussion and supersedes the individually purchased specialist model for new simulated subscriptions. Phase 1 is implemented and pushed as `414fb0d`; Phase 2 is pushed as `e9d21b2`. Phase 3, Copilot’s inbox workflow, is implemented and pushed as `77e69b7` to `TailoredAgents/AgentdeskNW`. Phase 4 is now prioritized around New Western’s company-email workflow inside Salesforce, based on the owner’s October 30 report from Alex; Phases 4–6 remain planned. No live payment collection, phone-number purchase, investor message or Render deployment is part of this work.
 
 ## Product outcome
 
@@ -19,7 +19,7 @@ The personal assistant conversation and external investor correspondence remain 
 | Included credits | $15 in retail AgentDesk usage value each billing period | Phase 1 wallet demonstration |
 | Purchased credits | $10, $25, $50 or $100; unused purchased balance rolls over | Phase 1 simulated top-ups, no payment collected |
 | AI pricing | Initial internal 5× cost target; versioned prices | Phase 1 server-owned sample scenarios; actual provider billing integration remains later work |
-| Email | Gmail/Workspace and Outlook/Microsoft 365 first; multiple mailboxes | Packaging of the first mailbox and extra-mailbox price remains open |
+| Email | Company email through Salesforce first; optional Gmail/Workspace and Outlook/Microsoft 365 adapters | Underlying company mail service and permitted Salesforce capabilities require administrator discovery; packaging remains open |
 | Dedicated business line | Provisional $39/month plus a defined messaging allowance | Planned; no line is sold, provisioned or connected in Phase 1 |
 | Business calling/recording | Separate future extension | Planned after SMS acceptance and approved recording policies |
 
@@ -69,11 +69,26 @@ Add bounded tools to search permitted communications, summarize a thread with so
 
 Acceptance: incoming email → investor/context retrieval → grounded draft → review → simulated send → fictional reply → sourced journey update → follow-up. No unsupported claim of delivery, verified investor intent or automatic CRM approval. Background analysis has a visible processing scope and budget.
 
-## Phase 4 — Gmail and Microsoft connections
+## Phase 4 — Company email through Salesforce first
 
-Implement OAuth consent, secure token custody/refresh/revocation, account identity, incremental sync/cursors, subscription/watch renewal, retry/deduplication, provider thread/draft/send reconciliation and disconnect controls. Begin with one provider end to end while retaining the common multi-provider interface. Obtain required provider verification and company consent. Use approved test accounts before customer mailboxes.
+**Priority update, October 30:** Alex reportedly uses the company-provided email workflow only inside Salesforce. AgentDesk should support that existing workflow without making a separate personal Gmail/Outlook connection the default. This identifies the employee experience, not the underlying mail host or permitted APIs. Gmail/Workspace and Outlook/Microsoft 365 remain optional adapters and may also be necessary as the company-authorized transport behind Salesforce. No New Western administrator access or live configuration is assumed.
 
-Acceptance: real authorized test email arrives, produces a sourced draft, and an explicitly approved reply is found in the correct provider's sent history without duplicates. Disconnect/revocation stops further access. Mailbox ownership and visibility are confirmed before company rollout.
+### Phase 4A — Company-workflow demonstration and discovery
+
+- Add a clearly fictional **Company email · Salesforce workflow** source to the demonstration and make it the primary presentation path. Preserve existing Gmail/Outlook fixtures and saved correspondence; do not relabel existing data as Salesforce-connected.
+- Separate correspondence source from delivery transport and expose explicit capabilities: CRM activity/header lookup, full-body retrieval, thread history, attachments, draft handling, reviewed send and receipt reconciliation. Missing capabilities remain unavailable rather than being inferred from a Salesforce connection.
+- Associate fictional company-email records with existing investor journeys, tasks and review workflows. Model Salesforce activity-only, header-only, revoked-access and duplicate-source examples. The shared inbox and Copilot services remain reusable.
+- Prepare a concise administrator discovery checklist: where messages are recorded, which bodies/attachments/history are accessible, the permitted sender identity and sending method, employee/manager visibility and approved sandbox access. Details are in SALESFORCE_INTEGRATION.md.
+
+Acceptance: the company-email demonstration presents incoming investor correspondence → sourced context → reviewed relationship reply → simulated receipt → reviewed follow-up, without separate personal mailbox setup or a claim of live Salesforce access. Existing demo records and private mailbox isolation remain intact.
+
+### Phase 4B — Approved company connection
+
+After company approval, implement the confirmed Salesforce activity reader and the approved sending/receiving route. A CRM activity reader alone is not a full inbox connector and does not authorize outbound email. Retain explicit sender identity, company access boundaries, provider/source IDs, deduplication and reconciliation when the same email appears in both Salesforce and an approved mailbox.
+
+Implement delegated consent, server token custody/refresh/revocation, organization/user identity binding, incremental synchronization, retry/limit handling and disconnect controls for the actual selected adapter. Use administrator-approved fictional sandbox/test records before any customer mail. Reviewed outgoing actions retain exact-content approval and the existing property disclosure/media gates; a synced activity or provider acceptance is not proof of delivery to the recipient.
+
+Acceptance: an authorized test message is retrieved through the confirmed company workflow, a reviewed reply uses the approved company sender/route, and provider evidence plus CRM association reconcile without duplicate sends or activity records. Missing body/attachment access is explicit. Revocation stops dependent work. Expand to optional Gmail/Outlook connections afterward or use them as approved company infrastructure when required.
 
 ## Phase 5 — Dedicated Twilio business lines and approved investor SMS
 

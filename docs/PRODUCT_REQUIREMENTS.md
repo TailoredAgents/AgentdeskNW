@@ -1,5 +1,9 @@
 # Product requirements
 
+## Next communications priority — company email through Salesforce
+
+The owner reports that Alex uses company email only inside Salesforce. The next build should make that company workflow the primary experience, retaining optional Gmail/Outlook adapters. First demonstrate a clearly fictional Salesforce-associated email source and capability limits; connect actual company data only after approval and administrator discovery. Salesforce activity access, full mailbox access and sending authority are separate capabilities. Existing Inbox data must be preserved rather than relabeled as a live Salesforce integration. See COMMUNICATIONS_AND_CREDITS_PLAN.md Phase 4 and SALESFORCE_INTEGRATION.md.
+
 ## Communications Phase 3 — useful, reviewed inbox work
 
 An employee can use multiple fictional email and investor-text accounts through the private unified Inbox. Copilot searches permitted correspondence and prepares a sourced relationship reply using current investor context and saved employee preferences. The employee reviews exact sender, recipient, subject and body before simulated sending. Only current generated relationship replies are eligible for this bounded simulator; custom drafts remain saved and property distribution uses existing Deal packages checks. An arriving fictional reply can become a separately reviewed employee-reported journey observation and personal follow-up. Preserve privacy, unsaved edits, versions, replay receipts and clear source/simulation labels. Live mailbox sync, actual investor delivery and real wallet settlement remain later phases. See COMMUNICATIONS_WORKFLOW.md for the acceptance sequence and limits.
