@@ -2,6 +2,18 @@
 
 Source: the founder's Phase 2 directive, recording a discovery session with Alex, a New Western dispositions agent, and insights from his earlier DealIQ concept. These are reported observations, not independently verified corporate policy. AgentDesk keeps its existing identity and architecture; no DealIQ code, design or brand is copied.
 
+This document preserves discovery evidence and product decisions. [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) is the sole authority for current status, development order and next steps; requirements here do not create a separate phase sequence. [PROGRESS.md](PROGRESS.md) records implementation evidence.
+
+## October 30 owner decisions — mobile and everyday access
+
+The owner reports that New Western employees use a mix of iPhone and Android, mostly iPhone, and **do not currently use Slack**. These are owner-reported deployment assumptions, not a corporate device inventory. The desired primary daily interface is an iPhone/Android app with an Agent section for the same personal Copilot used elsewhere. Desktop remains useful for detailed work. Preserve Slack as an optional existing channel without requiring employees to adopt it for this rollout.
+
+App access is included in the workforce subscription. Employee-to-Copilot SMS is an optional **provisional $19/month** convenience add-on. This employee channel is distinct from an investor-facing business number and correspondence inbox. All channels share the same employee conversation, authorized knowledge, work records and cost authority. Company email remains Salesforce-first as described below; mobile access does not authorize a new connector.
+
+The owner has neither an Apple Developer nor a Google Play developer account and asked for local app preparation. Mixed-platform support remains required. Do not infer that no phones are available: no connected-device acceptance has been completed. Reviewable dictation is the first speech-input scope; actual live two-way voice remains a separate acceptance requirement.
+
+At the documentation freeze, `2d16665` is the committed application baseline. Later mobile, pairing, notification and conversation-control source is **uncommitted, frozen work in progress and unaccepted**. Local JavaScript exports do not establish installed-phone, push, speech, onboarding or production readiness. [MOBILE_DELIVERY_PLAN.md](MOBILE_DELIVERY_PLAN.md) holds subordinate mobile requirements and [mobile/README.md](../mobile/README.md) holds exact local evidence and limitations. Development resumes only through the canonical roadmap's checkpoints.
+
 ## October 30 clarification — one company platform for three roles
 
 The owner's explicit product direction is company-wide rollout across **dispositions, acquisitions and management**. All three are primary audiences with their own complete workflows. Dispositions should have more specialist capabilities and greater depth where needed, but the product must not center on that role. Different staffing levels and specialist counts do not determine which roles deserve a complete experience.
@@ -49,12 +61,12 @@ Store employee preferences separately from investor relationship knowledge and d
 ### Planning implications pending the remaining answers
 
 1. Maintain three explicit discovery and delivery tracks: dispositions, acquisitions and management. For each, define useful outcomes, daily workflows, needed specialists/data, decision authority and acceptance examples.
-2. Continue the already approved Investor Relationship Manager depth milestone as one bounded implementation sequence. Its current priority is not a declaration that the entire product is dispositions-centered.
+2. Carry the Investor Relationship Manager depth requirements into the canonical roadmap's three-role specialist work. Their earlier priority does not make the product dispositions-centered or override the current checkpoint order.
 3. Use Alex's response to specify dispositions buyer matching, reviewed outreach, optional costed external research, reply tracking and title-opening coordination. Validate the remaining details with him.
 4. Shape acquisitions around wholesaler relationships, submitted opportunities, deal evaluation/diligence and handoffs, using dedicated role-specific input.
 5. Gather management requirements for actual oversight, coordination, exceptions and decisions. The existing limited Team Performance overview does not establish a complete management experience.
 6. Identify shared foundations and cross-role handoffs: identity/access, Copilot continuity, scoped records, communications, schedules, deal stages, participants and reviewed actions. Reuse capabilities where useful while preserving role-specific behavior.
-7. Build the final phased roadmap around dependencies, useful outcomes and explicit acceptance for all three roles. Dispositions should have more specialists and greater implementation depth; acquisitions and management must remain first-class workstreams throughout planning.
+7. Use the canonical roadmap's dependencies, outcomes and acceptance gates for all three roles. Dispositions should have more specialists and greater implementation depth; acquisitions and management remain first-class workstreams.
 
 These are candidate workstreams, not a finalized phase order or authorization for new automatic actions. Remaining questionnaire answers and priorities are pending. Do not infer company procedures, automation approval or live connection readiness from one employee's account.
 
@@ -64,7 +76,7 @@ The founder reports that Alex said New Western agents use company-provided CRM e
 
 Plan the employee experience around **Company email / Salesforce**. Discover separately where correspondence can be read, which company-approved system sends it, and how the resulting activity returns to the investor's CRM history. A visible email activity must not be represented as a complete mailbox or authority to send. Gmail/Google Workspace and Outlook/Microsoft 365 remain optional adapters, and could also be an underlying company-approved transport if administrator discovery establishes that setup. No personal mailbox should be required merely to use the New Western workflow.
 
-Before customer access, add a clearly fictional Salesforce company-email demonstration to the existing Inbox and Copilot workflow. Preserve the current Gmail/Outlook examples as optional external accounts and keep every send simulated. A fictional Salesforce source must not imply a connected org or verified New Western schema. Live implementation follows administrator-confirmed capability and permissions; see [SALESFORCE_INTEGRATION.md](SALESFORCE_INTEGRATION.md).
+The demonstration requirement is a clearly fictional Salesforce company-email source in the Inbox and Copilot workflow, with Gmail/Outlook examples retained as optional external accounts and every send simulated. See the canonical roadmap and progress ledger for implementation status. A fictional Salesforce source must not imply a connected org or verified New Western schema. Live implementation follows administrator-confirmed capability and permissions; see [SALESFORCE_INTEGRATION.md](SALESFORCE_INTEGRATION.md).
 
 The three practical discovery questions are:
 
@@ -81,7 +93,7 @@ The three practical discovery questions are:
 - Personal cell phones are common, with no routine recording/transcription system available to Alex. A useful first capture surface is the employee's post-call recap.
 - Repetitive follow-up involves updating criteria, finding property email/notes and the Google Drive photo link, preparing a personal message, and remembering the next call.
 - The requested proactive priority is a ranked list of investors to call each morning. New agents particularly need repeatable daily organization.
-- Mobile, live voice, SMS and a familiar messaging app are desirable. Slack is a candidate, not a confirmed New Western system. SMS remains a separately metered add-on.
+- Mobile, speech input and SMS are desired convenient access paths. The later owner clarification establishes the app as the primary daily interface and reports no current Slack use. SMS remains an optional provisionally priced add-on; live two-way voice needs separate acceptance.
 - Alex reports disclosure completion is required for receiving property information and Marketplace access. Informal exceptions are not an approved operating policy.
 
 ## Design decisions
@@ -92,7 +104,7 @@ The three practical discovery questions are:
 4. Model release versions, sources and audiences. Matching and calling recommendations must use only the requesting employee's authorized investors.
 5. Use a conservative disclosure gate for restricted deal packages, including copy/compose handoffs. Recheck eligibility at approval and handoff, not just initial composition.
 6. Separate external-research fit, existing-buyer property match, and relationship readiness scores. Explain evidence, missing facts and conflicts.
-7. Distinguish draft, approval and handoff from delivered communication. No supported delivery provider is active; copying is never proof of sending.
+7. Distinguish draft, approval and handoff from delivered communication. Provider delivery requires independent evidence; a fictional connector or copied text is never proof of sending. Consult the canonical status ledger for each connection's readiness.
 8. Keep synthetic investor, release and disclosure fixtures visibly synthetic. A demo signature event is not a real signed New Western disclosure.
 
 ## Explicit assumptions
@@ -110,7 +122,7 @@ Manual authorized media links are accepted as data. An employee's access attesta
 - Which disclosure document/version is current, which information is restricted, and which system proves signed/expired status?
 - What is the authoritative release/update/withdrawal source? Is any Marketplace integration supported and authorized?
 - Which property notes and media folders may be shared, with whom, and how are recipient permissions established?
-- Which outreach channels, templates, consent/opt-out policies and autonomy levels are approved? Is Slack actually used?
+- Which outreach channels, templates, consent/opt-out policies and autonomy levels are approved? Confirm the owner-reported phone mix and no-Slack assumption with the pilot administrator; which mobile installation/distribution methods will the company support?
 - Which operational outcomes would justify purchasing: preparation time, contacts, appointments, qualified matches, follow-through or another measure?
 - Which transaction stages, parties and closing structures should the pilot represent, and who can change them?
 - What retention, review, security, billing and support requirements apply to employee context and communications?

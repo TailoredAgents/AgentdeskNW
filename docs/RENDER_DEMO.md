@@ -1,3 +1,5 @@
+> **Operational reference, not the development roadmap.** Use [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) for current scope/status and [PROGRESS.md](PROGRESS.md) for dated evidence. Rehearse only accepted capabilities on the actual deployed revision; old presentation steps do not establish live connections, mobile readiness or production identity. The latest Render revision is unverified by this documentation reset.
+
 # AgentDesk NW — private Render demonstration
 
 This deployment is a fictional customer demonstration, not an authorized New Western integration or a production tenant. The app has a private invitation entrance; invited presenters can switch between the three fictional roles. All invited visitors share the same sample workspace, so this is not separate customer accounts.

@@ -1,16 +1,18 @@
 # Finish routine work in the conversation
 
-This milestone lets an employee complete, cancel, snooze or reschedule a personal task in typed Copilot, Slack or SMS. It also supports an explicit investor-concern resolution. The same services power the Work queue and conversational actions; the conversation does not bypass record access, subscription access, version checks or CRM approval.
+[IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) is the sole authority for completion status, development order and the next checkpoint. This is the shared-conversation behavior specification, chiefly supporting C1 and the native C2/C3 surfaces. It does not define another sequence or authorize implementation to resume during the current freeze.
 
-All supplied demo people and records remain fictional. Live Slack/Twilio account configuration and real delivery acceptance are still pending. This document describes implemented behavior, not a claim that those accounts are connected.
+The verified committed baseline through `2d16665` lets an employee complete, cancel, snooze or reschedule a personal task in typed Copilot, Slack or SMS. It also supports an explicit investor-concern resolution. The same services power the Work queue and conversational actions; the conversation does not bypass record access, subscription access, version checks or CRM approval. Durable-job conversation commands, native transport and notifications are separate **frozen, uncommitted drafts**, described below.
+
+All supplied demo people and records remain fictional. Live Slack/Twilio account configuration and real delivery acceptance are still pending. The product direction is a primary native app for iPhone/Android, included in the workforce subscription; optional employee SMS is provisionally $19/month. New Western does not currently use Slack, so that retained channel is lower priority. Desktop remains available for detailed work. These decisions do not imply the native draft is released.
 
 ## One ongoing Copilot
 
-The dashboard's default first message opens the employee's ongoing Copilot conversation, the same one used by linked Slack and SMS. The **Continue phone and Slack conversation** control returns to it. Selecting **New conversation** deliberately starts a separate chat; it does not merge every conversation into one history. Writing preferences remain employee-wide, while short references such as “it” are resolved within the selected conversation.
+The dashboard's default first message opens the employee's ongoing Copilot conversation, the same one used by linked Slack and SMS. The **Continue phone and Slack conversation** control returns to it. The frozen native draft joins that same employee-owned conversation through the shared server. Selecting **New conversation** deliberately starts a separate chat; it does not merge every conversation into one history. Writing preferences remain employee-wide, while short references such as “it” are resolved within the selected conversation.
 
 Slack and SMS transport the employee's requests to the same dispatcher as web Copilot. Linked-channel notifications respect the employee's reminder setting, quiet hours, subscription/allowance and current permissions. They do not send messages to investors. Long replies retain a concise preview and a link to the saved answer when the configured channel origin is available.
 
-## Supported requests
+## Committed personal-task and concern requests
 
 | Say this | What happens |
 | --- | --- |
@@ -65,12 +67,20 @@ Use the fictional dispositions employee and a future task deadline. No external 
 5. Create two open tasks with overlapping names, such as `Call Mike about inspection` and `Call Mike about paperwork`. Say `Cancel the reminder to call Mike.` Choose the intended number and verify only that task changed.
 6. Say `Remember an objection for Mike: Repair scope was unclear.` Then say `Resolve Mike’s repair concern: he confirmed the breakdown answered it.` Inspect the linked resolution and updated recommendation. If an earlier rehearsal left several matching concerns, use the specific concern instead of assuming which one applies.
 
-After actual channel configuration, repeat with a message in SMS, a reminder/reply in Slack, and the ongoing dashboard conversation. Confirm real provider receipts, delivery status and the correct task in each step. Automated transports can verify the software path but cannot establish carrier delivery or employee experience.
+After actual channel configuration, repeat across SMS and the ongoing dashboard conversation. Slack is an optional retained-channel acceptance run, not a prerequisite for New Western's mobile/SMS experience. Native continuation belongs to C2/C3 device acceptance. Confirm real provider receipts, delivery status and the correct task in each exercised channel. Automated transports can verify the software path but cannot establish carrier delivery or employee experience.
+
+## Frozen draft: durable-job conversation controls
+
+The C1 working tree adds pre-model employee commands for job lists/status, pause/resume/cancel, exact cost review and approve/deny decisions. A short W reference identifies a scoped job; an A reference identifies an immutable cost review for one employee/conversation, plan version, quote and maximum. Ambiguous assent cannot authorize spending. Limited dispositions-starter corrections can add/remove fictional research or change the selected investor while preserving completed results. See [WORK_EXECUTION.md](WORK_EXECUTION.md) for the exact contract and supported examples.
+
+Short commands such as `Pause that job` require a single current structured job reference with no competing task and suitable channel delivery timing. **Unresolved acceptance issue:** if access changes and a work artifact is withheld, a bare pointer such as `Cancel it` can fall through to the existing personal-task handler. C1 must instead require a fresh selection in that case. This issue remains unfixed under the implementation freeze.
+
+Native reviewed dictation submits an employee-confirmed transcript through the typed dispatcher in the draft. It does not establish live spoken-command parity. General plan correction, broader missing-information continuation and the complete mobile review/Inbox experience remain roadmap acceptance requirements.
 
 ## Current boundaries and verification
 
-The new edit and concern-resolution commands are available in **typed** Copilot, Slack and SMS. Voice continues to use its existing supported tools; these task edits are not yet accepted from spoken transcripts. Real audio acceptance, actual Slack/Twilio setup, calendar/email/file integrations, bulk task edits, recurring task schedules and CRM approvals within channels remain separate work.
+The committed edit and concern-resolution commands are available in **typed** Copilot, Slack and SMS. Current live voice uses its existing supported tools; its provider transcripts do not execute these edit commands or the draft durable-job commands. Native dictation's reviewed typed submission is a different path. Real audio/device acceptance, actual Slack/Twilio setup, live calendar/email/file integrations, bulk task edits, recurring task schedules and CRM approvals within channels remain separate requirements in the canonical roadmap.
 
 Personal task reads and edits remain employee-owned, including for managers. Office management views do not give the assistant authority to change another employee's personal task. Unlinked or disconnected identities, missing subscription access and stale records remain blocked by the services.
 
-Focused tests cover request intent, ambiguity, numbered choices, replay, task versions, Eastern dates and DST, midnight clarification, concern provenance and channel delivery ordering. `npm run test:conversation` runs the compiled HTTP workflow with a disposable database and external providers disabled. See `docs/PROGRESS.md` for the final verification and release status of the integrated milestone.
+Focused tests cover request intent, ambiguity, numbered choices, replay, task versions, Eastern dates and DST, midnight clarification, concern provenance and channel delivery ordering. `npm run test:conversation` runs the compiled HTTP workflow with a disposable database and external providers disabled. [PROGRESS.md](PROGRESS.md) preserves historical verification evidence; [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) owns current acceptance and release status. The frozen draft's focused tests do not establish integrated or live-channel acceptance.

@@ -1,204 +1,196 @@
-# AgentDesk NW — implementation roadmap
+# AgentDesk NW — roadmap to completion
 
-## Authority and purpose
+Updated October 30, 2026. **This is the only authority for current delivery status, build order, dependencies and what comes next.** [MASTER_PLAN.md](../MASTER_PLAN.md) records the product direction; [PROGRESS.md](PROGRESS.md) records dated evidence; [the documentation map](README.md) assigns supporting documents their roles. Older phases remain historical references, not another schedule. Later explicit owner decisions take precedence.
 
-Updated October 30, 2026. This is the **authoritative development sequence** for bringing the current application to the owner's company-wide vision. It replaces competing “next” instructions and historical phase ordering, not completed work or its evidence. [CAPABLE_WORKFORCE_PLAN.md](CAPABLE_WORKFORCE_PLAN.md) defines product direction; this document defines execution order and completion gates. [PROGRESS.md](PROGRESS.md) records what actually shipped. Original briefs remain historical requirements; later explicit owner decisions take precedence.
+## Where we are now
 
-The product serves dispositions, acquisitions and management as three primary audiences. One personal Copilot coordinates the available specialists through the dashboard, SMS and Slack. Dispositions receives a broader specialist lineup and deeper workflows where needed; the other roles must also have complete daily work. Alex's input represents dispositions, not corporate policy or acquisitions/management acceptance.
+**A substantial fictional-data web demonstration and a bounded Copilot work engine are built. The complete business workforce, mobile product and connected company rollout are not finished.** Development is paused at the owner's request for this documentation reset. Preserve the unfinished local work; do not resume implementation merely because this document is updated.
 
-The first bounded A1–A3 implementation checkpoint is now available; [WORK_EXECUTION.md](WORK_EXECUTION.md) defines its exact scope. It does not activate payments, connect company data or establish a deployed revision. Keep building with fictional sources while company access is pending. Commit and push verified changes under the owner's standing instruction; report the deployed revision separately from the repository revision.
-
-## Target experience
-
-An employee states an outcome, rather than choosing an agent or learning commands. Copilot retrieves relevant current context, composes an executable plan, performs authorized work, asks only for a necessary fact or decision, follows through after the chat closes, and returns verifiable results. The employee can inspect, correct, pause, resume or cancel that work from any supported channel.
-
-The assistant improves through sourced relationship/deal knowledge, inspectable employee preferences and tested specialist methods. It uses calculations and direct services for simple work, focused reasoning where needed, and connected tools for actions. Broader capability comes from reusable tools and composable plans, not a longer hard-coded command list or simply increasing the model loop limit.
-
-The complete assignment must request approval before costing more than **$1 in customer-facing credits**. Auto top-up is optional and never authorizes an expensive job. All roles inherit this behavior. Exact rules are in [USAGE_METERING.md](USAGE_METERING.md).
-
-## Starting point and remaining gap
-
-Historical planning baseline inspected against repository checkpoint 6766a59; last major application acceptance is recorded at c958f2f. Those historical results are 459 tests, 648 HTTP checks, 36 relationship scenarios, type/lint/build, migration preservation and desktop/phone acceptance. They are not newly run results or evidence that the new roadmap is complete.
-
-| Area | Built foundation | Still needed for the vision |
-| --- | --- | --- |
-| Copilot | Persistent conversation, bounded live text runner, composable local jobs with dependencies, leases, versioned plans and step receipts | Broader planning quality, missing-information continuation, channel controls and complete assignment outcomes |
-| Specialists | 16 registered: 2 locally ready, 10 demo, 4 planned | Each specialist's methods, sufficient tools, varied quality cases and employee acceptance; none has proven independent expert superiority |
-| Context | Explicit private preferences; sourced investor journeys, reports, corrections and separate buy boxes | Company knowledge retrieval, reviewable learning, wholesaler/opportunity/deal/party/document context and better judgment |
-| Communications | Shared employee conversation adapters; fictional Salesforce-first inbox; reviewed generated-reply simulation | Actual employee channel acceptance, general edited correspondence, recipients/CC/files, company-authorized sync and sending |
-| Work and initiative | Durable composed local work, child synthetic research, personal task actions and selected notifications | Broader capabilities, recurring briefings, event watchers and bounded standing action authority |
-| Commercial | Workforce entitlement, fictional wallet and whole-job $1 approval/reservation/partial settlement | Auto-top-up lifecycle, real usage admission/settlement and verified payments |
-| Experience and operations | Light workspace, ink/green navigation, phone layouts, hosted fictional demo foundation | Complete role homes, onboarding, accessible work controls, managed identity, production persistence/workers and measured rollout |
-
-## Three separate release levels
-
-| Level | Definition of done | What it does not prove |
-| --- | --- | --- |
-| Fictional workflow complete | All three agreed role journeys work end to end with realistic data, actual persistence, explicit simulated delivery/payment outcomes, recovery and quality evidence | Company connections, live delivery, measured employee adoption or production operations |
-| Connected pilot ready | Approved users and data use verified connections with identity, permissions, operating controls, receipts and measured usage | Readiness for every office or a proven advantage over competing agents |
-| Company rollout ready | Supported role workflows pass employee acceptance, operations recover reliably, onboarding/support work and controlled cohorts show useful repeat usage | Unlimited capabilities or support for arbitrary inaccessible systems |
-
-A specialist is complete only for a declared task scope and release level. Track functional coverage, knowledge/judgment, connection readiness, autonomy/recovery and employee acceptance separately. Do not average a polished UI and an unbuilt agent into an unsupported completion percentage.
-
-## Delivery order
-
-| Phase | User-visible result | Depends on | Exit gate |
-| --- | --- | --- | --- |
-| A — Reliable work and spending | Ask for a job, leave it running, return from another channel, control cost and see its result | Existing services and fictional adapters | Durable composed work for every role, whole-job approval, recovery and top-up simulation pass |
-| B — Context and working expertise | Copilot understands this employee, these relationships and this stage of work | A's contracts; knowledge inventory can begin immediately | Source/versioned methods and corrections materially change supported next actions |
-| C — Complete specialist workflows | All 16 specialists perform their agreed jobs within connected role journeys | A; relevant B methods/data | Every specialist and all three role journeys meet fictional functional/quality gates |
-| D — Proactive follow-through | Briefings, reply/deal watchers and authorized follow-ups run without repeated prompting | A; relevant B/C workflow | Schedules/events use the same execution, budget and permission services without duplicates or noise |
-| E — Approved connections and operations | Real channels, CRM/email, investor line and payments work under company-authorized identity | Each connection's authorization; relevant A–D capability | Measured connected pilot, correct receipts/costs and recoverable production operations |
-| F — Proof and rollout | Employees repeatedly choose the product because it finishes their work | Evaluation starts in A; pilot depends on E | Predeclared task/quality/usability targets pass for each role before expanding cohorts |
-
-UI work and evaluation are part of every phase. E workstreams are dependency gates, not a requirement to finish all of A–D before starting any connection. E1 employee demo-account channel tests may run alongside A when the owner can sign in; E5a real usage admission can follow A3 on fictional data without waiting for payments or company access; E2 operating prerequisites must precede real company-data ingestion. C can proceed by independent role slices after their required B context exists. Do not wait for all live integrations to finish fictional role workflows, or wait until F to discover whether specialists are useful.
-
-## Phase A — Reliable work and spending
-
-A1–A3 now have a bounded local implementation, with initial A4 Work queue controls and A6 role/test evidence. This does not close every acceptance gate in Phase A. Eight implemented capabilities can be composed through typed Copilot; the worker performs local/synthetic service work only. Full channel decisions, UI revisions, missing-information continuation, broad planner quality evidence and A5 auto top-up remain pending. Existing quick questions and services remain available.
-
-| ID | Concrete implementation package | Required evidence |
-| --- | --- | --- |
-| A1 | Add work runs, versioned instructions/plans, steps/dependencies, evidence/artifacts, events, leases and recovery; link child research jobs to their parent assignment | Restart before/after a step preserves results; only one worker claims it; changed instructions invalidate obsolete pending work; cancellation stops later dispatch |
-| A2 | Describe capabilities by inputs/results, role/access, readiness, source availability, side effects, cost and completion evidence; let the planner compose existing services and request missing information | Varied/paraphrased requests produce valid plans; unsupported work identifies the missing capability; each dispatch rechecks current authority; a tool error cannot become a success claim |
-| A3 | Add a server-owned budget for the entire assignment, quote versions, reservations, employee approve/deny and revised-cost decisions using fictional prices first | $0.99/$1.00/$1.01, multiple cheap substeps, child research, retries, concurrent holds, denied/expired approval, growth, partial cancellation/failure and unknown outcomes all behave correctly |
-| A4 | Add work detail/progress/result controls and shared run references to Copilot, Work queue, employee SMS and Slack; short approvals identify exact job/version/maximum | Start in one channel, correct in another, approve or decline from an authenticated channel, resume after restart and inspect one consistent result; ambiguous “yes” does not pick a job |
-| A5 | Implement optional simulated auto top-up settings and purchase lifecycle: payer, low-balance trigger, purchase amount, monthly auto-purchase cap, pending/success/failure/unknown, disablement and receipts | Off initially; one pending purchase per trigger; pending purchases count toward cap; only success grants credit; duplicates/failures cannot charge or grant twice; funding never approves a job; successful/failed purchases cannot retrigger on every worker poll |
-| A6 | Add initial composed-work scenarios for all roles, migration preservation, HTTP/UI coverage and quality baseline | Each role completes the modest scope below; established workflows still pass; evidence records what the new planner cannot yet do |
-
-The work lifecycle must distinguish queued/planning/running, waiting for information, cost approval or action approval, paused, reconciling an unknown result, completed, failed and canceled. Exact state names are an implementation choice. Separate action execution state from message delivery state. A queued email is not sent; an unknown outcome is not safe to retry blindly.
-
-Cost scope includes planning itself, specialist reasoning, tool/research fees, chargeable retries and verification. Use a bounded preflight and reserve any paid planning allowance inside the same run; do not spend an unbounded amount discovering the estimate. Quote the total estimate and maximum, pause before crossing $1 or an approved maximum, and reconcile actual usage without silently increasing the authorized customer debit. Quick billable turns also need stable cost identity. For cancellation, failure or a declined increased quote after partial execution, settle consumed authorized work, release only unused reservations, and retain unresolved provider holds until reconciliation. Do not reuse whole-operation sample refunds for partially executed real work. Simulated enforcement must never be presented as enforcement on the existing live provider path; enable each new autonomous billable provider path only after E5a cost-integration acceptance. Existing configured live text remains separately accounted and E1 can verify actual messaging transport with fictional work and bounded/mock AI.
-
-Auto top-up performs one replenishment per eligible low-balance cycle. Re-arm only after the balance recovers above the trigger and a subsequent eligible event lowers it again, or an explicit payer recovery/configuration decision establishes a new cycle. A recharge that still leaves the balance low must not trigger repeated purchases. Failure/unknown outcomes require reconciliation or explicit recovery, not a purchase attempt on every worker poll. Disablement prevents new purchases while pending outcomes are still reconciled accurately.
-
-A's role examples deliberately reuse existing capabilities:
-
-- **Dispositions:** inspect an available release → find existing buyers → consider relationship concerns → prepare an eligible package/draft and a personal follow-up; optionally propose a costed child research job.
-- **Acquisitions:** inspect an existing release/opportunity fixture → identify missing property/handoff facts → prepare a sourced checklist and personal follow-up. This is not a completed valuation agent.
-- **Management:** inspect permitted office workload → identify a supported exception → prepare priorities and a personal follow-up. Team reassignment is not assumed to exist.
-
-**First implementation checkpoint: A1–A3.** Establish the durable work model, capability executor and fictional job-budget gate together, with an inspectable minimal work view and bounded test adapters. Do not expose an unbudgeted autonomous executor while postponing cost controls. A4–A6 then complete convenient channel controls, top-up simulation and the full Phase A acceptance. Keep checkpoint scope reviewable and update its actual status before moving on.
-
-Likely touchpoints, to confirm at implementation: new work contracts/services/worker and additive migration after 019; existing orchestrator, text runtime, registry, provider receipts, wallet, messaging worker, conversation focus and task UI. Reuse their domain services; do not fork CRM/inbox logic into a separate agent framework. External operations retain durable dispatch identifiers and reconciliation; local mutations and receipts should remain transactionally coupled.
-
-## Phase B — Context and working expertise
-
-| ID | Package | Exit evidence |
-| --- | --- | --- |
-| B1 | Versioned knowledge sources, ownership/role visibility, effective dates, provisional vs approved methods, permission-aware retrieval and citations | Advice identifies its applicable source/revision; missing, conflicting, withdrawn or outdated knowledge changes the answer; retrieved instructions cannot grant actions |
-| B2 | Link wholesaler/contact, opportunity, property, deal, participant, document/version, milestone and commitment records to existing investors, messages and work runs | Two deals or buy boxes do not merge; sources and corrections persist; changed party/document/state invalidates dependent pending work |
-| B3 | Extend employee memory with reviewable suggestions from draft corrections and accepted work; inspect/edit/forget, evidence and scope | A confirmed writing correction improves a later relevant draft; one exception does not become permanent preference; forgetting removes subsequent influence |
-| B4 | Define specialist method contracts: objective, context, sources, reasoning/checking steps, tools, output, missing-fact handling, examples and evaluation | Methods work on varied cases, select a useful next action, expose uncertainty and use tools instead of producing advice alone |
-
-Start B1/B4 with Investor Relationship Manager stage 3, then qualification, notetaking and workflow guidance across roles. Continue relationship stages 4–7 within C/D/F. Preserve the existing sourced record rather than replacing it with unsourced chat memory. Apply the shared context model to acquisitions and management from the beginning.
-
-The employee should be able to ask “why this recommendation?” and see the few relevant facts, sources and assumptions. They should not need to inspect raw prompts or internal agent traces. Private preferences/mailboxes remain separate from shared company deal records and authorized manager metrics.
-
-## Phase C — Complete specialist workflows
-
-Use the [16-specialist delivery matrix](AI_EMPLOYEES.md#capability-depth-delivery-matrix) as the completion checklist. Its next-depth column describes work to build, not current functionality. No specialist becomes ready by changing a registry label alone.
-
-| ID | Workflow delivery slice | Required outcome |
-| --- | --- | --- |
-| C1 | Dispositions relationship-to-opportunity: Qualification, Relationship, Matchmaker, Marketing, shared Notes/Workflow/CRM | Interpret replies/recaps, resolve missing criteria, choose existing buyers first, address current objections, draft in the employee's style and create/track useful next work |
-| C2 | Acquisitions intake-to-handoff: Acquisition Lead, Valuation/Diligence, Acquisition-to-Disposition and shared services | Track wholesaler submissions and revisions, gather missing facts, compare sourced scenarios, prepare supported screening conclusions and deliver a complete versioned handoff |
-| C3 | Management exception-to-resolution: Team Performance, Daily Coordinator, Coaching and scoped action services | Define metrics and denominators, explain what is stuck, identify an owner, prepare/perform authorized assignments and verify follow-through without private mailbox access |
-| C4 | Deal economics and external research: Investment Deal Analyst, Valuation and Hunter | Shared tested calculations with distinct acquisition/investor methods; explicit ranges/assumptions; evidence-ranked external candidates only when deliberately requested, with whole-job cost control |
-| C5 | Correspondence and transaction completion: Marketing, Transaction/Document, Salesforce and handoff coordination | Editable drafts, exact sender/recipients/CC, supported document files, deal milestones, conditional lender participation, title-opening preparation and subsequent evidence-backed tracking |
-| C6 | Cross-role handoff and universal guidance | Changes in price, release, ownership, reservation, document or assignment update dependent work; Notetaker, Workflow Navigator and Coaching assist each role in normal work |
-
-C1, C2 and C3 are peer delivery tracks. Review one coherent slice at a time while keeping all three on the acceptance board. Do not finish an entire dispositions product before starting acquisition/management depth. C4 calculations can be built alongside C2; C5 depends on B2's deal/document model. Implement actual file access/versioning and attachment selection before calling an email package complete; today's metadata-only attachments are insufficient.
-
-**Dispositions acceptance, based on Alex:** select a current company property → match permitted CRM buy boxes first → prepare personalized eligible outreach → choose optional extra-cost Hunter research → associate investor replies → report changed commitments → track sourced signed-agreement/deposit evidence → prepare title-opening email with investor, attorney, acquisition agent and lender only when relevant → follow acknowledgment, issues, clearance, signing, funding and closing as distinct events. A reservation or stop-marketing transition requires a confirmed authoritative source and company rule; Alex's description is provisional until validated. Never infer wire instructions or a completed payment from a draft.
-
-**Acquisitions acceptance, provisional pending practitioner review:** receive a wholesaler opportunity → resolve duplicate/revised submission → identify missing property, price and document facts → compare supported valuation/repair scenarios → explain diligence gaps and decision options → prepare an authorized release → dispositions acknowledges the correct version → correction/withdrawal propagates to affected work. Do not assume direct-seller prospecting or autonomous offer authority.
-
-**Management acceptance, provisional pending manager review:** ask what is stuck across the permitted team → see sourced pipeline/work exceptions with meaningful denominators → drill into a specific handoff → assign or request next work within configured authority → receive an outcome → compare an agreed period without counting retries/duplicate events as productivity. Office visibility does not grant private chat or mailbox visibility.
-
-## Phase D — Proactive follow-through and delegated actions
-
-| ID | Package | Exit evidence |
-| --- | --- | --- |
-| D1 | Recurring briefings with selected topics, times, timezone, channel, quiet periods and change summaries | Three daily updates work; daylight/timezone changes, downtime and catch-up do not create a message storm; user can revise/stop by message |
-| D2 | Reply, commitment, deal and handoff watchers with event deduplication and bounded processing scope | New evidence triggers one relevant job; event storms coalesce; resolved/withdrawn work does not keep prompting; meaningful exceptions reach the right employee |
-| D3 | Explicit standing authorization for routine actions, scoped by actor/account/contact/deal/action/content/frequency/expiry with revocation | Previously authorized routine work completes without repeated action approval; out-of-scope changes request a concrete decision; revoked/in-flight work stops or reconciles correctly |
-| D4 | Continue work after answers, changed records or external outcomes | A missing lender contact or corrected record resumes the right job; old assumptions and approvals cannot execute silently; a materially superseded recommendation is visibly corrected with the reason and original history retained |
-
-Every scheduled execution uses the same whole-job budget. Standing business-action authority does not waive approval for a run above $1. Existing exact-review requirements remain until their tested replacement exists; loosening a prompt or removing server checks is not an autonomy implementation. Authenticated short channel decisions should suffice when the exact action is clear; use a linked review only when recipients, documents or ambiguity need inspection.
-
-## Phase E — Approved connections and company operation
-
-| ID | Package and dependency | Exit evidence |
-| --- | --- | --- |
-| E1 | Employee Slack/SMS acceptance on owner-controlled demo accounts; may overlap A | Real DM/SMS round-trips, reminders, shared work continuity, STOP/disconnect and uncertain-delivery handling on the actual hosted origin; no claim that investor SMS is thereby implemented |
-| E2 | Before real company-data ingestion: managed identity/membership, scoped access and revocation, data lifecycle, PostgreSQL migration, supervised durable workers, telemetry, backup/restore and environment separation | Separate employees/offices remain isolated; assignment/departure interrupts pending work; recovery preserves records and receipts; representative concurrent-job/channel load and provider limits are tested; presentation PIN/shared sample roles cannot authenticate real employees |
-| E3 | Approved Salesforce/company email, after administrator capability discovery and E2 for real records | Confirm object/field visibility, email body/history/file coverage, sender/transport, incremental sync, refresh/revoke, conflicts and deduplication; approved sandbox read/write/send outcomes verified independently |
-| E4 | Dedicated investor business lines, after approved ownership/registration/consent setup | Number assignment and payer clear; two-way routing, opt-out during queued work, reassignment/departure, allowance/cost and trusted delivery reconciliation tested; employee Copilot number remains separate |
-| E5a | Real provider cost admission after A3 and authorized bounded provider test access; may start early with fictional data | New autonomous billable dispatch uses whole-job admission, supported upper bounds, versioned rate calculations and actual receipts; $1/approved maxima work; unknown cost stays unresolved; shadow retail accounting is not a collected customer charge |
-| E5b | Payment settlement and automatic purchases after A5, usage integration and explicit payer/commercial setup | Verified idempotent payments, opted-in top-ups, failure/refund handling, caps and payer isolation pass payment test-mode then authorized live settlement; no simulation grants real funds |
-| E6 | Broader connected work: approved documents/calendar/research sources, real voice acceptance and reusable connector installation/health | Concrete requested tasks complete with current source/delivery evidence; scoped credential lifecycle, missing capability, rate limits, disconnection and recovery work; actual two-way voice quality tested |
-| E7 | Isolated browser-assisted fallback for approved tasks lacking a suitable API | Employee-scoped sessions, bounded tool/cost authority, recoverable steps and independently verified outcomes on selected supported sites; no claim of arbitrary-site reliability |
-
-Salesforce-first describes the employee workflow, not a guessed mail host. Keep Gmail/Outlook as optional connectors or company-approved underlying transport. Do not silently switch to personal email when company coverage is incomplete. Company acceptance is required before ingesting real records; owner-account fictional demonstrations can proceed independently. Implement API connectors first where they cover the job. Broader task/plugin capability and browser fallback are explicit roadmap work, not a reason to delay usable domain workflows.
-
-Begin E2 schema/queue design alongside A to avoid single-process assumptions. The existing one-instance Render demo remains a separate presentation environment until production migration passes. Verify the actual deployed commit before presentations; a successful GitHub push alone is not deployment evidence.
-
-## Phase F — Prove usefulness and roll out
-
-Create one scorecard per specialist and one end-to-end scorecard per role, versioned with task scope, data/source version, application/model configuration, reviewer, date, results and limitations. Keep the existing 36 relationship record cases as regression evidence; they are not an independent intelligence benchmark.
-
-- Before implementation of a specialist slice, write representative cases and expected useful outcomes. Include paraphrases, missing/contradictory/stale facts, conditional statements, changed instructions, denied costs/actions, failed tools, restart and channel continuation. Reserve unseen variations and freeze the acceptance set before scoring the release.
-- Separate deterministic calculation/service tests from model-quality trials. Use acquisition/dispositions/management reviewers for their own work. Require zero critical access, unauthorized-charge, duplicate-action or fabricated-completion failures in the release suite; a high average cannot hide one.
-- Proposed internal quality target: at least 90% completion of the declared supported tasks on the reserved scenario set and at least 4/5 usefulness from the relevant role reviewer. Agree case counts and scoring before a run; report counts and uncertainty. These are engineering acceptance targets, not achieved results or sales claims. If a role representative is unavailable, employee acceptance stays pending.
-- Compare against a capable generic connected agent with equivalent tasks, information, tools/access and budget. Measure setup time separately from execution. Record factual errors, missed commitments, employee edits/interventions, time to usable outcome, total customer cost and provider expense. Reverify current competitor features when running that benchmark.
-- Run a small approved pilot including each role, then expand by cohort/office only after reliability, quality, support and payer controls pass. Measure useful tasks completed and repeat weekly use by role, not raw messages or logins. Establish the pilot's repeat-use target and observation window with the sponsor before launch; no retention target is currently achieved.
-
-A comparison report must include failures and unavailable integrations. Do not claim AgentDesk beats Grok Bot, ChatGPT agents or current employee workflows until the relevant comparisons support that conclusion. App-specific knowledge and memory are the hypothesis; less effort and better completed work are the evidence.
-
-## Experience work in every phase
-
-Preserve the chosen light professional workspace with an ink sidebar and restrained green accents. Aesthetic work includes the complete product, not just the home dashboard:
-
-- Role-specific home, first useful request, navigation and onboarding for dispositions, acquisitions and management; no investor-heavy default for every employee.
-- Copilot and Work queue show desired outcome, current step, what is needed, estimate/approved maximum, completed artifacts and meaningful recovery controls. Keep internal tool traces out of normal user flows.
-- Coherent investor/wholesaler/property/deal timeline, clear sources and private/shared boundaries; inspectable preferences and corrections.
-- Phone-friendly cost review and top-up controls; clear purchased/included credit balance, processing/payment failures and receipts without technical ledger jargon.
-- Inbox, deal packages, documents, specialist pages, settings, billing and management receive the same typography, spacing, forms and empty/loading/error/disconnected states.
-- Verify desktop/phone layouts, keyboard/focus/contrast, long text, slow/failed operations and cross-channel links. Each release includes a real walkthrough of changed screens, not only screenshots of static fixtures.
-
-## Inputs to collect without blocking independent work
-
-| Needed input | Who/what supplies it | Build now | Dependent acceptance |
-| --- | --- | --- | --- |
-| Dispositions/title specifics | Alex plus authorized company process owner | Configurable fictional parties, stages and draft packages | Official reservation/stop-marketing rule, PSA/deposit evidence, title routing and exceptions |
-| Acquisition daily work | Acquisitions practitioner/lead | Wholesaler intake, explicit assumptions, calculator and handoff fixtures | Screening criteria, sources, decision authority and approved diligence method |
-| Management daily work | Manager/sponsor | Scoped exceptions, configurable metrics and assignment fixtures | Metric definitions, oversight visibility, assignment/escalation policies and rollout outcomes |
-| Company systems/knowledge | Salesforce/email administrator and process owner | Capability adapters, source/version retrieval and disconnect cases | Actual mail coverage/transport, field mapping, SOP authority and permitted data access |
-| Employee demo channels | Owner signs into chosen Slack/Twilio accounts | Existing mocks plus new run/approval controls | E1 real account installation, phone receipt and channel walkthrough |
-| Commercial operation | Owner and designated payer/company sponsor | Simulated $1 gate and opt-in top-up lifecycle | Pricing/rates, payment provider, sponsorship, line ownership and purchased-credit terms |
-
-Treat provisional defaults as visible assumptions. Ask the smallest role-specific questions when the next dependent slice needs them. Do not turn missing company access into a reason to stop fictional engineering, and do not call a provisional business rule confirmed.
-
-## Development and release discipline
-
-For each implementation checkpoint: declare its supported outcomes and dependencies, build the vertical slice, run meaningful service/model/permission/failure tests, check changed screens on desktop/phone, preserve existing data through additive migrations, update specifications and PROGRESS, commit/push and record remaining limits. Major changes require typecheck, lint, tests, build and the appropriate isolated HTTP smoke suites under AGENTS.md. Migration-copy tests protect prior records, drafts, receipts and balances.
-
-Do not rebuild completed workflows or change the model/framework solely for architectural novelty. Verify current provider APIs when implementing those connections. A blocked credential-dependent test remains pending; complete independent work and label the evidence accurately. Planning/documentation changes alone require link/consistency/diff checks, not a claim of newly passing application tests.
-
-The November 2 presentation is a separate demonstrated slice, not a deadline claim for finishing every agent or production deployment. Choose only verified workflows, include a useful example for each role and rehearse the deployed version with fictional data. Use the local fallback honestly if a live channel has not passed acceptance.
-
-## Relationship to existing plans
-
-| Existing plan | How it fits now |
+| State | Meaning |
 | --- | --- |
-| Capable workforce phases A–F | Same phase names; this document supplies actionable packages and gates |
-| Relationship stages 1–2 | Completed record/baseline foundation preserved |
-| Relationship stages 3–7 | B methods/context, C judgment/communication, D follow-through and F independent acceptance |
-| Communications 1–3 and 4A | Implemented fictional wallet/inbox/company-email foundations preserved |
-| Communications 4B | E3 approved company source and delivery route |
-| Communications 5 | E4 dedicated investor business lines |
-| Communications 6 | A3/A5 simulated spend/top-up controls, then E2/E5a/E5b live operations/usage/billing and F rollout |
-| Original numbered phases and Phase 2–4 directives | Historical requirements/checkpoints, not competing current scheduling instructions |
+| Verified foundation | Implemented and accepted for its stated local/demo scope at a recorded committed revision |
+| Partial | Useful foundations exist, but the checkpoint's full outcome has not passed |
+| Frozen working draft | Source is written locally, uncommitted and unpublished; targeted checks are not integrated acceptance |
+| Planned | A requirement or design, not a working feature |
+| External acceptance pending | Requires a real device, account, authorized company source or employee review; mocks do not close it |
 
-**Next build:** A1–A3, followed by A4–A6. Prepare B's source/method inventory in parallel where it does not depend on executor changes. No new runtime capability is marked complete by publishing this plan.
+**Last fully verified runtime baseline: `2d16665`**, committed and pushed to GitHub. Evidence: 522 automated tests across 28 files; 762 HTTP/workflow checks; 36 relationship scenarios / 54 assertions; typecheck, lint, production build, desktop and narrow-browser acceptance; all 228 prior rows across 75 tables preserved on a migrated copy. These are historical results for that revision, not new results for the mobile draft. The latest Render revision is unverified.
+
+| Area | Verified foundation | Remaining gap |
+| --- | --- | --- |
+| Copilot and work | Persistent conversations; typed model tools; eight composable local capabilities; durable jobs, immutable plans, receipts, pause/resume/cancel and three role starters | Broader planning and tool coverage, general clarification/changed-instruction continuation, cross-channel acceptance, live voice parity |
+| Business workflows | Investor criteria/journeys/corrections, matching, releases, calling priorities, debriefs, reviewed CRM proposals, deal-package handoff | Complete daily workflows for every role; actual transaction/document coordination and deeper judgment |
+| Specialists | 16 registered: 2 locally ready, 10 demo, 4 planned | All 16 require declared scope, methods/tools, varied quality cases and role acceptance; no expert or competitive-superiority claim is established |
+| Communications | Shared employee SMS/Slack adapters; private fictional Salesforce-first email/investor-text inbox; exact generated-reply simulation | Actual channel acceptance; editable sends, recipients/CC/files; approved company sync and delivery; dedicated investor numbers |
+| Costs | Workforce entitlements, simulated wallet and whole-job approval above $1 with holds and partial settlement | Actual provider-wide spending enforcement, optional automatic top-up and payments |
+| Mobile and notifications | Responsive web screens and existing in-app/task reminders | New native app, pairing, dictation, job commands and push are frozen local drafts; no installed-phone acceptance |
+| Company operation | Scoped fictional identities and hosted presentation entrance | Managed employee identity, approved data access, production persistence/workers, recovery, support and measured rollout |
+
+## Confirmed product decisions
+
+- Serve **dispositions, acquisitions and management** as three primary audiences. Dispositions receives more specialist depth where the work warrants it. Alex supplies dispositions discovery; he does not establish acquisitions/management needs or official company policy.
+- One employee's master Copilot coordinates role-appropriate specialists. Employees describe desired outcomes in ordinary language and should not have to pick agents or memorize commands. Use focused reasoning, calculations and reliable tools according to the job, not sixteen separate models for appearances.
+- **Native iPhone and Android app is the primary daily experience**, with a professional desktop workspace for detailed work. Workforce is mixed, mostly iPhone. App access is included; employee-to-Copilot SMS is the optional provisional **$19/month** convenience channel. Slack is retained as optional later demand because New Western does not currently use it.
+- The same employee conversation, memory, job and approval state serve app, desktop, dictation/live voice and configured messaging. Investor email/business texts are a separate inbox, never commands to the employee's assistant.
+- Company email follows the **Salesforce workflow first**. Its actual mail host, coverage and permitted delivery route require administrator discovery. Optional Gmail/Outlook connectors remain in scope. Investor-facing Twilio business numbers are a separate service from Copilot SMS.
+- Remember inspectable employee preferences and sourced customer/deal history. Corrections must improve the next relevant recommendation; stored memory alone is insufficient. Versioned methods and realistic evaluation establish specialist depth.
+- Be usefully autonomous within explicit action authority. Prepare work before asking for a necessary decision; allow scoped standing authorization for routine actions once implemented and tested. Do not weaken execution checks to simulate greater ability.
+- Ask approve/deny **before a whole job exceeds $1 in customer-facing credits**, including delegated work. A larger revised maximum needs a new decision. Optional auto top-up funds the wallet; it never approves a job.
+- Keep the light professional workspace, ink sidebar and restrained green accents. Complete aesthetic/accessibility passes across the whole product, including role homes, mobile navigation, approvals, inbox, billing and failure states.
+- Use fictional business records until company access is approved. Owner demo-account testing can proceed independently. No Apple/Google developer accounts exist yet; prepare locally. GitHub commit/push is authorized; a push does not verify a deployment.
+
+## Completion means three different releases
+
+| Release level | Required outcome | Not established by that level |
+| --- | --- | --- |
+| Fictional workflows complete | All three role journeys and all 16 agreed specialist scopes pass end-to-end functional/quality/recovery checks with honest simulated integrations; phone workflows pass their device tests | Real company access, payments, customer effectiveness or broad production operation |
+| Connected pilot ready | Authorized employees use verified connections with managed identity, receipts, actual spending control, isolation and recoverable operations | Company-wide readiness or an advantage over competing agents |
+| Company rollout ready | Role acceptance, onboarding/support, reliability and measured repeat useful usage pass in controlled cohorts before wider rollout | Unlimited capabilities or arbitrary inaccessible-system support |
+
+Track functionality, knowledge/judgment, connection readiness, autonomy/recovery and employee acceptance separately. Do not average a polished interface and an unfinished specialist into a single unsupported completion percentage.
+
+## The seven checkpoints
+
+Checkpoint IDs **C1–C7 below are the current numbering**. Old `C1` in historical A–F documents meant a dispositions work package; use the legacy crosswalk at the end when reading old evidence.
+
+| ID | Outcome | Current status | Completion test |
+| --- | --- | --- | --- |
+| C1 | Shared conversation and reliable work controls | Partial; durable local jobs verified, new conversation controls frozen | Start in one channel, supply information/change instructions/control cost in another, finish once with one consistent result |
+| C2 | First iPhone and Android app | Frozen working draft; device acceptance pending | Speak a request, review/send it, close the app, receive a notification and open the correct saved result on both platforms |
+| C3 | Essential mobile work experience | Partial draft Work controls; mobile Inbox and full review flow planned | Finish a representative daily workflow entirely on the phone |
+| C4 | Deep specialists and complete role workflows | Early foundations; most expertise and four specialist implementations planned | New facts/corrections change useful work; all 16 scopes and all three role journeys pass declared quality cases |
+| C5 | Proactive usefulness and SMS continuity | Task/channel foundations; job push draft; broader initiative planned | Relevant update reaches the chosen channel once and the employee acts on it immediately |
+| C6 | Actual spending protection and optional auto top-up | Fictional job gate verified; actual integration/top-up planned | Whole-job limits, actual usage and purchases reconcile across channels without surprise authorization or duplicate charges |
+| C7 | Representative pilot, approved connections and rollout | Demonstration exists; company/device/production acceptance pending | Each role completes approved real work reliably, with evidence of usefulness and repeat use before expansion |
+
+**Dependency rules:** stabilize C1 before broadening channel execution. C2 and C3 reuse it. Start C4's knowledge/method work alongside C2/C3 rather than waiting for a finished app. C5 reuses the same work/permission/budget system. **C6 actual usage admission must pass before enabling broader live paid autonomous work**, even though it is numbered after C5. C7 identity/operations must pass before real company-data ingestion. Device and owner-account SMS tests do not need Salesforce approval. Quality and interface review accompany every checkpoint.
+
+## Immediate next checkpoint — stabilize the frozen draft
+
+This is the next implementation work **when the owner resumes development**, not work authorized by the documentation reset itself. Do not start another feature bundle first.
+
+- [ ] Inventory the uncommitted runtime diff and preserve all existing records; finish only the current shared-controls/mobile-foundation slice.
+- [ ] Fix the known ambiguous-reference edge case: after a work artifact becomes withheld, a bare “cancel it” must request a fresh selection rather than falling through to the older personal-task handler.
+- [ ] Run final root and independent mobile checks after the last edits. Earlier full test/build results predate some draft changes; do not present them as final acceptance.
+- [ ] Run the authored isolated mobile HTTP smoke suite against a fresh compiled server; it has not been run. Recheck existing workflows and browser-to-phone pairing/revocation, shared history and job decisions.
+- [ ] Verify additive migrations 022–024 on a disposable upgraded copy, preserving previous records, wallet holds and receipts. Active local schema-009 data remains untouched by the paused work.
+- [ ] Complete connected interface walkthroughs and stale-session/changed-source recovery. Separate mock notification tests, JavaScript exports, native builds and actual phone acceptance in the report.
+- [ ] Keep generated outputs out of source control, including currently unignored `mobile/web-preview/`; review mobile tooling advisories/configuration warnings described in [mobile/README.md](../mobile/README.md) before native release.
+- [ ] Commit/push the verified slice and record the exact remaining gaps. Verify any subsequently authorized Render deployment independently. Do not label C1 or C2 wholly complete merely because the bounded slice passes.
+
+**Frozen draft inventory:** native Agent/Work/Settings, scoped demo phone pairing, shared typed chat, reviewable dictation, bounded job commands/cost decisions/corrections and opt-in job-push infrastructure. Targeted tests passed for work commands (22 new), mobile auth (14), notifications (23) and the mobile client (9). An earlier full root run passed 572 tests before later edits. iOS/Android JavaScript exports and project generation succeeded; native binary builds, installation, real push, speech and integrated final acceptance did not occur. This draft is not in the verified runtime commit. [PROGRESS.md](PROGRESS.md) records the evidence limits.
+
+## C1 — Shared conversation and work controls
+
+Extend the existing durable engine instead of rebuilding it. Every surface uses the same employee identity, ongoing conversation, capability services, immutable job/plan versions, budget authority and execution receipts. Distinguish saved personal tasks from multi-step jobs; natural references must select the correct one.
+
+Required work:
+
+- Natural requests compose supported capabilities instead of selecting only fixed templates. Expose the specific missing capability when a task cannot run. Test paraphrases, ambiguous references and unsupported requests.
+- Start, status, result review, pause, resume, cancel, revised instructions and exact cost/action decisions work across typed app/web and configured SMS. Retained Slack uses the same contract. Dictation enters this same reviewed message path.
+- General missing-information continuation asks for the missing fact once, attaches the answer to the right job, invalidates obsolete plans/approvals and resumes. The draft currently supports only bounded dispositions-plan corrections.
+- Persist dependencies, partial results, leases and reconciliation through restart, failure, revoked access and uncertain provider outcomes. Do not repeat completed actions. A tool error cannot become a narrated success.
+- Share business authority with voice while preserving explicit reviewed decisions. Existing browser live voice excludes important work/inbox/edit tools; native dictation is not live conversational parity.
+
+Acceptance includes cross-channel continuation, changed source/role/session, stale/ambiguous approvals, partial cancellation, two workers, interrupted delivery and clear recovery. See [WORK_EXECUTION.md](WORK_EXECUTION.md) and [CONVERSATION_WORKFLOWS.md](CONVERSATION_WORKFLOWS.md).
+
+## C2 — First iPhone and Android app
+
+Keep the existing server and domain services; build a purpose-designed native client. The frozen Expo/React Native project is a foundation, not a second backend. Prepare local development without store accounts.
+
+Required work: individual session lifecycle; Agent conversation; text; microphone dictation with transcript review/fallback; saved jobs; opt-in notifications and exact result links; loading/offline/interrupted/reconnect behavior; accessible mobile navigation. Demonstration pairing is scoped to a fictional employee, not production SSO. C7 supplies managed identity for real employees.
+
+Validate microphone/audio, background/closed-app notification delivery and links on actual iPhone and Android devices early. Exports and generated projects do not establish installation. Add live back-and-forth voice after dictation, with C1's tool/approval/continuity coverage and real audio acceptance. [MOBILE_DELIVERY_PLAN.md](MOBILE_DELIVERY_PLAN.md) describes the client contract and testing layers, not a separate schedule.
+
+## C3 — Essential mobile Work and Inbox
+
+Finish Work status/results, readable approval cards, draft editing/review, Inbox correspondence and relevant investor/property/deal links. Rich recipient, attachment and cost decisions must remain reviewable on a phone; short SMS decisions can work when the exact action is unambiguous, with a focused link when more inspection is essential.
+
+A missing document/contact/fact identifies what is needed and continues from the supplied answer. Protect unsaved edits, current versions, declined/expired approvals and account switches. Cover long text, keyboard/screen-reader focus, narrow screens, slow/offline/error states and touch targets. Mobile is complete only when the employee can finish the selected workflow without returning to the desktop browser.
+
+## C4 — Deep specialists and complete role workflows
+
+Use [AI_EMPLOYEES.md](AI_EMPLOYEES.md#capability-depth-delivery-matrix) as the detailed scope/evidence matrix for all sixteen specialists. Start with one coherent workflow per role, improve the specialists it uses, then expand to the remaining declared scopes. These are peer tracks; a dispositions release is not company-wide completion.
+
+Shared depth requirements:
+
+- Source/versioned knowledge with role visibility, dates, withdrawal, conflicts and explicit provisional-versus-approved methods. Retrieved content does not grant authority.
+- Linked employee/contact/wholesaler/opportunity/property/deal/party/document/commitment records. Separate buy boxes, deal stages, document versions and private preferences; evidence and corrections survive changes.
+- Reviewable learning from edits and accepted work; inspect/edit/forget. A one-off change is not a permanent preference. Explain recommendations with the few relevant facts, not raw internal traces.
+- Every specialist has objectives, context, tools, a working method, excellent-output examples, missing-fact behavior and failure/quality cases. Use tested deterministic calculations and focused reasoning where each helps.
+
+| Role | First workflow to deepen | Full acceptance journey |
+| --- | --- | --- |
+| Dispositions | Current property → existing buyer matches → relationship concerns → appropriate draft → response/follow-up | Existing CRM first; optional costed external Hunter; reply association and changed commitments; sourced agreement/deposit state; title-opening draft with investor, attorney, acquisition agent and lender only when relevant; track acknowledgment, issues, clearance, signing, funding and closing separately |
+| Acquisitions | Wholesaler opportunity → missing facts → supported assumptions → useful questions → handoff | Versioned/duplicate submissions, sourced comparables and repair/diligence ranges, supported screening, authorized release, acknowledgment and propagation of correction/withdrawal; no assumed direct-seller or autonomous-offer workflow |
+| Management | Stalled work/deadlines → supporting evidence → next owner/action → resolution | Defined metrics/denominators, scoped pipeline/handoff drilldown, authorized assignment/escalation, outcome and period comparison; no private mailbox/chat visibility inferred from manager role |
+
+Include Deal Analyst and Valuation calculation agreement, evidence-ranked Hunter research, conditional transcript meaning, full handoff changes, editable correspondence/CC/actual document access and transaction coordination. Metadata-only attachments do not complete a title-opening package. Alex's reported signed-agreement/deposit reservation and stop-marketing rule remains provisional until company confirmation; never invent wire details or payment confirmation.
+
+Begin Investor Relationship Manager's source/versioned method work from its verified record foundation; its [seven local depth stages](RELATIONSHIP_SPECIALIST_PLAN.md) are a specialist method, not another company roadmap. Acquisitions and management examples need their own practitioners. Fictional methods can progress while those inputs are pending, with assumptions explicit.
+
+## C5 — Proactive usefulness and SMS
+
+Implement chosen topics/times/timezone for morning/afternoon or three-times-daily briefings; changes since last update; reply, deal, commitment and handoff watchers; meaningful reminders and requests for attention. Choose a preferred channel and quiet hours. Deduplicate/coalesce across app push and SMS, handle downtime/timezone changes, and stop obsolete/resolved alerts.
+
+The frozen push draft only covers certain job events with existing quiet hours, generic text and device limits. It does not complete scheduled briefs, reply monitoring, per-employee timezones or preferred-channel routing. Provider acceptance and phone display remain different outcomes.
+
+Add explicit standing-authority records for routine actions: actor, account/contact/deal/action/content, frequency, budget, expiry and revocation. Out-of-scope changes request a prepared decision; approved routine work does not repeatedly interrupt. Changed facts must update or withdraw obsolete recommendations. Every scheduled job still follows the C6 whole-job rule.
+
+Test real employee SMS on the owner's demo account with fictional business records: shared conversation, reminders, cost decisions, STOP/disconnect, changed devices and uncertain delivery. Slack remains optional later acceptance. Investor business texting is a separate C7 connection. See [MESSAGING_SETUP.md](MESSAGING_SETUP.md).
+
+## C6 — Spending protection and optional auto top-up
+
+The verified local job path enforces **fictional** whole-job quotes/holds/partial settlement. It does not cap the separate existing live model path. Finish actual admission before enabling broader live paid autonomous work.
+
+- Price the entire assignment, including bounded planning, specialist reasoning, tools/research, chargeable retries and verification. Aggregate delegated steps; quick paid turns also need stable cost identity. Show estimated total and maximum. Above $1 waits for approve/deny; growth pauses before crossing the threshold or approved maximum.
+- Connect versioned rates, supported upper bounds, reservations and authoritative provider receipts. Track customer credits separately from provider expense; unknown cost stays unresolved. Settle consumed authorized work, release only unused holds and never silently increase the approved customer debit.
+- Test $0.99/$1.00/$1.01, many small steps, children, retries, simultaneous jobs, denied/expired decisions, revised quotes, partial failure/cancellation and uncertain outcomes. Standing authorization and wallet balance never waive the gate.
+- Add optional payer-owned auto top-up: balance trigger, amount and monthly purchase cap, off initially. One pending purchase per eligible low-balance cycle; pending purchases count toward cap. Only confirmed success grants credit, idempotently. Failure/unknown needs reconciliation, not another purchase every worker tick. Re-arm only after balance recovery and a later eligible drop or explicit payer recovery. Disablement stops new purchases while reconciling pending outcomes.
+- Simulate purchase outcomes first, then payment test mode and authorized live settlement with verified webhooks, payer binding, refunds and receipts. Separate company-funded seats from employee extras; navigation and ordinary deterministic internal work do not consume AI credits.
+
+Detailed contracts: [USAGE_METERING.md](USAGE_METERING.md), [BILLING_ARCHITECTURE.md](BILLING_ARCHITECTURE.md), [PRICING_AND_PACKAGES.md](PRICING_AND_PACKAGES.md). Commercial prices/margins remain provisional; funding never approves an expensive job.
+
+## C7 — Pilot, approved connections and rollout
+
+Rehearse fictional workflows with Alex, an acquisitions practitioner and a manager on both phone platforms. Fix friction and agree supported task scopes before real company access. The demonstration date is a presentation milestone, not a promise that the whole product is finished.
+
+| Work package | Prerequisites and acceptance |
+| --- | --- |
+| Identity and operations | Managed identity, memberships/departure, scoped access, retention, PostgreSQL migration, supervised workers, telemetry, backups/restore and environment separation before real company data; test concurrency, isolation, restart, revocation and recovery |
+| Salesforce/company email | Administrator-confirmed objects/fields, mailbox ownership, body/history/files, sender/transport, incremental sync, conflicts, deduplication, refresh/revoke and receipts; approved sandbox reads/writes/sends before real use. Salesforce-first does not identify the mail host |
+| Investor business numbers | Authorized provisioning/ownership/payer, registration/consent, two-way routing, opt-out, delivery reconciliation, allowance/cost, reassignment/departure and retention. Separate from employee Copilot SMS. Calling/recording is a later explicitly scoped extension |
+| Other tools and connections | Approved calendar, documents and research, optional Gmail/Outlook/Slack, installation/health and scoped credential lifecycle. Prefer suitable APIs; add isolated browser-assisted fallback for selected approved tasks with bounded authority and verified outcomes, not arbitrary-site promises |
+| Native distribution and voice | Developer accounts/signing/distribution when available; real installed-device/background/push/live-audio acceptance; managed identity before company use. No store account is needed to continue independent local preparation |
+| Pilot and commercial operation | C6 actual-cost evidence and payment evidence when collecting payments, role onboarding, admin/support, payer agreements and communication ownership; agreed task scope and repeat-use window; verify actual deployed revision and recovery before expanding cohorts |
+
+An explicitly authorized, bounded owner-funded/unbilled pilot can validate usefulness without collecting customer payments; it still needs actual usage control and all applicable identity, access and operational gates.
+
+A proposed internal release target is at least 90% completion on a reserved supported-task set and 4/5 usefulness from the relevant role reviewer, with **zero critical access, unauthorized-charge, duplicate-action or fabricated-completion failures**. Agree cases/counts/scoring before the run and report uncertainty; these are targets, not achieved results. Missing role reviewers leave employee acceptance pending.
+
+Compare with a capable generic connected agent using equivalent tasks, information, access and budget. Measure setup effort separately, errors/missed commitments, edits/interventions, time to useful outcome, total customer/provider cost and repeat weekly use by role. Recheck competitor capabilities at evaluation time. Existing regression tests are not a blinded quality benchmark, and no superiority/retention result is established.
+
+## Inputs and ongoing delivery discipline
+
+Collect only the inputs needed for the next dependent slice; do useful fictional engineering independently. Needed inputs: acquisitions and management discovery; administrator-confirmed Salesforce/email/access/SOPs; official reservation/title/party/document rules; demo Twilio account access; actual phone testing; developer accounts for distribution; payer/pricing/allowance decisions. No company agreement or 700-seat commitment is assumed.
+
+For each resumed implementation slice: declare its outcome and dependencies, build/test it, preserve old data through additive migrations, inspect changed desktop/phone screens, update this roadmap's status and PROGRESS evidence, then commit/push verified work. Major changes require the checks in AGENTS.md plus relevant isolated smoke/migration tests. Deployment status is recorded separately. Documentation-only edits use link/consistency/diff checks without claiming application revalidation.
+
+## Legacy phase crosswalk
+
+This table preserves earlier scope and evidence without retaining another active sequence.
+
+| Historical identifier | Current home |
+| --- | --- |
+| A1–A3 durable work/capabilities/fictional budget; A4 channel controls; A6 scenarios | C1, with C6 actual-cost continuation and C7 acceptance |
+| A5 automatic top-up; E5a usage; E5b payments | C6 |
+| B1–B4 knowledge/context/memory/methods | C4 shared depth |
+| Old C1 dispositions, C2 acquisitions, C3 management, C4 calculations/research, C5 correspondence/transaction, C6 handoffs | C4 role workflows and sixteen-specialist matrix; mobile presentation in C3 |
+| D1–D4 schedules/watchers/standing authority/continuation | C5, using C1 and C6 |
+| E1 employee channels | C2 device transport and C5 SMS; Slack optional |
+| E2 identity/operations; E3 Salesforce/email; E4 investor lines; E6 broader tools/voice; E7 browser fallback | C7, with C2/C3 native experience |
+| F evaluation/rollout | Evidence throughout C1–C6 and final C7 acceptance |
+| Communications 1–3 and 4A | Preserved verified fictional wallet/inbox/company-email foundations |
+| Communications 4B, 5, 6 | C7 approved company/investor connections; C6 billing and C7 operation |
+| Relationship stages 1–2 / 3–7 | Preserved record baseline / C4 depth, C5 follow-through and C7 independent acceptance |
+| Original brief and numbered Phase 2–4 directives/reports | Historical requirements/results; later confirmed decisions and this roadmap control current work |

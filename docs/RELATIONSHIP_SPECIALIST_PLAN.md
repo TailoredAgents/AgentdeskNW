@@ -1,10 +1,10 @@
 # Investor Relationship Manager — depth and quality plan
 
-Owner direction: proceed with stages 1 and 2 of the seven-stage plan. Starting checkpoint: 89f8c57. This milestone adds a quality benchmark and a stronger investor record, preserving current workflows and fictional data. Commit/push is authorized; Render deployment and real company connections remain separate.
+**Document role:** Investor Relationship Manager method and acceptance specification within canonical C4 (depth), C5 (follow-through) and C7 (independent acceptance). [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) alone controls project status and next work. The seven stages below are local specialist depth stages, not another company-wide roadmap. Stages 1–2 were authorized from checkpoint `89f8c57` and completed; evidence below is historical.
 
 ## Current checkpoint
 
-Stages 1–2 implemented and verified on October 30, 2026. Development cases improved from 8/24 on the original observation interface to 24/24; twelve reserved variations also passed. These measure representation and application behavior, not model expertise. See [quality evidence and limitations](RELATIONSHIP_QUALITY.md) for 459 tests, 648 HTTP checks, browser acceptance and migration preservation. Stage 3 is this specialist’s next depth step within roadmap Phase B; stages 3–7 remain unimplemented by this checkpoint. The project-wide next checkpoint is A1–A3 in [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md), not an independent competing schedule.
+Stages 1–2 implemented and verified on October 30, 2026. Development cases improved from 8/24 on the original observation interface to 24/24; twelve reserved variations also passed. These measure representation and application behavior, not model expertise. See [quality evidence and limitations](RELATIONSHIP_QUALITY.md) for 459 tests, 648 HTTP checks, browser acceptance and migration preservation. Stages 3–7 remain the depth backlog for this specialist. Start its source/versioned method work as part of C4 when the canonical roadmap resumes that slice; no completed mobile or project-wide checkpoint is implied.
 
 ## Relationship to the wider workforce plan
 
@@ -28,7 +28,7 @@ The record must distinguish canonical reviewed criteria, employee-reported updat
 | 6 — Follow-through | Reviewed drafts/updates/tasks with consistent conversation context | No duplicate commitments; changes affect the next action across configured channels |
 | 7 — Evaluation and release | Independent/blinded review, generic-model comparison, latency/cost and deployment acceptance | Demonstrated useful improvement within stated scope |
 
-## This milestone
+## Preserved stages 1–2 implementation
 
 Add an append-only relationship report ledger separate from CRM and personal employee memory. Support buying budget, strategy, target geography, financing, renovation tolerance, purchase timing and contact preference. Buy-box criteria attach to an explicit approved buy box; relationship-wide timing/contact preference stay separate. Reports are deliberate employee testimony, with an optional statement date distinct from capture time, and an exact source note. Corrections reference an earlier report and retain its original text.
 

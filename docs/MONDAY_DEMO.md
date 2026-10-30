@@ -1,3 +1,5 @@
+> **Operational reference, not the development roadmap.** Use [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) for current scope/status and [PROGRESS.md](PROGRESS.md) for dated evidence. Rehearse only accepted capabilities on the actual deployed revision; old presentation steps do not establish live connections, mobile readiness or production identity. The latest Render revision is unverified by this documentation reset.
+
 # Monday presentation — November 2, 2026
 
 The story: one employee, one personal Copilot, a workforce helping the entire deal move forward. This is working software with fictional records. The New Western connection would follow their approval.

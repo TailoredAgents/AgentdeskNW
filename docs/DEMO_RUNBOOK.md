@@ -1,3 +1,5 @@
+> **Operational reference, not the development roadmap.** Use [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) for current scope/status and [PROGRESS.md](PROGRESS.md) for dated evidence. Rehearse only accepted capabilities on the actual deployed revision; old presentation steps do not establish live connections, mobile readiness or production identity. The latest Render revision is unverified by this documentation reset.
+
 # AgentDesk NW — detailed demonstration reference
 
 Use the [Monday walkthrough](MONDAY_DEMO.md), [communications/credits plan](COMMUNICATIONS_AND_CREDITS_PLAN.md), and [progress log](PROGRESS.md) for current scope. All seeded accounts and records are fictional. Subscription and wallet actions are demonstrations, with no payment collection or investor delivery. The new workforce offer supersedes historical per-specialist purchase examples.

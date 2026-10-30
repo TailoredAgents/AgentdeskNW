@@ -1,3 +1,5 @@
+> **Historical reference.** Preserved from an earlier request or checkpoint. Later owner decisions and [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) govern current scope, status and ordering. Claims, prices, test results and “next” instructions below belong to their original context and do not verify the current working tree or deployed version.
+
 # Live provider acceptance — October 29, 2026
 
 The user supplied an API key after the Phase 4 implementation checkpoint. It is configured in ignored `.env.local`; no credential is stored in source or this report. No application code changed during this follow-up.

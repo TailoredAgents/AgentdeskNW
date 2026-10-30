@@ -1,3 +1,5 @@
+> **Historical reference.** Preserved from an earlier request or checkpoint. Later owner decisions and [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) govern current scope, status and ordering. Claims, prices, test results and “next” instructions below belong to their original context and do not verify the current working tree or deployed version.
+
 # Phase 2 completion report — October 29, 2026
 
 The existing AgentDesk application now supports the connected local investor workflow requested in the Phase 2 directive. This completes a working local demonstration milestone. It does not claim live Salesforce, genuine investor research, signed-document verification, external delivery or production readiness.

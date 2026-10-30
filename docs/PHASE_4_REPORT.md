@@ -1,3 +1,5 @@
+> **Historical reference.** Preserved from an earlier request or checkpoint. Later owner decisions and [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) govern current scope, status and ordering. Claims, prices, test results and “next” instructions below belong to their original context and do not verify the current working tree or deployed version.
+
 # Phase 4 completion report — October 29, 2026
 
 **Subsequent live verification:** after this initial report, the user supplied credentials. Live Responses tool execution and persisted conversational continuity passed. Realtime session credential setup passed, but actual speech remains unverified. External research is still disabled. See [LIVE_PROVIDER_CHECK](LIVE_PROVIDER_CHECK.md) for the updated evidence; credential-absence statements below describe the original implementation checkpoint.

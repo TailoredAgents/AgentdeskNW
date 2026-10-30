@@ -1,4 +1,4 @@
-# AgentDesk communications and credits delivery plan
+# AgentDesk communications and credits specification
 
 Owner: Tailored Agents. Approved direction: October 29, 2026; company-email priority updated October 30, 2026.
 
@@ -6,19 +6,19 @@ This plan follows the owner's supplied email/business-line/pricing discussion an
 
 ## Product outcome
 
-An employee uses one personal Copilot to coordinate the available workforce. Connected email and business texting eventually supply the relationship context: incoming message → matched investor → sourced understanding → useful draft → employee approval → delivery receipt → reply → follow-up. Employees can use the dashboard inbox or instruct Copilot through the existing private channels.
+An employee uses one personal Copilot to coordinate the available workforce. Connected email and business texting eventually supply the relationship context: incoming message → matched investor → sourced understanding → useful draft → employee approval → delivery receipt → reply → follow-up. The target offers native and desktop Inbox plus the shared Copilot. The native Inbox is still planned; existing private channel adapters await actual account acceptance.
 
 The personal assistant conversation and external investor correspondence remain separate records with different authority. An investor's email/text is evidence, never an employee command. Sources, uncertain identity matches, permissions, reviewed CRM changes and delivery outcomes remain explicit.
 
 ## Relationship to the company-wide roadmap
 
-[IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) now controls project-wide sequencing. The numbered phases here retain communications/billing scope and historical acceptance. Implemented Phases 1–3 and 4A remain foundations; Phase 4B maps to E3, Phase 5 to E4, and Phase 6 to E2/E5a/E5b plus rollout acceptance. E5a real usage admission can follow A3 using fictional data and an authorized provider test budget before E5b payment collection. Simulated whole-job cost approval and auto top-up move into A3/A5 before live billing. Employee demo-account Slack/SMS acceptance is E1 and may proceed independently of company Salesforce approval. Company identity and operating prerequisites must precede real company-data ingestion.
+[IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) is the sole authority for current status, ordering and dependencies. The numbered phases below are preserved domain milestone identifiers and detailed contracts, not a second build sequence. Phases 1–3 and 4A are verified fictional foundations. Live company email (4B) and investor numbers (5) belong to C7; actual usage/top-up/payment work from Phase 6 belongs to C6, with identity/operations/rollout in C7. Mobile Inbox is C3, richer correspondence/transaction expertise is C4 and employee SMS is C5. Slack is optional later demand; owner-account SMS testing can proceed independently of Salesforce approval. Company identity/operations must precede real company-data ingestion.
 
 ## Added requirement — job approvals and automatic top-ups
 
 The owner requires employee approval/denial before a complete job costs more than $1 in customer-facing credits. The threshold includes its delegated substeps; growth beyond the threshold or an approved maximum pauses for a revised approval. Scheduled work and standing action permissions do not waive this spending decision. Add optional payer-authorized auto top-up with a chosen low-balance threshold, purchase amount and monthly auto-purchase cap. Top-ups fund the wallet without approving expensive work or raising spending limits. See [USAGE_METERING.md](USAGE_METERING.md) for exact semantics and acceptance cases.
 
-Implement the job gate and top-up settings/outcomes with fictional accounting first, then connect real usage and payment settlement in Phase 6 below. Current manual simulated top-ups and sample-work reviews remain unchanged; these requirements are not claims of live enforcement or payment collection.
+The committed local job engine already enforces the fictional whole-job gate. Optional auto-top-up settings/outcomes and actual usage/payment settlement remain C6 work. Current manual simulated top-ups are not automatic purchases; none of this establishes live customer billing.
 
 ## Working commercial decisions
 
@@ -29,6 +29,7 @@ Implement the job gate and top-up settings/outcomes with fictional accounting fi
 | Included credits | $15 in retail AgentDesk usage value each billing period | Phase 1 wallet demonstration |
 | Purchased credits | $10, $25, $50 or $100; unused purchased balance rolls over | Phase 1 simulated top-ups, no payment collected |
 | AI pricing | Initial internal 5× cost target; versioned prices | Phase 1 server-owned sample scenarios; actual provider billing integration remains later work |
+| App / employee channels | Native and desktop access included; employee SMS provisional $19/month; Slack optional | Native source frozen/uncommitted; real device and messaging acceptance pending |
 | Email | Company email through Salesforce first; optional Gmail/Workspace and Outlook/Microsoft 365 adapters | Underlying company mail service and permitted Salesforce capabilities require administrator discovery; packaging remains open |
 | Dedicated business line | Provisional $39/month plus a defined messaging allowance | Planned; no line is sold, provisioned or connected in Phase 1 |
 | Business calling/recording | Separate future extension | Planned after SMS acceptance and approved recording policies |
@@ -39,7 +40,7 @@ All implemented specialists are included subject to role and company permission.
 
 ## Phase 1 — Workforce subscription and credit-wallet demonstration
 
-Status: **implemented and verified**. This phase is included in the owner-authorized repository checkpoint. Verification: 355 automated tests, 356 compiled HTTP checks, production build, type/lint checks, desktop/mobile inspection and preservation on a migrated database copy. See `PROGRESS.md` for details. Phase 2 is now implemented; real payment collection and provider wallet debiting remain deferred.
+Status: **implemented and verified**. This phase is included in the owner-authorized repository checkpoint. Verification: 355 automated tests, 356 compiled HTTP checks, production build, type/lint checks, desktop/narrow responsive-browser inspection and preservation on a migrated database copy. See `PROGRESS.md` for details. Phase 2 is now implemented; real payment collection and provider wallet debiting remain deferred.
 
 ### Deliverables
 
@@ -60,12 +61,12 @@ Status: **implemented and verified**. This phase is included in the owner-author
 - $15 included grant appears exactly once per period; purchased credits survive renewal; old included credit and unresolved holds cannot manufacture new spendable credit.
 - Replay, stale version, isolation, cancellation, failure, pending work, period change and spend-limit cases have meaningful tests.
 - UI demonstrates estimate → confirm → hold/settle/release and simulated top-up without moving money or contacting a provider.
-- Typecheck, lint, unit tests, build, isolated billing/legacy HTTP suites, desktop/mobile inspection and migration-copy preservation pass.
+- Typecheck, lint, unit tests, build, isolated billing/legacy HTTP suites, desktop/narrow responsive-browser inspection and migration-copy preservation pass.
 - Commit and push all phase changes; verify GitHub main matches the local commit. Render deployment remains separate.
 
 ## Phase 2 — Unified communications inbox with fictional adapters
 
-Status: **implemented and verified**. Verification passed: 379 automated tests across 19 files, 475 compiled HTTP checks (119 new inbox checks), production build, type/lint checks, desktop/phone inspection and migration-copy preservation. Detailed design and acceptance are in [COMMUNICATIONS_INBOX.md](COMMUNICATIONS_INBOX.md). This phase includes manually saved reply drafts and explicit inbox status; AI drafting, mailbox search through Copilot and simulated sending are Phase 3.
+Status: **implemented and verified**. Verification passed: 379 automated tests across 19 files, 475 compiled HTTP checks (119 new inbox checks), production build, type/lint checks, desktop/narrow responsive-browser inspection and migration-copy preservation. Detailed design and acceptance are in [COMMUNICATIONS_INBOX.md](COMMUNICATIONS_INBOX.md). This phase includes manually saved reply drafts and explicit inbox status; AI drafting, mailbox search through Copilot and simulated sending are Phase 3.
 
 Create All, Email, Texts, Needs reply and Drafts views. Store connected-account ownership, message/thread identity, participants, timestamps, source references, attachments/links, status and investor association independently of any provider. Seed realistic Gmail-like, Outlook-like and business-number conversations with explicit demo labels. Support multiple mailboxes and sender identities from the beginning. Show ambiguous investor matches for review.
 
@@ -73,9 +74,9 @@ Acceptance: a fictional message persists, is linked to the right permitted inves
 
 ## Phase 3 — Copilot communication workflow and relationship intelligence
 
-Status: **implemented and verified**. Verification passed 413 automated tests, 535 compiled HTTP checks, production build, type/lint checks, desktop/phone inspection and migration-copy preservation. See [COMMUNICATIONS_WORKFLOW.md](COMMUNICATIONS_WORKFLOW.md) and PROGRESS.md. Includes bounded private inbox search/read tools, a sourced relationship reply that respects saved employee preferences, an exact saved-draft review and simulated receipt, and separately reviewed source-linked observations and personal follow-ups. Dashboard, typed Copilot and linked employee channels use the same services. The selected conversation is the explicit processing scope; there is no background mailbox sweep or new wallet charge. Property distribution continues through the existing disclosure-gated package workflow. Inbox attachments remain unavailable metadata and are never included in a simulated reply.
+Status: **implemented and verified**. Verification passed 413 automated tests, 535 compiled HTTP checks, production build, type/lint checks, desktop/narrow responsive-browser inspection and migration-copy preservation. See [COMMUNICATIONS_WORKFLOW.md](COMMUNICATIONS_WORKFLOW.md) and PROGRESS.md. Includes bounded private inbox search/read tools, a sourced relationship reply that respects saved employee preferences, an exact saved-draft review and simulated receipt, and separately reviewed source-linked observations and personal follow-ups. Dashboard, typed Copilot and linked employee channels use the same services. The selected conversation is the explicit processing scope; there is no background mailbox sweep or new wallet charge. Property distribution continues through the existing disclosure-gated package workflow. Inbox attachments remain unavailable metadata and are never included in a simulated reply.
 
-Add bounded tools to search permitted communications, summarize a thread with sources, identify relevant property information, draft in the employee's saved style, and propose follow-ups/CRM changes. Before any send, bind approval to the exact sender, recipient, body, attachments and current disclosure/media eligibility. A changed draft requires fresh review. Simulated send receipts remain clearly distinguished from actual delivery.
+Add bounded tools to search permitted communications, summarize a thread with sources, identify relevant property information, draft in the employee's saved style, and propose follow-ups/CRM changes. Before any send, bind authority to the exact sender, recipient, body, attachments and current disclosure/media eligibility. Current implementation requires exact employee review. Future eligible routine actions may use C5 standing authorization only after that policy is implemented and tested; it must still bind/check the actual payload and sources. The current simulator requires fresh review of a changed draft. Simulated send receipts remain clearly distinguished from actual delivery.
 
 Acceptance: incoming email → investor/context retrieval → grounded draft → review → simulated send → fictional reply → sourced journey update → follow-up. No unsupported claim of delivery, verified investor intent or automatic CRM approval. Background analysis has a visible processing scope and budget.
 
@@ -85,7 +86,7 @@ Acceptance: incoming email → investor/context retrieval → grounded draft →
 
 ### Phase 4A — Company-workflow demonstration and discovery
 
-Status: **implemented and verified**. The owner requested this phase on October 30, including testing, documentation and commit/push. Verification passed 438 automated tests, 606 compiled HTTP checks, type/lint/build checks, desktop/phone acceptance and disposable migration-copy preservation. See [COMPANY_EMAIL_DEMO.md](COMPANY_EMAIL_DEMO.md) and PROGRESS.md. This is fictional company-email workflow work only; live Salesforce, account authorization, external messages and Render deployment remain separate.
+Status: **implemented and verified**. The owner requested this phase on October 30, including testing, documentation and commit/push. Verification passed 438 automated tests, 606 compiled HTTP checks, type/lint/build checks, desktop/narrow responsive-browser acceptance and disposable migration-copy preservation. See [COMPANY_EMAIL_DEMO.md](COMPANY_EMAIL_DEMO.md) and PROGRESS.md. This is fictional company-email workflow work only; live Salesforce, account authorization, external messages and Render deployment remain separate.
 
 - Add a clearly fictional **Company email · Salesforce workflow** source to the demonstration and make it the primary presentation path. Preserve existing Gmail/Outlook fixtures and saved correspondence; do not relabel existing data as Salesforce-connected.
 - Separate correspondence source from delivery transport and expose explicit capabilities: CRM activity/header lookup, full-body retrieval, thread history, attachments, draft handling, reviewed send and receipt reconciliation. Missing capabilities remain unavailable rather than being inferred from a Salesforce connection.
@@ -98,13 +99,13 @@ Acceptance: the company-email demonstration presents incoming investor correspon
 
 After company approval, implement the confirmed Salesforce activity reader and the approved sending/receiving route. A CRM activity reader alone is not a full inbox connector and does not authorize outbound email. Retain explicit sender identity, company access boundaries, provider/source IDs, deduplication and reconciliation when the same email appears in both Salesforce and an approved mailbox.
 
-Implement delegated consent, server token custody/refresh/revocation, organization/user identity binding, incremental synchronization, retry/limit handling and disconnect controls for the actual selected adapter. Use administrator-approved fictional sandbox/test records before any customer mail. Reviewed outgoing actions retain exact-content approval and the existing property disclosure/media gates; a synced activity or provider acceptance is not proof of delivery to the recipient.
+Implement delegated consent, server token custody/refresh/revocation, organization/user identity binding, incremental synchronization, retry/limit handling and disconnect controls for the actual selected adapter. Use administrator-approved fictional sandbox/test records before any customer mail. Outgoing actions retain current exact-content approval and property disclosure/media gates; a future tested C5 standing policy may cover eligible routine sends without removing payload/source checks. A synced activity or provider acceptance is not proof of delivery to the recipient.
 
 Acceptance: an authorized test message is retrieved through the confirmed company workflow, a reviewed reply uses the approved company sender/route, and provider evidence plus CRM association reconcile without duplicate sends or activity records. Missing body/attachment access is explicit. Revocation stops dependent work. Expand to optional Gmail/Outlook connections afterward or use them as approved company infrastructure when required.
 
 ## Phase 5 — Dedicated Twilio business lines and approved investor SMS
 
-Add administrator-approved number provisioning/assignment, business identity and messaging registration, consent/opt-out records, per-number routing, two-way investor threads, exact-message send approval, delivery/status reconciliation, message allowances and transparent charges. Keep employee assistant ingress separate. Define reassignment, retention and portability before selling a number. Existing personal-phone copy/handoff remains available.
+Add administrator-approved number provisioning/assignment, business identity and messaging registration, consent/opt-out records, per-number routing, two-way investor threads, exact-message authority (current explicit review or a future tested C5 standing policy), delivery/status reconciliation, message allowances and transparent charges. Keep employee assistant ingress separate. Define reassignment, retention and portability before selling a number. Existing personal-phone copy/handoff remains available.
 
 Acceptance: authorized test number sends and receives with trusted receipts, correct investor/employee association, valid consent, STOP handling, no duplicate send, and no cross-tenant route. No cold marketing authority is inferred from a researched phone number. Voice calling and recording are separate later work.
 
@@ -120,7 +121,7 @@ Acceptance: a small approved pilot proves payments/usage reconcile, retries are 
 
 Phase 1: show all available workforce capabilities → compare retail/company payer presentation → inspect $15 included balance → review a sample-work estimate → simulate completion/cancellation → add simulated purchased credit → show history and spend limit.
 
-After Phases 2–3: show one investor relationship across email and text with improved recommendations and employee-approved action. The same scenario must clearly identify fictional sources and simulated delivery until Phases 4–5 receive live acceptance.
+After Phases 2–3: show one investor relationship across email and text with improved recommendations and employee-approved action. The same scenario must clearly identify fictional sources and simulated delivery until the corresponding C7 connections receive live acceptance.
 
 ## Open commercial choices
 
@@ -130,4 +131,4 @@ After Phases 2–3: show one investor relationship across email and text with im
 - Purchased-credit terms, expiration/refund policy and company-funded versus personal top-ups.
 - Measured economics and allowed automation before committing to a final usage price.
 
-These choices do not block the Phase 1 demonstration. No unavailable integration is presented as connected, and no simulated purchase establishes a real financial commitment.
+These choices do not block fictional workflow development; the Phase 1 demonstration already exists. No unavailable integration is presented as connected, and no simulated purchase establishes a real financial commitment.

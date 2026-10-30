@@ -1,3 +1,5 @@
+> **Historical reference.** Preserved from an earlier request or checkpoint. Later owner decisions and [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) govern current scope, status and ordering. Claims, prices, test results and “next” instructions below belong to their original context and do not verify the current working tree or deployed version.
+
 # Phase 3 delivery report
 
 1. **Built:** AI Employee Marketplace, live subscription configuration, My AI Workforce, usage/billing dashboard, organization policies, sponsorship, trials and secured demo billing controls. The $147 example and $179 duplicate-free bundle were verified. Existing Copilot and workflows are extended in place.

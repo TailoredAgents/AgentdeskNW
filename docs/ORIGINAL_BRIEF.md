@@ -1,3 +1,5 @@
+> **Historical reference.** Preserved from an earlier request or checkpoint. Later owner decisions and [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) govern current scope, status and ordering. Claims, prices, test results and “next” instructions below belong to their original context and do not verify the current working tree or deployed version.
+
 # TAILORED AGENTS — AGENTDESK AI WORKFORCE
 ## Master Project Initialization, Architecture & Autonomous Development Instructions
 

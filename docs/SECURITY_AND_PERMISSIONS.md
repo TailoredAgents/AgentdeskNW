@@ -1,5 +1,17 @@
 # Security and permissions
 
+[IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) is the sole authority for completion status and development order. This specification preserves permission contracts and release gates; written source, local tests, real transport acceptance and production authorization are separate evidence.
+
+## Shared work and native access — unaccepted C1/C2 source
+
+The committed durable-work foundation makes jobs private to the employee, rechecks current source/role access on dispatch and replay, and requires an exact employee decision above $1 of fictional whole-job credit usage. Cost approval does not grant CRM or communication authority. Existing live model/provider spending remains separate; C6 must connect actual usage to the same whole-job policy. Auto top-up is planned and cannot approve a job or grant a role.
+
+Uncommitted C1/C2 source adds bounded conversational controls and exact review records before model execution, plus native demonstration pairing and notification infrastructure. Integrated acceptance is incomplete. Models cannot issue cost decisions, ambiguous assent cannot choose an arbitrary job, and changed scope/version requires a fresh review. The native app and employee channels must use the same scoped services as desktop. No mobile approval or real SMS round-trip is claimed accepted by this document.
+
+Phone pairing binds a single-use code from a signed-in fictional employee to a revocable hashed bearer credential. Server-side session validation checks expiry, revocation and current membership/role; a phone cannot choose a tenant/persona or issue another pairing code. Browser cookie/origin protections remain separate from native transport admission. These credentials are for the fictional demonstration and do not satisfy production SSO, company provisioning, departure or device-management requirements. Migrations 022–024 are written but have not passed integrated preservation acceptance; the active local schema-009 database is unchanged.
+
+Phone notifications require per-device opt-in and session ownership. Dispatch rechecks the session, current work/source access and existing notification preferences/quiet hours. Payloads use generic text and an exact job link; current access is checked when that link opens. Queued, accepted, push-service-received, failed and uncertain states do not imply that a phone displayed a notice. Default live sending is disabled, ambiguous sends do not automatically retry, and actual phone delivery remains unverified. Preferred-channel routing and cross-channel coalescing remain later work under C5.
+
 ## Company source access — communications Phase 4A
 
 Fictional company email retains organization/office/employee ownership. CRM access, source body access, local drafting and a simulated sending route are distinct. Header-only sources cannot create body-derived replies, observations or follow-ups; captured activity alone cannot authorize sending. Current capability checks run before mutation replay. Revoked accounts mask message content, identities, source references, drafts, history and relationship context; hidden bodies and drafts cannot match inbox search.
@@ -17,7 +29,7 @@ The workforce offer changes entitlement packaging without widening employee reco
 
 ## Deployment boundary
 
-This build is a **local demonstration**, not a system approved to store real customer data. Fixed demo identities are permitted only with explicit demo configuration and loopback restrictions. A signed session prevents casual client field tampering; it does not substitute for real employee authentication. Production SSO, user lifecycle, access reviews and secure deployment are release gates.
+This build is a **fictional demonstration**, not a system approved to store real customer data. Local demonstration mode requires explicit configuration and loopback restrictions. The separately authorized hosted presentation uses a validated HTTPS origin, invitation PIN/code and signed secure sessions with fictional personas; it is not a real employee tenant. Unaccepted native pairing is also demonstration access. Signed sessions prevent casual client field tampering but do not substitute for managed employee identity. Production SSO, user lifecycle, access reviews and operating controls remain C7 release gates before real company-data ingestion.
 
 ## Authorization model
 
@@ -40,7 +52,7 @@ A model cannot approve an action. Rephrasing a proposal as a completed action do
 
 - Validate bounded JSON inputs with Zod and reject malformed values.
 - Authenticate routes before exposing records or minting paid provider credentials.
-- Use same-origin/request-header checks for state changes and signed HTTP-only session cookies.
+- Use same-origin/request-header checks for browser state changes and signed HTTP-only session cookies; separately validate native bearer transport without relaxing browser controls.
 - Keep permanent API keys in ignored server environment files; never expose a public-prefixed key.
 - Restrict model tools to the approved registry and enforce a bounded loop.
 - Apply rate limits and provider timeouts; use centralized safe error messages.
@@ -48,7 +60,7 @@ A model cannot approve an action. Rephrasing a proposal as a completed action do
 - Treat uploaded text, web content, transcript instructions and model arguments as untrusted data.
 - Escape rendered text and prevent spreadsheet-formula execution when exporting CSV.
 
-Implemented controls and verification evidence must be checked in [PROGRESS](PROGRESS.md). This document is a requirement baseline; it does not assert a completed penetration test or enterprise certification.
+Check current acceptance status in the [implementation roadmap](IMPLEMENTATION_ROADMAP.md) and historical verification evidence in [PROGRESS](PROGRESS.md). This document is a requirement baseline; it does not assert a completed penetration test or enterprise certification.
 
 ## Prompt injection and action integrity
 
@@ -84,7 +96,7 @@ Property access and investor access are separate. Base inventory inherits releas
 
 The local disclosure policy conservatively requires the current demo version. Only managers may enter synthetic disclosure fixtures; a signed fixture requires a `demo:` evidence reference and current version. Expiry is checked when read. This is not signature verification and cannot be used to self-declare a real investor signed. No provider can be treated as active without credentials and verified integration evidence.
 
-Packages are drafts until explicit review; copy/compose handoff records preparation, never delivery. No Gmail, personal SMS, iMessage or Slack send occurs. Paid SMS and Slack dispatch remain unconfigured/planned adapter work. Formal disclosure rules, authoritative signed-document sources, property-release authority and corporate sharing rules remain customer confirmation gates.
+Packages are drafts until explicit review; copy/compose handoff records preparation, never delivery. The package workflow does not send Gmail, personal SMS, iMessage or Slack messages. Employee Copilot SMS/Slack adapters exist separately, with actual account setup and provider round-trip acceptance still pending; they do not authorize investor distribution. Mobile is the primary daily interface, employee SMS is optional, and Slack is retained for future demand. Formal disclosure rules, authoritative signed-document sources, property-release authority and corporate sharing rules remain customer confirmation gates.
 
 ## Structured investor testimony
 

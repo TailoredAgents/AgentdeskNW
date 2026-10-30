@@ -1,6 +1,6 @@
 # Workforce pricing and packages
 
-This is a provisional commercial demonstration. No payment is collected, no card is stored, and no New Western agreement is assumed. The current direction supersedes individual specialist purchases. The complete delivery plan is [COMMUNICATIONS_AND_CREDITS_PLAN](COMMUNICATIONS_AND_CREDITS_PLAN.md).
+This is a provisional commercial demonstration. No payment is collected, no card is stored, and no New Western agreement is assumed. The current direction supersedes individual specialist purchases. [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) is the sole authority for completion status and development order; [COMMUNICATIONS_AND_CREDITS_PLAN.md](COMMUNICATIONS_AND_CREDITS_PLAN.md) preserves the detailed communications and commercial requirements.
 
 ## Current simulated catalog
 
@@ -9,10 +9,13 @@ This is a provisional commercial demonstration. No payment is collected, no card
 | AgentDesk Workforce | $50 | Employee, unless the company sponsors the retail seat; all available role-authorized specialists |
 | AgentDesk Company Seat | $30 | Company; explicitly assigned by a billing administrator under a named demonstration agreement |
 | Included AgentDesk Credits | $15 retail value | Once per billing period on either workforce plan |
+| App and desktop access | Included | No additional access fee; shared AI usage allowances still apply |
 | Employee Copilot SMS access | $19 | Existing optional employee-to-assistant channel; provider setup and usage allowances remain separate |
 | Purchased AgentDesk Credits | $10 / $25 / $50 / $100 | Simulated employee top-up; unused purchased balance rolls over |
 
 The workforce includes all sixteen catalog capabilities, with role/company restrictions and actual implementation readiness enforced separately. Twelve have limited local/demo capabilities; four remain planned. There is no individual specialist purchase needed to coordinate authorized implemented work.
+
+The mobile app is the intended primary everyday interface for iPhone and Android. Its current source is unfinished and awaiting integrated/device acceptance; inclusion in the workforce price does not mean it is published or available in either app store. New Western does not currently use Slack; retain that optional integration without an additional channel-access fee, rather than requiring it for rollout. App, desktop and optional channels share the same usage authority; included app access does not mean unlimited AI or voice use.
 
 The fictional email/investor-text Inbox preview is available without buying or connecting an account. Live email connectors and the dedicated investor-facing Business Line remain **planned**, not purchasable connections in this phase. A $39 business-line price is provisional; allowance, registration, account ownership and actual delivery economics require later acceptance. Whether the first mailbox is included and what extra mailboxes cost remain open choices. Future business-line packaging should remove overlapping employee SMS fees where included.
 
@@ -31,15 +34,15 @@ Examples with no other sponsorship:
 
 ## Credit demonstration
 
-One dollar of AgentDesk Credits represents one dollar of retail usage value, not one dollar of provider cost. The wallet separates included and purchased funds, holds, settled sample spending, spend limits and history. Included credit resets each subscription period; purchased credit rolls over. An estimate must be reviewed before sample spending. The default monthly sample-spending cap is $25 and can be adjusted deliberately.
+One dollar of AgentDesk Credits represents one dollar of retail usage value, not one dollar of provider cost. The wallet separates included and purchased funds, holds, settled sample spending, spend limits and history. Included credit resets each subscription period; purchased credit rolls over. Standalone wallet samples require an estimate review; durable fictional jobs follow the whole-job threshold below. The default monthly sample-spending cap is $25 and can be adjusted deliberately.
 
-The demonstration uses server-owned fictional cost scenarios with a versioned 5× multiplier. These are examples for testing the experience, not measured provider costs or proven margins. It does not debit real AI, research, voice or SMS activity yet. Existing operational allowances/receipts remain separate until real usage settlement is integrated in Phase 6. Ordinary navigation and deterministic task controls do not debit the wallet.
+The demonstration uses server-owned fictional cost scenarios with a versioned 5× multiplier. These are examples for testing the experience, not measured provider costs or proven margins. It does not debit real AI, research, voice or SMS activity yet. Existing operational allowances/receipts remain separate until real usage settlement passes checkpoint C6. Ordinary navigation and deterministic task controls do not debit the wallet.
 
-## Planned spending controls
+## Implemented fictional spending and remaining controls
 
-Jobs above $1 of customer-facing AgentDesk Credit usage require employee approval of a quoted scope and maximum. Aggregate the complete job across agents and tool steps, and pause before a growing job crosses that threshold or its approved maximum. This uses the retail credit value the employee consumes, not the underlying provider cost. Approval applies to included as well as purchased credits.
+The committed durable-work foundation enforces employee approval above $1 of fictional customer-facing AgentDesk Credit usage. It aggregates the complete supported job and synthetic child work, binds approval to a quoted scope and maximum, and pauses before a revised job exceeds its authority. Exactly $1 or less can proceed subject to permissions, balance and spending limits. Approval applies to included as well as purchased credits. The same rule remains a requirement for actual provider spending; that integration is not implemented. Newly written conversational/mobile cost controls remain uncommitted and pending integrated acceptance under C1/C2.
 
-Optional auto top-up will let the authorized payer choose a balance trigger, purchase amount and monthly automatic-purchase cap. It is off until explicitly enabled. A recharge does not approve jobs, increase their maximum or raise the separate monthly usage-spending limit. These are planned requirements; manual demo purchases and the current simulation remain unchanged. See [USAGE_METERING.md](USAGE_METERING.md).
+Optional auto top-up remains planned in C6, separately from the implemented manual simulated purchases. It will let the authorized payer choose a balance trigger, purchase amount and monthly automatic-purchase cap, starting off until explicitly enabled. A recharge does not approve jobs, increase their maximum or raise the separate monthly usage-spending limit. Simulated purchase acceptance must precede verified payment integration. See [USAGE_METERING.md](USAGE_METERING.md).
 
 ## Versions and historical migration
 

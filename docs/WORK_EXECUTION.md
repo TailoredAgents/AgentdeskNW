@@ -1,10 +1,14 @@
-# Durable Copilot work — Phase A1–A3
+# Durable Copilot work — service specification
 
-## Implemented scope
+[IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) is the sole authority for completion status, development order and the next checkpoint. This file defines the durable-work contracts and acceptance boundaries. Historical A1–A3 labels identify the verified foundation in commit `2d16665`; conversational controls belong to canonical C1, native surfaces to C2/C3, specialist depth to C4, proactive messaging to C5, actual spending/top-up to C6 and connected pilot/rollout to C7. They are not a second delivery sequence.
+
+Implementation is frozen while the owner consolidates the completion roadmap. The conversation-control, native-client and notification changes in the working tree are **uncommitted drafts**, not part of the verified `2d16665` baseline or a verified deployment.
+
+## Verified committed foundation
 
 This checkpoint adds a bounded persistent work executor around existing services. An employee can create a role-specific sample job in **Work queue → Copilot jobs**, inspect its exact steps and simulated estimate, approve or deny an expensive job, pause/resume/cancel, and return to its saved results. A configured text Copilot can discover available capabilities and compose its own supported plan. The local fallback offers narrower explicitly described starter jobs; it is not equivalent to model reasoning.
 
-The worker performs local deterministic services and fictional research only. It does not run additional reasoning-model calls, contact investors, send mail/SMS, change CRM, purchase credits or connect company systems. The existing live text request remains separately metered; the new simulated $1 rule does not yet protect real provider spending. Real usage admission remains E5a. Automatic top-up remains A5/E5b, not part of this checkpoint.
+The worker performs local deterministic services and fictional research only. It does not run additional reasoning-model calls, contact investors, send mail/SMS, change CRM, purchase credits or connect company systems. The existing live text request remains separately metered; the simulated $1 rule does not yet protect real provider spending. Actual usage admission and optional automatic top-up are C6 requirements, not completed by this foundation.
 
 The catalog still contains 2 locally ready, 10 demo and 4 planned specialists. These workflows demonstrate shared execution and cost authority, not completion of the 16-specialist depth plan or proven expert-level reasoning.
 
@@ -26,7 +30,7 @@ The server-owned catalog in work-capabilities.ts declares input schemas, output 
 
 Input references may select a field inside a completed dependency's structured result. The server validates reference paths and concrete inputs again at dispatch. Models cannot supply tenant/role overrides, arbitrary code, private credentials, arbitrary tools or prices. Cycles, unknown capabilities, malformed inputs and undeclared/prototype-path references fail validation. Research must follow existing-buyer matching for the same property and include a result-collection step. Changed property facts require refreshing the shortlist before starting research.
 
-A work run contains versioned instructions, plans, steps, states, events and actual outputs. Completed steps and their immutable receipts survive plan revisions; revision cannot remove, change or silently repeat them. The service supports versioned revision of remaining work. The present UI exposes pause/resume/cancel and exact cost decisions; a convenient revision editor and cross-channel control interpretation are A4 work.
+A work run contains versioned instructions, plans, steps, states, events and actual outputs. Completed steps and their immutable receipts survive plan revisions; revision cannot remove, change or silently repeat them. The service supports versioned revision of remaining work. The committed UI exposes pause/resume/cancel and exact cost decisions; broader editing remains planned. The frozen C1 draft adds bounded conversational control and dispositions-starter corrections, described below; it has not closed C1 acceptance.
 
 ## Persistence, recovery and visibility
 
@@ -58,14 +62,27 @@ These are fictional sample prices, not provider invoices or a measured AI charge
 - POST /api/work creates a server-owned role starter from a stable request ID and selected records.
 - POST /api/work/:id/control, /decision and /revise require employee session, expected version and stable event key; cost decisions also require the exact quote ID. The current public revision route rebuilds a validated starter plan; the service supports general typed revisions.
 - Typed Copilot has work_capabilities, start_work and work_status. New jobs attach to the current employee conversation. The model tool's closed schema carries capability input JSON as a string, then validates the decoded object against that capability's typed server schema.
-- Work artifacts and ?work= links open the exact job. Linked employee SMS/Slack use the same typed Copilot service, but job controls/cost approval currently use the dashboard. Real account delivery acceptance and A4's direct channel approvals remain pending. Voice excludes these new work tools.
+- Work artifacts and ?work= links open the exact job. Linked employee SMS/Slack use the same typed Copilot service. The frozen C1 draft adds bounded actual-employee job commands and exact cost review codes to that dispatcher; real account delivery acceptance remains pending. Its long reviews require the full app view, and short channel approvals require the reviewed message's recorded acceptance/delivery before the decision. Live voice excludes these work tools and does not have conversational job-control parity.
 
 The existing Responses integration was checked against [official function-calling documentation](https://developers.openai.com/api/docs/guides/function-calling#strict-mode). Strict tool envelopes keep every property required and disallow undeclared properties; server validation and authority remain independent of the model output. No model or SDK migration was performed.
 
-## Verification and next work
+## Verification and acceptance boundaries
 
 Run `npm run build` then `npm run test:work` for the isolated compiled HTTP/worker suite. It requires its own disposable database and rejects `SMOKE_BASE_URL`; it never operates on the active demonstration database.
 
-Acceptance includes unit/service tests, mocked model planning/replay, compiled HTTP checks, a real local worker processing fictional work, source/role/cost failures, migration-copy preservation and desktop/phone walkthroughs. Actual results and remaining limitations belong in PROGRESS.md; passing local tests does not establish live model quality, real channel delivery or production readiness.
+Acceptance includes unit/service tests, mocked model planning/replay, compiled HTTP checks, a real local worker processing fictional work, source/role/cost failures, migration-copy preservation and desktop/narrow responsive-browser walkthroughs. [PROGRESS.md](PROGRESS.md) records historical verification evidence; the canonical roadmap owns current completion status. Passing local tests does not establish live model quality, real channel delivery or production readiness.
 
-Next are A4 channel continuation/revision controls, A5 opt-in automatic top-up simulation and A6 expanded all-role acceptance. Phase B develops source/versioned methods and stronger specialist judgment; E5a later connects actual provider spending to the new job authority. The UI starter scenarios in this checkpoint do not finish those later packages.
+Outstanding acceptance includes general missing-information continuation and broader corrections (C1/C3), native-device behavior (C2/C3), source/versioned methods and useful workflows across all three roles (C4), proactive/SMS behavior (C5), actual spending and optional top-up (C6), and approved connections/rollout (C7). The canonical roadmap sets their order and dependencies; this specification does not authorize implementation to resume.
+
+
+## Frozen draft: shared conversational work controls
+
+In the uncommitted C1 draft, saved jobs have short W references in Copilot output. Actual authenticated employee messages are interpreted before any model call; the model has no cost-approval tool. Supported examples include `Show my Copilot jobs`, `Review job W1234ABCD`, `Pause job W1234ABCD`, `Resume job W1234ABCD`, `Cancel job W1234ABCD`, `Remove research from job W1234ABCD` and `Change investor for job W1234ABCD to Mike Bennett`. Corrections are restricted to reconstructable dispositions starter plans and preserve completed steps; unsupported edits explain what remains necessary. This is not arbitrary natural-language plan revision.
+
+A cost review lists actual step targets, scope, estimate/maximum, prior spend and expiry. `Approve A1234ABCD` or `Deny A1234ABCD` acts only on that actor/conversation's exact immutable review, job version, plan and quote. Ambiguous assent is not a decision. Reviews from SMS/Slack must have confirmed reply delivery before the decision's received time; a long scope directs the employee to full app review instead of issuing a truncated authority token. Dashboard/native buttons continue calling the same versioned services. Fictional costs remain distinct from actual provider metering.
+
+The draft also supports short references such as `Pause that job` when the latest authorized assistant message contains exactly one current structured job reference and no competing task. It rechecks scope, plan version and channel delivery timing. **Pending acceptance issue:** when a work artifact is withheld because access changed, a bare command such as `Cancel it` can fall through to the older personal-task handler. That path must ask for fresh selection before C1 is accepted. No fix was applied after the implementation freeze.
+
+Draft migration 022 adds scoped conversation command receipts and immutable exact-review records. Mobile transport and notifications are subordinate specifications in [MOBILE_DELIVERY_PLAN.md](MOBILE_DELIVERY_PLAN.md); their working-tree changes are also frozen and uncommitted. New device credentials do not grant a role or permit another employee's jobs. Reviewed native dictation uses the typed command path, not the current live-voice tool path.
+
+Before the freeze, 22 new conversation-control tests and 33 existing conversation-action/work-Copilot tests passed together, and targeted lint passed. This focused evidence does not close integrated, migration, channel or device acceptance. Use the roadmap for the outstanding validation gate and release decision.

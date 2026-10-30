@@ -1,137 +1,83 @@
-# Product requirements
+# AgentDesk NW — product requirements
 
-## Company-wide product scope
+Current requirements, reconciled October 30, 2026. [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) alone defines delivery status, order and completion gates. This document describes the target; a requirement is not a claim of implementation. [PROGRESS.md](PROGRESS.md) supplies evidence and [MASTER_PLAN.md](../MASTER_PLAN.md) the confirmed direction.
 
-AgentDesk NW is intended for dispositions, acquisitions and management across New Western. Each is a primary audience requiring a useful role-specific workspace, Copilot behavior, specialist depth and complete workflows. Dispositions is expected to have more specialists and greater depth in its workflows, without becoming the product's central audience. Shared platform capabilities and cross-role handoffs must serve all three.
+## Users and outcome
 
-Alex's current discovery input represents dispositions work. Acquisitions and management require their own discovery, priorities and acceptance scenarios. This is the target product scope, not a claim that all role workflows are already implemented. The phased plan must identify deliverables and readiness for each role rather than treating completion of the largest role's workflow as company-wide readiness.
+Dispositions, acquisitions and management are primary audiences. Each needs a useful role-specific workspace, specialist methods, permitted information and complete daily workflows. Dispositions receives greater specialist coverage where warranted; it is not the product's sole center. Alex's examples represent dispositions and require separate acquisitions/management discovery and company-policy confirmation.
 
-## Planned full-vision acceptance
-
-The [implementation roadmap](IMPLEMENTATION_ROADMAP.md) defines the active build sequence and separate fictional-workflow, connected-pilot and company-rollout gates. New requirements are durable composable Copilot work across channels; source/versioned specialist knowledge and reviewable learning; complete workflows for all three roles and all 16 specialists; proactive briefings/watchers; configurable standing action authority; and finished role-specific onboarding/work controls. These capabilities remain planned beyond their existing foundations.
-
-Before an entire job costs more than $1 in customer-facing credits, show its estimate and maximum and ask the employee to approve or deny. Aggregate all delegated steps and pause before growing beyond the threshold or approved maximum. Optional payer-enabled auto top-up has a balance trigger, purchase amount and monthly purchase cap; it never approves a costly job. See [USAGE_METERING.md](USAGE_METERING.md) for boundaries, including planning costs, concurrent reservations and simulated-before-live acceptance. Current live provider billing does not yet enforce these new requirements.
-
-## Implemented communications Phase 4A — fictional company email
-
-The primary Inbox entry now opens fictional Company email · Salesforce, reflecting Alex’s reported workflow. Existing Gmail, Outlook and investor-text accounts remain optional examples with original records and drafts preserved. Each account declares its source coverage and available operations. Full correspondence supports the existing reviewed workflow; captured CRM activity permits reading/local drafts without sending; headers-only records cannot establish message content, investor intent, a reply or a sourced journey change.
-
-The demonstration correlates two source records to one message and supports access pause/restoration. Revoked content is hidden from reads, search, cached tool results and prior Copilot history; mutations stop and restored access requires fresh review. Typed Copilot can find company email explicitly and open its exact thread; unqualified inbox requests can include optional sources. See [COMPANY_EMAIL_DEMO.md](COMPANY_EMAIL_DEMO.md) for acceptance behavior and [PROGRESS.md](PROGRESS.md) for verification. Live Phase 4B still requires approved source, mailbox and sending capability discovery in [SALESFORCE_INTEGRATION.md](SALESFORCE_INTEGRATION.md).
-
-## Communications Phase 3 — useful, reviewed inbox work
-
-An employee can use multiple fictional email and investor-text accounts through the private unified Inbox. Copilot searches permitted correspondence and prepares a sourced relationship reply using current investor context and saved employee preferences. The employee reviews exact sender, recipient, subject and body before simulated sending. Only current generated relationship replies are eligible for this bounded simulator; custom drafts remain saved and property distribution uses existing Deal packages checks. An arriving fictional reply can become a separately reviewed employee-reported journey observation and personal follow-up. Preserve privacy, unsaved edits, versions, replay receipts and clear source/simulation labels. Live mailbox sync, actual investor delivery and real wallet settlement remain later phases. See COMMUNICATIONS_WORKFLOW.md for the acceptance sequence and limits.
-
-## Communications and credits update — October 29, 2026
-
-The owner-approved communications and credits plan supersedes individual specialist shopping: one workforce subscription, included retail credits, optional communication services and the private unified email/investor-text workspace. Phase 1 established the workforce and simulated wallet foundation; the later implemented communications phases are described above. Preserve private assistant commands separately from investor correspondence; source relationship knowledge and review outbound/CRM changes. All customer-provider connectivity and actual payment collection remain gated future acceptance.
-
-
-## Phase 2 operational acceptance — local implementation
-
-Discovery source and unverified policy questions are recorded in [NEW_WESTERN_DISCOVERY](NEW_WESTERN_DISCOVERY.md). The same AgentDesk application and sixteen-specialist catalog now support the following connected work:
-
-- Private investor intelligence with separately reviewed, versioned buy boxes, source statements, local synchronization status, disclosure evidence and relationship history. Shared read access does not grant mutation rights. Managers operate under an explicit demo policy, not presumed corporate authority.
-- Versioned property releases with explicit employee recipients, idempotent event keys, supplied economics/media and configurable transaction descriptions. Shared inventory never broadens buyer access.
-- A source-grounded deal composer for email, personal text, iMessage, Slack and SMS formats. A signed current disclosure and acceptable media access are prerequisites. The implemented outcome is reviewed copy handoff; every package remains `not_sent`.
-- Typed post-call recaps suited to personal-phone work, plus the existing authorized transcript path. Extracted fields require review, ambiguous investor/property references are resolved by the employee, and follow-up creation is explicit. Multiple strategies are not silently flattened into one inferred buy box.
-- A dynamically ranked calling queue, separate match/readiness scores, reasons, briefings, dismiss/reorder controls and recorded outcomes. No call or external contact is placed.
-- Enhanced existing-buyer matching with best distinct buy box, conflicts and missingness; external Investor Hunter remains a separate synthetic research pipeline whose strongest weights are property-type and purchase-price similarity.
-
-Production evidence ingestion, real Salesforce synchronization, disclosure-provider proof, Drive permission verification, licensed research, live delivery and customer-approved policy remain integration gates. Desktop/mobile browser checks and exact test results belong in [PROGRESS](PROGRESS.md), not capability promises.
-
-Status: implementation baseline, October 29, 2026. Verified completion is tracked separately in [PROGRESS](PROGRESS.md).
-
-## Users and access
-
-| Role | Primary work | Initial permission boundary |
+| Role | Intended daily work | Required boundary |
 | --- | --- | --- |
-| Dispositions | Investors, research, qualification, follow-up and marketing preparation | Own office and assigned personal records |
-| Acquisitions | Wholesaler relationships, submitted property opportunities, diligence and handoff preparation | Own office and assigned personal work; unavailable specialist operations stay unavailable |
-| Manager | Office priorities, authorized review and operational overview | Own organization and office; no cross-tenant elevation |
+| Dispositions | Investor relationships, existing-buyer matching, optional external research, qualification, follow-up, marketing and transaction coordination | Permitted relationships, inventory and correspondence; truthful source/delivery state |
+| Acquisitions | Wholesaler submissions, opportunity revisions, screening, valuation/diligence assumptions and handoffs | Authorized opportunity/source data and decisions; no assumed direct-seller or offer authority |
+| Management | Team priorities, pipeline/handoff exceptions, assignments and resolution | Defined metrics and authorized oversight; no automatic access to private assistant memory/mailboxes |
 
-A platform operator role, tenant administrators, fine-grained entitlement configuration and invitation provisioning are future features. The local role selector uses fixed fictional users; it is not an authorization model for a deployed product.
+## One useful master assistant
 
-## Core acceptance requirements
+Employees state desired outcomes in ordinary language. Copilot retrieves current permitted context, composes capabilities, delegates focused specialist work, verifies results and persists useful artifacts. A separate model persona is not required for each specialist. Calculations and mutations use tested services; reasoning handles interpretation, planning, ambiguity and synthesis.
 
-### Copilot
+Support useful questions and multi-step tasks without forcing a fixed menu. The same server services power UI, tools and workers. Unsupported tasks identify the missing capability or essential information. A tool failure, prepared draft or queued message must never become a claim of completed external action.
 
-- A single conversation surface retains messages across reloads.
-- Each request runs with an authenticated employee context, permitted records, history, task/job context and guidance preference.
-- Model requests dispatch typed functions, which invoke the same server services used by the UI.
-- Multiple specialists can contribute to one response, but Copilot owns the response.
-- Result cards link to actual jobs/actions/tasks; success requires a service result.
-- A missing API key produces an explicitly local tool experience, not a fake model response.
-- Ambiguous record references require selection or clarification before consequential work.
+Work survives app closure and service restart. Preserve desired outcome, current plan/version, dependencies, sources, results, receipts, permissions and cost state. Employees can inspect, pause, resume, cancel, change instructions, answer questions and approve/deny exact costs/actions. Changed sources or instructions invalidate obsolete pending work. Retry/recovery must not repeat completed effects or blindly resend an uncertain operation.
 
-### Investor Hunter
+## App and channel experience
 
-- Accept property address, county, price, strategy and requested count.
-- Start a persistent job with states queued, running, awaiting input, completed, failed and canceled.
-- Separate externally sourced discovery from existing CRM buyer matching.
-- Store ranking rationale, factor contributions, source provenance, synthetic flag, contact status and duplicate classification.
-- A job may return fewer candidates than requested; never fill a quota with invented verified results.
-- Permit cancellation, safe retry, review/filter/sort, CSV export and proposed import.
-- Exclude known duplicates from unreviewed new-record creation; unresolved identities require human review.
-- Fixture mode is visible at the job, evidence and export level.
+Native iPhone and Android are the primary daily surfaces; the detailed desktop workspace remains supported. Mixed devices, mostly iPhone, and no current Slack usage are owner-reported facts. App access is included. Optional employee-to-Copilot SMS is provisionally $19/month; Slack is retained for later demand.
 
-### Call notes and next steps
+The Agent conversation, work history, memory, permissions and approval state continue across app/web and configured messaging. A request can start in one channel and finish in another without repeating context or duplicating work. SMS can complete ordinary requests and unambiguous decisions; a focused app review handles rich recipients/files/content when needed.
 
-- Accept manual notes and text transcript upload. Audio recording/transcription providers are a later integration.
-- Return source excerpts, summary, parties, criteria, questions, objections, commitments, missing information and proposed follow-up.
-- Employee-supplied transcript content is not independently verified fact.
-- Keep suggested tasks distinct from completed tasks. A transcript promise is not proof the promise was fulfilled.
-- The user selects the intended investor, reviews the proposed note and approves a specific action before the CRM mutation.
-- Contextual guidance compares known qualification fields with a clearly labeled baseline checklist. It must not impersonate an approved New Western SOP.
+The initial native client requires individual session handling, Agent text, reviewed microphone dictation, saved Work, notifications and result links. Add Inbox, draft review, approvals and entity links to finish phone workflows. Dictation is text input into the same command system; full live voice is a separate capability requiring equivalent tools, continuity, turn-taking/interruption, review and actual audio acceptance. Exports are not installed-phone proof.
 
-### Daily work and notifications
+Use light professional surfaces, an ink sidebar and restrained green accents. Complete role homes/onboarding and consistent typography, spacing, tables/forms, accessibility, loading/empty/error/disconnected states. Preserve unsaved drafts and make cost, progress and essential missing information clear without exposing internal tool traces.
 
-- Show open tasks, pending approvals, job statuses and relevant local records.
-- Create a dated reminder, complete it, and retain both changes across reloads.
-- Notify on meaningful events with deduplication; respect user settings and quiet-hour policy when implemented.
-- Background work must use a worker/scheduler rather than an always-running model loop.
-- Browser closure does not delete jobs; execution still requires a running local server or worker.
+## Memory, relationships and specialist depth
 
-### Live voice
+Keep personal preferences distinct from company facts and private inbox content. Employees can inspect/correct/forget preferences. Learning suggestions from repeated edits require review and must improve later relevant drafts; an exception must not become a permanent rule.
 
-- Display explicit unavailable, connecting, connected and failed states.
-- Obtain microphone permission after a user gesture.
-- Keep permanent credentials off the browser; create short-lived credentials on the authenticated server.
-- Use full duplex audio, model turn-taking and interruption support.
-- Execute tools through the same authorized backend, retaining approval boundaries.
-- Preserve conversation continuity and usage records; distinguish measured usage from estimates.
-- Do not claim acceptance until a real credential-backed voice interaction succeeds.
+Link contacts/investors/wholesalers, multiple buy boxes, opportunities, properties, deals, parties, document versions, statements, dates, commitments and work. Preserve provenance, uncertainty, corrections and differing evidence. Newer testimony does not silently rewrite approved CRM criteria. A task marked done does not prove a promise, deposit, signature or closing occurred.
 
-### Catalog and navigation
+All sixteen specialists require declared tasks, appropriate context/tools, source/versioned methods, excellent-output examples, uncertainty handling, recovery and quality cases. Complete the matrix in [AI_EMPLOYEES.md](AI_EMPLOYEES.md). Names/readiness labels alone prove neither expertise nor advantage over generic connected agents.
 
-- All 16 employees show purpose, category, role availability and truthful status.
-- Dashboard, Copilot, research, notes, queue, investors/deals, notifications and settings are navigable.
-- Role-restricted management information must be restricted by the backend, not only by hidden navigation.
-- Layouts support desktop and narrow mobile screens; forms have visible labels, keyboard focus, validation and error recovery.
+## Role workflows
 
-## Nonfunctional requirements
+Dispositions: current property → permitted existing CRM buyers first → match distinct buy boxes and relationship concerns → appropriate personalized draft → deliberate optional extra-cost Hunter research → reply/commitment tracking → sourced agreement/deposit milestone → title-opening preparation → acknowledgment/issues/clearance/signing/funding/closing tracked separately. Validate the official reservation/stop-marketing rule. Include attorney, investor, acquisition agent and lender only when applicable, using actual authorized current documents and contacts.
 
-Validate at both HTTP and tool boundaries. Keep server-only integration secrets. Scope all queries by organization and office, and personal data by actor ownership. Record mutations and approvals in an audit log. Bound model tool loops, provider request duration, input size and request frequency. Retry only recoverable operations; retain terminal failures and actionable explanations.
+Acquisitions: wholesaler submission → duplicate/revision handling → missing facts → sourced comparables/repair/diligence scenarios → supported questions/recommendation → authorized versioned release/handoff → acknowledgment → changed/withdrawn information propagated. No invented comps, unsupported valuation confidence or automatic offer authority.
 
-The initial local database is persistent and relational. Production requires stronger identity, backup/restore, encrypted token storage, retention policy, tenant database controls, observability and distributed execution. The presence of interfaces does not establish these controls.
+Management: scoped workload/pipeline → meaningful metrics and denominators → sourced exception → authorized owner/action → outcome → period comparison. Retries and duplicates are not productivity. Changes in assignment/access must affect pending work and visibility.
 
-## Data truth labels
+Shared notes, workflow guidance, CRM, documents, deal analysis and coaching support all permitted roles within normal work. Role scenarios remain provisional until the corresponding practitioners review them.
 
-| Label | Meaning |
-| --- | --- |
-| Synthetic/demo | Fictional demonstration fixture; unusable as a real lead or source |
-| Employee transcript | Employee-supplied information, retained with source excerpts |
-| Verified source | Data associated with an accessible source and verification process; not available merely because a model says so |
-| Proposed | Prepared for human review; no action has occurred |
-| Executed | Domain service confirmed the mutation and wrote an execution record |
-| Planned | Catalog/design exists; operation is not available |
+## Communications and sources
 
-## Assumptions requiring validation
+Separate investor email/business texts from private employee Copilot messages. Investor correspondence is data, never assistant instructions. Default to the company's Salesforce email workflow; discover actual mailbox/body/history/file coverage, sender and delivery transport with its administrator. Retain optional external Gmail/Outlook connectors without silently substituting personal email for unavailable company access.
 
-No actual Salesforce schema, office membership list, SOPs, provider contract, communication policy or billing agreement has been supplied. Proposed pricing and national seat estimates remain hypotheses. Product capability is not evidence of permission to use a customer system.
+Search/read permitted correspondence; associate investor/property/deal with evidence and resolve ambiguity; draft in the employee's style; support edits, exact sender/recipients/CC, current document files and relevant eligibility checks. Preserve distinct draft, approved, queued, provider-accepted, delivered and uncertain states. Provider acceptance is not recipient delivery. Revocation masks protected history and invalidates reviews; restoration requires fresh access/review.
 
-## Investor Relationship Manager depth — first checkpoint
+Current fictional inbox behavior supports generated relationship-reply simulation only; general edited sending and real attachments are target requirements, not working promises. Dedicated investor-facing Twilio numbers require ownership, consent/opt-out, routing, allowance/cost, delivery and employee-departure handling. They remain separate from employee SMS access. Calling/recording requires a separately scoped integration.
 
-Employees must be able to inspect recorded buying criteria beside sourced reported changes; preserve independent buy boxes; distinguish original statement dates from capture time; explicitly correct testimony without erasing history; see differing values and provisional reconfirmation flags; and receive a clarification next step from the same record in dashboard/Copilot/inbox. Reports require deliberate review and preserve canonical CRM approval boundaries. This is implemented for budget, geography, strategy, financing, renovation tolerance, timing and contact preference.
+Research differentiates existing CRM matching from external discovery. Keep sources, contact uncertainty, freshness and duplicate classes; permit fewer results than requested rather than fabricated verified leads. Property packages retain current release/disclosure/media checks, and copy handoff never means sent.
 
-The complete seven-stage specialist plan is RELATIONSHIP_SPECIALIST_PLAN.md. The first checkpoint's engineering benchmark and limitations are in RELATIONSHIP_QUALITY.md. No expert-agent, passive-learning, customer-effectiveness or generic-AI superiority claim is established by passing these application cases.
+## Proactivity and autonomy
+
+Support chosen briefing topics/times/timezone/channel, including three daily updates, reminders, reply/deal/commitment watchers and meaningful change summaries. Deduplicate across notification channels, honor quiet hours and recover from downtime without floods. Employees can change/stop subscriptions and continue the relevant job from a notification.
+
+Scoped standing authorization can cover routine actions with actor/account/contact/deal/content/frequency/expiry and revocation. Ask only for essential missing facts or decisions outside that authority. Current exact approvals remain until a tested replacement exists; an AI response cannot grant authority.
+
+## Spending and commercial requirements
+
+One workforce plan covers implemented role-authorized specialists. Separate entitlement, role permission, implementation readiness, provider connectivity and spend allowance. Planned specialists stay unavailable after simulated subscription selection. Prices/allowances are provisional versioned records; company seats require explicit assignment and separate payer authority.
+
+Before the whole assignment exceeds $1 in customer-facing credits, quote scope/estimate/maximum and request approve/deny. Include planning, delegated tools/research, retries and verification. Pause before growth exceeds $1 or the approved maximum. Do not split work to evade approval. A schedule, standing permission or large wallet balance does not waive it.
+
+Optional payer-enabled top-up has a trigger, amount and monthly purchase cap. Funding never approves work. Only confirmed, replay-safe purchases grant funds; unknown outcomes reconcile. Actual provider receipts/rates, authorized partial settlement, unresolved holds, refunds and separate company/personal payers must work before real billing. The verified fictional job gate does not enforce the separate current live provider path. Exact contracts: [USAGE_METERING.md](USAGE_METERING.md).
+
+## Identity, operations and acceptance
+
+Validate requests at HTTP/tool/domain boundaries. Derive employee/organization/role from trusted identity and enforce current ownership/source permissions on reads, writes, dispatch and replay. Keep provider secrets server-side, retrieved content non-authoritative, actions idempotent and audit records useful.
+
+Real company access requires managed identity/provisioning/revocation, approved connections, production persistence, supervised workers, retention, backup/restore, monitoring and support. Presentation PINs and fictional device pairing are not production identity. Preserve previous data through additive, migration-tested changes.
+
+Evaluate declared specialist scopes and all three role journeys using varied/paraphrased requests, missing/conflicting/stale facts, corrections, denied costs/actions, tool failures and cross-channel/restart continuation. Separate deterministic correctness from model judgment and employee usefulness. Compare with generic connected agents under equivalent access/context/budget before claiming superiority. Measure successful useful work, employee edits, time/cost and repeat use, not only message count.
+
+The roadmap separately gates fictional completion, connected pilot and company rollout. Company policies, acquisitions/management methods, payer terms and actual integration capabilities remain inputs to validate; no company agreement, official endorsement or completed enterprise rollout is implied.

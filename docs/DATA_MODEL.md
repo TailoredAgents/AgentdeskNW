@@ -1,5 +1,21 @@
 # Data model
 
+[IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) is the sole authority for completion status and development order. This document records schema contracts and historical preservation evidence, not permission to apply migrations to the active database.
+
+## Written shared-work/mobile migrations — unaccepted C1/C2 source
+
+Migrations 022–024 and their services exist in the uncommitted working tree. Integrated HTTP acceptance and migration-preservation acceptance for this group remain incomplete; writing or registering a migration does not establish that it was applied to a deployed or active database. The active local database remains at schema 009 and was not changed by this work. Prior copy-based migration evidence below does not validate these new migrations.
+
+| Migration | Written schema and intended contract |
+| --- | --- |
+| 022 — shared work commands | `work_conversation_reviews` binds an immutable review code to the employee/conversation, run and plan versions, exact quote/maximum, channel, expiry and review result. `work_conversation_commands` retains scoped request identity/hash and immutable command results for replay. Both reference membership and conversation; reviews also reference the run. Service checks enforce their shared scope. |
+| 023 — demonstration phone sessions | `mobile_pairings` stores scoped single-use code hashes and expiry/consumption; `mobile_sessions` stores the membership/role snapshot, device name, hashed bearer credential, lifetime and revocation; `mobile_pair_rate_limits` bounds pairing attempts. Session validation rechecks current membership and role. These are demonstration credentials, not production SSO or company provisioning. |
+| 024 — phone notification foundation | `mobile_push_devices` binds one opt-in registration to a mobile session and employee, with unique nullable Expo token, platform and enablement timestamps. `mobile_push_outbox` binds a notice to device/run/plan/kind, with unique deduplication and ticket keys, delivery state and reconciliation timestamps. Live sending defaults off. |
+
+Phone notices use generic wording and an exact job link; opening the job still requires current scope. Queue state, Expo acceptance and a push-service receipt remain different from a displayed phone notification. Interrupted or ambiguous sends remain unresolved instead of retrying automatically. Per-device opt-in and existing quiet hours do not yet provide preferred-channel routing, cross-SMS/push coalescing or employee-specific timezones. No physical-device push acceptance or real delivery is established by these tables.
+
+The shared contracts are in `src/lib/work-conversation-contracts.ts`, `src/lib/mobile-contracts.ts` and `src/lib/mobile-notification-contracts.ts`. All phone transport and worker access reuse the existing server services; no separate phone CRM, conversation store or spendable wallet is introduced. Full native Work/Inbox, proactive/SMS acceptance and production identity/operations retain their separate roadmap gates.
+
 ## Durable work and fictional job budgets — migrations 020/021
 
 Migration 020 adds five tables: `work_runs`, `work_run_plans`, `work_run_events`, `work_run_commands` and `work_step_receipts`. A run binds an organization/office/employee, stable request ID/hash, current version and plan version, status, lease token/expiry/step, timestamps and validated JSON. Plans retain immutable instruction/step versions. Events retain progress; commands bind expected-version employee mutations to scoped replay keys. One immutable receipt per run/step prevents a completed local effect from being executed again. Child records reference their parent run; service reads and every dispatch enforce that run's private scope. An office manager cannot inspect another employee's private jobs.

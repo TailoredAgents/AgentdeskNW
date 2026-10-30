@@ -1,3 +1,5 @@
+> **Historical reference.** Preserved from an earlier request or checkpoint. Later owner decisions and [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) govern current scope, status and ordering. Claims, prices, test results and “next” instructions below belong to their original context and do not verify the current working tree or deployed version.
+
 # Phase 4 pre-implementation audit
 
 Starting source checkpoint: `2701e3ad70bbd10e20a97f6fe0692ad3e1161ef3`. The checkout was clean before this directive was saved. The existing database and Phase 1–3 backups are retained.

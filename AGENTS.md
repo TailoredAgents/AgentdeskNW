@@ -1,6 +1,6 @@
 # AgentDesk engineering instructions
 
-Read `docs/ORIGINAL_BRIEF.md`, `MASTER_PLAN.md`, and `docs/PROGRESS.md` before material changes. Use `docs/IMPLEMENTATION_ROADMAP.md` for the current development sequence; relationship and communications phases are subordinate workstreams, not competing next-step instructions. This is a local concept demonstration for a prospective customer; never imply New Western endorsement or production access.
+Read `docs/IMPLEMENTATION_ROADMAP.md`, `MASTER_PLAN.md`, and the latest `docs/PROGRESS.md` entries before material changes. The roadmap is the only authority for current status, sequence, dependencies and next work; `docs/README.md` assigns other documents their purposes. Original briefs and historical progress are reference material, not current scheduling instructions. Update these assigned sources when direction changes; do not create competing roadmaps. This is a local concept demonstration for a prospective customer; never imply New Western endorsement or production access.
 
 - Stack: Next.js App Router, React, strict TypeScript, Zod, SQLite via better-sqlite3. A modular Node monolith; migrate persistence to PostgreSQL before multi-instance production.
 - `src/lib/contracts.ts` is the shared browser/server contract. `src/server/` owns persistence, permissions and domain services. Route handlers authenticate, validate and invoke services. Never import server modules into client components.
@@ -17,7 +17,8 @@ Read `docs/ORIGINAL_BRIEF.md`, `MASTER_PLAN.md`, and `docs/PROGRESS.md` before m
 
 - Follow `docs/WORK_EXECUTION.md`. UI, model tools and workers use the same capability, scope and whole-job budget services. Never accept caller prices or split one assignment into smaller jobs to avoid approval above $1.
 - Preserve immutable plans, original context references, step receipts and partial settlement. Recheck current sources on dispatch, display and cached conversation/tool replay; a revised plan must not expose a revoked source from an earlier version.
-- Current job charges are fictional samples. The worker performs local/synthetic services only. Live model usage remains separate; automatic top-up and full channel controls are not implemented. Keep those distinctions visible.
+- The native `mobile/` client uses an independent Expo dependency graph; keep it excluded from the Next.js TS/lint build. Phone access pairs the existing fictional employee, never caller-selected roles. Device credentials and push registration must recheck current ownership/revocation. Native exports are not physical-device acceptance.
+- Current job charges are fictional samples. The worker performs local/synthetic services only. Live model usage remains separate; automatic top-up and broad plan editing remain pending. New bounded conversational job controls and native phone infrastructure are a frozen, uncommitted draft pending integrated acceptance; consult the roadmap before resuming them. Keep those distinctions visible.
 
 ## Communications inbox rules
 

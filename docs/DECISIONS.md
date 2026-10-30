@@ -1,5 +1,19 @@
 # Architecture decisions
 
+
+## October 30, 2026 — Consolidated direction and documentation authority
+
+The owner asked to pause further implementation and reconcile the full conversation, existing source and conflicting documentation. Keep IMPLEMENTATION_ROADMAP.md as the only status/order/next-work authority, with seven current checkpoints C1–C7. MASTER_PLAN is a stable product brief; domain plans are specifications; PROGRESS and original phase material remain dated evidence/reference. The documentation reset does not resume development or upgrade unfinished code.
+
+Confirmed direction: a company-wide platform for dispositions, acquisitions and management; one capable master Copilot; all sixteen specialist scopes deepened and evaluated; native iPhone/Android primary (mixed phones, mostly iPhone), desktop for detailed work, included app access, optional provisional $19 employee SMS, retained lower-priority Slack because the company does not currently use it. This supersedes ADR-014's old Slack-next priority. Neither developer-store account exists yet; installed-device acceptance has not been performed.
+
+Keep one employee conversation/work authority across channels, distinct investor correspondence, Salesforce-first company-email discovery, optional external email and separate investor business numbers. Preserve the whole-job >$1 approval decision and optional auto-top-up requirement; funding never approves a job. Fictional workflows continue independently of company approval when development resumes; actual usage protection precedes broader live paid autonomy, and production identity/operations precede real company data.
+
+Verified runtime remains `2d16665`; later native/shared-controls/notification work is frozen, uncommitted and unpublished. Commit/push of documentation is authorized by the standing owner instruction. This supersedes ADR-010's initial local-only repository-publishing restriction, not the requirement for authorized external messages/company access. The already authorized hosted fictional demo also supplements ADR-008's initial loopback-only scope; neither it nor draft phone pairing is production SSO. No current deployment is performed or verified by this reset.
+
+Earlier entries below retain their original context. The roadmap's legacy crosswalk prevents old A–F IDs from competing with C1–C7.
+
+
 ## Communications Phase 3: bounded assistance and exact simulated review
 
 The owner authorized the next phase after inbox checkpoint `e9d21b2`. Use one selected private conversation and source-linked relationship context to prepare a deterministic reply using saved employee preferences. Keep sources and unknowns visible. Separate preparation from exact employee approval; the model has no send/approval tool. The simulator accepts only current canonical relationship replies, preventing arbitrary property content from bypassing Deal packages. Manual edits remain drafts. Reviewed journey notes and tasks retain private source receipts while sharing only deliberately selected observation text and minimal provenance. No live connector, investor message, wallet charge or Render deployment is part of this checkpoint. Detailed scope and acceptance: COMMUNICATIONS_WORKFLOW.md.

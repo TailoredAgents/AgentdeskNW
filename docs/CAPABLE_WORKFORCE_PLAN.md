@@ -1,22 +1,25 @@
 # Capable workforce development plan
 
+
+**Document role:** master-agent and specialist design specification. [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) is the sole authority for current status, delivery order and next work. This document supplies requirements within C1, C4, C5 and C7; it does not add another phase sequence. Native app first, optional $19 employee SMS and retained lower-priority Slack reflect the confirmed mixed-phone/no-Slack workforce.
+
 ## Product outcome
 
-An employee describes the result they want in ordinary language. Their persistent Copilot finds the relevant context, chooses specialists and tools, completes authorized work, follows up as events change, and explains what actually happened. Dashboard, SMS and Slack are ways to reach the same assistant and ongoing work. Employees should not have to learn a command vocabulary or manually route each step between specialists.
+An employee describes the result they want in ordinary language. Their persistent Copilot finds the relevant context, chooses specialists and tools, completes authorized work, follows up as events change, and explains what actually happened. Native app, desktop, dictation/eventual live voice, SMS and optional Slack are ways to reach the same assistant and ongoing work. Employees should not have to learn a command vocabulary or manually route each step between specialists.
 
 This is a company-wide product for dispositions, acquisitions and management. All three need complete role-specific workflows. Dispositions should have more specialists and greater depth where its work requires it, without making the other roles secondary. Alex contributes firsthand dispositions examples; acquisitions and management requirements need dedicated validation.
 
-The owner wants high capability, useful autonomy, easy messaging and routine adoption, with Grok Bot and ChatGPT's agent/task experiences as competitive reference points. This document translates that direction into a development plan. It does not claim those capabilities are implemented or authorize live company access, sending, spending or deployment. Repository updates remain authorized. The existing relationship and communications plans provide completed building blocks and still apply to their implementation details.
+The owner wants high capability, useful autonomy, easy messaging and routine adoption, with Grok Bot and ChatGPT's agent/task experiences as competitive reference points. This document translates that direction into design requirements. It does not claim those capabilities are implemented or authorize live company access, sending, spending or deployment. Repository updates remain authorized. The existing relationship and communications plans provide completed building blocks and still apply to their implementation details.
 
-## Executable roadmap
+## How to use this specification
 
-[IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) is the authoritative implementation order and detailed acceptance checklist for the A–F phases below. It defines work packages, dependencies, three release levels, the immediate A1–A3 durable execution/cost checkpoint and the mapping from existing specialist/communications phases. The [specialist delivery matrix](AI_EMPLOYEES.md#capability-depth-delivery-matrix) covers all 16 specialists. The bounded A1–A3 implementation is described in [WORK_EXECUTION.md](WORK_EXECUTION.md); broader checklist items remain planned and do not upgrade specialist readiness.
+Use the canonical roadmap for the seven checkpoints, frozen local work and release gates. The [specialist matrix](AI_EMPLOYEES.md#capability-depth-delivery-matrix) supplies declared scope and proof for all sixteen specialists. [WORK_EXECUTION.md](WORK_EXECUTION.md) separates the committed local engine from draft channel controls. Requirements below describe the target, not a claim of completion.
 
 ## What exists and what must change
 
 The inspected application has persistent conversations, scoped domain records, private employee preferences, sourced investor journeys and structured corrections, a specialist registry, validated model tools, durable research jobs, messaging/task receipts, a fictional communications inbox and reviewed simulation workflows.
 
-The current general text runner executes a bounded request/tool loop. Its default is five model rounds and eight tool calls, configurable within explicit ranges in provider-config.ts. Tool schemas and dispatch are defined in orchestrator.ts; local fallback uses narrower deterministic routing. A new durable-work layer can now compose eight local capabilities, save dependencies, resume progress and enforce a fictional whole-job budget. Its worker does not add model reasoning or real provider research. Broader planning, channel controls and missing-information continuation remain incomplete. Many specialist results are deterministic summaries or demonstrations. Four registered specialists remain planned. The current inbox simulator accepts only its generated relationship reply, attachments are metadata only, and model approvals, broad outbound delivery, recurring multi-source briefs and participant-aware title opening are not implemented.
+The current general text runner executes a bounded request/tool loop. Its default is five model rounds and eight tool calls, configurable within explicit ranges in provider-config.ts. Tool schemas and dispatch are defined in orchestrator.ts; local fallback uses narrower deterministic routing. A new durable-work layer can now compose eight local capabilities, save dependencies, resume progress and enforce a fictional whole-job budget. Its worker does not add model reasoning or real provider research. Broader planning, channel controls and missing-information continuation remain incomplete. Many specialist results are deterministic summaries or demonstrations. Four registered specialists remain planned. The current inbox simulator accepts only its generated relationship reply, attachments are metadata only, and models cannot authorize approvals. Broad outbound delivery, recurring multi-source briefs and participant-aware title opening remain unimplemented.
 
 The goal is to expand available work and make execution reliable. Removing a limit or changing a prompt does not create a missing connector, expert method or completed workflow. Convert long work into resumable jobs with adjustable task budgets rather than making a request loop run indefinitely. Keep deterministic calculations, validation and state changes reliable while using reasoning for interpretation, planning, ambiguity and synthesis.
 
@@ -28,7 +31,7 @@ Introduce a durable work record containing the employee's request, desired outco
 
 Use model-generated plans that compose registered capabilities. Templates provide useful methods and checkpoints; they must not restrict every request to a fixed script. Allow independent reads/research to proceed concurrently where permissions and task dependencies allow it. Verify outputs before treating a step as complete, and present concise progress or a result rather than narrating every internal call. Unsupported work needs a specific missing capability or essential question, not a vague refusal or invented completion.
 
-The first implementation slice should use existing local services and mock adapters. It should prove a multi-step work record can survive a restart, accept a correction through a second channel, finish without duplicating actions and show the same status in the UI. Use one small useful example for each role; do not begin by replacing every functioning workflow.
+The committed foundation already uses local services and synthetic adapters. C1 completes cross-channel continuation and general correction/recovery while preserving that foundation. Small useful examples for every role are acceptance cases, not a reason to replace functioning workflows.
 
 ### Retrieve the right working context
 
@@ -59,7 +62,7 @@ Use these product behaviors:
 - Read, research within an authorized budget, summarize, calculate, draft and perform already authorized internal work without unnecessary approval steps.
 - Execute routine external work covered by an explicit standing authorization, once the company connection and execution capability are approved and tested.
 - Ask only for essential missing information or an action outside the current authorization. Present the prepared result and the specific decision needed.
-- Support phone/Slack approvals where a short authenticated response can unambiguously authorize the current reviewed action. Use a linked review screen when the exact document, recipient set or attachment needs inspection. Do not force dashboard navigation for every task.
+- Support app/SMS and optional Slack approvals where a short authenticated response can unambiguously authorize the current reviewed action. Use a linked review screen when the exact document, recipient set or attachment needs inspection. Do not force dashboard navigation for every task.
 - Report actual results and reconcile uncertain delivery. “Prepared,” “sent,” “received,” “signed” and “confirmed” remain distinct outcomes.
 
 This preserves useful autonomy while keeping employees in control of what the assistant does in their name. Authority is configurable; source truth, identity and confirmed execution are not optional.
@@ -70,7 +73,7 @@ The owner adds a mandatory approval point for any job costing **more than $1 in 
 
 Add optional auto top-up with explicit payer opt-in, a chosen low-balance trigger, purchase amount and monthly auto-purchase cap. Buying credits never authorizes an expensive job. Settings and payment results must be visible and replay-safe. The detailed policy, implementation boundaries and required tests are in [USAGE_METERING.md](USAGE_METERING.md).
 
-Phase A must include job-wide cost state, estimates/reservations and a waiting-for-cost-approval state using fictional accounting first. Subsequent autonomy and scheduled work reuse that service. Add simulated auto-top-up settings/outcomes to the wallet work; Phase E connects verified real usage/payment settlement. These requirements are not yet enforced by the current live provider path.
+The committed bounded job engine supplies fictional cost state, estimates/reservations and waiting-for-cost-approval behavior. C6 connects actual usage and optional top-up simulation/payment settlement; subsequent autonomy and schedules reuse the same authority. These requirements are not yet enforced by the current live provider path.
 
 ## Alex's dispositions acceptance journey
 
@@ -94,18 +97,9 @@ Management needs complete workflows for authorized workload and pipeline visibil
 
 All three tracks must have end-to-end acceptance examples and a visible readiness scorecard. Cross-role handoffs, changed assignments and access changes must work as part of the main workflow, not only in isolated screens.
 
-## Development phases and exit conditions
+## Roadmap responsibilities
 
-| Phase | Work | Exit condition |
-| --- | --- | --- |
-| A Shared work execution | Durable work plans, capability discovery, resumable steps, channel continuity and clear outcomes | One useful multi-step task per role completes on fictional data, survives restart/changed instructions, avoids duplicate actions and respects whole-job cost approval |
-| B Specialist knowledge and business context | Context retrieval, deal/party/document records, reviewable employee learning, versioned specialist methods and examples | Each priority specialist produces a supported result on varied cases; missing evidence changes its answer and corrections affect future work |
-| C Complete role workflows and delegated actions | Build remaining specialists, expand existing tools, connect each role's journey, add tested standing authorizations and conversational reviews | Each role completes its agreed day-to-day workflows; routine authorized work proceeds without repetitive prompts and exceptions ask a precise question |
-| D Proactive follow-through | Scheduled/event-driven work, reply tracking, deal watchers, configured briefings and corrective updates | Work runs with the app closed, follows changed facts, respects stop/revoke settings, and reports relevant results without duplicate noise |
-| E Approved connections and company operation | Approved Salesforce/email routes, employee Slack/SMS and investor communications, documents, identity, company administration, production persistence/queues and observability | Live acceptance confirms authorized reads/writes/delivery, isolation, recoverability, costs and multi-employee operation; fake-data success alone is insufficient |
-| F Comparative acceptance and rollout | Same-task product benchmarks, employee usability sessions, reliability/cost/latency evaluation and controlled rollout | Demonstrated useful performance for all three roles within the agreed task scope; publish measured results and remaining gaps |
-
-Evaluation begins in Phase A and continues through every phase; Phase F consolidates release evidence. The relationship-specialist depth stages continue inside B/C and the communications plan supplies completed foundations plus E's connection work. Phases can overlap where dependencies permit, but no role disappears from the acceptance matrix. The executable roadmap sets the engineering dependency order now; role-specific methods and pilot acceptance still require the remaining employee/manager inputs and approved connection capabilities. No completion date or percentage is established by this plan.
+C1 supplies composable, resumable work and consistent channel controls; C2/C3 present it through the native experience; C4 supplies context, methods and complete workflows; C5 supplies proactive follow-through and standing authority; C6 supplies actual spending and funding controls; C7 supplies approved connections, operations and comparative acceptance. The roadmap defines their dependencies and evidence. Relationship and communications local stages contribute to these checkpoints, without their own company-wide build order.
 
 ## Definition of a finished specialist
 
@@ -113,14 +107,14 @@ A catalog label or one scripted demonstration is insufficient. A specialist is f
 
 Track separate dimensions: functional scope, knowledge/judgment quality, integration readiness, autonomy level and real employee acceptance. Include every existing specialist in the matrix, including the four currently planned ones; add or regroup roles only where discovered work warrants it. The goal is complete useful work, not maximizing the number of model calls or branded personas.
 
-## Competitive reference and measurement
+## Competitive reference and measurement — dated research
 
-The comparison is with capable connected agents, not just text chat. Official Grok Bot documentation describes persistent work context, multi-step work with apps/computer tools, coordination between Bots, and reusable skills/routines. Official OpenAI documentation describes scheduled work that can use connected tools, skills and plugins, with supported event-triggered tasks on eligible plans. Product availability and behavior depend on account and environment. These references describe capability, not measured performance on New Western tasks.
+The comparison is with capable connected agents, not just text chat. The October 30 research snapshot recorded that official Grok Bot documentation described persistent work context, multi-step work with apps/computer tools, coordination between Bots, and reusable skills/routines. That snapshot also recorded that official OpenAI documentation described scheduled work that can use connected tools, skills and plugins, with supported event-triggered tasks on eligible plans. Product availability and behavior depend on account and environment. These are dated references, not a fresh verification or measured performance on New Western tasks; recheck them before implementing comparisons.
 
 Sources inspected October 30, 2026: [Grok Bot overview](https://docs.x.ai/grok-bot/overview), [Grok Bot skills and routines](https://docs.x.ai/grok-bot/skills-routines-and-automations), [OpenAI scheduled tasks](https://learn.chatgpt.com/docs/automations).
 
 The proposed AgentDesk advantage is lower setup effort, immediately useful role knowledge, current relationship/deal context, convenient messaging, reliable handoffs and verified outcomes on New Western work. General agents also have tools and memory; their mere presence is not differentiation. Demonstrate the advantage with the same tasks, fictional/authorized data and equivalent available access. Report setup time, successful completion, factual errors, missed commitments, employee edits, unnecessary interruptions, latency, cost and repeat usage. Score blocked/missing connections separately; do not quietly give only AgentDesk the needed information. No superiority or retention claim is established until those comparisons and employee trials are run.
 
-## Current checkpoint
+## Implementation status reference
 
-The bounded A1–A3 runtime checkpoint now uses existing services and fictional budgets, with role-specific starters and initial Work queue controls. Actual verification is recorded in PROGRESS.md. No real provider call, investor message, payment or deployment was performed for this checkpoint. Next are A4 shared conversational controls and A5 optional simulated top-up, with continued A6 quality evidence; deeper specialist methods follow the dependency order without waiting for company connections.
+Committed runtime `2d16665` contains bounded local execution with fictional budgets and role starters. Later conversation/native/notification source is frozen, uncommitted and not yet accepted as an integrated release. Current next-work instructions live only in [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md); detailed dated evidence remains in [PROGRESS.md](PROGRESS.md). No real company connection, payment, investor delivery or deployment is established by this design document.
