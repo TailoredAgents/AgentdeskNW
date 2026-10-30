@@ -2,7 +2,7 @@
 
 Owner: Tailored Agents. Approved direction: October 29, 2026.
 
-This plan follows the owner's supplied email/business-line/pricing discussion and supersedes the individually purchased specialist model for new simulated subscriptions. Phase 1 is implemented and pushed as `414fb0d`. The owner subsequently authorized **Phase 2**, the unified fictional inbox, with updated documentation and commit/push to `TailoredAgents/AgentdeskNW`. Phases 3–6 remain planned. No live payment collection, phone-number purchase, investor message or Render deployment is part of this work.
+This plan follows the owner's supplied email/business-line/pricing discussion and supersedes the individually purchased specialist model for new simulated subscriptions. Phase 1 is implemented and pushed as `414fb0d`; Phase 2 is pushed as `e9d21b2`. The owner has now authorized **Phase 3**, Copilot's inbox workflow, with updated documentation and commit/push to `TailoredAgents/AgentdeskNW`. Phases 4–6 remain planned. No live payment collection, phone-number purchase, investor message or Render deployment is part of this work.
 
 ## Product outcome
 
@@ -62,6 +62,8 @@ Create All, Email, Texts, Needs reply and Drafts views. Store connected-account 
 Acceptance: a fictional message persists, is linked to the right permitted investor, can be read/replied to as a draft, and remains isolated from another employee's private accounts. Existing assistant SMS/Slack commands still work independently.
 
 ## Phase 3 — Copilot communication workflow and relationship intelligence
+
+Status: **implemented and verified**. Verification passed 413 automated tests, 535 compiled HTTP checks, production build, type/lint checks, desktop/phone inspection and migration-copy preservation. See [COMMUNICATIONS_WORKFLOW.md](COMMUNICATIONS_WORKFLOW.md) and PROGRESS.md. Includes bounded private inbox search/read tools, a sourced relationship reply that respects saved employee preferences, an exact saved-draft review and simulated receipt, and separately reviewed source-linked observations and personal follow-ups. Dashboard, typed Copilot and linked employee channels use the same services. The selected conversation is the explicit processing scope; there is no background mailbox sweep or new wallet charge. Property distribution continues through the existing disclosure-gated package workflow. Inbox attachments remain unavailable metadata and are never included in a simulated reply.
 
 Add bounded tools to search permitted communications, summarize a thread with sources, identify relevant property information, draft in the employee's saved style, and propose follow-ups/CRM changes. Before any send, bind approval to the exact sender, recipient, body, attachments and current disclosure/media eligibility. A changed draft requires fresh review. Simulated send receipts remain clearly distinguished from actual delivery.
 

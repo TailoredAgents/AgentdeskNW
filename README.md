@@ -16,7 +16,7 @@ A private hosted demo entrance and Render blueprint are implemented. **Repositor
 
 ## Unified inbox preview
 
-The communications Phase 2 preview brings fictional Gmail, Outlook and investor-text accounts into one private Inbox. Filter by channel, account, reply status or saved drafts; inspect linked investor context; review uncertain matches; and save manual reply drafts with the correct sender/recipient. These records remain separate from the employee’s private Copilot chat. No provider is connected and no draft is sent. See [Inbox scope and walkthrough](docs/COMMUNICATIONS_INBOX.md) and the [delivery plan](docs/COMMUNICATIONS_AND_CREDITS_PLAN.md).
+The communications preview brings fictional Gmail, Outlook and investor-text accounts into one private Inbox. Copilot can search the inbox and prepare a relationship reply grounded in source messages, investor history and saved writing preferences. The employee reviews exact content before simulated sending, then separately reviews a relationship note or personal follow-up. Custom drafts stay saved; only current generated relationship replies use the bounded simulator. No live mailbox or investor delivery is connected. See [Copilot workflow and walkthrough](docs/COMMUNICATIONS_WORKFLOW.md), [Inbox foundation](docs/COMMUNICATIONS_INBOX.md) and the [delivery plan](docs/COMMUNICATIONS_AND_CREDITS_PLAN.md).
 
 ## Local setup
 
@@ -55,6 +55,7 @@ npm run build
 npm run test:smoke
 npm run test:hosted
 npm run test:inbox
+npm run test:communications
 ```
 
 The smoke suite requires the compiled build. By default it starts the built application and worker on a temporary loopback port with a disposable SQLite database, disables model credentials, runs HTTP workflow checks, then stops the processes and removes its temporary database. No manually started server is needed, and your demonstration data is unchanged.

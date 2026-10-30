@@ -1,8 +1,8 @@
 # Product requirements
 
-## Communications Phase 2 — private inbox preview
+## Communications Phase 3 — useful, reviewed inbox work
 
-An employee can work with multiple fictional email and business-text accounts through All, Email, Texts, Needs reply and Drafts views. Source messages, current authorized investor context, reviewed association, explicit handling status and saved manual replies must persist. Protect unsaved edits and reject stale writes. Private mailbox access never follows office-manager CRM access. Distinguish demo arrivals, saved drafts and manually selected waiting/done states from sent/delivered messages. AI inbox drafting/actions, live mailbox sync and actual investor delivery remain later phases. Acceptance is in COMMUNICATIONS_INBOX.md.
+An employee can use multiple fictional email and investor-text accounts through the private unified Inbox. Copilot searches permitted correspondence and prepares a sourced relationship reply using current investor context and saved employee preferences. The employee reviews exact sender, recipient, subject and body before simulated sending. Only current generated relationship replies are eligible for this bounded simulator; custom drafts remain saved and property distribution uses existing Deal packages checks. An arriving fictional reply can become a separately reviewed employee-reported journey observation and personal follow-up. Preserve privacy, unsaved edits, versions, replay receipts and clear source/simulation labels. Live mailbox sync, actual investor delivery and real wallet settlement remain later phases. See COMMUNICATIONS_WORKFLOW.md for the acceptance sequence and limits.
 
 ## Communications and credits update — October 29, 2026
 

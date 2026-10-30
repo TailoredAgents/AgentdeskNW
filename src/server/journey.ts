@@ -43,12 +43,13 @@ function observationsFor(actor: Actor, investorId: string): JourneyObservation[]
 }
 
 /** Append employee testimony; this does not approve a CRM mutation or independently verify a customer statement. */
-export function recordJourneyObservation(actor: Actor, input: JourneyObservationInput): JourneyObservation {
+export function recordJourneyObservation(actor: Actor, input: JourneyObservationInput, communicationSource?: JourneyObservation['communicationSource']): JourneyObservation {
   requireRole(actor, ['dispositions', 'manager']);
   requireFeature(actor, 'core');
   const parsed = journeyObservationSchema.parse(input);
   writableInvestor(actor, parsed.investorId);
-  const payload = {...parsed, propertyId: parsed.propertyId ?? null, resolvesId: parsed.resolvesId ?? null};
+  const source = communicationSource ? z.object({channel:z.enum(['email','sms']),receivedAt:z.string().datetime(),label:z.literal('Employee-reviewed fictional correspondence')}).strict().parse(communicationSource) : undefined;
+  const payload = {...parsed, propertyId: parsed.propertyId ?? null, resolvesId: parsed.resolvesId ?? null,...(source?{communicationSource:source}:{})};
   const payloadHash = createHash('sha256').update(JSON.stringify(payload)).digest('hex');
   return getDb().transaction(() => {
     const previous = getDb().prepare('SELECT data,payload_hash FROM journey_observations WHERE organization_id=? AND office_id=? AND owner_id=? AND event_key=?')
@@ -72,6 +73,7 @@ export function recordJourneyObservation(actor: Actor, input: JourneyObservation
       id: newId('journey'), investorId: parsed.investorId, kind: parsed.kind, text: parsed.text,
       propertyId, resolvesId: payload.resolvesId, recordedAt: now(), recordedBy: actor.id,
       verification: 'employee_reported', status: parsed.kind === 'resolved' ? 'resolved' : 'open', resolvedById: null,
+      ...(source?{communicationSource:source}:{}),
     };
     getDb().prepare('INSERT INTO journey_observations(id,organization_id,office_id,owner_id,investor_id,property_id,resolves_id,event_key,payload_hash,data) VALUES(?,?,?,?,?,?,?,?,?,?)')
       .run(value.id, actor.organizationId, actor.officeId, actor.id, value.investorId, propertyId, value.resolvesId, parsed.eventKey, payloadHash, JSON.stringify(value));
@@ -112,7 +114,7 @@ export function getInvestorJourney(actor: Actor, investorId: string): InvestorJo
     id:`observation:${observation.id}`, sourceRecordId:observation.id, kind:'observation',
     label:`Employee-reported ${observation.kind.replaceAll('_',' ')}${observation.status === 'resolved' ? ' · resolved' : ''}`,
     text:observation.text, recordedAt:observation.recordedAt, verification:'employee_reported',
-    source:'Explicit employee observation; not independently verified and not a canonical CRM update.', propertyId:observation.propertyId,
+    source:observation.communicationSource ? `${observation.communicationSource.label} (${observation.communicationSource.channel}, received ${observation.communicationSource.receivedAt}). Only the employee-reviewed observation is shared; the source mailbox remains private. Not independently verified or a canonical CRM update.` : 'Explicit employee observation; not independently verified and not a canonical CRM update.', propertyId:observation.propertyId,
   });
   for (const debrief of debriefs) {
     const items = [...debrief.summary.objections.map(text => ({label:'Unreviewed possible objection',text})),

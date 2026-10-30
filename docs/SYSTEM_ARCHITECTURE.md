@@ -1,8 +1,8 @@
 # System architecture
 
-## Unified inbox — communications Phase 2
+## Unified inbox and Copilot — communications Phases 2–3
 
-The private correspondence domain uses `communications.ts`, `communications-api.ts`, separate migration-016 tables and `communications-contracts.ts`. Fictional Gmail, Outlook and business-text sources normalize to shared accounts/threads/messages/drafts; their records never become private Copilot commands or employee channel deliveries. `/api/inbox` uses the common authenticated boundary and server-enforced ownership, current investor permissions, versions and idempotency. The UI reads relationship context without promoting messages into CRM facts. Copilot mailbox tools, sending and live adapters remain later work. See COMMUNICATIONS_INBOX.md.
+The private correspondence domain uses `communications.ts`, `communications-workflow.ts`, `communications-api.ts`, additive inbox/workflow migrations and `communications-contracts.ts`. Fictional Gmail, Outlook and business-text sources normalize to private accounts/threads/messages/drafts, independent of assistant chat and employee channel delivery. Typed Copilot tools call the same scoped assistance and draft services as the UI. Exact review, simulated delivery, reviewed journey observations and follow-ups use explicit employee API actions. The model cannot approve them. Private inbox fingerprints and history references invalidate stale assistant context; voice excludes inbox tools and inbox-derived history. There are no live adapters or background mailbox analysis. See COMMUNICATIONS_WORKFLOW.md and COMMUNICATIONS_INBOX.md.
 
 ## Communications and credits update — October 29, 2026
 

@@ -1,8 +1,8 @@
 # Security and permissions
 
-## Unified correspondence permissions — communications Phase 2
+## Private correspondence and reviewed actions — communications Phase 3
 
-Inbox accounts and content are private to the authenticated organization/office/employee, including when an office manager can read that employee's CRM investors. Incoming fictional correspondence is data and cannot issue commands, edit memory or approve CRM changes. Investor association/context uses current CRM permissions; a revoked link must not disclose protected identifiers through read, search, draft history or replay. Mutations enforce active Core access, scoped event keys and expected thread versions, while prior private correspondence stays readable. Client-supplied sender/recipient/account identities are rejected. There is no send, OAuth, provider receipt or attachment-download endpoint. See COMMUNICATIONS_INBOX.md.
+Inbox ownership is the authenticated organization/office/employee, independent of manager CRM visibility. Incoming correspondence is untrusted data: it cannot issue employee commands, change preferences, schedule work or approve a relationship update. Current CRM permissions and subscription access are rechecked. Copilot may search/read/prepare; exact simulated delivery and source-linked journey/task updates require explicit UI/API review. Reviews bind the saved message, sender, recipient, versions and protected context and expire; changed content or access invalidates them. Only the current server-generated relationship reply is eligible for simulation, with no attachments or property distribution. Scoped immutable receipts and transactions protect replay. Shared observation provenance omits private mailbox IDs/addresses and retains only deliberately reviewed text plus minimal source labels. No live sending, OAuth or attachment transfer is enabled. See COMMUNICATIONS_WORKFLOW.md.
 
 ## Communications and credits update — October 29, 2026
 

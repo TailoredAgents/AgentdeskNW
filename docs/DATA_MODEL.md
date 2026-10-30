@@ -1,5 +1,9 @@
 # Data model
 
+## Reviewed communications — Phase 3
+
+Migration 017 adds private immutable `communication_send_reviews`, `communication_send_receipts` and `communication_workflow_actions`. Reviews bind exact saved sender/recipient/content, versions, expiration and protected-context hash. One review can produce only one simulated receipt; scoped event keys make repeats safe. The outgoing message remains explicitly `simulated_sent`, and its archived draft distinguishes simulation from ordinary discard. Source-linked action receipts retain the original private message/source reference and reviewed text; shared journey observations carry only minimal channel/time/source labels. No provider send or payment ledger is created. See COMMUNICATIONS_WORKFLOW.md.
+
 ## Unified inbox — communications Phase 2
 
 Migration 016 adds correspondence accounts, threads, messages, saved/discarded drafts, replay receipts and a persistent demo-seed marker. Organization, office and employee ownership is independent of CRM manager visibility. Provider/source references, account identity, plain message text, attachment metadata, explicit read/handling status and investor association are preserved separately from assistant chat. Sender/recipient are server-bound when a draft is saved. Current permissions filter linked investor details on every read. See COMMUNICATIONS_INBOX.md and the migration for exact schema.

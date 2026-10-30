@@ -45,3 +45,7 @@ A network timeout can leave the provider outcome unknown. Preserve that distinct
 Automated provider tests use mocked responses and no billable API requests. They should cover schema enforcement, reasoning/tool continuation, follow-up state, explicit refusal/incomplete outcomes, repeated and conflicting call IDs, unknown/malformed usage, scope revocation, entitlement denial, process interruption and preservation of completed artifacts.
 
 Live text requires an API key configured only on the server, account/model access and explicit local testing. Live speech additionally requires microphone permission, a usable browser, an audio-output device and a successful Realtime session. Research needs its own selected source/provider path and evidence inspection. Passing the mocked tests establishes neither provider access nor production readiness. New Western remains a prospective customer; no endorsement, production CRM connectivity or verified investor contact is implied.
+
+## Communications tool schemas — October 30, 2026
+
+Phase 3 extends the existing Responses function registry with bounded inbox search/read/prepare/propose tools. Schemas remain strict, reject extra fields and make optional values explicitly nullable. Tool approval is never delegated to the model. Current official reference checked: [Function calling — strict mode](https://developers.openai.com/api/docs/guides/function-calling#strict-mode). No model selection or provider configuration changed; verification uses mocked model responses and deterministic local workflows.

@@ -4,6 +4,7 @@ import { AppError,getDb,now,scopedGet } from './db';
 import { EntitlementError,requireFeature } from './billing';
 import { reserveUsage,releaseUsage,reconcileTextUsage } from './metering';
 import { beginProviderOperation,fingerprint,recordProviderUsage } from './provider-runtime';
+import { assertInboxToolResultVisible } from './history';
 import { textProviderConfig } from './provider-config';
 
 type Item=Record<string,unknown>;
@@ -17,7 +18,7 @@ export function executeRecordedTool(actor:Actor,conversationId:string,callId:str
  requireFeature(actor,'core');scopedGet(actor,'conversations',conversationId,true);
  return getDb().transaction(()=>{
   const hash=fingerprint({name,args,requestKey});const prior=getDb().prepare('SELECT request_hash,result FROM assistant_tool_receipts WHERE organization_id=? AND office_id=? AND user_id=? AND conversation_id=? AND call_id=?').get(actor.organizationId,actor.officeId,actor.id,conversationId,callId) as {request_hash:string;result:string}|undefined;
-  if(prior){if(prior.request_hash!==hash)throw new AppError(409,'The provider reused a tool call identifier for different work.');return JSON.parse(prior.result) as ToolResult;}
+  if(prior){if(prior.request_hash!==hash)throw new AppError(409,'The provider reused a tool call identifier for different work.');const result=JSON.parse(prior.result) as ToolResult;assertInboxToolResultVisible(actor,result.artifacts);return result;}
   // Dispatch contains only synchronous, local service writes; mutation and receipt commit together.
   const result=dispatch();getDb().prepare('INSERT INTO assistant_tool_receipts VALUES(?,?,?,?,?,?,?)').run(actor.organizationId,actor.officeId,actor.id,conversationId,callId,hash,JSON.stringify(result));return result;
  }).immediate();

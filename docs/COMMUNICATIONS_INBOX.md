@@ -1,6 +1,6 @@
-# Unified communications inbox — Phase 2
+# Unified communications inbox — Phase 2 foundation
 
-Status: **implemented and verified**. 379 automated tests across 19 files and 475 compiled HTTP checks passed, including 119 inbox checks. Desktop/phone verification and migration-copy preservation also passed. This is the second phase of [COMMUNICATIONS_AND_CREDITS_PLAN.md](COMMUNICATIONS_AND_CREDITS_PLAN.md), following workforce/wallet commit `414fb0d`. Detailed evidence is recorded in [PROGRESS.md](PROGRESS.md).
+Foundation status: **implemented and verified at `e9d21b2`**. This document preserves the Phase 2 acceptance boundary. The current Phase 3 additions—Copilot retrieval, grounded replies, reviewed simulated sending and source-linked actions—are specified in [COMMUNICATIONS_WORKFLOW.md](COMMUNICATIONS_WORKFLOW.md). 379 automated tests across 19 files and 475 compiled HTTP checks passed, including 119 inbox checks. Desktop/phone verification and migration-copy preservation also passed. This is the second phase of [COMMUNICATIONS_AND_CREDITS_PLAN.md](COMMUNICATIONS_AND_CREDITS_PLAN.md), following workforce/wallet commit `414fb0d`. Detailed evidence is recorded in [PROGRESS.md](PROGRESS.md).
 
 ## User outcome
 
@@ -59,6 +59,6 @@ Unsaved edits trigger a choice before switching threads or leaving Inbox. A vers
 - Typecheck, lint, automated tests, production build, isolated inbox/existing HTTP suites, desktop/phone browser checks and migration-copy preservation.
 - Updated plan, specifications, demo instructions and progress evidence; commit/push with a clean worktree and verified remote revision.
 
-## Next phase
+## Phase 3 extension
 
-Phase 3 adds bounded Copilot tools to retrieve permitted inbox content, create grounded drafts in the employee's style, suggest follow-ups and review exact simulated sending. Live Gmail/Microsoft synchronization and Twilio investor texting remain separately gated later work.
+The authorized Phase 3 extension adds bounded Copilot tools to retrieve permitted inbox content, create grounded drafts in the employee's style, suggest follow-ups and review exact simulated sending. Live Gmail/Microsoft synchronization and Twilio investor texting remain separately gated later work.

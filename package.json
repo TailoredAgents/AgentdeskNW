@@ -20,7 +20,8 @@
     "test:intelligence": "node scripts/smoke-runner.mjs intelligence",
     "test:conversation": "node scripts/smoke-runner.mjs conversation",
     "test:wallet": "node scripts/smoke-runner.mjs wallet",
-    "test:inbox": "node scripts/smoke-runner.mjs inbox"
+    "test:inbox": "node scripts/smoke-runner.mjs inbox",
+    "test:communications": "node scripts/smoke-runner.mjs communications"
   },
   "dependencies": {
     "@slack/socket-mode": "3.1.0",

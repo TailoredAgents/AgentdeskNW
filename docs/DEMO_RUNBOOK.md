@@ -21,7 +21,7 @@ Use the [Monday walkthrough](MONDAY_DEMO.md), [communications/credits plan](COMM
 
 ## Inbox preview story
 
-Open **Inbox** as Alex. Show the fictional Gmail, Outlook and investor-text accounts, then open Mike's repair-cost question. Read its original message/source and current investor context; mailbox content is not a verified CRM update. Write and save a concise reply, reopen it from **Drafts**, and show **Not sent**. Use a fictional-arrival scenario to demonstrate a new unread follow-up without connecting a provider. Review an uncertain investor match and mark a conversation waiting or done. The inbox state is employee-managed; waiting/done does not prove delivery or schedule a reminder. See [COMMUNICATIONS_INBOX.md](COMMUNICATIONS_INBOX.md) for the detailed sequence and current limits.
+Open **Inbox** as Alex and show the fictional Gmail, Outlook and investor-text accounts. Open Mike’s repair-cost question, inspect its source and Copilot’s relationship context, and prepare a grounded reply in the saved writing style. Review sender, recipient and exact text before confirming **simulated sending**. Add a fictional follow-up arrival, then separately review and save a relationship observation and personal follow-up. No provider delivery, automatic CRM approval or wallet charge occurs. Custom edits remain saved drafts; only current generated relationship replies use this simulator. Follow [COMMUNICATIONS_WORKFLOW.md](COMMUNICATIONS_WORKFLOW.md) for the complete sequence.
 
 ## Company-seat story
 

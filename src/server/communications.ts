@@ -19,7 +19,7 @@ export const saveDraftSchema=z.object({...mutation,body:z.string().trim().min(1)
 export const discardDraftSchema=z.object(mutation).strict();
 export const linkInvestorSchema=z.object({...mutation,investorId:idSchema.nullable()}).strict();
 export const receiveDemoSchema=z.object({scenarioId:z.enum(['mike-repair-followup','sarah-rental-followup','david-text-followup','unknown-buyer']),eventKey:z.string().trim().min(1).max(150)}).strict();
-const notice='Fictional email and investor-text inbox. Accounts are demo adapters, drafts stay here, and no message is sent. Your private Copilot SMS/Slack conversation is separate.';
+const notice='Fictional email and investor-text inbox. Accounts are demo adapters; reviewed simulations stay here and no message is delivered externally. Your private Copilot SMS/Slack conversation is separate.';
 const scope=(actor:Actor)=>[actor.organizationId,actor.officeId,actor.id];
 const fingerprint=(value:unknown)=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const providerLabel={gmail:'Gmail demo mailbox',outlook:'Outlook demo mailbox',twilio:'Demo business text line'};
@@ -104,7 +104,7 @@ export function getInboxThread(actor:Actor,id:string):InboxThreadDetail {
  const draftHistory=rows<CommunicationDraft>(actor,'communication_draft_revisions','AND thread_id=? ORDER BY rowid DESC LIMIT 25',[id]).filter(value=>!(draft?.id===value.id&&draft.version===value.version));
  let investorContext:InboxThreadDetail['investorContext']=null;
  if(thread.association.investor&&access.allowed)investorContext=getInvestorJourney(actor,thread.association.investor.id);
- return {thread,account,messages,draft,draftHistory,investorContext,contextNotice:investorContext?'Existing authorized relationship history. Inbox messages are separate source material and have not updated CRM facts, preferences or commitments.':!access.allowed?'Mailbox history remains available. An active workforce subscription is required for relationship context and changes.':thread.association.notice,availableInvestors:readInvestors(actor).map(value=>investorMatch(value,'Permitted CRM relationship; linking requires your review.')),canEdit:access.allowed,accessReason:access.reason,liveDelivery:false};
+ return {thread,account,messages,draft,draftHistory,investorContext,contextNotice:investorContext?'Existing authorized relationship history. Inbox messages are separate source material and have not updated CRM facts automatically. Only explicitly reviewed notes and follow-ups are added to relationship work.':!access.allowed?'Mailbox history remains available. An active workforce subscription is required for relationship context and changes.':thread.association.notice,availableInvestors:readInvestors(actor).map(value=>investorMatch(value,'Permitted CRM relationship; linking requires your review.')),canEdit:access.allowed,accessReason:access.reason,liveDelivery:false};
 }
 function replay(actor:Actor,key:string,payload:unknown){
  const row=getDb().prepare('SELECT payload_hash,thread_id FROM communication_events WHERE organization_id=? AND office_id=? AND owner_id=? AND event_key=?').get(...scope(actor),key) as {payload_hash:string;thread_id:string}|undefined;

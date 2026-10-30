@@ -2,12 +2,13 @@ import type { Actor, Artifact, Message } from '../lib/contracts';
 import { createHash } from 'node:crypto';
 import type { DealPackage, PropertyRelease } from '../lib/intelligence-contracts';
 import { AppError, getDb } from './db';
+import { featureAccess } from './billing';
 import { readInvestor, readProperty } from './access';
 import { getDisclosure, isDisclosureReady, listBuyBoxes } from './intelligence';
 
-export interface HistoryReferences {investors:string[];properties:string[];releases:string[];packages:string[];debriefs:string[]}
+export interface HistoryReferences {investors:string[];properties:string[];releases:string[];packages:string[];debriefs:string[];inboxThreads:string[]}
 export type StoredMessage=Message & {references?:HistoryReferences};
-const empty=():HistoryReferences=>({investors:[],properties:[],releases:[],packages:[],debriefs:[]});
+const empty=():HistoryReferences=>({investors:[],properties:[],releases:[],packages:[],debriefs:[],inboxThreads:[]});
 export const criteriaFingerprint=(actor:Actor,investorId:string)=>createHash('sha256').update(JSON.stringify(listBuyBoxes(actor,investorId))).digest('hex');
 /** References come from structured service outputs, never guessed from names in prose. */
 export function collectHistoryReferences(actor:Actor,artifacts:Artifact[],inherited:HistoryReferences[]=[],context?:{investors:{id:string}[];properties:{id:string}[]}):HistoryReferences {
@@ -23,12 +24,14 @@ export function collectHistoryReferences(actor:Actor,artifacts:Artifact[],inheri
     if(key==='releaseId'||key==='id'&&/^release_/.test(item))refs.releases.push(item);
     if(key==='id'&&/^package_/.test(item))refs.packages.push(item);
     if(key==='id'&&/^debrief_/.test(item))refs.debriefs.push(item);
+    if((key==='threadId'||key==='id')&&/^inbox_thread_/.test(item))refs.inboxThreads.push(item);
    }else visit(item,depth+1);
   }
  };
  visit(artifacts.filter(artifact=>artifact.type!=='marketplace'));
  for(const artifact of artifacts){
   if(artifact.type==='briefing'&&artifact.id)refs.investors.push(artifact.id);
+  if(artifact.type==='inbox'&&artifact.id)refs.inboxThreads.push(artifact.id);
   if(artifact.type==='approval'&&artifact.id){const row=getDb().prepare('SELECT data FROM proposed_actions WHERE id=? AND organization_id=? AND office_id=? AND owner_id=?').get(artifact.id,actor.organizationId,actor.officeId,actor.id) as {data:string}|undefined;if(row)visit(JSON.parse(row.data));}
  }
  for(const key of Object.keys(refs) as (keyof HistoryReferences)[])refs[key]=[...new Set(refs[key])];
@@ -42,6 +45,8 @@ function releaseRecord(actor:Actor,id:string):PropertyRelease {
 }
 function allowed(actor:Actor,refs:HistoryReferences) {
  try {
+  if(refs.inboxThreads?.length&&!featureAccess(actor,'core').allowed)return false;
+  for(const id of refs.inboxThreads??[]){if(!getDb().prepare('SELECT 1 FROM communication_threads WHERE id=? AND organization_id=? AND office_id=? AND owner_id=?').get(id,actor.organizationId,actor.officeId,actor.id))return false;}
   for(const id of refs.investors)readInvestor(actor,id);
   for(const id of refs.properties)readProperty(actor,id);
   for(const id of refs.releases)releaseRecord(actor,id);
@@ -62,4 +67,9 @@ export function readHistoryMessage(actor:Actor,message:StoredMessage):Message {
  if(message.references&&!allowed(actor,message.references))return {id:message.id,role:message.role,content:'This historical message is withheld because access or sharing eligibility for a referenced record has changed.',createdAt:message.createdAt,specialistIds:[],artifacts:[]};
  // Navigation opens current scoped services. CRM snapshots are never reissued as current facts from chat storage.
  return {id:message.id,role:message.role,content:message.content,createdAt:message.createdAt,specialistIds:message.specialistIds,artifacts:message.artifacts.map(artifact=>{const {data,...link}=artifact;return artifact.type==='notes'?{...link,data}:link;})};
+}
+
+export function assertInboxToolResultVisible(actor:Actor,artifacts:Artifact[]):void {
+ const refs=collectHistoryReferences(actor,artifacts);
+ if(refs.inboxThreads.length&&!allowed(actor,refs))throw new AppError(403,'Access to the inbox result or its relationship context changed. Retrieve the conversation again.');
 }

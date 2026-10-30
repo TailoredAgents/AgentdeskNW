@@ -199,3 +199,69 @@
  .inbox-detail{padding-bottom:8px;}
  .inbox-draft-editor{scroll-margin-bottom:90px;}
 }
+
+/* Sourced conversation assistance and employee-reviewed simulation. */
+.inbox-assistance{margin:22px 26px 0;border:1px solid #dbe6d2;border-radius:11px;background:#fbfdf8;overflow:hidden;}
+.inbox-assistance-heading{display:flex;align-items:center;gap:10px;padding:16px;}
+.inbox-copilot-mark{width:32px;height:32px;flex:0 0 32px;display:grid;place-items:center;border-radius:9px;color:#5e8050;background:#eaf2e3;}
+.inbox-assistance-heading>div{flex:1;min-width:0;}
+.inbox-assistance-heading h3{font-size:12px;font-weight:600;color:#3f634b;margin:0;}
+.inbox-assistance-heading p{font-size:10px;line-height:1.7;color:#7c8d70;margin:3px 0 0;}
+.inbox-assistance-heading>.button{flex-shrink:0;font-size:10px;padding:9px 11px;}
+.inbox-assistance-intro{font-size:11px;line-height:1.85;color:#7c8f6c;padding:0 16px 17px;margin:0;}
+.inbox-assistance-body{padding:0 16px 17px;}
+.inbox-assistance-summary{font-size:12px;line-height:1.85;color:#5d7550;white-space:pre-wrap;overflow-wrap:anywhere;margin:0 0 14px;}
+.inbox-next-step{border-left:2px solid #97b37f;background:#f0f6e9;padding:12px 13px;margin-bottom:16px;border-radius:0 7px 7px 0;}
+.inbox-next-step>span{display:block;font-size:9px;font-weight:600;color:#789064;text-transform:uppercase;letter-spacing:.7px;margin-bottom:5px;}
+.inbox-next-step>p{font-size:12px;line-height:1.8;color:#496b3c;margin:0;overflow-wrap:anywhere;}
+.inbox-assistance-actions{display:flex;flex-wrap:wrap;gap:8px;}
+.inbox-assistance-actions>.button{font-size:10px;padding:9px 11px;}
+.inbox-assistance-evidence{border-top:1px solid #e5ecdd;margin-top:15px;padding-top:12px;}
+.inbox-assistance-evidence>summary{display:flex;justify-content:space-between;align-items:center;gap:8px;list-style:none;font-size:10px;color:#6b8357;cursor:pointer;}
+.inbox-assistance-evidence article{background:white;border:1px solid #e5ecdd;border-radius:7px;margin-top:10px;padding:11px;}
+.inbox-assistance-evidence article>strong{font-size:10px;color:#688052;font-weight:550;}
+.inbox-assistance-evidence article>p{font-size:11px;line-height:1.8;color:#7b8c6c;white-space:pre-wrap;overflow-wrap:anywhere;margin:5px 0 8px;}
+.inbox-assistance-evidence article>small{font-size:9px;line-height:1.7;color:#95a285;}
+.inbox-assistance-evidence>ul{font-size:11px;line-height:1.8;color:#7c8c6d;padding-left:18px;margin:10px 0 0;}
+.inbox-assistance-evidence li+li{margin-top:7px;}
+.inbox-assistance-style{font-size:9px;line-height:1.8;color:#879b75;margin:15px 0 5px;}
+.inbox-processing-note{font-size:9px;line-height:1.8;color:#98a78b;margin:0;}
+.inbox-simulation-label{display:flex;align-items:center;gap:6px;font-size:10px;line-height:1.8;color:#6e8a58;margin:12px 0 0 41px;}
+.inbox-message-outbound{padding:16px;background:#f4f8ef;border:1px solid #e3ebd9;border-radius:10px;}
+.inbox-draft-footer>div{flex-wrap:wrap;justify-content:flex-end;}
+.inbox-draft-footer .button.secondary{font-size:10px;padding:10px;}
+.inbox-workflow-review{min-width:0;}
+.inbox-review-scroll>p{font-size:12px;line-height:1.9;color:#7b8f6a;margin:0 0 19px;}
+.inbox-review-address{display:grid;gap:11px;margin:19px 0;padding:17px;border:1px solid #e1e8d8;background:#f9fbf6;border-radius:9px;}
+.inbox-review-address>div{display:grid;grid-template-columns:76px minmax(0,1fr);gap:13px;min-width:0;font-size:11px;line-height:1.8;}
+.inbox-review-address dt{color:#91a17f;}
+.inbox-review-address dd{color:#5e7b49;overflow-wrap:anywhere;margin:0;}
+.inbox-review-body{padding:18px 19px;border:1px solid #dce6d3;border-radius:9px;color:#4d6f3f;background:#fff;font-size:13px;line-height:1.95;white-space:pre-wrap;overflow-wrap:anywhere;margin:0 0 18px;max-height:360px;overflow-y:auto;}
+.inbox-review-scroll>.inbox-review-note{font-size:11px;line-height:1.9;color:#91a17f;margin:13px 0 18px;}
+.inbox-review-actions{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:9px;margin-top:23px;}
+.inbox-review-actions>.button{font-size:12px;}
+.inbox-review-simulation{display:flex;align-items:flex-start;gap:11px;background:#f0f6e9;border:1px solid #dce8d0;padding:15px;border-radius:9px;color:#749259;}
+.inbox-review-simulation>svg{flex-shrink:0;margin-top:2px;}
+.inbox-review-simulation strong{font-size:12px;font-weight:600;color:#52753d;}
+.inbox-review-simulation p{font-size:11px;line-height:1.85;color:#7c9468;margin:5px 0 0;}
+.inbox-review-scroll>label{display:grid;gap:9px;font-size:12px;line-height:1.6;color:#6c8557;margin:18px 0;}
+.inbox-review-scroll>label>input,.inbox-review-scroll>label>select,.inbox-review-scroll>label>textarea{width:100%;min-width:0;font:inherit;font-size:12px;line-height:1.8;padding:12px;border-radius:8px;background:#fff;color:#557a40;border:1px solid #dce5d2;}
+.inbox-review-scroll>label>textarea{resize:vertical;min-height:120px;}
+.inbox-optional{font-size:10px;color:#9aa78b;font-weight:400;}
+.inbox-review-source{border-left:2px solid #c9d9b9;border-radius:0 6px 6px 0;background:#f7faf2;padding:13px 15px;margin:18px 0;}
+.inbox-review-source>span{font-size:9px;text-transform:uppercase;letter-spacing:.7px;color:#9aa98b;}
+.inbox-review-source>p{font-size:11px;line-height:1.9;color:#839871;white-space:pre-wrap;overflow-wrap:anywhere;margin:7px 0 0;max-height:160px;overflow-y:auto;}
+@media(max-width:1150px){.inbox-assistance{margin:20px 20px 0;}.inbox-assistance-heading{flex-wrap:wrap;}.inbox-assistance-heading>.button{margin-left:42px;}.inbox-assistance-heading>div{min-width:150px;}}
+@media(max-width:760px){.inbox-assistance{margin:18px 12px 0;}.inbox-assistance-heading{padding:14px 12px;gap:9px;}.inbox-assistance-heading h3{font-size:12px;}.inbox-assistance-heading p{font-size:10px;}.inbox-assistance-heading>.button{margin-left:0;width:100%;justify-content:center;font-size:12px;padding:11px;}.inbox-assistance-body{padding:0 12px 15px;}.inbox-assistance-intro{padding:0 12px 15px;font-size:12px;}.inbox-assistance-summary,.inbox-next-step>p{font-size:13px;}.inbox-assistance-actions{display:grid;grid-template-columns:1fr;width:100%;}.inbox-assistance-actions>.button{font-size:12px;padding:11px;justify-content:center;}.inbox-assistance-evidence>summary{font-size:11px;}.inbox-assistance-evidence article>strong{font-size:11px;}.inbox-assistance-evidence article>p,.inbox-assistance-evidence>ul{font-size:12px;}.inbox-assistance-evidence article>small,.inbox-assistance-style,.inbox-processing-note{font-size:10px;}.inbox-simulation-label{margin-left:0;font-size:11px;}.inbox-draft-footer>div{width:100%;}.inbox-draft-footer .button.secondary{font-size:11px;}.inbox-review-scroll>p{font-size:13px;}.inbox-review-address{padding:13px;}.inbox-review-address>div{grid-template-columns:65px minmax(0,1fr);gap:9px;font-size:11px;}.inbox-review-body{font-size:13px;padding:14px;max-height:300px;}.inbox-review-actions{flex-direction:column;align-items:stretch;}.inbox-review-actions>.button{width:100%;justify-content:center;}.inbox-review-scroll>label>input,.inbox-review-scroll>label>select,.inbox-review-scroll>label>textarea{font-size:16px;}.inbox-review-scroll>.inbox-review-note{font-size:11px;}.inbox-review-source>p{font-size:12px;}}
+
+.inbox-reply-blocker{font-size:11px;line-height:1.8;background:#fff8e9;color:#9b814d;border:1px solid #eddfbc;border-radius:7px;padding:11px;margin:0 0 14px;overflow-wrap:anywhere;}
+
+/* Keep review actions visible while the exact message scrolls independently. */
+.modal:has(.inbox-workflow-review){display:flex;flex-direction:column;overflow:hidden;}
+.modal:has(.inbox-workflow-review)>.modal-header{flex-shrink:0;}
+.modal-content:has(>.inbox-workflow-review){display:flex;min-height:0;padding:0;overflow:hidden;}
+.inbox-workflow-review{display:flex;flex-direction:column;min-height:0;width:100%;overflow:hidden;}
+.inbox-review-scroll{min-height:0;overflow-y:auto;padding:20px 24px;overscroll-behavior:contain;}
+.inbox-review-actions{flex-shrink:0;margin:0;padding:16px 24px;border-top:1px solid #e4ecdc;background:#fff;}
+.inbox-review-body{max-height:none;overflow:visible;}
+@media(max-width:760px){.inbox-review-scroll{padding:18px;}.inbox-review-actions{padding:13px 18px;gap:8px;}.inbox-review-actions>.button{padding:12px;}}

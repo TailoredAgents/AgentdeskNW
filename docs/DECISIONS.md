@@ -1,5 +1,9 @@
 # Architecture decisions
 
+## Communications Phase 3: bounded assistance and exact simulated review
+
+The owner authorized the next phase after inbox checkpoint `e9d21b2`. Use one selected private conversation and source-linked relationship context to prepare a deterministic reply using saved employee preferences. Keep sources and unknowns visible. Separate preparation from exact employee approval; the model has no send/approval tool. The simulator accepts only current canonical relationship replies, preventing arbitrary property content from bypassing Deal packages. Manual edits remain drafts. Reviewed journey notes and tasks retain private source receipts while sharing only deliberately selected observation text and minimal provenance. No live connector, investor message, wallet charge or Render deployment is part of this checkpoint. Detailed scope and acceptance: COMMUNICATIONS_WORKFLOW.md.
+
 ## October 29, 2026 — Build the private inbox before live communication adapters
 
 The owner approved communications Phase 2 after workforce/wallet commit `414fb0d`. Add a provider-independent inbox with multiple fictional mailboxes, investor texts, manual drafts and permission-aware relationship context. Separate investor correspondence from employee-to-Copilot channels and preserve each source/ownership boundary. Exact-contact matches can suggest context; ambiguous/name-only matches require review. Saving a draft or linking a thread does not send or write CRM facts. Prove persistence, permission revocation and conflict/replay behavior before adding model tools or external delivery. The authorized release includes documentation and commit/push; Render deployment remains separate.

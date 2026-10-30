@@ -35,6 +35,7 @@ export interface JourneyObservation {
   verification: 'employee_reported';
   status: 'open' | 'resolved';
   resolvedById: string | null;
+  communicationSource?: {channel:'email'|'sms';receivedAt:string;label:'Employee-reviewed fictional correspondence'};
 }
 export interface ConsideredProperty {
   propertyId: string;

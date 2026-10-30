@@ -17,7 +17,7 @@ Read `docs/ORIGINAL_BRIEF.md`, `MASTER_PLAN.md`, and `docs/PROGRESS.md` before m
 
 - Follow `docs/COMMUNICATIONS_INBOX.md` for the private fictional email/investor-text inbox. Keep correspondence separate from employee Copilot conversations and channel inbox/outbox.
 - Office-manager CRM access does not grant mailbox access. Recheck linked investor permissions on reads and replay. Saving a manual draft or reviewing a match never sends a message or changes CRM facts.
-- Phase 2 has no live connector, sending, attachment transfer or AI inbox tools. Preserve that boundary until the corresponding phase is authorized and implemented.
+- Communications Phase 3 is authorized: bounded Copilot inbox tools and exact reviewed simulated delivery. Model tools may prepare work but cannot approve delivery or source-linked CRM changes. Preserve the separate later-phase boundaries for live connectors, actual investor sending and attachment transfer.
 
 ## Subscription and usage rules
 
