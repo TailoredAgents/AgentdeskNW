@@ -5,8 +5,8 @@ The story: one employee, one personal Copilot, a workforce helping the entire de
 ## Before the meeting
 
 - Use the final Render HTTPS address and sign in with the invitation code before screen sharing.
-- Present as Alex Morgan. The explicit presentation setup provides 14-day trials of his implemented specialists, with visible limits and no payment collection.
-- Keep one clean browser tab open. Open “Explore the demo” for the built-in six-step guide.
+- Present as Alex Morgan. The workforce includes his available role-authorized specialists; presentation allowances remain visible and no payment is collected.
+- Keep one clean browser tab open. Open “Explore the demo” for the built-in walkthrough.
 - Confirm the actual provider status and practice one short Copilot question. Without connectivity, use the same deterministic tools and dedicated workflow screens.
 - Rehearse voice on the actual laptop and network if it will be shown. Provider session setup has been tested; live microphone/audio acceptance is still separate.
 - Do not refresh the sample workspace by deleting data. Use a separate rehearsal database when you want to repeat approvals from scratch.
@@ -21,6 +21,8 @@ The story: one employee, one personal Copilot, a workforce helping the entire de
 6. **Deal packages — “The right details, for the right recipient.”** Choose Mike and the released Marietta property. Review the draft and its disclosure checks. Show manual copy/handoff; nothing is delivered to an investor. An unresolved recipient illustrates the blocking checks.
 7. **AI workforce and Credits & billing — “One workforce, a clear usage balance.”** Show all available role-authorized specialists included, $15 monthly simulated credits, a reviewed sample estimate and a simulated top-up. Explain that the wallet is separate from live provider usage in this phase. Four planned roles remain visibly in development. Company seats are assigned by a billing administrator.
 8. **Office manager — “A clear view without a separate system.”** In Settings → Demonstration personas, select Taylor. Open Team overview for the sample office's tasks, relationships and released inventory. Switch back to Alex when finished.
+
+For the communications preview, open **Inbox** and show Mike's fictional repair-cost email next to his current relationship context. Save a manual reply, reopen it from Drafts, and demonstrate a fictional follow-up arrival. Compare Gmail, Outlook and investor-text accounts; all are labeled demo. Explain that AI inbox tools and reviewed simulated delivery are the next phase. Live mailbox access and actual investor SMS follow provider/company approval. This is separate from the employee privately messaging Copilot.
 
 If time permits, run Investor Hunter against a sample property. It returns 12 fictional candidates with evidence and duplicate checks. Leave external research off; the demo demonstrates the workflow without pretending these are real discoveries.
 

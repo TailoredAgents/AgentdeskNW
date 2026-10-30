@@ -1,5 +1,9 @@
 # System architecture
 
+## Unified inbox — communications Phase 2
+
+The private correspondence domain uses `communications.ts`, `communications-api.ts`, separate migration-016 tables and `communications-contracts.ts`. Fictional Gmail, Outlook and business-text sources normalize to shared accounts/threads/messages/drafts; their records never become private Copilot commands or employee channel deliveries. `/api/inbox` uses the common authenticated boundary and server-enforced ownership, current investor permissions, versions and idempotency. The UI reads relationship context without promoting messages into CRM facts. Copilot mailbox tools, sending and live adapters remain later work. See COMMUNICATIONS_INBOX.md.
+
 ## Communications and credits update — October 29, 2026
 
 The workforce subscription and wallet simulator extend the same monolith. All implemented role-authorized specialists share one base plan. Company seats require explicit billing-admin assignment. The wallet has reviewed server-priced sample quotes, transactional holds/settlement and append-only history; it is separate from live provider admission/receipts until production cost reconciliation. See COMMUNICATIONS_AND_CREDITS_PLAN.md for email, investor inbox and dedicated number phases.
@@ -75,7 +79,8 @@ Property release commands carry a source, explicit audience, unique event key an
 | Research provider | Separate fictional provider and explicitly selected OpenAI web-search adapter; no live source run verified | Live evidence evaluation, licensed transactions, independent contact verification and source-rights review |
 | Model provider | Bounded Responses manager, durable replay and provider/token receipts; mock-tested | Account access, live evaluation, operational reconciliation and retention |
 | Voice | WebRTC setup, trusted server sideband and receipt-driven tools/lifecycle; live audio unverified | Real microphone/audio trials, cost evaluation, multi-instance operation and production metering policy |
-| Channels | Web is operational surface; channel design documented | Verified external identity links and replay-safe webhooks |
+| Employee channels | Shared Copilot with implemented Slack/SMS identity linking, replay-safe ingress/outbox and mocked delivery acceptance | Actual account setup and verified real round-trips |
+| Investor correspondence | Private fictional Gmail/Outlook/text inbox with source records, manual drafts and reviewed relationship association | Copilot inbox tools, live consent/sync, dedicated numbers and reviewed delivery |
 | Knowledge | Baseline fixture guidance | Approved document revisions and permission-aware retrieval |
 
 ## Trust and memory boundaries

@@ -10,7 +10,7 @@ The sample-work rate card has a version and server-owned provider-cost examples 
 
 **Live provider activity does not debit the new wallet in this phase.** Existing text, voice, research and SMS allowances remain independent operational safeguards. Simulated wallet top-ups do not increase those allowances. Before live wallet billing, Phase 6 must integrate real usage with versioned model/tool/audio rates, cost reconciliation, holds, failure/refund policy and payment settlement. Unknown provider dollars remain unknown. No estimated or fictional amount is relabeled as an invoice.
 
-Ordinary navigation and deterministic task management do not consume retail credits. Background communications processing will need explicit scope and budgets in later phases.
+Ordinary navigation, deterministic task management and the Phase 2 fictional Inbox do not consume retail credits. Inbox filtering, context reads, manual drafts and sample arrivals make no AI/provider calls. Background communications processing will need explicit scope and budgets in later phases.
 
 ## Existing operational allowances and admission
 

@@ -12,7 +12,7 @@ Taylor is the explicitly assigned fictional billing administrator. The company-s
 
 ## Upcoming connections
 
-Email and the Business Line appear as planned additions with no functioning purchase or connection claim. Email will support multiple Gmail/Workspace and Outlook/Microsoft 365 accounts. The Business Line will provide a dedicated investor-facing SMS inbox; it is separate from today's employee-to-Copilot SMS connection. Pricing/packaging choices are documented in `COMMUNICATIONS_AND_CREDITS_PLAN.md`.
+The connections preview opens the working fictional Inbox, with multiple Gmail/Outlook demo mailboxes, investor texts and saved manual reply drafts. Live email connections and a dedicated Business Line remain planned with no purchase or connectivity claim. The investor inbox is separate from today's employee-to-Copilot SMS connection. Pricing/packaging choices are documented in `COMMUNICATIONS_AND_CREDITS_PLAN.md`.
 
 ## Demonstration
 

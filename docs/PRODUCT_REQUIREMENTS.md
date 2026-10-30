@@ -1,5 +1,9 @@
 # Product requirements
 
+## Communications Phase 2 — private inbox preview
+
+An employee can work with multiple fictional email and business-text accounts through All, Email, Texts, Needs reply and Drafts views. Source messages, current authorized investor context, reviewed association, explicit handling status and saved manual replies must persist. Protect unsaved edits and reject stale writes. Private mailbox access never follows office-manager CRM access. Distinguish demo arrivals, saved drafts and manually selected waiting/done states from sent/delivered messages. AI inbox drafting/actions, live mailbox sync and actual investor delivery remain later phases. Acceptance is in COMMUNICATIONS_INBOX.md.
+
 ## Communications and credits update — October 29, 2026
 
 The owner-approved communications and credits plan supersedes individual specialist shopping: one workforce subscription, included retail credits, optional communication services and a future unified email/investor-text workspace. Phase 1 implements the workforce and simulated wallet only. Preserve private assistant commands separately from investor correspondence; source relationship knowledge and review outbound/CRM changes. All customer-provider connectivity and actual payment collection remain gated future acceptance.

@@ -1,5 +1,7 @@
 # Employee messaging — AgentDesk NW
 
+The new fictional investor **Inbox** is a separate correspondence domain. Its demo business-text account does not use the employee Copilot SMS number, consume channel segments or receive these webhooks. Dedicated live investor numbers and delivery are planned later; see [COMMUNICATIONS_INBOX.md](COMMUNICATIONS_INBOX.md).
+
 Implemented locally on October 29, 2026. Provider credentials are not installed yet; no actual Slack message or SMS round-trip is claimed. The owner created `TailoredAgents/AgentdeskNW` and authorized committing and pushing this project on October 29. Render deployment remains deferred until requested.
 
 ## What the employee gets

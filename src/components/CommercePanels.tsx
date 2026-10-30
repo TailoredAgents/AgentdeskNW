@@ -8,7 +8,7 @@ import {WalletPanel} from './WalletPanel';
 
 const dollars=(cents:number)=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:cents%100?2:0}).format(cents/100);
 function SpecialistIcon({id}:{id:string}){return id==='investor-hunter'?<Target size={22}/>:id==='call-notetaker'?<FileText size={22}/>:id.includes('relationship')?<Users size={22}/>:id.includes('marketing')?<MessageSquare size={22}/>:id.includes('workflow')?<Workflow size={22}/>:id.includes('salesforce')?<Building2 size={22}/>:<Sparkles size={22}/>;}
-type Props={data:Bootstrap;billing:BillingState;onChange:(message?:string)=>Promise<void>;onError:(error:unknown)=>void;onUse:(id:string)=>void};
+type Props={data:Bootstrap;billing:BillingState;onChange:(message?:string)=>Promise<void>;onError:(error:unknown)=>void;onUse:(id:string)=>void;onInbox?:()=>void};
 const filters=[['your-role','For your role'],['all','All specialists'],['dispositions','Dispositions'],['acquisitions','Acquisitions'],['management','Management'],['general','Everyday work']];
 function accessLabel(specialist:Specialist,access?:FeatureAccess){return specialist.status==='planned'?'In development':!access?.roleAllowed?'For another role':access.allowed?'Available in demo':'Access unavailable';}
 
@@ -23,11 +23,11 @@ function SpecialistCard({specialist,access,onUse,onDetails}:{specialist:Speciali
 function SpecialistDetails({specialist,access,onClose,onUse}:{specialist:Specialist;access?:FeatureAccess;onClose:()=>void;onUse:(id:string)=>void}){
  return <Modal title={specialist.name} onClose={onClose}><div className="workforce-detail"><Badge tone={access?.allowed?'green':'amber'}>{accessLabel(specialist,access)}</Badge><p>{specialist.purpose}</p><h3>What it can help with</h3><ul>{specialist.outputs.map(output=><li key={output}>{readable(output)}</li>)}</ul><h3>What it needs from you</h3><ul>{specialist.inputs.map(input=><li key={input}>{readable(input)}</li>)}</ul><div className="commerce-notice"><ShieldCheck size={17}/><span>{specialist.approval}</span></div><p className="small-copy">{access?.reason} Live connections are separate from subscription access. Sample records remain fictional.</p><button className="button primary" disabled={!access?.allowed} onClick={()=>{onClose();onUse(specialist.id);}}>Use with Copilot<ArrowRight size={15}/></button></div></Modal>;
 }
-function ComingConnections(){
- return <section className="connections-preview"><SectionHead title="More of your work, connected" aside={<Badge>Planned</Badge>}/><p className="small-copy">The next communications phase will bring email and investor texts into one workspace.</p><div className="connection-preview-grid"><article><span className="commerce-icon"><Mail size={22}/></span><div><h3>Email connections</h3><p>Gmail and Microsoft 365, with multiple mailboxes and reviewable replies.</p><small>Packaging under review · Connection not available yet</small></div></article><article><span className="commerce-icon"><Phone size={22}/></span><div><h3>AgentDesk Business Line</h3><p>A dedicated investor texting number, inbox and AI-assisted reply drafts.</p><small>Proposed $39 / month · Not available to purchase</small></div></article></div></section>;
+function ComingConnections({onInbox}:{onInbox?:()=>void}){
+ return <section className="connections-preview"><SectionHead title="More of your work, connected" aside={<Badge>Inbox preview</Badge>}/><p className="small-copy">Explore email and investor texts together with fictional accounts and saved reply drafts. Live provider connections come later.</p>{onInbox&&<button className="button secondary" onClick={onInbox}>Open demo inbox<ArrowRight size={15}/></button>}<div className="connection-preview-grid"><article><span className="commerce-icon"><Mail size={22}/></span><div><h3>Email connections</h3><p>Preview Gmail and Microsoft 365 conversations across multiple demo mailboxes.</p><small>Demo inbox available · Live connections planned</small></div></article><article><span className="commerce-icon"><Phone size={22}/></span><div><h3>AgentDesk Business Line</h3><p>Preview investor texts and saved drafts. A dedicated number and AI-assisted replies are planned.</p><small>Proposed $39 / month · Not available to purchase</small></div></article></div></section>;
 }
 
-export function Marketplace({data,billing,onChange,onError,onUse}:Props){
+export function Marketplace({data,billing,onChange,onError,onUse,onInbox}:Props){
  const [selection,setSelection]=useState<SubscriptionSelection>(billing.subscription.selection),[quote,setQuote]=useState<SubscriptionQuote>(billing.quote),[filter,setFilter]=useState('your-role'),[timing,setTiming]=useState<'now'|'period_end'>('now'),[busy,setBusy]=useState(false),[quoting,setQuoting]=useState(false),[detail,setDetail]=useState<Specialist|null>(null);
  const attempt=useRef<{key:string;eventKey:string}|null>(null);
  const configure=async(next:SubscriptionSelection)=>{setQuoting(true);try{const result=await api<SubscriptionQuote>('/billing/quote',next);setSelection(result.selection);setQuote(result);}catch(e){onError(e);}finally{setQuoting(false);}};
@@ -43,7 +43,7 @@ export function Marketplace({data,billing,onChange,onError,onUse}:Props){
   <div className="commerce-layout"><div>
    <div className="commerce-filter" role="group" aria-label="Filter AI specialists">{filters.map(([id,label])=><button key={id} className={filter===id?'active':''} onClick={()=>setFilter(id)}>{label}</button>)}</div>
    <div className="commerce-grid">{visible.map(s=><SpecialistCard key={s.id} specialist={s} access={billing.access.find(a=>a.id===s.id)} onUse={onUse} onDetails={()=>setDetail(s)}/>)}</div>
-   <ComingConnections/>
+   <ComingConnections onInbox={onInbox}/>
   </div><aside className="subscription-config workforce-plan">
    <div className="config-heading"><Layers size={20}/><h2>Your plan</h2></div><Badge tone={company?'green':'neutral'}>{company?'Company-funded seat':'Individual subscription'}</Badge><h3>{plan?.name??'AgentDesk Workforce'}</h3><p className="small-copy">All specialists are included. Role permissions, company policy and implementation readiness determine what you can use.</p>
    <div className="quote-lines">{quote.lines.map(line=><div key={line.id}><span>{line.name}{line.creditCents>0&&<small>Company pays {dollars(line.creditCents)}</small>}</span><strong>{dollars(line.personalCents)}</strong></div>)}</div>

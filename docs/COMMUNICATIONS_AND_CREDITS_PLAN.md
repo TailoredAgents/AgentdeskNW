@@ -2,7 +2,7 @@
 
 Owner: Tailored Agents. Approved direction: October 29, 2026.
 
-This plan follows the owner's supplied email/business-line/pricing discussion and supersedes the individually purchased specialist model for new simulated subscriptions. The current authorization covers writing/updating the project documentation, implementing **Phase 1**, and committing/pushing the result to `TailoredAgents/AgentdeskNW`. Later phases remain planned. No live payment collection, phone-number purchase, investor message or Render deployment is part of Phase 1.
+This plan follows the owner's supplied email/business-line/pricing discussion and supersedes the individually purchased specialist model for new simulated subscriptions. Phase 1 is implemented and pushed as `414fb0d`. The owner subsequently authorized **Phase 2**, the unified fictional inbox, with updated documentation and commit/push to `TailoredAgents/AgentdeskNW`. Phases 3–6 remain planned. No live payment collection, phone-number purchase, investor message or Render deployment is part of this work.
 
 ## Product outcome
 
@@ -29,7 +29,7 @@ All implemented specialists are included subject to role and company permission.
 
 ## Phase 1 — Workforce subscription and credit-wallet demonstration
 
-Status: **implemented and verified**. This phase is included in the owner-authorized repository checkpoint. Verification: 355 automated tests, 356 compiled HTTP checks, production build, type/lint checks, desktop/mobile inspection and preservation on a migrated database copy. See `PROGRESS.md` for details. Phase 2 is the next planned work; real payment collection and provider wallet debiting remain deferred.
+Status: **implemented and verified**. This phase is included in the owner-authorized repository checkpoint. Verification: 355 automated tests, 356 compiled HTTP checks, production build, type/lint checks, desktop/mobile inspection and preservation on a migrated database copy. See `PROGRESS.md` for details. Phase 2 is now implemented; real payment collection and provider wallet debiting remain deferred.
 
 ### Deliverables
 
@@ -54,6 +54,8 @@ Status: **implemented and verified**. This phase is included in the owner-author
 - Commit and push all phase changes; verify GitHub main matches the local commit. Render deployment remains separate.
 
 ## Phase 2 — Unified communications inbox with fictional adapters
+
+Status: **implemented and verified**. Verification passed: 379 automated tests across 19 files, 475 compiled HTTP checks (119 new inbox checks), production build, type/lint checks, desktop/phone inspection and migration-copy preservation. Detailed design and acceptance are in [COMMUNICATIONS_INBOX.md](COMMUNICATIONS_INBOX.md). This phase includes manually saved reply drafts and explicit inbox status; AI drafting, mailbox search through Copilot and simulated sending are Phase 3.
 
 Create All, Email, Texts, Needs reply and Drafts views. Store connected-account ownership, message/thread identity, participants, timestamps, source references, attachments/links, status and investor association independently of any provider. Seed realistic Gmail-like, Outlook-like and business-number conversations with explicit demo labels. Support multiple mailboxes and sender identities from the beginning. Show ambiguous investor matches for review.
 

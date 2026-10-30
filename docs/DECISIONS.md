@@ -1,5 +1,9 @@
 # Architecture decisions
 
+## October 29, 2026 — Build the private inbox before live communication adapters
+
+The owner approved communications Phase 2 after workforce/wallet commit `414fb0d`. Add a provider-independent inbox with multiple fictional mailboxes, investor texts, manual drafts and permission-aware relationship context. Separate investor correspondence from employee-to-Copilot channels and preserve each source/ownership boundary. Exact-contact matches can suggest context; ambiguous/name-only matches require review. Saving a draft or linking a thread does not send or write CRM facts. Prove persistence, permission revocation and conflict/replay behavior before adding model tools or external delivery. The authorized release includes documentation and commit/push; Render deployment remains separate.
+
 ## Communications and credits update — October 29, 2026
 
 The owner approved a workforce subscription with $15 retail credits instead of individual specialist purchases, plus phased email and business-number communications. Phase 1 deliberately demonstrates monetary accounting with server-owned fictional scenarios while preserving actual provider receipt tracking separately. One paid employee seat has one wallet across its office memberships. External investor conversations will be distinct from private Copilot commands. See COMMUNICATIONS_AND_CREDITS_PLAN.md for scope and acceptance.

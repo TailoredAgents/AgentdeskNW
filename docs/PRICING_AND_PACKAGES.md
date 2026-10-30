@@ -14,7 +14,7 @@ This is a provisional commercial demonstration. No payment is collected, no card
 
 The workforce includes all sixteen catalog capabilities, with role/company restrictions and actual implementation readiness enforced separately. Twelve have limited local/demo capabilities; four remain planned. There is no individual specialist purchase needed to coordinate authorized implemented work.
 
-Email connectors and the dedicated investor-facing Business Line are **planned**, not purchasable connections in this phase. A $39 business-line price is provisional; allowance, registration, account ownership and actual delivery economics require later acceptance. Whether the first mailbox is included and what extra mailboxes cost remain open choices. Future business-line packaging should remove overlapping employee SMS fees where included.
+The fictional email/investor-text Inbox preview is available without buying or connecting an account. Live email connectors and the dedicated investor-facing Business Line remain **planned**, not purchasable connections in this phase. A $39 business-line price is provisional; allowance, registration, account ownership and actual delivery economics require later acceptance. Whether the first mailbox is included and what extra mailboxes cost remain open choices. Future business-line packaging should remove overlapping employee SMS fees where included.
 
 ## Company seats and payer separation
 

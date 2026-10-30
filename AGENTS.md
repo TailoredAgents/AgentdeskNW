@@ -13,6 +13,12 @@ Read `docs/ORIGINAL_BRIEF.md`, `MASTER_PLAN.md`, and `docs/PROGRESS.md` before m
 - Run `npm run typecheck`, `npm run lint`, `npm test`, `npm run build`, and the smoke suite after major changes. Write tests for tenant/permission boundaries, approval enforcement, durable jobs and core workflows.
 - Update `docs/PROGRESS.md` and affected specifications with actual behavior, verification and remaining setup. Do not publish, contact investors or mutate third-party accounts without authorization.
 
+## Communications inbox rules
+
+- Follow `docs/COMMUNICATIONS_INBOX.md` for the private fictional email/investor-text inbox. Keep correspondence separate from employee Copilot conversations and channel inbox/outbox.
+- Office-manager CRM access does not grant mailbox access. Recheck linked investor permissions on reads and replay. Saving a manual draft or reviewing a match never sends a message or changes CRM facts.
+- Phase 2 has no live connector, sending, attachment transfer or AI inbox tools. Preserve that boundary until the corresponding phase is authorized and implemented.
+
 ## Subscription and usage rules
 
 - The current communications/credits Phase 1 uses all-workforce plans ($50 retail/$30 explicitly assigned company seat) and a separate $15 simulated monthly wallet. Follow `docs/COMMUNICATIONS_AND_CREDITS_PLAN.md`; old individual-specialist catalog entries remain historical only. Never describe the wallet simulator as live provider billing.

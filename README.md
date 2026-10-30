@@ -8,11 +8,15 @@ The application centers on one Copilot that coordinates investor intelligence, p
 
 ## Monday presentation build
 
-The workspace now has a light professional interface, forest sidebar, refreshed dashboard, consistent dialogs/forms/tables, phone layouts, a six-step demo guide, and a sample office workload view. Existing workflows and live AI remain available.
+The workspace now has a light professional interface, forest sidebar, refreshed dashboard, consistent dialogs/forms/tables, phone layouts, a guided demo walkthrough, and a sample office workload view. Existing workflows and live AI remain available.
 
 Prepare a repeatable presentation scenario with `npm run demo:prepare`. This adds role-scoped 14-day trials and reviewable fictional work once; it preserves existing records and never renews the trial on restart. This has been applied to the prepared local workspace.
 
 A private hosted demo entrance and Render blueprint are implemented. **Repository: [TailoredAgents/AgentdeskNW](https://github.com/TailoredAgents/AgentdeskNW). GitHub publishing is authorized; Render deployment remains a separate next step.** See [Render setup](docs/RENDER_DEMO.md) and the [Monday walkthrough](docs/MONDAY_DEMO.md). Real company data is intentionally deferred until customer approval.
+
+## Unified inbox preview
+
+The communications Phase 2 preview brings fictional Gmail, Outlook and investor-text accounts into one private Inbox. Filter by channel, account, reply status or saved drafts; inspect linked investor context; review uncertain matches; and save manual reply drafts with the correct sender/recipient. These records remain separate from the employee’s private Copilot chat. No provider is connected and no draft is sent. See [Inbox scope and walkthrough](docs/COMMUNICATIONS_INBOX.md) and the [delivery plan](docs/COMMUNICATIONS_AND_CREDITS_PLAN.md).
 
 ## Local setup
 
@@ -50,6 +54,7 @@ npm test
 npm run build
 npm run test:smoke
 npm run test:hosted
+npm run test:inbox
 ```
 
 The smoke suite requires the compiled build. By default it starts the built application and worker on a temporary loopback port with a disposable SQLite database, disables model credentials, runs HTTP workflow checks, then stops the processes and removes its temporary database. No manually started server is needed, and your demonstration data is unchanged.

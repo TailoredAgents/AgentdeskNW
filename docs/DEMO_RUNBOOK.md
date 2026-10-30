@@ -19,6 +19,10 @@ Use the [Monday walkthrough](MONDAY_DEMO.md), [communications/credits plan](COMM
 6. Show that ordinary task completion and navigation do not consume the wallet. Current real AI/provider usage is not yet debited from it.
 7. Show planned email and Business Line cards. They do not imply a connected mailbox, purchased number or investor sending capability.
 
+## Inbox preview story
+
+Open **Inbox** as Alex. Show the fictional Gmail, Outlook and investor-text accounts, then open Mike's repair-cost question. Read its original message/source and current investor context; mailbox content is not a verified CRM update. Write and save a concise reply, reopen it from **Drafts**, and show **Not sent**. Use a fictional-arrival scenario to demonstrate a new unread follow-up without connecting a provider. Review an uncertain investor match and mark a conversation waiting or done. The inbox state is employee-managed; waiting/done does not prove delivery or schedule a reminder. See [COMMUNICATIONS_INBOX.md](COMMUNICATIONS_INBOX.md) for the detailed sequence and current limits.
+
 ## Company-seat story
 
 Select Taylor Reed / Manager. Taylor is the explicitly assigned fictional billing administrator. In Credits & billing, assign Alex a company seat under a clear demonstration agreement label. Return to Alex and show $0 personal base / $30 company base, with the same $15 included credit period and no duplicate grant. An employee cannot self-select that discount.
@@ -33,7 +37,7 @@ The workforce plan includes available role-authorized matching, briefing, packag
 
 ## Verification
 
-`npm run test:smoke` and `npm run test:wallet` use disposable local servers and databases. Do not set `SMOKE_BASE_URL` unless intentionally testing and mutating that instance. All checks use authenticated service routes; there is no runtime entitlement bypass. See PROGRESS for final counts and browser evidence.
+`npm run test:smoke`, `npm run test:wallet` and `npm run test:inbox` use disposable local servers and databases. Do not set `SMOKE_BASE_URL` unless intentionally testing and mutating that instance. All checks use authenticated service routes; there is no runtime entitlement bypass. See PROGRESS for final counts and browser evidence.
 
 ---
 

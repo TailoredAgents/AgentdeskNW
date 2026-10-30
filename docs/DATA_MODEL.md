@@ -1,5 +1,9 @@
 # Data model
 
+## Unified inbox — communications Phase 2
+
+Migration 016 adds correspondence accounts, threads, messages, saved/discarded drafts, replay receipts and a persistent demo-seed marker. Organization, office and employee ownership is independent of CRM manager visibility. Provider/source references, account identity, plain message text, attachment metadata, explicit read/handling status and investor association are preserved separately from assistant chat. Sender/recipient are server-bound when a draft is saved. Current permissions filter linked investor details on every read. See COMMUNICATIONS_INBOX.md and the migration for exact schema.
+
 ## Communications and credits update — October 29, 2026
 
 Migrations 014/015 add enterprise seat assignments, preserved legacy subscription migration snapshots, and the credit wallet (accounts, reviewed quotes, operations, append-only ledger and events). The wallet belongs to the organization/employee paid seat across office memberships; actions retain office provenance and validate current membership. Included monthly credit and purchased rollover are distinct. Business records and old invoice rows are retained. See BILLING_ARCHITECTURE.md.
