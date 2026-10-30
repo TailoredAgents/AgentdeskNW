@@ -1,8 +1,8 @@
 # System architecture
 
-## Planned durable execution layer
+## Durable local execution layer
 
-Roadmap [Phase A](IMPLEMENTATION_ROADMAP.md#phase-a--reliable-work-and-spending) adds a server-owned work-run/step/event model, capability executor, whole-job budget and shared continuation controls around existing domain services. It does not replace the modular monolith or imply that general durable planning currently exists. Planning, specialist calls, research children and verification share one assignment and budget; the $1 rule and auto top-up simulation precede real settlement. Later phases add source/versioned methods, linked deal/party/document context, scheduling and tested standing action authority. Every surface reuses current scoped services and authoritative receipts.
+The bounded [Phase A](IMPLEMENTATION_ROADMAP.md#phase-a--reliable-work-and-spending) implementation adds private work runs, immutable versioned plans, steps/dependencies, events, leases and transactional receipts around existing domain services. `work-capabilities.ts` defines eight typed local capabilities; Copilot composes these through `start_work`, and Work queue offers role starters and pause/resume/cancel/exact cost decisions. `work-budget.ts` owns the fictional whole-job quote, hold and partial settlement, including child synthetic research. Original model context and immutable plan references are rechecked on execution, display and chat replay. See [WORK_EXECUTION.md](WORK_EXECUTION.md). The worker performs no additional model calls, real research or sending. Full channel controls, automatic top-up and real provider cost integration remain pending. Later phases add source/versioned methods, linked deal/party/document context, scheduling and tested standing action authority. Every surface reuses current scoped services and authoritative receipts.
 
 ## Company-email demonstration — communications Phase 4A
 

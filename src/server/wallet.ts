@@ -41,7 +41,7 @@ function totals(actor:Actor,periodStart:string){
  const purchasedCents=entries.reduce((sum,entry)=>sum+entry.purchasedDeltaCents,0);
  const holds=operations.filter(operation=>operation.status==='reserved'||operation.status==='unknown');
  const reservedCents=holds.reduce((sum,operation)=>sum+operation.includedReservedCents+operation.purchasedReservedCents,0);
- const reservedThisPeriodCents=holds.filter(operation=>operation.periodStart===periodStart).reduce((sum,operation)=>sum+operation.maximumCents,0);
+ const reservedThisPeriodCents=holds.filter(operation=>operation.periodStart===periodStart).reduce((sum,operation)=>sum+operation.includedReservedCents+operation.purchasedReservedCents,0);
  const spentThisPeriodCents=entries.filter(entry=>entry.periodStart===periodStart).reduce((sum,entry)=>sum+entry.chargedCents,0);
  return {entries,operations,includedCents,purchasedCents,reservedCents,reservedThisPeriodCents,spentThisPeriodCents};
 }
@@ -119,7 +119,7 @@ function finish(actor:Actor,account:Account,operation:WalletOperation,outcome:'s
  writeOperation(actor,{...operation,status:outcome==='success'?'settled':'released',chargedCents,updatedAt:now()});
 }
 export function simulateWalletWork(actor:Actor,input:z.input<typeof simulationSchema>){const parsed=simulationSchema.parse(input);return mutate(actor,parsed,'sample_work',parsed,account=>{
- const quote=readQuote(actor,parsed.quoteId);requireFeature(actor,quote.feature);
+ const quote=readQuote(actor,parsed.quoteId);if(quote.scenarioId==='copilot-work')throw new AppError(409,'Copilot job spending is managed by its work run.');requireFeature(actor,quote.feature);
  if(Date.parse(quote.expiresAt)<=Date.now())throw new AppError(409,'This estimate expired. Review a new estimate before continuing.');
  if(getDb().prepare('SELECT 1 FROM wallet_operations WHERE quote_id=?').get(quote.id))throw new AppError(409,'This estimate already has sample work. Open its existing reservation instead.');
  const balance=totals(actor,account.periodStart);
@@ -136,7 +136,83 @@ export function resolveWalletWork(actor:Actor,input:z.input<typeof resolveSchema
  const row=getDb().prepare('SELECT data FROM wallet_operations WHERE id=? AND organization_id=? AND user_id=?').get(parsed.operationId,...walletOwner(actor)) as {data:string}|undefined;
  if(!row)throw new AppError(404,'Sample work not found in your workspace.');
  // Resolving already reserved fictional work remains possible after cancellation; it grants no new execution.
- finish(actor,account,JSON.parse(row.data) as WalletOperation,parsed.outcome,parsed.eventKey);
+ const operation=JSON.parse(row.data) as WalletOperation;if(operation.workRunId)throw new AppError(409,'Copilot job spending is managed by its work run.');
+ finish(actor,account,operation,parsed.outcome,parsed.eventKey);
 });}
 
 export type {WalletScenarioId};
+
+
+/** Internal job-budget ledger bridge. No HTTP/model route accepts these server-priced inputs. */
+export function reserveWorkWallet(actor:Actor,input:{runId:string;quoteId:string;maximumCents:number;expiresAt:string}):WalletOperation {
+ assertActor(actor);assertBillingDemo();requireFeature(actor,'core');
+ const maximum= z.number().int().nonnegative().max(100000).parse(input.maximumCents);
+ return getDb().transaction(()=>{
+  const account=ensureAccount(actor),db=getDb();
+  const prior=db.prepare('SELECT data FROM wallet_operations WHERE quote_id=? AND organization_id=? AND office_id=? AND user_id=?').get(input.quoteId,...owner(actor)) as {data:string}|undefined;
+  if(prior){const operation=JSON.parse(prior.data) as WalletOperation;if(operation.workRunId!==input.runId||operation.maximumCents!==maximum)throw new AppError(409,'This job reservation already represents different work.');return operation;}
+  if(Date.parse(input.expiresAt)<=Date.now())throw new AppError(409,'This job estimate expired. Refresh the estimate before starting.');
+  const balance=totals(actor,account.periodStart);
+  if(balance.includedCents+balance.purchasedCents<maximum)throw new AppError(402,'Not enough available credits for this job maximum.');
+  if(balance.spentThisPeriodCents+balance.reservedThisPeriodCents+maximum>account.monthlySpendLimitCents)throw new AppError(402,'This job maximum exceeds your monthly spending limit.');
+  const quote:WalletQuote={id:input.quoteId,scenarioId:'copilot-work',name:'Copilot job · simulated usage',feature:'core',rateVersion:1,markupMultiplier:5,maximumCents:maximum,successCents:maximum,sampleProviderMaximumCents:maximum/5,sampleProviderSuccessCents:maximum/5,costBasis:'fictional_sample',createdAt:now(),expiresAt:input.expiresAt};
+  db.prepare('INSERT INTO wallet_quotes VALUES(?,?,?,?,?)').run(quote.id,...owner(actor),JSON.stringify(quote));
+  const includedReservedCents=Math.min(balance.includedCents,maximum),purchasedReservedCents=maximum-includedReservedCents;
+  const operation:WalletOperation={id:newId('wallet_work'),quoteId:quote.id,scenarioId:'copilot-work',name:quote.name,periodStart:account.periodStart,rateVersion:1,workRunId:input.runId,status:'reserved',maximumCents:maximum,chargedCents:0,includedReservedCents,purchasedReservedCents,quote,createdAt:now(),updatedAt:now()};
+  writeOperation(actor,operation);
+  append(actor,`job-reserve:${quote.id}`,{kind:'reservation',description:'Copilot job: fictional credits reserved against its approved maximum.',periodStart:account.periodStart,includedDeltaCents:-includedReservedCents,purchasedDeltaCents:-purchasedReservedCents,reservedIncludedDeltaCents:includedReservedCents,reservedPurchasedDeltaCents:purchasedReservedCents,operationId:operation.id});
+  account.version++;writeAccount(actor,account);
+  return operation;
+ }).immediate();
+}
+
+function readWorkWalletOperation(actor:Actor,operationId:string,runId:string):WalletOperation {
+ const row=getDb().prepare('SELECT data FROM wallet_operations WHERE id=? AND organization_id=? AND office_id=? AND user_id=?').get(operationId,...owner(actor)) as {data:string}|undefined;
+ if(!row)throw new AppError(404,'Job reservation not found in your workspace.');
+ const operation=JSON.parse(row.data) as WalletOperation;
+ if(operation.workRunId!==runId)throw new AppError(409,'The reservation belongs to different work.');
+ return operation;
+}
+
+export function consumeWorkWallet(actor:Actor,input:{runId:string;operationId:string;stepKey:string;amountCents:number}):WalletOperation {
+ assertActor(actor);assertBillingDemo();requireFeature(actor,'core');
+ const amount=z.number().int().nonnegative().max(100000).parse(input.amountCents);
+ return getDb().transaction(()=>{
+  const account=ensureAccount(actor),db=getDb(),operation=readWorkWalletOperation(actor,input.operationId,input.runId);
+  const eventKey=`job-consume:${operation.id}:${input.stepKey}`;
+  const prior=db.prepare('SELECT data FROM wallet_ledger WHERE organization_id=? AND user_id=? AND event_key=?').get(...walletOwner(actor),eventKey) as {data:string}|undefined;
+  if(prior){if((JSON.parse(prior.data) as WalletLedgerEntry).chargedCents!==amount)throw new AppError(409,'This job step already has a different usage receipt.');return operation;}
+  if(operation.status!=='reserved')throw new AppError(409,'This job reservation cannot dispatch more work.');
+  const remaining=operation.includedReservedCents+operation.purchasedReservedCents;
+  if(amount>remaining)throw new AppError(409,'This step exceeds the reserved job maximum. Review a revised estimate first.');
+  const includedUsed=Math.min(amount,operation.includedReservedCents),purchasedUsed=amount-includedUsed;
+  const updated:WalletOperation={...operation,includedReservedCents:operation.includedReservedCents-includedUsed,purchasedReservedCents:operation.purchasedReservedCents-purchasedUsed,chargedCents:operation.chargedCents+amount,status:amount===remaining?'settled':'reserved',updatedAt:now()};
+  append(actor,eventKey,{kind:'settlement',description:'Copilot job: completed step settled at its fictional rate.',periodStart:operation.periodStart,reservedIncludedDeltaCents:-includedUsed,reservedPurchasedDeltaCents:-purchasedUsed,chargedCents:amount,operationId:operation.id});
+  writeOperation(actor,updated);account.version++;writeAccount(actor,account);return updated;
+ }).immediate();
+}
+
+export function releaseWorkWallet(actor:Actor,input:{runId:string;operationId:string}):WalletOperation {
+ assertActor(actor);assertBillingDemo();
+ return getDb().transaction(()=>{
+  const account=ensureAccount(actor),operation=readWorkWalletOperation(actor,input.operationId,input.runId);
+  if(operation.status==='unknown')throw new AppError(409,'The job outcome is unresolved; its reservation must remain held.');
+  if(operation.status==='settled'||operation.status==='released')return operation;
+  const samePeriod=account.periodStart===operation.periodStart;
+  append(actor,`job-release:${operation.id}`,{kind:'release',description:'Copilot job: unused fictional reservation released; completed work remains spent.',periodStart:operation.periodStart,includedDeltaCents:samePeriod?operation.includedReservedCents:0,purchasedDeltaCents:operation.purchasedReservedCents,reservedIncludedDeltaCents:-operation.includedReservedCents,reservedPurchasedDeltaCents:-operation.purchasedReservedCents,expiredCents:samePeriod?0:operation.includedReservedCents,operationId:operation.id});
+  const updated:WalletOperation={...operation,includedReservedCents:0,purchasedReservedCents:0,status:operation.chargedCents?'settled':'released',updatedAt:now()};
+  writeOperation(actor,updated);account.version++;writeAccount(actor,account);return updated;
+ }).immediate();
+}
+
+export function markWorkWalletUnknown(actor:Actor,input:{runId:string;operationId:string}):WalletOperation {
+ assertActor(actor);assertBillingDemo();
+ return getDb().transaction(()=>{
+  const account=ensureAccount(actor),operation=readWorkWalletOperation(actor,input.operationId,input.runId);
+  if(operation.status==='unknown')return operation;
+  if(operation.status!=='reserved')throw new AppError(409,'Only an outstanding job reservation can have an unresolved outcome.');
+  const updated:WalletOperation={...operation,status:'unknown',updatedAt:now()};
+  append(actor,`job-unknown:${operation.id}`,{kind:'unknown',description:'Copilot job outcome unresolved; unused maximum remains held.',periodStart:operation.periodStart,operationId:operation.id});
+  writeOperation(actor,updated);account.version++;writeAccount(actor,account);return updated;
+ }).immediate();
+}

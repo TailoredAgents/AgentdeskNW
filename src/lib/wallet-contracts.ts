@@ -5,12 +5,12 @@ export interface WalletScenario {
  allowed:boolean;reason:string;
 }
 export interface WalletQuote {
- id:string;scenarioId:WalletScenarioId;name:string;feature:string;rateVersion:number;markupMultiplier:5;
+ id:string;scenarioId:WalletScenarioId|'copilot-work';name:string;feature:string;rateVersion:number;markupMultiplier:5;
  maximumCents:number;successCents:number;sampleProviderMaximumCents:number;sampleProviderSuccessCents:number;
  costBasis:'fictional_sample';createdAt:string;expiresAt:string;
 }
 export interface WalletOperation {
- id:string;quoteId:string;scenarioId:WalletScenarioId;name:string;periodStart:string;rateVersion:number;
+ id:string;quoteId:string;scenarioId:WalletScenarioId|'copilot-work';name:string;periodStart:string;rateVersion:number;workRunId?:string;
  status:'reserved'|'unknown'|'settled'|'released';maximumCents:number;chargedCents:number;
  includedReservedCents:number;purchasedReservedCents:number;quote:WalletQuote;createdAt:string;updatedAt:string;
 }
@@ -27,4 +27,14 @@ export interface WalletState {
  lowBalance:boolean;lowBalanceThresholdCents:number;canSpend:boolean;canTopUp:boolean;accessReason:string;
  topUpOptionsCents:number[];scenarios:WalletScenario[];operations:WalletOperation[];ledger:WalletLedgerEntry[];
  mode:'demonstration';liveUsageDebiting:false;notice:string;
+}
+
+/** Whole-job fictional customer-credit authority; distinct from real provider receipts. */
+export interface WorkBudget {
+ runId:string;planVersion:number;planHash:string;quoteId:string;
+ estimatedCents:number;maximumCents:number;spentCents:number;reservedCents:number;
+ approvedMaximumCents:number|null;
+ status:'awaiting_approval'|'approved'|'reserved'|'denied'|'released'|'settled'|'unknown';
+ expiresAt:string;createdAt:string;updatedAt:string;rateVersion:1;costBasis:'fictional_sample';
+ operationId:string|null;
 }

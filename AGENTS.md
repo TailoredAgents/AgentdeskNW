@@ -13,6 +13,12 @@ Read `docs/ORIGINAL_BRIEF.md`, `MASTER_PLAN.md`, and `docs/PROGRESS.md` before m
 - Run `npm run typecheck`, `npm run lint`, `npm test`, `npm run build`, and the smoke suite after major changes. Write tests for tenant/permission boundaries, approval enforcement, durable jobs and core workflows.
 - Update `docs/PROGRESS.md` and affected specifications with actual behavior, verification and remaining setup. Do not publish, contact investors or mutate third-party accounts without authorization.
 
+## Durable work rules
+
+- Follow `docs/WORK_EXECUTION.md`. UI, model tools and workers use the same capability, scope and whole-job budget services. Never accept caller prices or split one assignment into smaller jobs to avoid approval above $1.
+- Preserve immutable plans, original context references, step receipts and partial settlement. Recheck current sources on dispatch, display and cached conversation/tool replay; a revised plan must not expose a revoked source from an earlier version.
+- Current job charges are fictional samples. The worker performs local/synthetic services only. Live model usage remains separate; automatic top-up and full channel controls are not implemented. Keep those distinctions visible.
+
 ## Communications inbox rules
 
 - Follow `docs/COMMUNICATIONS_INBOX.md` for the private fictional email/investor-text inbox. Keep correspondence separate from employee Copilot conversations and channel inbox/outbox.

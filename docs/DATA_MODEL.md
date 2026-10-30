@@ -1,5 +1,19 @@
 # Data model
 
+## Durable work and fictional job budgets — migrations 020/021
+
+Migration 020 adds five tables: `work_runs`, `work_run_plans`, `work_run_events`, `work_run_commands` and `work_step_receipts`. A run binds an organization/office/employee, stable request ID/hash, current version and plan version, status, lease token/expiry/step, timestamps and validated JSON. Plans retain immutable instruction/step versions. Events retain progress; commands bind expected-version employee mutations to scoped replay keys. One immutable receipt per run/step prevents a completed local effect from being executed again. Child records reference their parent run; service reads and every dispatch enforce that run's private scope. An office manager cannot inspect another employee's private jobs.
+
+Each stored step includes its capability ID, validated input, dependencies, fictional estimate/rate version, resolved input, state, attempts, timestamps and actual result/artifacts. References can read only safe paths inside completed declared dependencies. Plan revisions preserve completed steps and receipts while changing remaining work. Synthetic research is linked through its saved child-job ID and required result-collection step; it retains the existing research schema and service. Source-access checks redact unavailable results on reads rather than deleting historical evidence.
+
+Migration 021 adds `work_budgets` and immutable `work_budget_events`. The private budget records the whole assignment's plan hash/version, quote ID, expiry, estimate/maximum, approved maximum, consumed/reserved cents, state and backing wallet operation. Quote/decision/step events preserve their payload hashes and reject conflicting replay. These are fictional job-control records, not real provider billing or payment receipts.
+
+Budget reservations and per-step settlements reuse `wallet_operations` and the append-only `wallet_ledger`. New operations identify `copilot-work` and `workRunId`; old sample records need no rewrite. The same wallet admits every job and sample against available funds and spending limits. A completed local mutation, fictional charge and step receipt commit atomically. Cancellation releases unused reserves, retains settled usage and preserves any unresolved hold. No auto-top-up settings, payment tables or live provider-cost settlement are added in this checkpoint.
+
+Both migrations are additive. Preservation validation used a read-only backup of the active schema-009 database, advanced the copy with prior commit `2d545f3` to schema 019, seeded a manual inbox draft and wallet purchase/hold, then applied 020/021. All **228 existing rows across 75 tables** were byte-for-byte preserved, excluding the migration journal. The draft, balances and original hold survived; a new four-step job completed for 75¢ simulated usage. Foreign-key/integrity checks passed, no provider operation was added, and the active source remained schema 009 with its file checksum unchanged. Evidence is in ignored `artifacts/work/migration-preservation.json`; release-wide checks belong in [PROGRESS.md](PROGRESS.md).
+
+See [WORK_EXECUTION.md](WORK_EXECUTION.md), [BILLING_ARCHITECTURE.md](BILLING_ARCHITECTURE.md) and the exact migrations for supported states and boundaries. Browser/server types for this domain are in `src/lib/work-contracts.ts` and `src/lib/wallet-contracts.ts`.
+
 ## Company correspondence — communications Phase 4A
 
 Migration 018 adds `communication_company_demo_seeds` and immutable `communication_source_links`. Company seeding is separate and additive: original Gmail/Outlook/text account IDs, source records, draft histories and statuses are not renamed or rewritten. Source links bind organization, office, owner, account and message through composite foreign keys; a scoped unique source-system/reference key prevents duplicate mappings. A second trusted fictional reference attaches to the existing message rather than creating another message or workflow action.
@@ -55,6 +69,8 @@ The database enables foreign keys, WAL journaling and a five-second busy timeout
 | Property | Scoped address/location, price, physical attributes, strategy, status, synthetic flag |
 | Conversation | Scoped owner, title and timestamps |
 | Message | Conversation, role, text, timestamp, specialist IDs and artifact references |
+| Copilot work run | Private owner, request identity, versioned instructions/steps/dependencies, lease, state, outputs and immutable receipts |
+| Work budget | Same private run scope, quote/plan binding, approved maximum, simulated consumed/held amounts and wallet operation |
 | Research job | Scoped owner, validated input, state/stage/progress, provider, attempts/lease, results and errors |
 | Prospect/evidence | Job-linked normalized candidate, ranking, duplicate/contact states and source metadata |
 | Task | Scoped owner, optional investor, title, due instant, completion state |

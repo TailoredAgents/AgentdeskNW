@@ -1,3 +1,4 @@
+import { workRunVisible } from './work-context';
 import type { Actor, Artifact, Message } from '../lib/contracts';
 import { createHash } from 'node:crypto';
 import type { DealPackage, PropertyRelease } from '../lib/intelligence-contracts';
@@ -7,14 +8,14 @@ import { readInvestor, readProperty } from './access';
 import { getDisclosure, isDisclosureReady, listBuyBoxes } from './intelligence';
 import { inboxAccessReferenceCurrent } from './communications-context';
 
-export interface HistoryReferences {investors:string[];properties:string[];releases:string[];packages:string[];debriefs:string[];inboxThreads:string[];inboxAccess:string[]}
+export interface HistoryReferences {investors:string[];properties:string[];releases:string[];packages:string[];debriefs:string[];inboxThreads:string[];inboxAccess:string[];workRuns?:string[]}
 export type StoredMessage=Message & {references?:HistoryReferences};
-const empty=():HistoryReferences=>({investors:[],properties:[],releases:[],packages:[],debriefs:[],inboxThreads:[],inboxAccess:[]});
+const empty=():HistoryReferences=>({investors:[],properties:[],releases:[],packages:[],debriefs:[],inboxThreads:[],inboxAccess:[],workRuns:[]});
 export const criteriaFingerprint=(actor:Actor,investorId:string)=>createHash('sha256').update(JSON.stringify(listBuyBoxes(actor,investorId))).digest('hex');
 /** References come from structured service outputs, never guessed from names in prose. */
 export function collectHistoryReferences(actor:Actor,artifacts:Artifact[],inherited:HistoryReferences[]=[],context?:{investors:{id:string}[];properties:{id:string}[]}):HistoryReferences {
  // Withheld content is not supplied as context; do not permanently taint future, freshly authorized turns.
- const refs=empty();for(const prior of inherited.filter(value=>allowed(actor,value)))for(const key of Object.keys(refs) as (keyof HistoryReferences)[])refs[key].push(...(prior[key]??[]));
+ const refs=empty();for(const prior of inherited.filter(value=>historyReferencesVisible(actor,value)))for(const key of Object.keys(refs) as (keyof HistoryReferences)[])refs[key]!.push(...(prior[key]??[]));
  if(context){refs.investors.push(...context.investors.map(item=>item.id));refs.properties.push(...context.properties.map(item=>item.id));}
  const visit=(value:unknown,depth=0)=>{
   if(depth>15||value===null||typeof value!=='object')return;
@@ -27,17 +28,19 @@ export function collectHistoryReferences(actor:Actor,artifacts:Artifact[],inheri
     if(key==='id'&&/^package_/.test(item))refs.packages.push(item);
     if(key==='id'&&/^debrief_/.test(item))refs.debriefs.push(item);
     if((key==='threadId'||key==='id')&&/^inbox_thread_/.test(item))refs.inboxThreads.push(item);
+    if(key==='workRunId')refs.workRuns!.push(Number.isInteger((value as Record<string,unknown>).workPlanVersion)?`${item}@${(value as Record<string,unknown>).workPlanVersion}`:item);
     if(key==='inboxAccessReference')refs.inboxAccess.push(item);
    }else visit(item,depth+1);
   }
  };
  visit(artifacts.filter(artifact=>artifact.type!=='marketplace'));
  for(const artifact of artifacts){
+  if(artifact.type==='work_run'&&artifact.id){const data=artifact.data as {workPlanVersion?:number}|undefined;refs.workRuns!.push(Number.isInteger(data?.workPlanVersion)?`${artifact.id}@${data!.workPlanVersion}`:artifact.id);}
   if(artifact.type==='briefing'&&artifact.id)refs.investors.push(artifact.id);
   if(artifact.type==='inbox'&&artifact.id)refs.inboxThreads.push(artifact.id);
   if(artifact.type==='approval'&&artifact.id){const row=getDb().prepare('SELECT data FROM proposed_actions WHERE id=? AND organization_id=? AND office_id=? AND owner_id=?').get(artifact.id,actor.organizationId,actor.officeId,actor.id) as {data:string}|undefined;if(row)visit(JSON.parse(row.data));}
  }
- for(const key of Object.keys(refs) as (keyof HistoryReferences)[])refs[key]=[...new Set(refs[key])];
+ for(const key of Object.keys(refs) as (keyof HistoryReferences)[])refs[key]=[...new Set(refs[key]??[])];
  refs.packages=refs.packages.filter(id=>{const row=getDb().prepare('SELECT data FROM deal_packages WHERE id=? AND organization_id=? AND office_id=? AND owner_id=?').get(id,actor.organizationId,actor.officeId,actor.id) as {data:string}|undefined;return !row||(JSON.parse(row.data) as DealPackage).status!=='blocked';});
  return refs;
 }
@@ -46,8 +49,9 @@ function releaseRecord(actor:Actor,id:string):PropertyRelease {
  if(!row)throw new AppError(404,'Release unavailable.');const release=JSON.parse(row.data) as PropertyRelease;
  if(actor.role!=='manager'&&row.owner_id!==actor.id&&!release.authorizedUserIds.includes(actor.id))throw new AppError(404,'Release unavailable.');return release;
 }
-function allowed(actor:Actor,refs:HistoryReferences) {
+export function historyReferencesVisible(actor:Actor,refs:HistoryReferences) {
  try {
+  for(const reference of refs.workRuns??[]){const [runId,version]=reference.split('@');if(version!==undefined&&!/^[1-9][0-9]*$/.test(version))return false;if(!workRunVisible(actor,runId,version===undefined?undefined:Number(version)))return false;}
   if(refs.inboxThreads?.length&&!featureAccess(actor,'core').allowed)return false;
   for(const id of refs.inboxThreads??[]){if(!inboxAccessReferenceCurrent(actor,id,refs.inboxAccess??[]))return false;}
   for(const id of refs.investors)readInvestor(actor,id);
@@ -67,12 +71,12 @@ function allowed(actor:Actor,refs:HistoryReferences) {
  }catch(error){if(error instanceof AppError&&(error.status===403||error.status===404))return false;throw error;}
 }
 export function readHistoryMessage(actor:Actor,message:StoredMessage):Message {
- if(message.references&&!allowed(actor,message.references))return {id:message.id,role:message.role,content:'This historical message is withheld because access or sharing eligibility for a referenced record has changed.',createdAt:message.createdAt,specialistIds:[],artifacts:[]};
+ if(message.references&&!historyReferencesVisible(actor,message.references))return {id:message.id,role:message.role,content:'This historical message is withheld because access or sharing eligibility for a referenced record has changed.',createdAt:message.createdAt,specialistIds:[],artifacts:[]};
  // Navigation opens current scoped services. CRM snapshots are never reissued as current facts from chat storage.
  return {id:message.id,role:message.role,content:message.content,createdAt:message.createdAt,specialistIds:message.specialistIds,artifacts:message.artifacts.map(artifact=>{const {data,...link}=artifact;return artifact.type==='notes'?{...link,data}:link;})};
 }
 
 export function assertInboxToolResultVisible(actor:Actor,artifacts:Artifact[]):void {
  const refs=collectHistoryReferences(actor,artifacts);
- if(refs.inboxThreads.length&&!allowed(actor,refs))throw new AppError(403,'Access to the inbox result or its relationship context changed. Retrieve the conversation again.');
+ if((refs.inboxThreads.length||refs.workRuns?.length)&&!historyReferencesVisible(actor,refs))throw new AppError(403,'Access to this result or its source context changed. Retrieve the conversation again.');
 }

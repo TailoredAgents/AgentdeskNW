@@ -24,7 +24,8 @@
     "test:communications": "node scripts/smoke-runner.mjs communications",
     "test:company-email": "node scripts/smoke-runner.mjs company-email",
     "test:relationship": "node scripts/smoke-runner.mjs relationship",
-    "test:relationship-quality": "node --import tsx scripts/relationship-benchmark.ts"
+    "test:relationship-quality": "node --import tsx scripts/relationship-benchmark.ts",
+    "test:work": "node scripts/smoke-runner.mjs work"
   },
   "dependencies": {
     "@slack/socket-mode": "3.1.0",

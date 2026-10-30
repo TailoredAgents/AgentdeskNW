@@ -1,3 +1,4 @@
+import { workRoute } from '@/server/work-api';
 import { messagingRoute } from '@/server/messaging-api';
 import { getPersonalTask, listPersonalTasks, mutateTask, taskMutationSchema } from '@/server/task-actions';
 import { memoryJourneyRoute } from '@/server/memory-journey-api';
@@ -59,6 +60,7 @@ async function route(request:NextRequest,{params}:{params:Promise<{path:string[]
     const billing=await billingRoute(request,actor,path,()=>body(request));if(billing)return billing;
     const inbox=await communicationsRoute(request,actor,path,()=>body(request));if(inbox)return inbox;
     const wallet=await walletRoute(request,actor,path,()=>body(request));if(wallet)return wallet;
+    const work=await workRoute(request,actor,path,()=>body(request));if(work)return work;
     const memoryJourney=await memoryJourneyRoute(request,actor,path,()=>body(request));if(memoryJourney)return memoryJourney;
     const phaseTwo=await phaseTwoRoute(request,actor,path,()=>body(request));if(phaseTwo)return phaseTwo;
     if(resource==='chat'&&method==='POST'){

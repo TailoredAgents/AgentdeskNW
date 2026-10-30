@@ -8,7 +8,13 @@ The application centers on one Copilot that coordinates investor intelligence, p
 
 ## Development plan
 
-The [implementation roadmap](docs/IMPLEMENTATION_ROADMAP.md) is the current source of truth for the remaining work: durable Copilot jobs and spending controls, deeper context and specialist methods, complete dispositions/acquisitions/management workflows, proactive follow-through, approved connections and measured rollout. The next implementation checkpoint is A1–A3. See the [16-specialist delivery matrix](docs/AI_EMPLOYEES.md#capability-depth-delivery-matrix) for required depth and acceptance. Planned capabilities are distinct from the implemented checkpoints below.
+The [implementation roadmap](docs/IMPLEMENTATION_ROADMAP.md) is the current source of truth for the remaining work: durable Copilot jobs and spending controls, deeper context and specialist methods, complete dispositions/acquisitions/management workflows, proactive follow-through, approved connections and measured rollout. The bounded A1–A3 foundation is implemented; next are shared conversational job controls and optional simulated auto top-up. See the [16-specialist delivery matrix](docs/AI_EMPLOYEES.md#capability-depth-delivery-matrix) for required depth and acceptance. Planned capabilities are distinct from the implemented checkpoints below.
+
+## Saved Copilot jobs
+
+Open **Work queue → Copilot jobs** to start a role-specific job, inspect its steps and results, and pause, resume or cancel remaining work. Dispositions can review a property, match existing buyers, consider an investor relationship and optionally request synthetic research; acquisitions can review missing handoff facts; managers can review office priorities. Each starter saves a personal follow-up. Configured text Copilot can also compose the eight supported local capabilities. Jobs retain progress while the application worker is running, even after the browser closes.
+
+Any job with a quoted maximum above **$1** waits for an exact approve/deny decision. These are clearly labeled **simulated credits**, not live model charges. Partial cancellation retains consumed simulated usage and releases unused credit. Auto top-up, full SMS/Slack job controls and real cost integration remain upcoming. See [scope and walkthrough](docs/WORK_EXECUTION.md).
 
 ## Monday presentation build
 
@@ -16,7 +22,7 @@ The workspace now has a light professional interface, forest sidebar, refreshed 
 
 Prepare a repeatable presentation scenario with `npm run demo:prepare`. This adds role-scoped 14-day trials and reviewable fictional work once; it preserves existing records and never renews the trial on restart. This has been applied to the prepared local workspace.
 
-A private hosted demo entrance and Render blueprint are implemented. **Repository: [TailoredAgents/AgentdeskNW](https://github.com/TailoredAgents/AgentdeskNW). GitHub publishing is authorized. The owner previously reported a Render deployment; the latest deployed revision has not been verified by this planning update. Repository updates and deployment status remain separate.** See [Render setup](docs/RENDER_DEMO.md) and the [Monday walkthrough](docs/MONDAY_DEMO.md). Real company data is intentionally deferred until customer approval.
+A private hosted demo entrance and Render blueprint are implemented. **Repository: [TailoredAgents/AgentdeskNW](https://github.com/TailoredAgents/AgentdeskNW). GitHub publishing is authorized. The owner previously reported a Render deployment; the latest deployed revision has not been verified by this implementation checkpoint. Repository updates and deployment status remain separate.** See [Render setup](docs/RENDER_DEMO.md) and the [Monday walkthrough](docs/MONDAY_DEMO.md). Real company data is intentionally deferred until customer approval.
 
 ## Investor understanding
 
@@ -70,12 +76,13 @@ npm run test:inbox
 npm run test:communications
 npm run test:company-email
 npm run test:relationship
+npm run test:work
 npm run test:relationship-quality -- --all
 ```
 
 The smoke suite requires the compiled build. By default it starts the built application and worker on a temporary loopback port with a disposable SQLite database, disables model credentials, runs HTTP workflow checks, then stops the processes and removes its temporary database. No manually started server is needed, and your demonstration data is unchanged.
 
-For an intentional check against an existing local instance, set `SMOKE_BASE_URL` (for example, `SMOKE_BASE_URL=http://127.0.0.1:3000 npm run test:smoke`). That override creates fictional records in the selected instance. Neither mode connects to Salesforce or contacts investors.
+For an intentional check against an existing local instance, set `SMOKE_BASE_URL` (for example, `SMOKE_BASE_URL=http://127.0.0.1:3000 npm run test:smoke`). That override creates fictional records in the selected instance. The new `test:work` suite always requires its own disposable database and rejects this override. Neither mode connects to Salesforce or contacts investors.
 
 For a local compiled build, `npm run build` followed by `AGENTDESK_ALLOW_PRODUCTION_DEMO=true npm start` explicitly allows the local demonstration identity under Next.js production mode. This remains bound to loopback and is **not a production authentication strategy**.
 
@@ -93,7 +100,7 @@ Phase 1 is preserved at Git checkpoint `cded4cd`, with a local database backup a
 
 | Area | Working local scope | Remaining integration or production dependency |
 | --- | --- | --- |
-| Copilot | Persistent conversations and validated service dispatch; model integration when configured | API project, live validation, evaluation and budgets |
+| Copilot | Persistent conversations, validated service dispatch and composed local durable jobs with fictional whole-job approval | Broader capabilities, full channel controls, model-quality evaluation and real usage budgets |
 | Investor intelligence | Multiple buy boxes, provenance, reviewed revisions, owner/shared access, disclosure state and relationship history | Confirmed company access policy and authorized Salesforce mappings/sync |
 | Property releases | Manual fictional releases, versions, explicit employee audience, transaction context and permitted buyer matches | Approved internal release source; no Marketplace access is assumed |
 | Calling and briefings | Ranked relationship priorities, distinct property-fit/engagement signals, explanations, outcomes and pre-call context | Reliable real relationship/activity evidence and pilot evaluation |

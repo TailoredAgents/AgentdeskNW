@@ -6,7 +6,7 @@ Updated October 30, 2026. This is the **authoritative development sequence** for
 
 The product serves dispositions, acquisitions and management as three primary audiences. One personal Copilot coordinates the available specialists through the dashboard, SMS and Slack. Dispositions receives a broader specialist lineup and deeper workflows where needed; the other roles must also have complete daily work. Alex's input represents dispositions, not corporate policy or acquisitions/management acceptance.
 
-This checkpoint plans implementation. It does not implement these capabilities, activate payments, connect company data or deploy a release. Keep building with fictional sources while company access is pending. Commit and push verified changes under the owner's standing instruction; report the deployed revision separately from the repository revision.
+The first bounded A1–A3 implementation checkpoint is now available; [WORK_EXECUTION.md](WORK_EXECUTION.md) defines its exact scope. It does not activate payments, connect company data or establish a deployed revision. Keep building with fictional sources while company access is pending. Commit and push verified changes under the owner's standing instruction; report the deployed revision separately from the repository revision.
 
 ## Target experience
 
@@ -18,16 +18,16 @@ The complete assignment must request approval before costing more than **$1 in c
 
 ## Starting point and remaining gap
 
-Inspected against repository checkpoint 6766a59; last major application acceptance is recorded at c958f2f. Those historical results are 459 tests, 648 HTTP checks, 36 relationship scenarios, type/lint/build, migration preservation and desktop/phone acceptance. They are not newly run results or evidence that the new roadmap is complete.
+Historical planning baseline inspected against repository checkpoint 6766a59; last major application acceptance is recorded at c958f2f. Those historical results are 459 tests, 648 HTTP checks, 36 relationship scenarios, type/lint/build, migration preservation and desktop/phone acceptance. They are not newly run results or evidence that the new roadmap is complete.
 
 | Area | Built foundation | Still needed for the vision |
 | --- | --- | --- |
-| Copilot | Persistent conversation, typed tools, shared domain services, request/tool receipts, bounded live text runner | General durable planning, dependencies, continuation, flexible recovery and complete assignment outcomes |
+| Copilot | Persistent conversation, bounded live text runner, composable local jobs with dependencies, leases, versioned plans and step receipts | Broader planning quality, missing-information continuation, channel controls and complete assignment outcomes |
 | Specialists | 16 registered: 2 locally ready, 10 demo, 4 planned | Each specialist's methods, sufficient tools, varied quality cases and employee acceptance; none has proven independent expert superiority |
 | Context | Explicit private preferences; sourced investor journeys, reports, corrections and separate buy boxes | Company knowledge retrieval, reviewable learning, wholesaler/opportunity/deal/party/document context and better judgment |
 | Communications | Shared employee conversation adapters; fictional Salesforce-first inbox; reviewed generated-reply simulation | Actual employee channel acceptance, general edited correspondence, recipients/CC/files, company-authorized sync and sending |
-| Work and initiative | Durable research jobs, personal task actions and selected notifications | Durable general work, recurring briefings, event watchers and bounded standing action authority |
-| Commercial | Workforce entitlement and fictional wallet/quotes/holds/ledger | Whole-job $1 gate, auto-top-up lifecycle, real usage settlement and verified payments |
+| Work and initiative | Durable composed local work, child synthetic research, personal task actions and selected notifications | Broader capabilities, recurring briefings, event watchers and bounded standing action authority |
+| Commercial | Workforce entitlement, fictional wallet and whole-job $1 approval/reservation/partial settlement | Auto-top-up lifecycle, real usage admission/settlement and verified payments |
 | Experience and operations | Light workspace, ink/green navigation, phone layouts, hosted fictional demo foundation | Complete role homes, onboarding, accessible work controls, managed identity, production persistence/workers and measured rollout |
 
 ## Three separate release levels
@@ -55,7 +55,7 @@ UI work and evaluation are part of every phase. E workstreams are dependency gat
 
 ## Phase A — Reliable work and spending
 
-All items below are planned. Keep existing quick questions and services useful while introducing the general work path.
+A1–A3 now have a bounded local implementation, with initial A4 Work queue controls and A6 role/test evidence. This does not close every acceptance gate in Phase A. Eight implemented capabilities can be composed through typed Copilot; the worker performs local/synthetic service work only. Full channel decisions, UI revisions, missing-information continuation, broad planner quality evidence and A5 auto top-up remain pending. Existing quick questions and services remain available.
 
 | ID | Concrete implementation package | Required evidence |
 | --- | --- | --- |

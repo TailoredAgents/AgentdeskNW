@@ -2,9 +2,22 @@
 
 The local subscription simulator and real provider evidence are separate ledgers. Proposed subscription rates are not actual charges. No customer payment is collected. Unknown provider expense remains `null`.
 
-## Planned job cost approval and automatic top-ups
+## Implemented job cost approval — bounded A1–A3 checkpoint
 
-Owner requirement, October 30, 2026: before a job will cost **more than $1**, the employee must be able to approve or deny it. Add optional automatic credit top-ups. These are new implementation requirements; the current wallet remains a simulator and live provider activity still does not debit it. Its existing sample-work reviews are unchanged.
+Saved Copilot jobs now use a server-owned whole-job quote, an employee cost decision above $1, and the existing simulated wallet for reservation and per-step settlement. This applies only to the new bounded local/synthetic work executor. A configured text Copilot may compose a plan through existing text tools, but that initial live text turn remains separately metered; the worker itself makes no additional reasoning-model calls. **The new $1 rule does not yet enforce real provider spending.** Automatic top-up remains planned in A5/E5b.
+
+The server derives estimated and maximum cents from its capability rate card. The budget aggregates all steps and any synthetic child research; UI/model input cannot set the price. At $1 or less it can proceed within current permissions, available balance and the monthly cap. Above $1 it waits for a dashboard approve/deny decision bound to the job plan version and quote. Direct channel cost approvals remain A4 work; linked SMS/Slack may create or inspect jobs through the shared typed Copilot.
+
+Quote validity is 15 minutes before approval/new reservation. An existing reservation may finish within its approved scope after that quote window. The entire remaining maximum is held atomically before dispatch. Local action, completed-step receipt and fictional settlement commit together; rollback cannot leave a charge for a failed local mutation. Waiting for the already-created synthetic child consumes no extra step charge. Revisions retain prior consumed credit, replace only remaining work and require a new quote/decision when appropriate.
+
+Pause preserves progress and its reservation. Cancellation/completion releases only unused funds; completed steps stay settled. Unknown outcomes keep their hold and block further dispatch or release. Other recoverable errors stop the job for review rather than silently repeating work. Old-period unused included credit expires instead of reappearing in a newer period; purchased funds retain their existing rollover behavior. Job reservations share balance/cap admission with the original wallet samples and cannot be resolved through their manual simulation buttons.
+
+These prices are explicit fictional scenarios, not observed provider expense: property inspection and personal-task creation cost zero; existing-buyer analysis is 40¢ estimated/50¢ maximum; relationship preparation 35¢/50¢; handoff/office analysis 50¢/75¢; synthetic research start 150¢/225¢; collecting its completed result is free. Research's fictional charge occurs at child creation, not as incremental live provider usage. Existing direct lookups, task controls and workflow forms remain unmetered by the wallet. See [WORK_EXECUTION.md](WORK_EXECUTION.md) for supported capabilities, interfaces and remaining limits.
+
+## Full policy and remaining expansion
+
+Owner requirement, October 30, 2026: before a complete job will cost **more than $1**, the employee must be able to approve or deny it, with optional automatic credit top-ups. The policy below covers the intended complete product, including later real provider, scheduled-work and channel-approval integration. The bounded implementation above does not establish that those later paths are connected or protected.
+
 
 ### Job approval rule
 
@@ -17,7 +30,7 @@ Owner requirement, October 30, 2026: before a job will cost **more than $1**, th
 - Canceling/failing a partially executed job or declining its revised quote does not erase consumed authorized work. Settle the consumed portion, release only unused reservations and retain uncertain provider holds until reconciled. A whole-operation sample refund is not a correct model for partially completed real work.
 - Exact $1.00 does not trigger this particular greater-than threshold. Other account permissions, available balance and monthly spending limits still apply. The $1 approval rule remains in effect regardless of wallet balance, company sponsorship, a routine's standing permission or automatic top-up settings.
 
-### Automatic credit top-ups
+### Automatic credit top-ups — planned
 
 Make auto top-up explicitly opt-in and initially off. The authorized payer chooses the available-credit trigger, amount to purchase per top-up and a monthly auto-purchase cap. Display the payer/payment method and the selected settings clearly, allow disabling/changing them, and notify after each completed purchase or payment failure. These values are settings, not automatically chosen purchase commitments.
 
@@ -27,19 +40,19 @@ Use one replenishment per eligible low-balance cycle. Re-arm after the balance r
 
 Keep the automatic-purchase cap separate from the existing monthly usage-spending limit. A top-up increases available funds; it does not approve a job above $1, increase its authorized maximum, raise a spending cap, grant a subscription or change role permissions. Company-paid seats do not authorize charging an employee's payment method, and employee auto top-ups do not authorize spending company funds. Recurring payment authorization must come from the actual payer.
 
-Implement/test settings, job gates and top-up outcomes first with explicit fictional rates/payment simulation. Roadmap E5a connects real provider admission and receipt reconciliation after A3 using authorized bounded tests on fictional data; shadow customer-credit accounting is not payment collection. E5b separately connects verified payments and opted-in off-session purchases after their commercial setup. Do not label these new settings or the $1 rule as enforced for current live AI requests before that integration is complete.
+The bounded fictional job gate is implemented. Implement/test the still-planned auto-top-up settings and outcomes with explicit payment simulation before enabling actual purchases. Roadmap E5a connects real provider admission and receipt reconciliation after A3 using authorized bounded tests on fictional data; shadow customer-credit accounting is not payment collection. E5b separately connects verified payments and opted-in off-session purchases after their commercial setup. Do not label these new settings or the $1 rule as enforced for current live AI requests before that integration is complete.
 
-### Required acceptance
+### Acceptance coverage and remaining gates
 
-Cover $0.99, exactly $1.00, and $1.01 whole-job bounds; multiple substeps totaling more than $1; parallel reservations; estimated growth mid-job; partial cancellation/failure and unused/uncertain reservations; increased approved maximum; denial, expiration and changed quotes; dashboard/SMS/Slack approval identity; each expensive scheduled run; and attempts to bypass approval with a top-up or task split. Test low balance, explicit opt-in, payer isolation, monthly purchase/spending caps, pending/failed/duplicate payment results, trigger re-arming, still-low balance after success, disablement and recovery. Report actual costs and unknown outcomes without presenting an estimate as a provider receipt.
+The A1–A3 tests cover $0.99, exactly $1.00, and $1.01 whole-job bounds; multiple substeps totaling more than $1; competing reservations; estimated growth mid-job; partial cancellation/failure and unused/uncertain reservations; increased approved maximum; denial, expiration and changed quotes; scoped approval identity; and attempts to bypass job admission with a top-up or replay. Full direct SMS/Slack approvals, scheduled-run decisions and actual provider-cost aggregation remain later gates. Auto-top-up acceptance must cover low balance, explicit opt-in, payer isolation, monthly purchase/spending caps, pending/failed/duplicate payment results, trigger re-arming, still-low balance after success, disablement and recovery. Report actual costs and unknown outcomes without presenting an estimate as a provider receipt.
 
 ## Current retail-credit wallet
 
-The workforce plans include $15 of simulated retail credits per billing period. Purchased simulated top-ups of $10/$25/$50/$100 roll over separately. `wallet.ts` performs scoped, transaction-bound estimates, reservations, sample settlement/release, pending/unknown handling and spending-limit checks. Monetary arithmetic uses integer cents, and the ledger/events are append-only. Monthly credit is spent before purchased credit. Expired included credit cannot be recreated by canceling an old reservation in a newer period.
+The workforce plans include $15 of simulated retail credits per billing period. Purchased simulated top-ups of $10/$25/$50/$100 roll over separately. `wallet.ts` performs scoped, transaction-bound estimates, reservations, sample settlement/release, pending/unknown handling and spending-limit checks. `work-budget.ts` adds complete-job authority and partial settlement through that same ledger; it does not create a second spendable balance. Monetary arithmetic uses integer cents, and the ledger/events are append-only. Monthly credit is spent before purchased credit. Expired included credit cannot be recreated by canceling an old reservation in a newer period.
 
 The sample-work rate card has a version and server-owned provider-cost examples multiplied by 5. An estimate returns a scoped quote valid for 15 minutes. The employee explicitly confirms that quote to reserve/finish/cancel/sample an unknown outcome. Stable event keys and expected wallet versions prevent duplicate or stale changes. Unknown operations remain reserved until a reviewed simulator resolution. The monthly cap is $25 by default, configurable from $0 to $1,000; this is a sample-spending cap, not a cap on existing live provider calls.
 
-**Live provider activity does not debit the new wallet in this phase.** Existing text, voice, research and SMS allowances remain independent operational safeguards. Simulated wallet top-ups do not increase those allowances. Before live wallet billing, Phase 6 must integrate real usage with versioned model/tool/audio rates, cost reconciliation, holds, failure/refund policy and payment settlement. Unknown provider dollars remain unknown. No estimated or fictional amount is relabeled as an invoice.
+**Live provider activity still does not debit this wallet.** Saved local/synthetic job simulations do. Existing text, voice, research and SMS allowances remain independent operational safeguards. Simulated wallet top-ups do not increase those allowances. Before live wallet billing, Phase 6 must integrate real usage with versioned model/tool/audio rates, cost reconciliation, holds, failure/refund policy and payment settlement. Unknown provider dollars remain unknown. No estimated or fictional amount is relabeled as an invoice.
 
 Ordinary navigation, deterministic task management and the Phase 2 fictional Inbox do not consume retail credits. Inbox filtering, context reads, manual drafts and sample arrivals make no AI/provider calls. Background communications processing will need explicit scope and budgets in later phases.
 
