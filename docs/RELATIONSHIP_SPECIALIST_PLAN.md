@@ -4,7 +4,9 @@
 
 ## Current checkpoint
 
-Stages 1–2 implemented and verified on October 30, 2026. Development cases improved from 8/24 on the original observation interface to 24/24; twelve reserved variations also passed. These measure representation and application behavior, not model expertise. See [quality evidence and limitations](RELATIONSHIP_QUALITY.md) for 459 tests, 648 HTTP checks, browser acceptance and migration preservation. Stages 3–7 remain the depth backlog for this specialist. Start its source/versioned method work as part of C4 when the canonical roadmap resumes that slice; no completed mobile or project-wide checkpoint is implied.
+Stages 1–2 implemented and verified on October 30, 2026. Development cases improved from 8/24 on the original observation interface to 24/24; twelve reserved variations also passed. These measure representation and application behavior, not model expertise. See [quality evidence and limitations](RELATIONSHIP_QUALITY.md) for that checkpoint's 459 tests, 648 HTTP checks, browser acceptance and migration preservation.
+
+**Stage 3 is now partial:** [four provisional working methods](RELATIONSHIP_METHODS.md) carry version/source/date/role/withdrawal semantics and produce focused questions in recommendations and Inbox assistance. Thirteen new automated cases cover the method rules and context changes; a repair concern changes the question, and its reviewed resolution returns the recommendation to existing follow-through. Catalog changes invalidate exact send review. Code-reviewed application guidance is not a company knowledge publishing/approval system. Broader sourced knowledge and role acceptance remain open, as do stages 4–7; no expert or project-wide completion is implied. Current aggregate verification belongs in PROGRESS, not the historical benchmark totals above.
 
 ## Relationship to the wider workforce plan
 

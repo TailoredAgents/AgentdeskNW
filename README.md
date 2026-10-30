@@ -16,13 +16,13 @@ The target is a primary iPhone/Android app and a detailed desktop workspace, wit
 
 ## Current state
 
-**Current local checkpoint: shared conversation controls and the first mobile foundation**, verified October 30, 2026. It extends the earlier `2d16665` web/work-engine baseline with Agent/Work/Settings, fictional employee pairing, shared typed conversation, saved jobs, bounded job commands and exact cost decisions, reviewable dictation source and opt-in notification infrastructure. The existing relationship memory, matching, releases, calling/debriefs, reviewed CRM proposals, deal packages, Salesforce-first fictional inbox and wallet demonstration remain intact.
+**Current local checkpoint: native Inbox and the first versioned relationship methods**, verified October 30, 2026, extending shared-controls/mobile foundation `e03e381`. Agent/Work/Inbox/Settings reuse the existing server. The phone now presents Salesforce-first private fictional correspondence, shared saved drafts, source-aware assistance, exact generated-reply simulation, reviewed relationship notes and personal follow-ups. Draft comparison protects unsaved edits when the dashboard changes a conversation. Four explicitly provisional working methods add useful questions and source/version explanations to relationship recommendations and Inbox assistance.
 
-Verification: **583 root tests, nine mobile client tests, 858 HTTP/workflow checks and 36 relationship scenarios / 54 assertions**; root typecheck/lint/production build, independent mobile typecheck, iOS/Android JavaScript exports, connected browser/phone-width walkthrough and migration-copy preservation. All 266 existing rows across 82 tables survived migrations 022–024. Sixteen registered specialists still comprise two locally ready, ten demo and four planned; this milestone does not establish sixteen expert agents.
+Verification: **596 root tests, 15 mobile client tests, 934 HTTP/workflow checks and 36 relationship scenarios / 54 assertions**; root typecheck/lint/production build, independent mobile typecheck, iOS/Android JavaScript exports and a connected phone-width Inbox walkthrough. No schema/dependency change was added; the prior checkpoint's migration preservation evidence remains historical. Sixteen registered specialists still comprise two locally ready, ten demo and four planned; the new methods do not establish expert intelligence or company-approved procedures.
 
 **Mobile is prepared locally, not yet installed or released.** The phone-width browser rehearsal passed pairing, shared history, cross-surface cost approval, pause/resume, background worker completion and remote device revocation. Native binary builds, real phone speech/push and store distribution remain pending. [Mobile preparation notes](mobile/README.md) distinguish each acceptance layer. Whole-job costs remain fictional; live model/provider usage is separately metered.
 
-The documentation reset is complete and implementation has resumed through the single roadmap. C1/C2 remain partial. Next: essential mobile Inbox/review work and specialist methods, alongside actual-device setup and acceptance when available.
+Implementation follows the single roadmap. C1–C4 remain partial. Next: close the personal follow-up loop in native Work and deepen the acquisitions opportunity intake/missing-facts workflow, with actual-device acceptance when tooling/devices are available.
 
 Repository: [TailoredAgents/AgentdeskNW](https://github.com/TailoredAgents/AgentdeskNW). The owner reported a Render deployment; the latest deployed revision has not been verified. Push and deployment are separate. Real company data, live mailboxes/investor delivery, actual payments, managed identity and broad expert autonomy remain unfinished.
 
@@ -71,6 +71,7 @@ npm run test:company-email
 npm run test:relationship
 npm run test:work
 npm run test:mobile
+npm run test:mobile-inbox
 npm run test:relationship-quality -- --all
 ```
 

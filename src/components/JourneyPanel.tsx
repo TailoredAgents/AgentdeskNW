@@ -1,4 +1,5 @@
 'use client';
+import {WorkingMethod} from './WorkingMethod';
 import {RelationshipRecordPanel} from './RelationshipRecordPanel';
 import { useCallback,useEffect,useRef,useState } from 'react';
 import { BookOpen,Check,Clipboard,ClipboardList,MessageSquare,Plus,RefreshCw,Sparkles,TriangleAlert } from 'lucide-react';
@@ -66,6 +67,7 @@ export function JourneyPanel({investorId,propertyId,onChange,canEdit=true}:{inve
    <RelationshipRecordPanel record={journey.record} buyBoxes={journey.buyBoxes} onSaved={async()=>{setNotice('Investor report saved. Recorded CRM criteria are unchanged.');await load();await onChange?.();}}/>
    {recommendationError&&<p className="intelligence-message intelligence-message-error" role="alert">{recommendationError}</p>}
    {recommendation&&<section className="journey-next-action"><p className="eyebrow"><Sparkles size={14}/>Recommended next step</p><h3>{recommendation.action.title}</h3><p>{recommendation.action.description}</p>{recommendation.why.length>0&&<ul className="journey-reasons">{recommendation.why.map((reason,index)=><li key={index}>{reason.replace(/\s*\(source [^)]+\)/g,'')}</li>)}</ul>}</section>}
+   <WorkingMethod guidance={recommendation?.workingMethod}/>
    <div className="journey-recommendation-actions"><button className="button secondary" disabled={busy||loading} onClick={()=>void refreshRecommendation()}>{busy?<Spinner label="Updating"/>:<><RefreshCw size={14}/>{recommendation?'Refresh next step':'Prepare next step'}</>}</button><span className="subtle-note">Uses your current saved preferences.</span></div>
    {recommendation&&<section className="journey-draft"><div className="journey-draft-heading"><h3><MessageSquare size={16}/>Suggested message</h3>{recommendation.draftEligibility.allowed&&recommendation.draft&&<button className="button ghost small" disabled={busy||loading} onClick={()=>void copyDraft()}>{copied?<Check size={14}/>:<Clipboard size={14}/>}<span aria-live="polite">{copied?'Copied':'Copy draft'}</span></button>}</div>
     {recommendation.draftEligibility.allowed&&recommendation.draft?<pre>{recommendation.draft}</pre>:<div className="journey-draft-blocked"><Badge tone="amber">Draft unavailable</Badge><ul className="journey-reasons">{recommendation.draftEligibility.reasons.map((reason,index)=><li key={index}>{reason}</li>)}</ul></div>}

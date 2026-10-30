@@ -119,3 +119,8 @@
 .mobile-device-list { margin-top: 12px; }
 .mobile-device-list .setting-row { gap: 12px; }
 .mobile-device-list strong { overflow-wrap: anywhere; }
+
+.relationship-method{border:1px solid var(--border,#dfe6dd);border-radius:12px;padding:14px 16px;margin:14px 0;background:var(--surface,#fff)}
+.relationship-method summary{cursor:pointer;font-weight:600;line-height:1.5;min-height:28px}
+.relationship-method p,.relationship-method li{font-size:13px;line-height:1.65}
+.relationship-method ol,.relationship-method ul{padding-left:22px}

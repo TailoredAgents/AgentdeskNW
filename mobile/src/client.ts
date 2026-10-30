@@ -15,11 +15,11 @@ export function normalizeOrigin(raw:string,allowLocalDevelopment=false):string {
 }
 export type FetchLike=(input:string,init?:RequestInit)=>Promise<Response>;
 export function createApi(origin:string,token:string,fetcher:FetchLike=fetch){
- return async function request<T>(path:string,body?:unknown):Promise<T>{
+ return async function request<T>(path:string,body?:unknown,method:'POST'|'PATCH'='POST'):Promise<T>{
   if(!/^\/[a-z][a-z0-9_/?=&%.-]*$/i.test(path)||path.includes('..')||path.includes('//'))throw new Error('Unsupported application request.');
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),100_000);
   try{
-   const response=await fetcher(`${origin}/api${path}`,{method:body===undefined?'GET':'POST',headers:{Accept:'application/json','Content-Type':'application/json','X-AgentDesk-Request':'1',...(token?{Authorization:`Bearer ${token}`}:{})},body:body===undefined?undefined:JSON.stringify(body),signal:controller.signal,redirect:'error',credentials:'omit',cache:'no-store'});
+   const response=await fetcher(`${origin}/api${path}`,{method:body===undefined?'GET':method,headers:{Accept:'application/json','Content-Type':'application/json','X-AgentDesk-Request':'1',...(token?{Authorization:`Bearer ${token}`}:{})},body:body===undefined?undefined:JSON.stringify(body),signal:controller.signal,redirect:'error',credentials:'omit',cache:'no-store'});
    let value:unknown;try{value=await response.json();}catch{throw new ApiError('The workspace returned an unreadable response. Check the connection and try again.',response.status);}
    if(!response.ok)throw new ApiError(typeof value==='object'&&value!==null&&'error' in value&&typeof value.error==='string'?value.error:'The request could not be completed.',response.status);
    return value as T;

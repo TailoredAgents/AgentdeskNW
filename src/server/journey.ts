@@ -1,3 +1,4 @@
+import {relationshipGuidance} from './relationship-methods';
 import { getRelationshipRecord } from './relationship-record';
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
@@ -304,7 +305,9 @@ export function recommendInvestorNextStep(actor: Actor, investorId: string, prop
       if(memory.avoidPhrases.some(phrase=>draft!.toLowerCase().includes(phrase.toLowerCase()))){reasons.push('A saved phrase preference conflicts with this clarification.');draft=null;}
     }
   }
-  return {investorId, propertyId:selectedPropertyId, generatedAt:now(), action, why, evidence, unknowns:[...new Set(unknowns)], draft,
+  const workingMethod=relationshipGuidance(journey,action.kind,actor.role,repair?'repair':'general');
+  if(workingMethod)action={...action,description:`${action.description} Suggested question: ${workingMethod.question}`};
+  return {investorId, propertyId:selectedPropertyId, generatedAt:now(), workingMethod, action, why, evidence, unknowns:[...new Set(unknowns)], draft,
     draftEligibility:{allowed:draft !== null, reasons, scope:selectedPropertyId ? 'property_specific' : 'relationship_only'},
     preferencesUsed:{tone:memory.tone, length:memory.length, avoidPhrases:memory.avoidPhrases, priorities:memory.priorities, version:memory.version},
     method:['Use reviewed buying criteria and current authorized records.', 'Respect a pause, unresolved employee reports and open follow-up work before a new pitch.', 'Keep unreviewed extractions and missing facts explicit.', 'Apply saved writing preferences; a human reviews any draft before sending.'],

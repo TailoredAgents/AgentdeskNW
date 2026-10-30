@@ -1,5 +1,37 @@
 # AgentDesk progress log
 
+## October 30, 2026 — Native Inbox and first relationship working methods accepted locally
+
+**Scope:** owner authorized the next recommended C3/C4 slice after shared-controls/mobile checkpoint `e03e381`. Added the native private Inbox and first versioned provisional relationship guidance using existing services. No schema migration, dependency change, provider connection, actual message delivery, payment, app distribution or deployment is included. C1–C4 remain partial in the canonical roadmap.
+
+**Phone Inbox:** Agent/Work/Inbox/Settings now includes Salesforce-first source selection, filters/search, private conversation details, explicit body/source limits, metadata-only attachment labels, relationship context and saved drafts/history. Native Agent Inbox artifacts open the corresponding conversation. Manual drafts share the dashboard's versions; unsaved text retains its original expected version when another surface saves. Explicit comparison offers keeping the employee's edits against the reviewed version or taking the latest saved text. Tab/thread navigation guards unsaved edits. Source withdrawal clears protected editors and reviews.
+
+On-demand assistance prepares the same bounded relationship reply as desktop. Exact review shows sender, recipient, subject, body, empty attachments and expiry, with visible simulation-only confirmation controls. A confirmed simulation saves one outbound record/receipt. Reviewed relationship observations and personal follow-ups preserve private source receipts; the phone offers no due time or an explicitly displayed tomorrow-9-AM device-local time. Status/read changes and investor association use existing services. Stable operation IDs allow explicit recovery while the screen remains active; no write is automatically retried. Unsaved editor/pending UI state is memory-only and is cleared with private rendered state on backgrounding: save before leaving. This is not offline editing/recovery.
+
+**Working knowledge:** four code-owned methods—qualification, objections, reactivation and follow-through—have source revision `2026-10-30.1`, effective date, role, active/withdrawn state, objective, steps, required facts and limits. They are explicitly provisional Tailored Agents design, not company-approved procedures. Recommendations now include the selected useful question; Inbox shares the catalog with current message/relationship evidence. Desktop and phone display provenance and checks. Selection checks the newest effective version before withdrawal/scope, preventing an older method from reappearing. The method catalog fingerprint participates in exact-send and active model-turn context. No knowledge ingestion/publisher UI, autonomous fact update or new model call is added.
+
+Thirteen new method cases test role/scope, effective revisions, withdrawal, pause priority, snapshots, header-only limits and changed-method review rejection. A repair concern changes the next recommendation/question; its deliberately reviewed resolution returns to existing follow-through. Six authored acquisitions/management scenarios are recorded as future acceptance targets, not executed tests or confirmed company procedures. Registry readiness remains two locally ready, ten demo, four planned. Engineering tests establish behavior, not expert intelligence or competitive superiority.
+
+**Verification on final runtime source:**
+
+| Check | Result |
+| --- | --- |
+| Root typecheck, lint, production build | Passed |
+| Root automated tests | 596 passed across 32 files |
+| Mobile independent typecheck / tests | Passed / 15 passed |
+| iOS and Android JavaScript exports | Passed, approximately 1.8 MB per platform; no native binaries |
+| Web development export | Passed; used for connected 390 × 844 browser rehearsal |
+| HTTP/workflow suites | 934 passed: workflows 109; intelligence 73; conversation 51; wallet 91; hosted 15; inbox 119; communications 61; company email 70; relationship 42; work 115; mobile 96; mobile Inbox 75; messaging 17 |
+| Relationship quality | 36/36 scenarios, 54/54 assertions |
+| Schema/dependencies | No changes; prior migration/install/native-generation evidence remains attached to `e03e381` |
+| Documentation/release review | 50 Markdown files / 212 local links and anchors passed; whitespace/diff checks passed |
+
+The new `test:mobile-inbox` suite exercises the compiled HTTP boundary, scoped phone sessions for all three roles, shared desktop/native drafts, exact/replayed/stale actions, manual-draft simulation rejection, source limits/revocation/restoration, reviewed follow-up/note provenance and device revocation. Existing suites verify unchanged provider/wallet behavior and preserved service boundaries. Tests/previews use disposable fictional databases with live providers disabled; the active demonstration database was not used.
+
+**Interface acceptance:** paired the phone preview as Alex; opened the primary company-email conversation; saved a manual draft; confirmed the dirty-tab warning preserves text; prepared and reviewed an eligible reply; recorded simulated delivery; reviewed/saved a personal follow-up and sourced relationship note. A competing desktop draft triggered comparison while preserving unsaved phone text; keeping the reviewed edits and saving appeared on desktop. The suggested approach showed its repair question, source revision and provisional status. Narrow Inbox layout and fixed review footer were inspected. No application browser errors were captured; Expo retains its expected web-only push-listener warning. Screenshots are ignored local artifacts: `artifacts/mobile/inbox-list.png` and `inbox-send-review.png`.
+
+**Limits and next work:** actual-device lifecycle, screen reader/keyboard behavior, native build/install, speech/push and distribution remain pending. The prior eight inherited Expo tooling audit findings remain unresolved; this slice adds no dependencies and does not claim a new clean audit. Custom sending/CC/files, full personal-task controls, general clarification, actual spending/top-up, approved company connections and independent specialist effectiveness remain open. The roadmap now names native personal follow-up completion and acquisitions intake/missing-facts depth as the next bounded development work, with management as a peer track and real-phone acceptance tracked separately. GitHub publication does not establish the latest Render deployment.
+
 
 ## October 30, 2026 — Shared controls and mobile foundation accepted locally
 

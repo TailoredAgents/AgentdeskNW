@@ -1,3 +1,4 @@
+import type {RelationshipGuidance} from './relationship-method-contracts';
 import type { RelationshipRecord } from './relationship-record-contracts';
 import type { Task } from './contracts';
 import type { BuyBox, InvestorIntelligence } from './intelligence-contracts';
@@ -75,6 +76,7 @@ export interface InvestorNextStep {
   draftEligibility: { allowed: boolean; reasons: string[]; scope: 'relationship_only' | 'property_specific' };
   preferencesUsed: Pick<EmployeeMemory, 'tone' | 'length' | 'avoidPhrases' | 'priorities' | 'version'>;
   method: string[];
+  workingMethod: RelationshipGuidance | null;
   deliveryStatus: 'not_sent';
   synthetic: boolean;
 }

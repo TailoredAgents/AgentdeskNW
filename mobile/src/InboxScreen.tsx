@@ -1,0 +1,129 @@
+import {useEffect,useRef,useState,type ReactNode} from 'react';
+import {ActivityIndicator,KeyboardAvoidingView,Modal,Platform,Pressable,RefreshControl,ScrollView,Text,TextInput,View} from 'react-native';
+import * as Crypto from 'expo-crypto';
+import type {InboxAssistance,InboxFilter,InboxFollowUpResult,InboxObservationResult,InboxSendResult,InboxSendReview,InboxState,InboxThreadDetail} from '../../src/lib/communications-contracts';
+import {ApiError,createApi} from './client';
+import {editorDirty,editorFor,inboxContextKey,keepReviewedEdits,reconcileEditor,reviewMatches,type InboxEditor} from './inbox-editor';
+import {Button} from './WorkScreen';
+import {colors,styles as s} from './styles';
+
+type Guard=(leave:()=>void)=>void;
+type Operation={path:string;body:Record<string,unknown>;method:'POST'|'PATCH';kind:'detail'|'review'|'send'|'followup'|'observation';notice:string};
+type ActionReview={kind:'followup'|'observation';version:number;messageId:string;text:string;dueAt:string|null;observationKind?:'objection'|'preference'};
+const filters:{id:InboxFilter;label:string}[]=[{id:'all',label:'All'},{id:'needs_reply',label:'Needs reply'},{id:'drafts',label:'Drafts'},{id:'email',label:'Email'},{id:'sms',label:'Texts'}];
+const statusLabel={needs_reply:'Needs reply',waiting:'Waiting',done:'Handled'};
+const stamp=(value:string)=>new Date(value).toLocaleString();
+const tomorrow=()=>{const date=new Date();date.setDate(date.getDate()+1);date.setHours(9,0,0,0);return date.toISOString();};
+function Sheet({title,close,children,footer}:{title:string;close:()=>void;children:ReactNode;footer:ReactNode}){
+ return <Modal visible transparent animationType="slide" onRequestClose={close}><KeyboardAvoidingView style={s.modalShade} behavior={Platform.OS==='ios'?'padding':undefined}><View style={s.modal}><View style={s.modalHeader}><View style={s.between}><Text style={[s.cardTitle,s.grow]}>{title}</Text><Pressable accessibilityRole="button" accessibilityLabel={`Close ${title}`} onPress={close} style={s.close}><Text style={s.cardTitle}>×</Text></Pressable></View></View><ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={s.body}>{children}</ScrollView><View style={s.modalFooter}>{footer}</View></View></KeyboardAvoidingView></Modal>;
+}
+export function InboxScreen({api,initialId,onAuthError,onGuard}:{api:ReturnType<typeof createApi>;initialId:string|null;onAuthError:(error:unknown)=>void;onGuard:(guard:Guard|null)=>void}){
+ const [list,setList]=useState<InboxState|null>(null),[selected,setSelected]=useState(initialId),[detail,setDetail]=useState<InboxThreadDetail|null>(null);
+ const [filter,setFilter]=useState<InboxFilter>('all'),[account,setAccount]=useState<string|undefined>(undefined),[query,setQuery]=useState(''),[search,setSearch]=useState('');
+ const [editor,setEditor]=useState<InboxEditor|null>(null),[assistance,setAssistance]=useState<InboxAssistance|null>(null),[review,setReview]=useState<InboxSendReview|null>(null),[actionReview,setActionReview]=useState<ActionReview|null>(null);
+ const [busy,setBusy]=useState(false),[loading,setLoading]=useState(true),[error,setError]=useState(''),[notice,setNotice]=useState(''),[showContext,setShowContext]=useState(false),[compare,setCompare]=useState(false);
+ const [showSources,setShowSources]=useState(false);
+ const [dialog,setDialog]=useState<{title:string;text:string;confirmLabel:string;confirm:()=>void}|null>(null),[pending,setPending]=useState<Operation|null>(null),[clock,setClock]=useState(Date.now());
+ const alive=useRef(true),generation=useRef(0),mutating=useRef(false),detailRef=useRef<InboxThreadDetail|null>(null);
+ const dirty=editorDirty(editor),conflict=!!detail&&!!editor&&dirty&&editor.baseVersion!==detail.thread.version;
+ const locked=busy||!!pending,editable=!!detail?.canEdit&&detail.bodyAccess==='full'&&detail.account.capabilities.localDraft;
+ function clearReviews(){setShowSources(false);setAssistance(null);setReview(null);setActionReview(null);}
+ function accept(next:InboxThreadDetail,reset=false){
+  if(!detailRef.current||inboxContextKey(detailRef.current)!==inboxContextKey(next))clearReviews();
+  detailRef.current=next;setDetail(next);setEditor(old=>reset?editorFor(next):reconcileEditor(old,next));
+  if(next.bodyAccess!=='full'){setDialog(null);setCompare(false);setShowContext(false);setNotice('');}
+ }
+ function fail(failure:unknown){
+  setError(failure instanceof Error?failure.message:'Could not open your inbox.');onAuthError(failure);
+  if(failure instanceof ApiError&&[401,403,404].includes(failure.status)){detailRef.current=null;setDetail(null);setEditor(null);setList(null);clearReviews();setDialog(null);setCompare(false);setNotice('');}
+ }
+ async function refresh(){
+  if(mutating.current)return;const epoch=++generation.current;
+  try{
+   const params=[`filter=${filter}`,`q=${encodeURIComponent(query)}`,...(account?[`accountId=${encodeURIComponent(account)}`]:[])];
+   const state=await api<InboxState>(`/inbox?${params.join('&')}`);if(!alive.current||epoch!==generation.current)return;
+   if(account===undefined){setAccount(state.preferredAccountId??'');if(state.preferredAccountId)return;}
+   setList(state);
+   if(selected){const next=await api<InboxThreadDetail>(`/inbox/${encodeURIComponent(selected)}`);if(!alive.current||epoch!==generation.current)return;accept(next);}
+  }catch(e){if(alive.current&&epoch===generation.current){clearReviews();fail(e);}}
+  finally{if(alive.current&&epoch===generation.current)setLoading(false);}
+ }
+ useEffect(()=>{alive.current=true;return()=>{alive.current=false;generation.current++;onGuard(null);};},[]);
+ useEffect(()=>{setLoading(true);void refresh();const timer=setInterval(()=>void refresh(),12_000);return()=>{generation.current++;clearInterval(timer);};},[api,selected,filter,account,query]);
+ useEffect(()=>{const timer=setInterval(()=>setClock(Date.now()),1000);return()=>clearInterval(timer);},[]);
+ function guard(leave:()=>void){
+  if(locked){setError('Finish or retry the outstanding inbox action before leaving.');return;}
+  if(dirty){setDialog({title:'Keep your draft?',text:'Your edits have not been saved. Stay here to save them, or discard only these unsaved edits and continue.',confirmLabel:'Discard unsaved edits & continue',confirm:()=>{setEditor(detail?editorFor(detail):null);setDialog(null);leave();}});return;}
+  leave();
+ }
+ useEffect(()=>{onGuard(guard);return()=>onGuard(null);},[dirty,locked,detail]);
+ function open(id:string|null){guard(()=>{generation.current++;detailRef.current=null;setSelected(id);setDetail(null);setEditor(null);clearReviews();setShowContext(false);setError('');setNotice('');});}
+ async function run(operation:Operation){
+  if(mutating.current)return;mutating.current=true;generation.current++;setPending(operation);setBusy(true);setError('');setNotice('');
+  try{
+   const result=await api<InboxThreadDetail|InboxSendReview|InboxSendResult|InboxFollowUpResult|InboxObservationResult>(operation.path,operation.body,operation.method);
+   if(!alive.current)return;
+   setPending(null);
+   if(operation.kind==='review'){clearReviews();setReview(result as InboxSendReview);}
+   else {const next='detail'in result?result.detail:result as InboxThreadDetail;accept(next,true);setReview(null);setActionReview(null);setCompare(false);setDialog(null);}
+   setNotice(operation.kind==='send'?(result as InboxSendResult).receipt.notice:operation.notice);
+   if(operation.path.endsWith('/prepare-reply')){try{const current=result as InboxThreadDetail;const next=await api<InboxAssistance>(`/inbox/${encodeURIComponent(current.thread.id)}/assist`);if(alive.current&&detailRef.current?.thread.id===next.threadId&&detailRef.current.thread.version===next.threadVersion)setAssistance(next);}catch{if(alive.current)setNotice('Reply saved. Refresh the conversation review to continue.');}}
+  }catch(e){
+   if(!alive.current)return;
+   if(e instanceof ApiError&&[400,401,402,403,404,409,422].includes(e.status)){setPending(null);setReview(null);setActionReview(null);}
+   fail(e);
+   if(e instanceof ApiError&&[403,409].includes(e.status)&&selected){try{const next=await api<InboxThreadDetail>(`/inbox/${encodeURIComponent(selected)}`);if(alive.current)accept(next);}catch{/* Keep uncertainty visible; never retry a write automatically. */}}
+  }finally{mutating.current=false;if(alive.current)setBusy(false);}
+ }
+ function mutate(action:string,body:Record<string,unknown>={},kind:Operation['kind']='detail',message='Saved. Nothing was sent.'){
+  if(!detail||locked)return;
+  void run({path:`/inbox/${encodeURIComponent(detail.thread.id)}${action?`/${action}`:''}`,body:{...(action==='simulate-send'?{}:{expectedVersion:action==='draft'?editor!.baseVersion:actionReview?.version??detail.thread.version}),...body,eventKey:Crypto.randomUUID()},method:action?'POST':'PATCH',kind,notice:message});
+ }
+ async function assist(){
+  if(!detail||locked)return;const epoch=++generation.current;mutating.current=true;setBusy(true);setError('');
+  try{const next=await api<InboxThreadDetail>(`/inbox/${encodeURIComponent(detail.thread.id)}`);if(!alive.current||epoch!==generation.current)return;accept(next);const result=await api<InboxAssistance>(`/inbox/${encodeURIComponent(detail.thread.id)}/assist`);if(!alive.current||epoch!==generation.current)return;if(result.threadVersion!==next.thread.version)throw new Error('This conversation changed. Review it again.');setAssistance(result);}
+  catch(e){if(alive.current&&epoch===generation.current){clearReviews();fail(e);}}finally{mutating.current=false;if(alive.current)setBusy(false);}
+ }
+ function prepare(){
+  if(dirty||detail?.draft){setDialog({title:'Replace the reply draft?',text:'This prepares the current relationship reply. Your saved draft remains in history. Unsaved edits will be discarded only after preparation succeeds.',confirmLabel:'Prepare current reply',confirm:()=>{setDialog(null);mutate('prepare-reply');}});}else mutate('prepare-reply');
+ }
+ const reviewValid=!!review&&!!detail&&reviewMatches(review,detail,editor,clock);
+ const savedReplyEligible=!!assistance?.suggestedReply.eligible&&!!detail?.draft&&assistance.suggestedReply.body===detail.draft.body&&assistance.suggestedReply.subject===detail.draft.subject;
+ const errorView=Boolean(error)&&<View style={s.error}><Text accessibilityRole="alert" style={s.errorText}>{error}</Text></View>;
+ return <KeyboardAvoidingView style={s.grow} behavior={Platform.OS==='ios'?'padding':undefined}>
+  <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={s.body} refreshControl={<RefreshControl refreshing={loading} onRefresh={()=>void refresh()}/>}>
+   <View style={s.demo}><Text style={s.demoText}>Fictional email & investor texts · No live delivery</Text></View>
+   {errorView}{Boolean(notice)&&<Text accessibilityLiveRegion="polite" style={s.copy}>{notice}</Text>}
+   {pending&&!busy&&<View style={s.card}><Text style={s.cardTitle}>Outcome needs checking</Text><Text style={s.copy}>Retry the same action to recover its saved result. It keeps the original request identity.</Text><Button label="Retry the same inbox action" onPress={()=>void run(pending)}/></View>}
+   {!detail?<>
+    {selected&&<Button secondary label="Back to inbox" disabled={locked} onPress={()=>open(null)}/>}
+    <View style={s.row}><TextInput accessibilityLabel="Search inbox" placeholder="Search your conversations" value={search} onChangeText={setSearch} style={[s.input,s.grow]} onSubmitEditing={()=>setQuery(search.trim())}/><Button label="Search" onPress={()=>setQuery(search.trim())}/></View>
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.wrap}><Button label="All inboxes" secondary={account!==''} onPress={()=>setAccount('')}/>{list?.accounts.map(item=><Button key={item.id} label={item.label} secondary={account!==item.id} onPress={()=>setAccount(item.id)}/>)}</ScrollView>
+    <View style={s.wrap}>{filters.map(item=><Pressable accessibilityRole="button" accessibilityState={{selected:filter===item.id}} key={item.id} onPress={()=>setFilter(item.id)} style={[s.pill,filter===item.id&&{backgroundColor:colors.ink}]}><Text style={[s.pillText,filter===item.id&&s.employeeText]}>{item.label} {list?.counts[item.id]??''}</Text></Pressable>)}</View>
+    {loading&&<ActivityIndicator color={colors.green}/>}
+    {list?.threads.map(thread=><Pressable accessibilityRole="button" accessibilityLabel={`Open conversation: ${thread.subject}`} key={thread.id} style={s.card} onPress={()=>open(thread.id)}><View style={s.between}><Text style={[s.status,s.grow]}>{statusLabel[thread.status]}{thread.unread?' · Unread':''}{thread.hasDraft?' · Draft':''}</Text><Text style={s.help}>{thread.channel==='sms'?'Text':'Email'}</Text></View><Text style={s.cardTitle}>{thread.correspondent.name}</Text><Text style={s.copy}>{thread.subject}</Text><Text numberOfLines={3} style={s.help}>{thread.preview}</Text><Text style={s.help}>{list.accounts.find(item=>item.id===thread.accountId)?.label}</Text></Pressable>)}
+    {list&&!loading&&!list.threads.length&&<View style={s.empty}><Text style={s.cardTitle}>Nothing here yet</Text><Text style={s.help}>Try another inbox, filter or search.</Text></View>}
+   </>:<>
+    <Button label="Back to inbox" secondary disabled={locked} onPress={()=>open(null)}/>
+    <View style={s.card}><Text style={s.status}>{detail.account.label}</Text><Text style={s.cardTitle}>{detail.thread.subject}</Text><Text style={s.copy}>{detail.thread.correspondent.name}</Text><Text selectable style={s.help}>{detail.thread.correspondent.address}</Text><Text style={s.help}>{detail.capabilityNotice}</Text><View style={s.wrap}>{(['needs_reply','waiting','done'] as const).map(status=><Button key={status} label={statusLabel[status]} secondary={detail.thread.status!==status} disabled={!detail.canEdit||locked||dirty} onPress={()=>mutate('',{status},'detail','Inbox status updated. Nothing was sent.')}/>)}</View><Button secondary label={detail.thread.unread?'Mark as read':'Mark as unread'} disabled={!detail.canEdit||locked||dirty} onPress={()=>mutate('',{unread:!detail.thread.unread},'detail','Read status updated.')}/></View>
+    {detail.bodyAccess==='revoked'?<View style={s.error}><Text style={s.errorText}>Source access changed. Saved content is hidden; reopen after access is restored.</Text></View>:<>
+     {detail.messages.map(message=><View key={message.id} style={s.card}><Text style={s.status}>{message.direction==='inbound'?'Received':'Outgoing'} · {message.deliveryStatus==='simulated_sent'?'Simulated — not delivered':'Fictional history'}</Text><Text style={s.copy}>{message.from.name} · {message.from.address}</Text><Text style={s.help}>{stamp(message.receivedAt)}</Text><Text selectable style={s.copy}>{message.bodyAvailability==='headers_only'?'Message body unavailable.':message.body}</Text><Text style={s.help}>{message.sourceLabel}</Text>{message.attachments.map(file=><Text key={file.id} style={s.help}>{file.name} · Metadata only; file unavailable</Text>)}</View>)}
+     <Button secondary label={showContext?'Hide relationship context':'Relationship & source context'} onPress={()=>setShowContext(value=>!value)}/>
+     {showContext&&<View style={s.card}><Text style={s.cardTitle}>{detail.investorContext?.investorName??'Investor association'}</Text><Text style={s.help}>{detail.contextNotice}</Text>{detail.investorContext&&<><Text style={s.copy}>{detail.investorContext.summary}</Text>{detail.investorContext.openIssues.map(issue=><Text key={issue.id} style={s.copy}>Open concern: {issue.text}</Text>)}{detail.investorContext.commitments.map(task=><Text key={task.id} style={s.copy}>Open follow-up: {task.title}</Text>)}{detail.investorContext.unknowns.map(text=><Text key={text} style={s.help}>{text}</Text>)}</>}{detail.thread.association.status!=='linked'&&<><Text style={s.copy}>Choose only a relationship you recognize. Linking does not update CRM facts.</Text>{detail.availableInvestors.map(investor=><Button key={investor.id} secondary label={`Link ${investor.name}`} disabled={!detail.canEdit||locked||dirty} onPress={()=>setDialog({title:'Review investor link',text:`Link this conversation to ${investor.name}? This records your association, not verified sender identity.`,confirmLabel:'Confirm this link',confirm:()=>{setDialog(null);mutate('link',{investorId:investor.id});}})}/>)}</>}</View>}
+     <View style={s.card}><Text style={s.cardTitle}>Your agent’s take</Text><Text style={s.help}>Uses this conversation and permitted relationship history. Incoming messages never authorize actions.</Text><Button secondary label={assistance?'Refresh conversation review':'Review this conversation'} disabled={!detail.canEdit||locked} onPress={()=>void assist()}/>
+      {assistance&&<><Text style={s.copy}>{assistance.summary}</Text><Text style={s.label}>Suggested next step</Text><Text style={s.copy}>{assistance.nextStep}</Text>{assistance.unknowns.map(text=><Text key={text} style={s.help}>• {text}</Text>)}<Button secondary label={showSources?'Hide sources & approach':'Sources & suggested approach'} onPress={()=>setShowSources(value=>!value)}/>{showSources&&<>{assistance.workingMethod&&<View style={s.result}><Text style={s.cardTitle}>{assistance.workingMethod.method.title}</Text><Text style={s.copy}>{assistance.workingMethod.question}</Text>{assistance.workingMethod.checks.map(text=><Text key={text} style={s.help}>• {text}</Text>)}<Text style={s.help}>{assistance.workingMethod.method.source.title} · version {assistance.workingMethod.method.version} · {assistance.workingMethod.method.source.revision}</Text><Text style={s.help}>{assistance.workingMethod.notice}</Text></View>}<Text style={s.label}>Supporting sources</Text>{assistance.sources.map(source=><View key={source.id} style={s.result}><Text style={s.status}>{source.label}</Text><Text selectable style={s.help}>{source.excerpt}</Text><Text style={s.help}>{source.recordedAt?stamp(source.recordedAt):'Date unknown'} · {source.verification.replaceAll('_',' ')}</Text></View>)}</>}<Text style={s.help}>{assistance.processing.notice}</Text>
+       <Button label="Prepare relationship reply" disabled={!editable||locked||!assistance.suggestedReply.eligible} onPress={prepare}/>
+       {assistance.canCreateFollowUp&&assistance.suggestedFollowUp&&<Button secondary label="Review follow-up task" disabled={locked||dirty} onPress={()=>{const item=assistance.suggestedFollowUp!;setActionReview({kind:'followup',version:detail.thread.version,messageId:item.messageId,text:item.title,dueAt:null});}}/>}
+       {assistance.canRecordObservation&&assistance.suggestedObservation&&<Button secondary label="Review relationship note" disabled={locked||dirty} onPress={()=>{const item=assistance.suggestedObservation!;setActionReview({kind:'observation',version:detail.thread.version,messageId:item.messageId,text:item.text,dueAt:null,observationKind:item.kind});}}/>}
+      </>}
+     </View>
+     {detail.bodyAccess==='full'&&detail.account.capabilities.localDraft&&editor&&<View style={s.card}><View style={s.between}><Text style={s.cardTitle}>Reply draft</Text><Text style={s.status}>{dirty?'Unsaved':detail.draft?'Saved · not sent':'Not sent'}</Text></View><Text selectable style={s.help}>From {detail.account.address}{'\n'}To {detail.thread.correspondent.address}</Text>{conflict&&<View style={s.error}><Text style={s.errorText}>This conversation changed. Your edits are preserved. Compare the latest saved version before saving again.</Text><Button secondary label="Compare latest saved draft" onPress={()=>setCompare(true)}/></View>}{detail.thread.channel==='email'&&<><Text style={s.label}>Subject</Text><TextInput accessibilityLabel="Reply subject" value={editor.subject} onChangeText={subject=>{setEditor({...editor,subject});setReview(null);}} maxLength={240} style={s.input} editable={editable&&!locked}/></>}<TextInput accessibilityLabel="Reply draft message" value={editor.body} onChangeText={body=>{setEditor({...editor,body});setReview(null);}} multiline textAlignVertical="top" maxLength={detail.thread.channel==='sms'?1600:12000} style={[s.input,{minHeight:170}]} editable={editable&&!locked}/><Text style={s.help}>Save before leaving the app. Custom edits remain drafts; simulation uses only the current prepared relationship reply.</Text><Button label="Save draft" disabled={!editable||locked||!dirty||conflict||!editor.body.trim()} onPress={()=>mutate('draft',{body:editor.body,...(detail.thread.channel==='email'?{subject:editor.subject}:{})})}/><Button secondary label="Review simulated send" disabled={!editable||locked||dirty||!detail.account.capabilities.simulateSend||!savedReplyEligible} onPress={()=>mutate('review-send',{},'review','Review the exact saved reply below.')}/>{detail.draft&&<Text style={s.help}>Last saved {stamp(detail.draft.updatedAt)}</Text>}{detail.draftHistory.length>0&&<><Text style={s.label}>Earlier drafts</Text>{detail.draftHistory.slice(0,3).map(item=><View key={`${item.id}:${item.version}`} style={s.result}><Text style={s.help}>{item.deliveryStatus==='simulated_sent'?'Simulated — not delivered':'Earlier draft · not sent'} · {stamp(item.updatedAt)}</Text><Text selectable style={s.copy}>{item.body}</Text></View>)}</>}</View>}
+    </>}
+   </>}
+  </ScrollView>
+  {dialog&&<Sheet title={dialog.title} close={()=>setDialog(null)} footer={<><Button label={dialog.confirmLabel} disabled={locked} onPress={dialog.confirm}/><Button secondary label="Stay here" onPress={()=>setDialog(null)}/></>}><Text style={s.copy}>{dialog.text}</Text></Sheet>}
+  {compare&&detail&&editor&&<Sheet title="Compare saved draft" close={()=>setCompare(false)} footer={<><Button label="Keep my edits against this version" disabled={locked||detail.bodyAccess!=='full'} onPress={()=>{setEditor(keepReviewedEdits(editor,detail));setCompare(false);setError('');}}/><Button secondary label="Use latest saved draft" disabled={locked} onPress={()=>{setEditor(editorFor(detail));setCompare(false);setError('');}}/></>}><Text style={s.label}>Latest saved version</Text><Text selectable style={s.copy}>{detail.draft?.subject??detail.thread.subject}</Text><Text selectable style={s.copy}>{detail.draft?.body??'No saved draft.'}</Text><Text style={s.label}>Your unsaved edits</Text><Text selectable style={s.copy}>{editor.subject}{'\n'}{editor.body}</Text><Text style={s.help}>Keeping your edits does not save them. Review, then tap Save draft.</Text></Sheet>}
+  {review&&<Sheet title="Review simulated send" close={()=>{if(!busy)setReview(null);}} footer={<><Button label="Confirm simulated send" disabled={locked||!reviewValid} onPress={()=>mutate('simulate-send',{reviewId:review.id},'send')}/><Button secondary label="Keep as draft" disabled={busy} onPress={()=>setReview(null)}/></>}><View style={s.demo}><Text style={s.demoText}>No email or text will be delivered. No credits are charged.</Text></View><Text style={s.label}>From</Text><Text selectable style={s.copy}>{review.from.name} · {review.from.address}</Text><Text style={s.label}>To</Text><Text selectable style={s.copy}>{review.to.name} · {review.to.address}</Text><Text style={s.label}>Subject</Text><Text selectable style={s.copy}>{review.subject}</Text><Text style={s.label}>Exact saved reply</Text><Text selectable style={s.copy}>{review.body}</Text><Text style={s.help}>No attachments. Expires {stamp(review.expiresAt)}.</Text>{!reviewValid&&<Text style={s.errorText}>This review changed or expired. Close it and review the current reply again.</Text>}{errorView}</Sheet>}
+  {actionReview&&detail&&<Sheet title={actionReview.kind==='followup'?'Review follow-up':'Review relationship note'} close={()=>{if(!busy)setActionReview(null);}} footer={<Button label={actionReview.kind==='followup'?'Save personal follow-up':'Save reviewed relationship note'} disabled={locked||actionReview.version!==detail.thread.version||!actionReview.text.trim()} onPress={()=>mutate(actionReview.kind==='followup'?'follow-up':'record-observation',{messageId:actionReview.messageId,...(actionReview.kind==='followup'?{title:actionReview.text,dueAt:actionReview.dueAt}:{kind:actionReview.observationKind,text:actionReview.text})},actionReview.kind,actionReview.kind==='followup'?'Personal follow-up saved once.':'Employee-reviewed relationship note saved. No message was sent.')}/>}><Text style={s.help}>Source: {detail.messages.find(item=>item.id===actionReview.messageId)?.sourceLabel}</Text><Text selectable style={s.copy}>{detail.messages.find(item=>item.id===actionReview.messageId)?.body}</Text><Text style={s.label}>{actionReview.kind==='followup'?'Task title':'Your reviewed observation'}</Text><TextInput accessibilityLabel={actionReview.kind==='followup'?'Follow-up title':'Relationship note'} multiline value={actionReview.text} maxLength={actionReview.kind==='followup'?240:1600} onChangeText={text=>setActionReview({...actionReview,text})} style={[s.input,{minHeight:100}]} editable={!locked}/>{actionReview.kind==='followup'?<><Text style={s.label}>Reminder</Text><Button secondary={!actionReview.dueAt} label="Tomorrow at 9 AM · this device’s time" disabled={locked} onPress={()=>setActionReview({...actionReview,dueAt:tomorrow()})}/><Button secondary={!!actionReview.dueAt} label="No due date" disabled={locked} onPress={()=>setActionReview({...actionReview,dueAt:null})}/><Text style={s.copy}>{actionReview.dueAt?stamp(actionReview.dueAt):'No reminder time will be assumed.'}</Text></>:<Text style={s.help}>This deliberately adds your selected text to the investor journey as employee-reported evidence. The private mailbox and full message remain private.</Text>}{errorView}</Sheet>}
+ </KeyboardAvoidingView>;
+}

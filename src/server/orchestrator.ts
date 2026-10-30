@@ -1,3 +1,4 @@
+import {relationshipMethodFingerprint} from './relationship-methods';
 import {executeWorkConversationAction} from './work-conversation';
 import { workToolSchemas,workToolDescriptions,dispatchWorkTool,localWorkReply } from './work-tooling';
 import { workContextSnapshot } from './work-context';
@@ -424,7 +425,7 @@ export async function chat(actor:Actor,message:string,conversationId?:string,req
         const visibleInvestorIds=new Set(current.investors.map(investor=>investor.id));
         const relationshipReports=(db.prepare('SELECT investor_id,data FROM relationship_reports WHERE organization_id=? ORDER BY rowid').all(actor.organizationId) as {investor_id:string;data:string}[]).filter(report=>visibleInvestorIds.has(report.investor_id));
         const protectedState=['investor_intelligence','buy_boxes','property_releases','deal_packages','channel_templates','journey_observations','debriefs','tasks'].map(table=>db.prepare(`SELECT data FROM ${table} WHERE organization_id=? AND office_id=? ORDER BY rowid`).all(actor.organizationId,actor.officeId));
-        return {actor,workAccess:workContextSnapshot(actor),employeeMemory:getEmployeeMemory(actor),investors:current.investors,properties:current.properties,protectedState,relationshipReports,inbox:inboxContextFingerprint(actor),access:service.specialists.map(s=>featureAccess(actor,s.id)),withheld:service.getConversation(actor,conversation.id).messages.filter(m=>m.content.startsWith('This historical message is withheld')).map(m=>m.id)};
+        return {actor,workingMethods:relationshipMethodFingerprint(),workAccess:workContextSnapshot(actor),employeeMemory:getEmployeeMemory(actor),investors:current.investors,properties:current.properties,protectedState,relationshipReports,inbox:inboxContextFingerprint(actor),access:service.specialists.map(s=>featureAccess(actor,s.id)),withheld:service.getConversation(actor,conversation.id).messages.filter(m=>m.content.startsWith('This historical message is withheld')).map(m=>m.id)};
       };
       const scope=currentScope();
       result=await runLiveText({actor,conversationId:conversation.id,requestId,message,instructions:assistantInstructions(actor)+(channel==='sms'?' This reply goes to the employee by SMS. Prefer a concise plain-text answer under 500 characters. Preserve essential caveats; the application adds a link to the full saved conversation.':channel==='slack'?' This reply goes to the employee in a private Slack DM. Be concise and use plain text.':''),context,scope,currentScope,history:currentPreferenceHistory(conversation,employeeMemory,24).map(m=>({role:m.role,content:m.content})),tools:toolDefinitions(),dispatch:(name,args)=>dispatchToolSync(actor,name,args,command),artifacts,specialists});

@@ -35,3 +35,7 @@ test('notification links accept only exact app work links',()=>{
  assert.equal(workIdFromUrl('agentdesknw://work/work_demo-123'),'work_demo-123');
  for(const value of ['https://evil.example/work/work_demo','agentdesknw://settings/work_demo','agentdesknw://work/work_demo?token=secret','agentdesknw://work/work_demo#fragment','agentdesknw://work/..%2Fprivate','agentdesknw://work/work_demo/extra'])assert.equal(workIdFromUrl(value),null);
 });
+test('inbox status changes use PATCH with the same authenticated transport',async()=>{
+ const api=createApi('https://workspace.example','test-device-token',async(_url,init)=>{assert.equal(init?.method,'PATCH');assert.equal(init?.redirect,'error');assert.equal(init?.credentials,'omit');assert.deepEqual(JSON.parse(init?.body as string),{status:'done',expectedVersion:3,eventKey:'one'});return new Response('{}');});
+ await api('/inbox/inbox_thread_one',{status:'done',expectedVersion:3,eventKey:'one'},'PATCH');
+});

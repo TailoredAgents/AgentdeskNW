@@ -1,13 +1,15 @@
 # System architecture
 
 
-**Document role:** architecture specification; [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) alone controls delivery status and sequencing. The October 30 shared-controls/mobile source checkpoint extends baseline `2d16665` and has local integrated acceptance. Installed-phone and live-provider acceptance remain pending.
+**Document role:** architecture specification; [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) alone controls delivery status and sequencing. The October 30 native Inbox/provisional-method slice extends shared-controls/mobile checkpoint `e03e381` and has local integrated acceptance. Installed-phone and live-provider acceptance remain pending.
 
 ## Native client and shared command transport
 
 The `mobile/` Expo/React Native project has an independent dependency graph and Node version, reusing type-only shared contracts and the existing API. It does not move server secrets, SQLite or agent execution to the phone. `mobile-auth.ts` pairs a single-use code from a signed-in fictional employee with a revocable hashed bearer credential. Current membership/role is rechecked; native requests cannot switch demonstration persona or issue another device code. Existing browser cookie/origin controls remain unchanged for browser requests. Explicit private development origins are separate from the canonical hosted HTTPS origin. This is demonstration device access, not company SSO.
 
 `work-conversation.ts` handles actual employee work commands before model execution, with scoped command receipts and immutable cost reviews. The same ongoing conversation connects native/web/SMS and retained Slack transport. `mobile-notifications.ts` queues generic job notices after device opt-in, rechecks session/source access, separates Expo acceptance/receipt from phone display, and retains unknown send outcomes without automatic retry. A separate worker timer avoids delaying jobs on notification delivery. Live push defaults off.
+
+`mobile/src/InboxScreen.tsx` uses existing scoped inbox services over the same authenticated client; `inbox-editor.ts` keeps dirty text tied to its original expected version until explicit comparison. Source changes reset protected editors/reviews. Stable operation IDs support explicit retry while the screen remains active. Native Agent links open Inbox without duplicating the assistant conversation. All private rendered state is cleared on backgrounding; unsaved editors/pending UI state are not persisted offline. No migration or native dependency was added for Inbox.
 
 ## Durable local execution layer
 
@@ -120,4 +122,6 @@ Introduce managed OIDC/SSO and membership provisioning before real company-data 
 
 `src/server/relationship-record.ts` projects reviewed criteria and immutable employee reports into typed facts, differing-source questions, provisional reconfirmation flags and correction history. `relationship-record-contracts.ts` is the shared browser/server boundary. `GET /api/investors/:id/relationship-record` reads it; `POST /api/investors/:id/relationship-record/reports` validates and appends a reviewed employee report. Both use the existing authenticated/request-protected route and shared authorization services.
 
-Journey, recommendation, Inbox assistance and the existing Copilot journey tool reuse that projection. Saved relationship reports participate in protected model-context fingerprints and inbox review hashes; volatile generation timestamps do not create false stale reviews. Copilot has no report-write/approval tool. Comparison and this milestone's recommendations are deterministic; source-versioned domain methods and broader reasoning/equal-context model evaluations remain later stages in RELATIONSHIP_SPECIALIST_PLAN.md.
+Journey, recommendation, Inbox assistance and the existing Copilot journey tool reuse that projection. Saved relationship reports participate in protected model-context fingerprints and inbox review hashes; volatile generation timestamps do not create false stale reviews. Copilot has no report-write/approval tool. Comparison and recommendations remain deterministic.
+
+`relationship-methods.ts` supplies code-reviewed provisional qualification/objection/reactivation/follow-through methods with source, revision, effective date, role and withdrawal semantics. The newest effective version is selected before checking withdrawal/role, preventing fallback to superseded advice. `relationship-method-contracts.ts` shares the method, useful question, checks, evidence references and missing facts across native/web/Copilot. Exact send-review and active model-context fingerprints include the catalog hash. No company knowledge ingestion/publishing, automatic CRM change or extra model call follows from a method. Wider knowledge lifecycle, deeper reasoning and equal-context model evaluations remain later C4/C7 work.

@@ -14,16 +14,16 @@ Updated October 30, 2026. **This is the only authority for current delivery stat
 | Planned | A requirement or design, not a working feature |
 | External acceptance pending | Requires a real device, account, authorized company source or employee review; mocks do not close it |
 
-**Current locally verified source checkpoint: October 30, 2026 — shared controls and mobile foundation**, following runtime `2d16665` and documentation reset `407320e`. Evidence: 583 root tests across 31 files, nine mobile client tests, 858 HTTP/workflow checks, 36 relationship scenarios / 54 assertions, root typecheck/lint/production build, independent mobile checks/exports, connected phone-width browser walkthrough and all 266 prior rows across 82 tables preserved on a migrated copy. Native binary builds, installed phones, real push/speech and the latest Render revision remain unverified. The older `2d16665` evidence is retained historically in PROGRESS.
+**Current locally verified source checkpoint: October 30, 2026 — native Inbox and provisional relationship methods**, extending shared-controls/mobile foundation `e03e381`. Evidence: 596 root tests across 32 files, 15 mobile client tests, 934 HTTP/workflow checks, 36 relationship scenarios / 54 assertions, root typecheck/lint/production build, independent mobile checks/exports and a connected phone-width Inbox walkthrough. No schema or dependency change in this slice. Earlier migration/native-generation evidence remains attached to its checkpoint in PROGRESS. Native binary builds, installed phones, real push/speech and the latest Render revision remain unverified.
 
 | Area | Verified foundation | Remaining gap |
 | --- | --- | --- |
 | Copilot and work | Persistent conversations; typed model tools; eight composable local capabilities; durable jobs, immutable plans, receipts, pause/resume/cancel and three role starters | Broader planning/tool coverage, general clarification/changed-instruction continuation, real SMS acceptance and live voice parity |
 | Business workflows | Investor criteria/journeys/corrections, matching, releases, calling priorities, debriefs, reviewed CRM proposals, deal-package handoff | Complete daily workflows for every role; actual transaction/document coordination and deeper judgment |
-| Specialists | 16 registered: 2 locally ready, 10 demo, 4 planned | All 16 require declared scope, methods/tools, varied quality cases and role acceptance; no expert or competitive-superiority claim is established |
+| Specialists | 16 registered: 2 locally ready, 10 demo, 4 planned; four provisional versioned relationship methods shared by recommendations and Inbox | Company knowledge lifecycle, deeper judgment, all-role methods/tools, varied quality cases and role acceptance; no expert or competitive-superiority claim is established |
 | Communications | Shared employee SMS/Slack adapters; private fictional Salesforce-first email/investor-text inbox; exact generated-reply simulation | Actual channel acceptance; editable sends, recipients/CC/files; approved company sync and delivery; dedicated investor numbers |
 | Costs | Workforce entitlements, simulated wallet and whole-job approval above $1 with holds and partial settlement | Actual provider-wide spending enforcement, optional automatic top-up and payments |
-| Mobile and notifications | Native Agent/Work/Settings foundation, scoped demo pairing, shared typed conversation/job controls, reviewed dictation source and opt-in job push infrastructure; connected browser rehearsal passed | Native binary installation, actual speech/push, full mobile Inbox and phone acceptance |
+| Mobile and notifications | Native Agent/Work/Inbox/Settings, scoped pairing, shared chat/jobs/drafts, exact simulated reply review, relationship notes/follow-ups, reviewed dictation source and opt-in job push infrastructure; local/browser acceptance | Native binary installation, actual speech/push, personal-task controls, richer correspondence/record links, broader continuation and phone acceptance |
 | Company operation | Scoped fictional identities and hosted presentation entrance | Managed employee identity, approved data access, production persistence/workers, recovery, support and measured rollout |
 
 ## Confirmed product decisions
@@ -57,17 +57,17 @@ Checkpoint IDs **C1–C7 below are the current numbering**. Old `C1` in historic
 | --- | --- | --- | --- |
 | C1 | Shared conversation and reliable work controls | Partial; durable local jobs and bounded cross-surface commands verified locally | Start in one channel, supply information/change instructions/control cost in another, finish once with one consistent result |
 | C2 | First iPhone and Android app | Partial; local/browser foundation verified, device acceptance pending | Speak a request, review/send it, close the app, receive a notification and open the correct saved result on both platforms |
-| C3 | Essential mobile work experience | Partial; Work controls verified in browser preview, mobile Inbox and full review flow planned | Finish a representative daily workflow entirely on the phone |
-| C4 | Deep specialists and complete role workflows | Early foundations; most expertise and four specialist implementations planned | New facts/corrections change useful work; all 16 scopes and all three role journeys pass declared quality cases |
+| C3 | Essential mobile work experience | Partial; Work controls and bounded Inbox/draft/review/follow-up flow accepted locally; installed-phone and richer workflows pending | Finish a representative daily workflow entirely on the phone |
+| C4 | Deep specialists and complete role workflows | Partial; relationship records and four provisional methods verified locally; broader expertise and four specialist implementations planned | New facts/corrections change useful work; all 16 scopes and all three role journeys pass declared quality cases |
 | C5 | Proactive usefulness and SMS continuity | Task/channel foundations; job push mocked acceptance; broader initiative and actual delivery planned | Relevant update reaches the chosen channel once and the employee acts on it immediately |
 | C6 | Actual spending protection and optional auto top-up | Fictional job gate verified; actual integration/top-up planned | Whole-job limits, actual usage and purchases reconcile across channels without surprise authorization or duplicate charges |
 | C7 | Representative pilot, approved connections and rollout | Demonstration exists; company/device/production acceptance pending | Each role completes approved real work reliably, with evidence of usefulness and repeat use before expansion |
 
 **Dependency rules:** stabilize C1 before broadening channel execution. C2 and C3 reuse it. Start C4's knowledge/method work alongside C2/C3 rather than waiting for a finished app. C5 reuses the same work/permission/budget system. **C6 actual usage admission must pass before enabling broader live paid autonomous work**, even though it is numbered after C5. C7 identity/operations must pass before real company-data ingestion. Device and owner-account SMS tests do not need Salesforce approval. Quality and interface review accompany every checkpoint.
 
-## Accepted local checkpoint — shared controls and mobile foundation
+## Preserved earlier checkpoint — shared controls and mobile foundation
 
-The owner resumed development after the documentation reset. This bounded source checkpoint has passed local integrated acceptance; it does not close all of C1/C2.
+The owner resumed development after the documentation reset. Checkpoint `e03e381` passed the following local acceptance before the Inbox/method extension; these totals describe that earlier revision and do not close all of C1/C2.
 
 - [x] Preserve and review the existing runtime/mobile slice; keep generated output out of Git.
 - [x] Fix withheld-job references: “cancel it” requests a fresh selection and cannot cancel an older personal task or reveal a revoked source.
@@ -80,8 +80,10 @@ Evidence: 583 root tests; nine mobile tests; 858 HTTP/workflow checks; 36 relati
 
 ## Immediate next work
 
-1. **C3: native Inbox and review continuity.** Bring the existing private Salesforce-first fictional correspondence into the phone: source-aware thread list/detail, saved drafts, relationship context and exact eligible simulated-send review. Keep investor correspondence separate from the employee Agent conversation. Acceptance: inspect a reply, prepare/review a sourced response and save a follow-up entirely on the phone; revoked sources and changed drafts invalidate stale review.
-2. **C4 alongside C3: specialist methods and quality.** Begin the Investor Relationship Manager's versioned method/knowledge work and prepare provisional acquisitions and management cases. Preserve all three role tracks; Alex supplies dispositions evidence. New context/corrections must improve a subsequent recommendation in varied cases.
+The preceding C3 Inbox/first C4 method slice is accepted locally: Salesforce-first list/detail, saved manual drafts and comparison, exact eligible simulation, reviewed note/follow-up and shared versioned guidance. It adds no provider connection or schema migration. See [working methods](RELATIONSHIP_METHODS.md) and the newest PROGRESS entry for scope and evidence. C3/C4 as a whole are not complete.
+
+1. **C3: close the personal follow-up loop.** Bring existing personal tasks into native Work alongside durable jobs, with clear due/status/result links and the existing reviewed snooze/reschedule/done/cancel services. Acceptance: create a follow-up from Inbox, leave, find the same task in Work, update it once and see the same state in Copilot/dashboard. Preserve the distinction between completing a task and resolving the investor's concern.
+2. **C4: acquisitions intake and missing-fact depth.** Build from the provisional wholesaler cases in [RELATIONSHIP_METHODS.md](RELATIONSHIP_METHODS.md#provisional-cases-for-the-other-role-tracks): versioned submissions, supplied facts versus gaps, focused questions and a reviewable handoff. Do not claim a valuation or completed expert acquisitions specialist without its calculations/evidence. Management's stalled-handoff and outcome cases remain the next peer track; practitioner acceptance is pending for both.
 3. **C2 device acceptance when local tooling/devices are available.** Compile/install development builds, then test dictation, secure storage, background/resume, push and exact result links on both platforms. Neither developer-store account exists; no distribution is implied. Track upstream mobile tooling advisories before a native release.
 
 General missing-fact continuation, broader plan edits and live voice parity remain C1 work. Actual spending protection remains a prerequisite to broader live paid autonomy. Do not wait for company data to deepen fictional workflows, and do not treat a phone-width browser test as actual-phone acceptance.
@@ -110,6 +112,8 @@ Validate microphone/audio, background/closed-app notification delivery and links
 
 ## C3 — Essential mobile Work and Inbox
 
+The bounded native Inbox flow is locally accepted: company-first sources, shared drafts, conflict comparison, relationship context/methods, exact generated-reply simulation, reviewed note/follow-up and Agent artifact navigation. It uses the existing services and no new delivery route. Arbitrary edited sends, recipients/CC, actual files, native personal-task completion and installed-phone acceptance remain unfinished. Unsaved in-memory edits are guarded across tabs/threads; employees must save before backgrounding/leaving the app. There is no offline draft store.
+
 Finish Work status/results, readable approval cards, draft editing/review, Inbox correspondence and relevant investor/property/deal links. Rich recipient, attachment and cost decisions must remain reviewable on a phone; short SMS decisions can work when the exact action is unambiguous, with a focused link when more inspection is essential.
 
 A missing document/contact/fact identifies what is needed and continues from the supplied answer. Protect unsaved edits, current versions, declined/expired approvals and account switches. Cover long text, keyboard/screen-reader focus, narrow screens, slow/offline/error states and touch targets. Mobile is complete only when the employee can finish the selected workflow without returning to the desktop browser.
@@ -133,7 +137,7 @@ Shared depth requirements:
 
 Include Deal Analyst and Valuation calculation agreement, evidence-ranked Hunter research, conditional transcript meaning, full handoff changes, editable correspondence/CC/actual document access and transaction coordination. Metadata-only attachments do not complete a title-opening package. Alex's reported signed-agreement/deposit reservation and stop-marketing rule remains provisional until company confirmation; never invent wire details or payment confirmation.
 
-Begin Investor Relationship Manager's source/versioned method work from its verified record foundation; its [seven local depth stages](RELATIONSHIP_SPECIALIST_PLAN.md) are a specialist method, not another company roadmap. Acquisitions and management examples need their own practitioners. Fictional methods can progress while those inputs are pending, with assumptions explicit.
+The first Investor Relationship Manager working-knowledge increment is locally accepted: qualification, objections, reactivation and follow-through methods carry source/version/effective date/role/withdrawal semantics and change the suggested question. Catalog changes invalidate exact send reviews. These are code-reviewed provisional AgentDesk methods, not company-approved knowledge ingestion or full stage-3 completion. Its [seven local depth stages](RELATIONSHIP_SPECIALIST_PLAN.md) remain a specialist specification, not another company roadmap. Acquisitions and management examples need their own practitioners; the authored cases can guide fictional implementation while acceptance remains pending.
 
 ## C5 — Proactive usefulness and SMS
 

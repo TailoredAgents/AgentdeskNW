@@ -1,3 +1,4 @@
+import type {RelationshipGuidance} from './relationship-method-contracts';
 import type {InvestorJourney} from './journey-contracts';
 import type {JourneyObservation} from './journey-contracts';
 import type {Task} from './contracts';
@@ -31,6 +32,7 @@ export interface ReceiveDemoCommunication {scenarioId:InboxScenarioId;eventKey:s
 
 export interface InboxSource {id:string;kind:'message'|'relationship';label:string;excerpt:string;recordedAt:string|null;verification:string;propertyId?:string|null}
 export interface InboxAssistance {
+ workingMethod:RelationshipGuidance|null;
  threadId:string;threadVersion:number;summary:string;nextStep:string;sources:InboxSource[];unknowns:string[];
  suggestedReply:{subject:string;body:string;scope:'relationship_only';deliveryStatus:'not_sent';eligible:boolean;reasons:string[]};
  suggestedObservation:{messageId:string;kind:'objection'|'preference';text:string}|null;
