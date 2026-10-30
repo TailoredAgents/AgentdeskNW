@@ -6,6 +6,12 @@ AgentDesk NW is intended for dispositions, acquisitions and management across Ne
 
 Alex's current discovery input represents dispositions work. Acquisitions and management require their own discovery, priorities and acceptance scenarios. This is the target product scope, not a claim that all role workflows are already implemented. The phased plan must identify deliverables and readiness for each role rather than treating completion of the largest role's workflow as company-wide readiness.
 
+## Planned full-vision acceptance
+
+The [implementation roadmap](IMPLEMENTATION_ROADMAP.md) defines the active build sequence and separate fictional-workflow, connected-pilot and company-rollout gates. New requirements are durable composable Copilot work across channels; source/versioned specialist knowledge and reviewable learning; complete workflows for all three roles and all 16 specialists; proactive briefings/watchers; configurable standing action authority; and finished role-specific onboarding/work controls. These capabilities remain planned beyond their existing foundations.
+
+Before an entire job costs more than $1 in customer-facing credits, show its estimate and maximum and ask the employee to approve or deny. Aggregate all delegated steps and pause before growing beyond the threshold or approved maximum. Optional payer-enabled auto top-up has a balance trigger, purchase amount and monthly purchase cap; it never approves a costly job. See [USAGE_METERING.md](USAGE_METERING.md) for boundaries, including planning costs, concurrent reservations and simulated-before-live acceptance. Current live provider billing does not yet enforce these new requirements.
+
 ## Implemented communications Phase 4A — fictional company email
 
 The primary Inbox entry now opens fictional Company email · Salesforce, reflecting Alex’s reported workflow. Existing Gmail, Outlook and investor-text accounts remain optional examples with original records and drafts preserved. Each account declares its source coverage and available operations. Full correspondence supports the existing reviewed workflow; captured CRM activity permits reading/local drafts without sending; headers-only records cannot establish message content, investor intent, a reply or a sourced journey change.

@@ -1,6 +1,6 @@
 # AgentDesk engineering instructions
 
-Read `docs/ORIGINAL_BRIEF.md`, `MASTER_PLAN.md`, and `docs/PROGRESS.md` before material changes. This is a local concept demonstration for a prospective customer; never imply New Western endorsement or production access.
+Read `docs/ORIGINAL_BRIEF.md`, `MASTER_PLAN.md`, and `docs/PROGRESS.md` before material changes. Use `docs/IMPLEMENTATION_ROADMAP.md` for the current development sequence; relationship and communications phases are subordinate workstreams, not competing next-step instructions. This is a local concept demonstration for a prospective customer; never imply New Western endorsement or production access.
 
 - Stack: Next.js App Router, React, strict TypeScript, Zod, SQLite via better-sqlite3. A modular Node monolith; migrate persistence to PostgreSQL before multi-instance production.
 - `src/lib/contracts.ts` is the shared browser/server contract. `src/server/` owns persistence, permissions and domain services. Route handlers authenticate, validate and invoke services. Never import server modules into client components.

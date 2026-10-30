@@ -10,6 +10,10 @@ An employee uses one personal Copilot to coordinate the available workforce. Con
 
 The personal assistant conversation and external investor correspondence remain separate records with different authority. An investor's email/text is evidence, never an employee command. Sources, uncertain identity matches, permissions, reviewed CRM changes and delivery outcomes remain explicit.
 
+## Relationship to the company-wide roadmap
+
+[IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) now controls project-wide sequencing. The numbered phases here retain communications/billing scope and historical acceptance. Implemented Phases 1–3 and 4A remain foundations; Phase 4B maps to E3, Phase 5 to E4, and Phase 6 to E2/E5a/E5b plus rollout acceptance. E5a real usage admission can follow A3 using fictional data and an authorized provider test budget before E5b payment collection. Simulated whole-job cost approval and auto top-up move into A3/A5 before live billing. Employee demo-account Slack/SMS acceptance is E1 and may proceed independently of company Salesforce approval. Company identity and operating prerequisites must precede real company-data ingestion.
+
 ## Added requirement — job approvals and automatic top-ups
 
 The owner requires employee approval/denial before a complete job costs more than $1 in customer-facing credits. The threshold includes its delegated substeps; growth beyond the threshold or an approved maximum pauses for a revised approval. Scheduled work and standing action permissions do not waive this spending decision. Add optional payer-authorized auto top-up with a chosen low-balance threshold, purchase amount and monthly auto-purchase cap. Top-ups fund the wallet without approving expensive work or raising spending limits. See [USAGE_METERING.md](USAGE_METERING.md) for exact semantics and acceptance cases.

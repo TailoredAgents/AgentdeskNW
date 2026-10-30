@@ -2,7 +2,7 @@
 
 The new fictional investor **Inbox** is a separate correspondence domain. Its demo business-text account does not use the employee Copilot SMS number, consume channel segments or receive these webhooks. Dedicated live investor numbers and delivery are planned later; see [COMMUNICATIONS_INBOX.md](COMMUNICATIONS_INBOX.md).
 
-Implemented locally on October 29, 2026. Provider credentials are not installed yet; no actual Slack message or SMS round-trip is claimed. The owner created `TailoredAgents/AgentdeskNW` and authorized committing and pushing this project on October 29. Render deployment remains deferred until requested.
+Implemented locally on October 29, 2026. The last recorded account check found setup incomplete; actual Slack/SMS round-trip acceptance remains pending and current account configuration must be checked when connecting. The owner authorized repository publishing and subsequently reported a Render deployment. Verify the actual hosted revision/origin before channel acceptance. Roadmap E1 permits owner-account fictional-data acceptance independently of company Salesforce approval; this planning update does not connect accounts or send messages.
 
 ## What the employee gets
 
@@ -73,7 +73,7 @@ The app does not implement multi-instance dispatch leases, multi-workspace OAuth
 
 Automated: `npm test`, `npm run typecheck`, `npm run lint`, `npm run build`, `npm run test:smoke`, `npm run test:hosted`, and `npm run test:messaging`. The messaging HTTP suite boots a disposable compiled server with fictional provider credentials, signed events, shared-task checks, delivery callbacks, STOP and restart persistence. Outbound provider requests are mocked. It does not prove Slack installation, Socket Mode connectivity, carrier delivery or live conversational quality.
 
-Monday acceptance still requires the chosen accounts and test recipient: read-only credential probe; real Slack DM round-trip; real SMS round-trip; a due reminder on both channels; STOP; reconnect; a task visible in the dashboard; an approval that remains pending until reviewed; and checking the actual deployed Render origin after deployment is authorized.
+Monday acceptance still requires the chosen accounts and test recipient: read-only credential probe; real Slack DM round-trip; real SMS round-trip; a due reminder on both channels; STOP; reconnect; a task visible in the dashboard; an approval that remains pending until reviewed; and checking the actual deployed Render origin and revision before testing.
 
 ## Official references
 

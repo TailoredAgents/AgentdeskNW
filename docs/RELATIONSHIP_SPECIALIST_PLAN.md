@@ -4,7 +4,7 @@ Owner direction: proceed with stages 1 and 2 of the seven-stage plan. Starting c
 
 ## Current checkpoint
 
-Stages 1–2 implemented and verified on October 30, 2026. Development cases improved from 8/24 on the original observation interface to 24/24; twelve reserved variations also passed. These measure representation and application behavior, not model expertise. See [quality evidence and limitations](RELATIONSHIP_QUALITY.md) for 459 tests, 648 HTTP checks, browser acceptance and migration preservation. Stage 3 is next; stages 3–7 remain unimplemented by this checkpoint.
+Stages 1–2 implemented and verified on October 30, 2026. Development cases improved from 8/24 on the original observation interface to 24/24; twelve reserved variations also passed. These measure representation and application behavior, not model expertise. See [quality evidence and limitations](RELATIONSHIP_QUALITY.md) for 459 tests, 648 HTTP checks, browser acceptance and migration preservation. Stage 3 is this specialist’s next depth step within roadmap Phase B; stages 3–7 remain unimplemented by this checkpoint. The project-wide next checkpoint is A1–A3 in [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md), not an independent competing schedule.
 
 ## Relationship to the wider workforce plan
 

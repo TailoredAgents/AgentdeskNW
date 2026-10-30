@@ -2,7 +2,7 @@
 
 This deployment is a fictional customer demonstration, not an authorized New Western integration or a production tenant. The app has a private invitation entrance; invited presenters can switch between the three fictional roles. All invited visitors share the same sample workspace, so this is not separate customer accounts.
 
-The owner created `TailoredAgents/AgentdeskNW` and authorized committing and pushing the local project on October 29. Render deployment remains a separate step awaiting instruction. The existing `TailoredAgents/AgentDesk` repository is a separate project and must not be overwritten. The future service name in the blueprint is `agentdesk-nw`.
+The owner created `TailoredAgents/AgentdeskNW`, authorized publishing, and subsequently reported a Render deployment and authorized the PIN revision. Later source checkpoints are not automatically verified as deployed; inspect the hosted revision before a presentation. This planning update does not perform deployment. The existing `TailoredAgents/AgentDesk` repository is a separate project and must not be overwritten. The blueprint service name is `agentdesk-nw`.
 
 ## Deployment package
 
@@ -48,7 +48,7 @@ The invitation is a demonstration gate, not enterprise SSO. It intentionally let
 
 `npm run test:hosted` exercises the actual compiled server, Render startup command, access gate and a restart using a temporary local database, fake invitation/signing secrets, and no OpenAI key. It performs **15 checks** including persistence and non-renewing trials. This is an HTTP proxy simulation of HTTPS headers; it does not certify public TLS, Render resource limits, microphone audio, a real Render disk or the final deployment URL.
 
-`npm run test:smoke` remains the **103-check** isolated workflow regression. `npm test` currently includes **195 tests**, including seven hosted-access and scenario tests.
+The initial presentation checkpoint passed 103 workflow HTTP checks and 195 automated tests. Later milestones expanded those suites; use [PROGRESS.md](PROGRESS.md) for the latest recorded acceptance and run the current required suites for a new application release. Historical counts are not evidence that the currently hosted revision passed newer checks.
 
 Do not delete the persistent disk to “refresh” the demonstration. Restarting retains work. For a clean rehearsal, use a separate disposable database locally or a deliberately separate demonstration service. Renew an expired trial explicitly through Taylor's billing controls; startup will not silently renew it.
 

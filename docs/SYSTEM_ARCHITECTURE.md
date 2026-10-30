@@ -1,5 +1,9 @@
 # System architecture
 
+## Planned durable execution layer
+
+Roadmap [Phase A](IMPLEMENTATION_ROADMAP.md#phase-a--reliable-work-and-spending) adds a server-owned work-run/step/event model, capability executor, whole-job budget and shared continuation controls around existing domain services. It does not replace the modular monolith or imply that general durable planning currently exists. Planning, specialist calls, research children and verification share one assignment and budget; the $1 rule and auto top-up simulation precede real settlement. Later phases add source/versioned methods, linked deal/party/document context, scheduling and tested standing action authority. Every surface reuses current scoped services and authoritative receipts.
+
 ## Company-email demonstration — communications Phase 4A
 
 The common correspondence contract now includes fictional `salesforce` accounts alongside preserved `gmail`, `outlook` and `twilio` accounts. `communications-capabilities.ts` derives body/history/local-draft/simulated-send availability from source coverage, access state and transport; attachment files remain unavailable. The primary company account supports full fictional correspondence and reviewed simulation. Captured activity allows reading and local drafts without sending; headers-only records cannot support body-derived replies or journey changes. `InboxSources.tsx` presents those limits without claiming a live connection.
@@ -42,7 +46,7 @@ flowchart LR
 
 The application is a modular monolith. Browser components receive shared contracts from `src/lib/contracts.ts`; they do not import persistence or integration credentials. `src/server` owns permission checks, domain state changes and integration execution. Next.js route handlers normalize transport details and errors.
 
-Phase 2 extends this structure rather than replacing it. `intelligence-contracts.ts` holds profile, buy-box, release, package, debrief and calling contracts. `access.ts` enforces relationship ownership/sharing and opaque duplicate collisions. `intelligence.ts` owns reviewed buy boxes, disclosure evidence, matching, calling priorities and briefings. `workflows.ts` owns versioned releases, templates and eligible package review/handoff. `debrief.ts` turns employee recaps into source-backed proposals and explicitly requested tasks. `phase-two-api.ts` runs inside the existing authenticated, rate-limited request boundary. `channels.ts` is a disconnected provider foundation, not an active Slack integration.
+Phase 2 extends this structure rather than replacing it. `intelligence-contracts.ts` holds profile, buy-box, release, package, debrief and calling contracts. `access.ts` enforces relationship ownership/sharing and opaque duplicate collisions. `intelligence.ts` owns reviewed buy boxes, disclosure evidence, matching, calling priorities and briefings. `workflows.ts` owns versioned releases, templates and eligible package review/handoff. `debrief.ts` turns employee recaps into source-backed proposals and explicitly requested tasks. `phase-two-api.ts` runs inside the existing authenticated, rate-limited request boundary. `channels.ts` is an older provider foundation; the implemented employee Slack/SMS adapter path uses the separate messaging services/worker described below. Actual account round-trip acceptance remains pending.
 
 ## Request lifecycle
 
@@ -85,15 +89,15 @@ Property release commands carry a source, explicit audience, unique event key an
 | --- | --- | --- |
 | CRM adapter | Authorized fictional buyer lookup and approved note/import mutations | Salesforce delegated OAuth, schema mappings, field access, replay protection |
 | Research provider | Separate fictional provider and explicitly selected OpenAI web-search adapter; no live source run verified | Live evidence evaluation, licensed transactions, independent contact verification and source-rights review |
-| Model provider | Bounded Responses manager, durable replay and provider/token receipts; mock-tested | Account access, live evaluation, operational reconciliation and retention |
+| Model provider | Bounded Responses manager, durable replay and provider/token receipts; limited live fictional rehearsals recorded in PROGRESS | Broader quality evaluation, job-wide cost admission, operational reconciliation and retention |
 | Voice | WebRTC setup, trusted server sideband and receipt-driven tools/lifecycle; live audio unverified | Real microphone/audio trials, cost evaluation, multi-instance operation and production metering policy |
 | Employee channels | Shared Copilot with implemented Slack/SMS identity linking, replay-safe ingress/outbox and mocked delivery acceptance | Actual account setup and verified real round-trips |
-| Investor correspondence | Private fictional Gmail/Outlook/text inbox with source records, manual drafts and reviewed relationship association | Copilot inbox tools, live consent/sync, dedicated numbers and reviewed delivery |
+| Investor correspondence | Private fictional Salesforce/Gmail/Outlook/text inbox, typed Copilot search/read/assistance, exact generated-reply simulation and reviewed relationship association | General edited sends, files/CC, approved live sync/transport, dedicated investor numbers and delivery reconciliation |
 | Knowledge | Baseline fixture guidance | Approved document revisions and permission-aware retrieval |
 
 ## Trust and memory boundaries
 
-Employee context, business records, procedure knowledge and execution history are separate categories. Model hypotheses do not become verified CRM facts. Transcript text and retrieved documents cannot change system instructions, tools, access scopes or approval state. Long-term approved-memory promotion and versioned SOP retrieval are future work; current persistence consists of messages and domain records.
+Employee context, business records, procedure knowledge and execution history are separate categories. Model hypotheses do not become verified CRM facts. Transcript text and retrieved documents cannot change system instructions, tools, access scopes or approval state. Explicit employee preferences with inspect/correct/forget controls, sourced investor observations and structured report/correction ledgers are implemented. Broader reviewable learning from edits and versioned SOP retrieval remain future work; conversation history does not automatically become authoritative memory.
 
 `provider_operations` records scoped request and response identifiers, status, model and available numeric usage independently of `billing_usage`. Actual provider cost remains null when unknown. Text admission reserves a conservative budget including tools, then reconciles authoritative token totals even if they exceed the estimate. A missing/invalid receipt remains unresolved and reserved; a timeout does not establish that the provider spent nothing. The ledger supports later receipts without granting new capability access. Subscription invoices remain simulated and do not collect money.
 
@@ -101,7 +105,7 @@ External research sends property criteria and prior public candidate names, not 
 
 ## Production transition
 
-Introduce managed OIDC/SSO and membership provisioning before remote exposure. Move schema to PostgreSQL, enforce tenant relationships at the database layer, and test cross-tenant access independently. Deploy a separately supervised queue worker, migrations, backup/restore, secrets manager, structured redacted telemetry, provider rate/cost budgets and retention operations. Do not deploy the local demo role switcher.
+Introduce managed OIDC/SSO and membership provisioning before real company-data access. The separately authorized hosted fictional demo uses its invitation gate and is not production employee identity. Move schema to PostgreSQL, enforce tenant relationships at the database layer, and test cross-tenant access independently. Deploy a separately supervised queue worker, migrations, backup/restore, secrets manager, structured redacted telemetry, provider rate/cost budgets and retention operations. Do not deploy the local demo role switcher.
 
 ## Investor understanding projection
 

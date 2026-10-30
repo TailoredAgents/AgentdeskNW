@@ -8,6 +8,10 @@ This is a company-wide product for dispositions, acquisitions and management. Al
 
 The owner wants high capability, useful autonomy, easy messaging and routine adoption, with Grok Bot and ChatGPT's agent/task experiences as competitive reference points. This document translates that direction into a development plan. It does not claim those capabilities are implemented or authorize live company access, sending, spending or deployment. Repository updates remain authorized. The existing relationship and communications plans provide completed building blocks and still apply to their implementation details.
 
+## Executable roadmap
+
+[IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) is the authoritative implementation order and detailed acceptance checklist for the A–F phases below. It defines work packages, dependencies, three release levels, the immediate A1–A3 durable execution/cost checkpoint and the mapping from existing specialist/communications phases. The [specialist delivery matrix](AI_EMPLOYEES.md#capability-depth-delivery-matrix) covers all 16 specialists. This strategy document and those checklists describe planned work, not a runtime readiness upgrade.
+
 ## What exists and what must change
 
 The inspected application has persistent conversations, scoped domain records, private employee preferences, sourced investor journeys and structured corrections, a specialist registry, validated model tools, durable research jobs, messaging/task receipts, a fictional communications inbox and reviewed simulation workflows.
@@ -101,7 +105,7 @@ All three tracks must have end-to-end acceptance examples and a visible readines
 | E Approved connections and company operation | Approved Salesforce/email routes, employee Slack/SMS and investor communications, documents, identity, company administration, production persistence/queues and observability | Live acceptance confirms authorized reads/writes/delivery, isolation, recoverability, costs and multi-employee operation; fake-data success alone is insufficient |
 | F Comparative acceptance and rollout | Same-task product benchmarks, employee usability sessions, reliability/cost/latency evaluation and controlled rollout | Demonstrated useful performance for all three roles within the agreed task scope; publish measured results and remaining gaps |
 
-Evaluation begins in Phase A and continues through every phase; Phase F consolidates release evidence. The relationship-specialist depth stages continue inside B/C and the communications plan supplies completed foundations plus E's connection work. Phases can overlap where dependencies permit, but no role disappears from the acceptance matrix. Exact priorities and schedule still depend on the remaining employee/manager inputs and approved connection capabilities. No completion date or percentage is established by this plan.
+Evaluation begins in Phase A and continues through every phase; Phase F consolidates release evidence. The relationship-specialist depth stages continue inside B/C and the communications plan supplies completed foundations plus E's connection work. Phases can overlap where dependencies permit, but no role disappears from the acceptance matrix. The executable roadmap sets the engineering dependency order now; role-specific methods and pilot acceptance still require the remaining employee/manager inputs and approved connection capabilities. No completion date or percentage is established by this plan.
 
 ## Definition of a finished specialist
 

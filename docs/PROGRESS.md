@@ -1,5 +1,19 @@
 # AgentDesk progress log
 
+## October 30, 2026 — Executable roadmap to the company-wide vision
+
+**Owner request:** plan the remaining work so AgentDesk matches the full vision: broadly capable personal Copilot through UI/SMS/Slack, deep specialists and context, useful autonomy, all three employee roles, professional design, whole-job approval above $1 and optional auto top-up.
+
+**Inspection and plan:** audited the current Copilot executor, research/channel workers, registry, wallet, role UI and prior specifications. Replaced competing historical sequences in IMPLEMENTATION_ROADMAP.md with the authoritative A–F roadmap, actionable work packages, dependencies, three release levels, all-role acceptance journeys, quality targets, discovery inputs and the immediate A1–A3 checkpoint. Added a depth/acceptance matrix for every specialist. Current registry remains 2 locally ready, 10 demo and 4 planned; no expert or competitor-superiority claim is established.
+
+**Sequence:** first build durable work, capability composition and fictional whole-job budget approval; then channel continuation/top-up simulation, source/versioned knowledge and reviewable learning, complete role workflows, proactive/delegated work and approved connections. Employee demo-account channels can be verified independently of company access. Real provider usage admission is separated from payment collection so bounded fictional-data model evaluations can begin after A3; identity and operating prerequisites still precede real company-data ingestion. UI quality and empirical evaluation apply throughout.
+
+**Consistency and review:** aligned master, requirements, engineering instructions, strategy, specialist/communications subplans, README and architecture; corrected stale memory/inbox and deployment-status descriptions without claiming a new deployment. Review added partial-job cancellation accounting and explicit auto-top-up trigger re-arming to the roadmap and metering requirements. Historical plans/results are preserved as historical evidence; the new roadmap controls future scheduling.
+
+**Verification and release scope:** documentation-only link/anchor, consistency and diff checks. No runtime code, database, provider configuration, real message, payment or deployment changed; application suites were not rerun for prose changes. The prior 459 tests/648 HTTP checks remain historical application evidence. All new work packages remain planned. Commit/push follows the owner's standing instruction; the currently hosted revision must be verified separately.
+
+---
+
 ## October 30, 2026 — One-dollar job approval and automatic credit top-up requirements
 
 **Owner addition:** require approve/deny before any job exceeds $1 of token/credit usage, and include automatic top-ups. The plan interprets this as the customer-facing credit debit, aggregates the entire job across specialists and retries, and requires a revised decision before crossing $1 or an approved maximum. Standing action permissions, scheduled runs and wallet balance cannot bypass the approval.

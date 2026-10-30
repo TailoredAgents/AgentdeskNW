@@ -6,13 +6,17 @@ AgentDesk is a persistent demonstration of Tailored Agents’ real estate workfo
 
 The application centers on one Copilot that coordinates investor intelligence, property releases, calling priorities, post-call debriefs, deal packages, research, reminders, and reviewable CRM actions. All 16 proposed specialist roles share a registry and permission model. Unimplemented specialists are explicitly marked planned.
 
+## Development plan
+
+The [implementation roadmap](docs/IMPLEMENTATION_ROADMAP.md) is the current source of truth for the remaining work: durable Copilot jobs and spending controls, deeper context and specialist methods, complete dispositions/acquisitions/management workflows, proactive follow-through, approved connections and measured rollout. The next implementation checkpoint is A1–A3. See the [16-specialist delivery matrix](docs/AI_EMPLOYEES.md#capability-depth-delivery-matrix) for required depth and acceptance. Planned capabilities are distinct from the implemented checkpoints below.
+
 ## Monday presentation build
 
 The workspace now has a light professional interface, forest sidebar, refreshed dashboard, consistent dialogs/forms/tables, phone layouts, a guided demo walkthrough, and a sample office workload view. Existing workflows and live AI remain available.
 
 Prepare a repeatable presentation scenario with `npm run demo:prepare`. This adds role-scoped 14-day trials and reviewable fictional work once; it preserves existing records and never renews the trial on restart. This has been applied to the prepared local workspace.
 
-A private hosted demo entrance and Render blueprint are implemented. **Repository: [TailoredAgents/AgentdeskNW](https://github.com/TailoredAgents/AgentdeskNW). GitHub publishing is authorized; Render deployment remains a separate next step.** See [Render setup](docs/RENDER_DEMO.md) and the [Monday walkthrough](docs/MONDAY_DEMO.md). Real company data is intentionally deferred until customer approval.
+A private hosted demo entrance and Render blueprint are implemented. **Repository: [TailoredAgents/AgentdeskNW](https://github.com/TailoredAgents/AgentdeskNW). GitHub publishing is authorized. The owner previously reported a Render deployment; the latest deployed revision has not been verified by this planning update. Repository updates and deployment status remain separate.** See [Render setup](docs/RENDER_DEMO.md) and the [Monday walkthrough](docs/MONDAY_DEMO.md). Real company data is intentionally deferred until customer approval.
 
 ## Investor understanding
 

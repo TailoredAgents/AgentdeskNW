@@ -1,5 +1,11 @@
 # AgentDesk master plan
 
+## Current execution sequence
+
+[IMPLEMENTATION_ROADMAP.md](docs/IMPLEMENTATION_ROADMAP.md) is the authoritative build order: A reliable work/spending, B context/expertise, C complete specialist workflows, D proactive follow-through, E approved connections/operations and F evidence/rollout. It contains implementation packages, dependencies, three role acceptance journeys, release gates and the immediate A1–A3 work-run/capability/budget checkpoint. Existing specialist and communications milestones map into that sequence. All new packages remain planned; this update does not implement or deploy them.
+
+Track fictional workflow completion, connected pilot readiness and company rollout readiness separately. Use the [specialist delivery matrix](docs/AI_EMPLOYEES.md#capability-depth-delivery-matrix), and require functional, quality, connection, autonomy and employee-acceptance evidence for every specialist. User-interface improvements and evaluation accompany each phase.
+
 ## Capable workforce direction
 
 The owner wants a broadly useful personal Copilot that can plan and complete work, use connected tools, remember business context and follow through across the dashboard, SMS and Slack. Use the [capable workforce plan](docs/CAPABLE_WORKFORCE_PLAN.md) to coordinate shared execution, deeper specialist methods, complete workflows for all three roles, configurable standing authorization, proactive work and comparative acceptance. The goal is high capability with few unnecessary interruptions, not a fixed menu of scripted commands.
@@ -20,9 +26,9 @@ The specialist-depth sequence below remains an implementation milestone within t
 
 ## Relationship specialist depth — stages 1 and 2 implemented
 
-The current owner-approved priority is to deepen one specialist at a time, beginning with Investor Relationship Manager. [The seven-stage plan](docs/RELATIONSHIP_SPECIALIST_PLAN.md) now has its first checkpoint: a measured baseline and structured investor reports with exact sources, statement/capture dates, explicit corrections, separate buy boxes, differing-value flags and provisional reconfirmation guidance. Dashboard, journey, Copilot and inbox suggestions use the same scoped record. Reports do not silently overwrite approved CRM criteria.
+The specialist-depth work begins with Investor Relationship Manager and continues within Phases B/C/D/F of the current execution roadmap; shared durable work and cost authority are the immediate Phase A foundation. [The seven-stage plan](docs/RELATIONSHIP_SPECIALIST_PLAN.md) now has its first checkpoint: a measured baseline and structured investor reports with exact sources, statement/capture dates, explicit corrections, separate buy boxes, differing-value flags and provisional reconfirmation guidance. Dashboard, journey, Copilot and inbox suggestions use the same scoped record. Reports do not silently overwrite approved CRM criteria.
 
-[Quality results](docs/RELATIONSHIP_QUALITY.md) distinguish passing application scenarios from unproven expert reasoning or generic-AI superiority. Next is stage 3: working knowledge and source/versioned specialist methods, followed by deeper judgment, communication learning, follow-through and independent evaluation. Communications integration gates below remain pending. This checkpoint includes commit/push; deployment and live company connections are separate.
+[Quality results](docs/RELATIONSHIP_QUALITY.md) distinguish passing application scenarios from unproven expert reasoning or generic-AI superiority. This specialist’s next stage is stage 3 in Phase B: working knowledge and source/versioned methods, followed by deeper judgment, communication learning, follow-through and independent evaluation. It is not a separate competing project-wide sequence. Communications integration gates below remain pending. This checkpoint includes commit/push; deployment and live company connections are separate.
 
 ## Communications and credits — Phase 4A company-email demonstration implemented
 
@@ -82,7 +88,7 @@ A Next.js App Router/React/TypeScript application hosts a modular Node backend. 
 
 This choice prioritizes a reproducible, inspectable local demonstration. It does not satisfy multi-instance enterprise operations. Before a production pilot, replace demo identity with managed SSO, migrate persistence to PostgreSQL with database-enforced tenant controls, and operate a durable queue/scheduler. See [DECISIONS](docs/DECISIONS.md).
 
-## Vertical delivery strategy
+## Original milestone model — historical reference
 
 | Milestone | User-visible outcome | Exit criteria |
 | --- | --- | --- |
@@ -96,7 +102,7 @@ This choice prioritizes a reproducible, inspectable local demonstration. It does
 
 M0–M3 and the Phase 2 operational slice are implemented locally; see `docs/PHASE_2_REPORT.md` and `docs/PROGRESS.md` for evidence. M4 is built as a real integration boundary and is not certified operational without live testing. Work on later phases must not undermine the repeatable demonstration.
 
-## Scope by horizon
+## Original horizons — use the current roadmap for sequencing
 
 **Initial build:** organization/office/user context, role checks, persistent conversations, specialist registry, durable research jobs, evidence and scoring, local CRM lookup and approved note/import mutations, transcript review, task creation/completion, guidance, preferences, notifications, usage/audit foundation, responsive design, secure voice integration path, tests and demonstration script.
 
@@ -112,7 +118,7 @@ Pilot measures should include time to complete a qualified workflow, research ev
 
 ## Non-goals for the demonstration
 
-No investor contact, automatic external communication, binding offers, altered contract terms, payment collection, real Salesforce writes, unofficial scraping, or public deployment. No fake live voice, fabricated phone verification, or implied customer endorsement.
+The fictional presentation does not perform investor outreach, binding offers, contract execution, payment collection or real Salesforce writes. The owner has authorized a private hosted Render demonstration and previously reported deploying it; that is separate from a real customer production rollout. Verify the actual hosted revision before claiming newer features are deployed. Never present simulated outcomes as live voice, verified contacts or customer endorsement.
 
 ## Operating discipline
 
