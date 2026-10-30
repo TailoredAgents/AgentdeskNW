@@ -2,13 +2,15 @@
 
 Source: the founder's Phase 2 directive, recording a discovery session with Alex, a New Western dispositions agent, and insights from his earlier DealIQ concept. These are reported observations, not independently verified corporate policy. AgentDesk keeps its existing identity and architecture; no DealIQ code, design or brand is copied.
 
-## October 30 clarification — dispositions leads the product design
+## October 30 clarification — one company platform for three roles
 
-The owner clarifies that acquisitions is the smaller upstream team, working with wholesalers to analyze opportunities and decide whether they fit. Most employee activity centers on selling deals and maintaining investor relationships, with substantially more dispositions agents. Use this reported operating model to set product priorities; do not treat acquisitions and dispositions as equally sized audiences or assume direct-to-homeowner lead generation is the primary acquisition workflow.
+The owner's explicit product direction is company-wide rollout across **dispositions, acquisitions and management**. All three are primary audiences with their own complete workflows. Dispositions should have more specialist capabilities and greater depth where needed, but the product must not center on that role. Different staffing levels and specialist counts do not determine which roles deserve a complete experience.
 
-The owner also explicitly confirmed that the investor matching, buyer follow-up and title-opening example below is performed by **dispositions agents**. The earlier questionnaire was introduced as acquisitions-focused; this particular answer belongs to dispositions. The remaining role-specific discovery is still open. Do not change employee permissions solely because a workflow was mentioned in a different role's questionnaire.
+The reported operating model remains useful context: the smaller acquisitions team works with wholesalers to analyze opportunities and decide whether they fit; the larger dispositions team handles selling deals and investor relationships. Management needs its own discovery and workflows for authorized visibility, coordination, oversight and decisions. These management needs must be validated, not invented from a dispositions agent's account.
 
-For AgentDesk NW, prioritize the dispositions employee's ongoing Copilot, investor relationship memory, existing-buyer matching, property communication, follow-through and transaction coordination. Keep acquisitions as a focused companion workflow for wholesaler contacts, submitted opportunities, deal screening, valuation/diligence and a complete handoff to dispositions. Shared inventory must still respect private investor relationships and current office/employee permissions.
+Alex is a dispositions agent helping with discovery. The earlier acquisitions label and questionnaire framing were mistaken. His buyer matching, follow-up and title-opening example below belongs to dispositions. Treat his examples as firsthand evidence for that work, not a complete specification for acquisitions, management or company-wide policy.
+
+Design a shared Copilot and platform with role-specific workspaces, knowledge, specialists, permissions and handoffs. Acquire dedicated inputs for wholesaler opportunities/evaluation/handoffs and for management responsibilities. Shared inventory must continue to respect private relationships and employee/office permissions. Clarifying product scope does not grant new runtime access.
 
 ## Copilot questionnaire response one — captured requirements
 
@@ -46,14 +48,15 @@ Store employee preferences separately from investor relationship knowledge and d
 
 ### Planning implications pending the remaining answers
 
-1. Continue specialist depth on the dispositions side, starting with Investor Relationship Manager methods and the now-implemented sourced record.
-2. Specify and test the complete existing-property → existing-buyers → reviewed outreach → reply → follow-up workflow before adding automatic execution.
-3. Add the deliberate external-research option with estimates and duplicate handling.
-4. Define scoped multi-source reply tracking and configurable daily briefings.
-5. Extend the deal record with participants, evidence, ownership and stage transitions, then build a reviewed title-opening package and coordination workflow.
-6. Give the smaller acquisitions team a separate wholesaler-opportunity → evaluation → approved handoff workflow, shaped by its own answers.
+1. Maintain three explicit discovery and delivery tracks: dispositions, acquisitions and management. For each, define useful outcomes, daily workflows, needed specialists/data, decision authority and acceptance examples.
+2. Continue the already approved Investor Relationship Manager depth milestone as one bounded implementation sequence. Its current priority is not a declaration that the entire product is dispositions-centered.
+3. Use Alex's response to specify dispositions buyer matching, reviewed outreach, optional costed external research, reply tracking and title-opening coordination. Validate the remaining details with him.
+4. Shape acquisitions around wholesaler relationships, submitted opportunities, deal evaluation/diligence and handoffs, using dedicated role-specific input.
+5. Gather management requirements for actual oversight, coordination, exceptions and decisions. The existing limited Team Performance overview does not establish a complete management experience.
+6. Identify shared foundations and cross-role handoffs: identity/access, Copilot continuity, scoped records, communications, schedules, deal stages, participants and reviewed actions. Reuse capabilities where useful while preserving role-specific behavior.
+7. Build the final phased roadmap around dependencies, useful outcomes and explicit acceptance for all three roles. Dispositions should have more specialists and greater implementation depth; acquisitions and management must remain first-class workstreams throughout planning.
 
-These are candidate workstreams, not a finalized phase order or implementation authorization. Their dependencies and priority will be reconciled with the remaining questionnaire answers. Do not infer company procedures, automation approval or live connection readiness from this one employee account.
+These are candidate workstreams, not a finalized phase order or authorization for new automatic actions. Remaining questionnaire answers and priorities are pending. Do not infer company procedures, automation approval or live connection readiness from one employee's account.
 
 ## October 30 update — company email through Salesforce
 

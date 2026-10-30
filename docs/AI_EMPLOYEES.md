@@ -2,6 +2,10 @@
 
 All 16 proposed specialists share the registry in `src/server/registry.ts` and the browser/server `Specialist` contract. Catalog presence means architecture coverage; it does not prove execution capability. Runtime status is authoritative: `demo` means operational against fictional/local data, `ready` means an implemented capability within its stated boundary, and `planned` means no executable specialist yet.
 
+## Company-wide role coverage
+
+Dispositions, acquisitions and management are all primary audiences. The intended specialist lineup and depth follow each role's actual work; dispositions should have more specialists and greater depth without making the product centered on dispositions. Shared specialists support all permitted roles through role-appropriate methods. Existing catalog entries and role counts are a starting implementation, not proof that any role's complete workflow is covered. Alex's current feedback is dispositions discovery; acquisitions and management requirements need their own validation.
+
 ## Current registry status
 
 - **Ready, within the stated local capability:** Conversation & Call Notetaker; Daily Coordinator.

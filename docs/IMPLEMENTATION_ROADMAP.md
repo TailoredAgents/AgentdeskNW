@@ -1,5 +1,9 @@
 # Implementation roadmap
 
+## Company-wide delivery scope
+
+Plan for dispositions, acquisitions and management as three primary audiences. Maintain a requirements and acceptance track for each, supported by shared Copilot, record, communication and permission foundations. Dispositions should have more agents and deeper workflows; staffing and specialist count do not make the platform dispositions-centered. Alex's examples inform the dispositions track. Dedicated acquisitions and management inputs remain necessary. The current specialist milestone below is an implementation sequence within that broader scope.
+
 ## Current differentiation priority
 
 Deepen Investor Relationship Manager one stage at a time. [Stages 1–2 are implemented](RELATIONSHIP_SPECIALIST_PLAN.md): measured quality baseline and sourced structured reports/corrections. Stage 3, working knowledge with explicit source/versioned methods, is next; stages 4–7 cover judgment, communication learning, follow-through and independent evaluation. [Current evidence and limits](RELATIONSHIP_QUALITY.md) remain separate from live-integration readiness. The communications sequence below is retained for its later approved connection work.

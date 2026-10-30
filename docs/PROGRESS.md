@@ -1,5 +1,15 @@
 # AgentDesk progress log
 
+## October 30, 2026 — Company-wide scope correction
+
+**Owner direction:** AgentDesk NW is for company-wide rollout to dispositions, acquisitions and management. All three are primary audiences. Dispositions should have more agents and greater depth where its workflows need them; that does not make the product dispositions-centered. Alex is a dispositions agent helping inform that role's design.
+
+**Correction:** supersedes the prior entry's dispositions-priority product framing. Updated master planning, discovery, requirements, roadmap and specialist coverage to require role-specific discovery, outcomes and acceptance for all three roles, plus their shared foundations and handoffs. The approved Investor Relationship Manager milestone remains one implementation sequence within the larger product. Remaining acquisitions and management discovery is explicit.
+
+**Verification and release:** documentation-only consistency and diff checks. No runtime permissions, software behavior or deployment changed. Commit/push follows the owner's standing instruction; earlier implementation test counts remain historical evidence.
+
+---
+
 ## October 30, 2026 — Copilot discovery and dispositions priority
 
 **Owner clarification:** acquisitions is the smaller team working with wholesalers to assess deals; the larger dispositions team handles investor relationships and selling deals. The owner explicitly assigns the submitted buyer-search, investor-follow-up and title-opening workflow to dispositions. Planning now reflects that operating model without changing runtime permissions.

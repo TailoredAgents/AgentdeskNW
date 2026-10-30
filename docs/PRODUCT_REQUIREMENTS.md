@@ -1,5 +1,11 @@
 # Product requirements
 
+## Company-wide product scope
+
+AgentDesk NW is intended for dispositions, acquisitions and management across New Western. Each is a primary audience requiring a useful role-specific workspace, Copilot behavior, specialist depth and complete workflows. Dispositions is expected to have more specialists and greater depth in its workflows, without becoming the product's central audience. Shared platform capabilities and cross-role handoffs must serve all three.
+
+Alex's current discovery input represents dispositions work. Acquisitions and management require their own discovery, priorities and acceptance scenarios. This is the target product scope, not a claim that all role workflows are already implemented. The phased plan must identify deliverables and readiness for each role rather than treating completion of the largest role's workflow as company-wide readiness.
+
 ## Implemented communications Phase 4A — fictional company email
 
 The primary Inbox entry now opens fictional Company email · Salesforce, reflecting Alex’s reported workflow. Existing Gmail, Outlook and investor-text accounts remain optional examples with original records and drafts preserved. Each account declares its source coverage and available operations. Full correspondence supports the existing reviewed workflow; captured CRM activity permits reading/local drafts without sending; headers-only records cannot establish message content, investor intent, a reply or a sourced journey change.
@@ -35,7 +41,7 @@ Status: implementation baseline, October 29, 2026. Verified completion is tracke
 | Role | Primary work | Initial permission boundary |
 | --- | --- | --- |
 | Dispositions | Investors, research, qualification, follow-up and marketing preparation | Own office and assigned personal records |
-| Acquisitions | Seller/property context, diligence and handoff preparation | Own office and assigned personal work; unavailable specialist operations stay unavailable |
+| Acquisitions | Wholesaler relationships, submitted property opportunities, diligence and handoff preparation | Own office and assigned personal work; unavailable specialist operations stay unavailable |
 | Manager | Office priorities, authorized review and operational overview | Own organization and office; no cross-tenant elevation |
 
 A platform operator role, tenant administrators, fine-grained entitlement configuration and invitation provisioning are future features. The local role selector uses fixed fictional users; it is not an authorization model for a deployed product.

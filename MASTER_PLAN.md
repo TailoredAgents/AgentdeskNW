@@ -1,10 +1,12 @@
 # AgentDesk master plan
 
-## Operating model and discovery in progress
+## Company-wide scope and role-specific discovery
 
-The owner clarifies that New Western's larger dispositions team does most investor relationship and deal-selling work. Acquisitions is a smaller upstream team working with wholesalers to evaluate opportunities and hand off suitable deals. Prioritize the dispositions Copilot experience while keeping acquisitions focused on its own workflow.
+AgentDesk NW is intended for company-wide rollout across **dispositions, acquisitions and management**. All three are primary product audiences. They share one platform and Copilot foundation, with workspaces, specialist capabilities, knowledge and access appropriate to their jobs. Dispositions should have a broader specialist roster and greater workflow depth where its work requires it; that does not make dispositions the center of the product or make the other roles companion features.
 
-The [first Copilot questionnaire response](docs/NEW_WESTERN_DISCOVERY.md) adds existing-buyer matching/outreach before optional external research, investor reply tracking, configurable three-times-daily briefings, and participant-aware deal/title coordination. The owner confirms this example belongs to dispositions. Remaining answers and priorities are pending; candidate workstreams do not yet replace the approved specialist-depth sequence or authorize live sending. The existing nine-specialist acquisitions roster must not be mistaken for the whole company's primary experience.
+Alex is a dispositions agent contributing firsthand examples from his work. The [first Copilot questionnaire response](docs/NEW_WESTERN_DISCOVERY.md) informs dispositions: existing-buyer matching/outreach before optional external research, investor reply tracking, configurable briefings and participant-aware deal/title coordination. Company-wide design also needs dedicated acquisitions and management discovery, role-specific outcomes and acceptance scenarios, plus cross-role handoffs. Alex's feedback does not define every employee's needs.
+
+The specialist-depth sequence below remains an implementation milestone within this company-wide plan. Final phases must explicitly cover each role and their shared dependencies; progress on one specialist does not establish another role's readiness. Runtime permissions, live sending and deployment are unchanged by this clarification.
 
 ## Relationship specialist depth — stages 1 and 2 implemented
 
