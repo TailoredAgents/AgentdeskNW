@@ -1,5 +1,11 @@
 # AgentDesk master plan
 
+## Operating model and discovery in progress
+
+The owner clarifies that New Western's larger dispositions team does most investor relationship and deal-selling work. Acquisitions is a smaller upstream team working with wholesalers to evaluate opportunities and hand off suitable deals. Prioritize the dispositions Copilot experience while keeping acquisitions focused on its own workflow.
+
+The [first Copilot questionnaire response](docs/NEW_WESTERN_DISCOVERY.md) adds existing-buyer matching/outreach before optional external research, investor reply tracking, configurable three-times-daily briefings, and participant-aware deal/title coordination. The owner confirms this example belongs to dispositions. Remaining answers and priorities are pending; candidate workstreams do not yet replace the approved specialist-depth sequence or authorize live sending. The existing nine-specialist acquisitions roster must not be mistaken for the whole company's primary experience.
+
 ## Relationship specialist depth — stages 1 and 2 implemented
 
 The current owner-approved priority is to deepen one specialist at a time, beginning with Investor Relationship Manager. [The seven-stage plan](docs/RELATIONSHIP_SPECIALIST_PLAN.md) now has its first checkpoint: a measured baseline and structured investor reports with exact sources, statement/capture dates, explicit corrections, separate buy boxes, differing-value flags and provisional reconfirmation guidance. Dashboard, journey, Copilot and inbox suggestions use the same scoped record. Reports do not silently overwrite approved CRM criteria.

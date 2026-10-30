@@ -2,6 +2,59 @@
 
 Source: the founder's Phase 2 directive, recording a discovery session with Alex, a New Western dispositions agent, and insights from his earlier DealIQ concept. These are reported observations, not independently verified corporate policy. AgentDesk keeps its existing identity and architecture; no DealIQ code, design or brand is copied.
 
+## October 30 clarification — dispositions leads the product design
+
+The owner clarifies that acquisitions is the smaller upstream team, working with wholesalers to analyze opportunities and decide whether they fit. Most employee activity centers on selling deals and maintaining investor relationships, with substantially more dispositions agents. Use this reported operating model to set product priorities; do not treat acquisitions and dispositions as equally sized audiences or assume direct-to-homeowner lead generation is the primary acquisition workflow.
+
+The owner also explicitly confirmed that the investor matching, buyer follow-up and title-opening example below is performed by **dispositions agents**. The earlier questionnaire was introduced as acquisitions-focused; this particular answer belongs to dispositions. The remaining role-specific discovery is still open. Do not change employee permissions solely because a workflow was mentioned in a different role's questionnaire.
+
+For AgentDesk NW, prioritize the dispositions employee's ongoing Copilot, investor relationship memory, existing-buyer matching, property communication, follow-through and transaction coordination. Keep acquisitions as a focused companion workflow for wholesaler contacts, submitted opportunities, deal screening, valuation/diligence and a complete handoff to dispositions. Shared inventory must still respect private investor relationships and current office/employee permissions.
+
+## Copilot questionnaire response one — captured requirements
+
+Source: the owner and Alex's first questionnaire answer, plus the owner's subsequent role and operating-model clarifications. This is discovery input, not a company-wide approved procedure. The owner describes an audience of roughly 700 employees; this is a reported scale ambition, not a verified seat count or a demonstrated capacity claim. Remaining questionnaire answers and ranked priorities are pending.
+
+### Existing buyers before new investor research
+
+An employee should be able to select a property for sale in the company system and ask Copilot to find buyers in a particular area. Search the employee's permitted existing investor records first. Compare actual buy boxes and relationship context to the selected property's current facts; geography alone is insufficient. Show fit reasons, missing criteria, current concerns and previous contact before preparing outreach. Respect distinct buy boxes and avoid duplicate approaches to the same person for the same opportunity.
+
+The preferred sequence is existing-buyer matching and outreach first, then an optional Investor Hunter request for fresh prospects who buy similar properties in that area. The user prefers this sequence to minimize unnecessary research cost. Show the estimated additional research cost and require a deliberate choice before starting it; actual cost differences must be measured rather than promised. Deduplicate external findings against permitted CRM records and preserve the privacy-safe collision behavior for protected records. Do not automatically escalate to paid research because no perfect match is found.
+
+Current role mapping already assigns Buyer Matchmaker, Investor Hunter, Investor Relationship Manager and Deal Marketing to dispositions. The requested combined workflow needs deeper coordination; it is not already an autonomous outreach feature. Real investor sending, approved company source access and delivery confirmation remain separate capabilities to build and validate.
+
+### Replies and configurable briefings
+
+Copilot should answer questions such as “Have any investors emailed or texted me back?” across configured, permitted correspondence sources. Associate replies with the right investor, property and deal, distinguish genuinely new replies from old or duplicated activity, and show what needs action.
+
+The owner wants an option for three updates per day on employee-selected subjects. Plan configurable times, timezone, channels, topics, urgency and quiet preferences, with a record of what was included to avoid duplicate briefings. This is a proposed AgentDesk feature, not a request to create a Codex automation now. Existing personal reminders are not equivalent to recurring multi-source briefings. Do not describe an unconnected source as checked or a missing reply as proof of silence.
+
+### Deal stages and opening title
+
+Alex describes this sequence for dispositions: after the investor has signed the purchase and sale agreement and the earnest-money deposit is confirmed, the deal is reserved for that investor and other dispositions agents stop marketing it. A closing date is tracked. The employee then opens title with the closing attorney and includes the acquisition agent who acquired the deal, the investor, and a lender contact when hard-money financing is used. Cash buyers do not automatically need a lender participant.
+
+The requested preparation includes buyer details, the closing date, the signed agreement and the relevant deposit confirmation/reference. The assistant should know the parties' roles and verified contact details so it can prepare the intended recipients and CC list. Whether “group chat” means an email thread or another channel is not yet established. Drafting a title-opening request is separate from an attorney confirming title has been opened.
+
+Track signed-agreement evidence, deposit status, reservation/marketing status, title request, attorney acknowledgment, reported title issues, clearance, signing, funding and closing as distinct facts/events. Clearance and other consequential status changes need an identified authoritative source or authorized employee review; never infer them from silence, a draft email or a proposed date. The assistant can coordinate and track the attorney's work, not independently establish legal title or initiate financial transactions. Company-wide marketing changes require an authoritative shared status and approved propagation rules. Cancellation, failed deposits, changed closing dates, participants and documents need explicit handling.
+
+Current transaction features only expose limited demonstration context. Participant-aware emails, document-aware title-opening packages, reservation enforcement, attachment delivery and live title correspondence are not implemented by the existing release.
+
+### Broad requests with explicit execution capabilities
+
+The intended user experience is one Copilot accepting a broad range of questions and tasks. Support expansion through shared records, specialist methods and reusable capabilities: retrieve, compare, draft, prepare an update, request review, execute an authorized action, schedule follow-through and verify the result. Track multi-step work durably across the dashboard and linked employee channels. Report whether work is proposed, waiting for review, running, completed or blocked; a generated answer is not evidence of execution.
+
+Store employee preferences separately from investor relationship knowledge and deal/party state. Reusable workflow templates can be configured per approved role, office and employee assignment; neither a job title nor an incoming message grants access. A new request outside implemented capabilities should become a clear limitation or reviewed workflow proposal, not an invented success or an ad hoc permission expansion.
+
+### Planning implications pending the remaining answers
+
+1. Continue specialist depth on the dispositions side, starting with Investor Relationship Manager methods and the now-implemented sourced record.
+2. Specify and test the complete existing-property → existing-buyers → reviewed outreach → reply → follow-up workflow before adding automatic execution.
+3. Add the deliberate external-research option with estimates and duplicate handling.
+4. Define scoped multi-source reply tracking and configurable daily briefings.
+5. Extend the deal record with participants, evidence, ownership and stage transitions, then build a reviewed title-opening package and coordination workflow.
+6. Give the smaller acquisitions team a separate wholesaler-opportunity → evaluation → approved handoff workflow, shaped by its own answers.
+
+These are candidate workstreams, not a finalized phase order or implementation authorization. Their dependencies and priority will be reconciled with the remaining questionnaire answers. Do not infer company procedures, automation approval or live connection readiness from this one employee account.
+
 ## October 30 update — company email through Salesforce
 
 The founder reports that Alex said New Western agents use company-provided CRM email through Salesforce, and subsequently clarified that Alex opens this email **only inside Salesforce**. The owner wants that company workflow to be AgentDesk NW's primary email path, with optional external email connections retained. This supersedes a Gmail-first product priority for this customer. The reported user experience is established by this discovery; the company's mailbox provider, Salesforce configuration, API availability, sender permissions and approval to connect remain unverified.

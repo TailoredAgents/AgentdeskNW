@@ -1,5 +1,15 @@
 # AgentDesk progress log
 
+## October 30, 2026 — Copilot discovery and dispositions priority
+
+**Owner clarification:** acquisitions is the smaller team working with wholesalers to assess deals; the larger dispositions team handles investor relationships and selling deals. The owner explicitly assigns the submitted buyer-search, investor-follow-up and title-opening workflow to dispositions. Planning now reflects that operating model without changing runtime permissions.
+
+**Captured requirements:** search existing permitted buyers before offering additional external research; coordinate reviewed outreach and replies; provide configurable three-times-daily topic briefings; track each deal's parties, evidence and stages; and prepare a title-opening request for the appropriate attorney, investor, acquisition agent and conditional lender contact. Signed-agreement/deposit/marketing/clearance milestones are reported workflow input awaiting company-specific confirmation, not newly implemented automation.
+
+**Scope:** updated discovery, master planning and the planned Acquisition Lead description. The remaining questionnaire responses and ranked priorities are pending, so the broader phase order remains provisional. This is documentation only: no application change, live provider action, scheduled automation or deployment. Verification is documentation consistency and diff review; prior implementation results remain below. Commit/push follows the owner's standing instruction.
+
+---
+
 ## October 30, 2026 — Investor Relationship Manager depth, stages 1–2
 
 **Implemented:** a seven-stage specialist plan, executable quality cases and an append-only investor report ledger. Seven topics cover budget, target locations, strategy, financing, renovation tolerance, timing and contact preference. Criteria reports attach to an explicit approved buy box. The investor panel compares approved values with active reports, shows source/statement/capture dates, distinguishes undated and provisional reconfirmation flags, and preserves original reports when explicitly corrected. Existing CRM criteria and private employee preferences remain separate.
