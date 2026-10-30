@@ -2,7 +2,7 @@
 
 Owner: Tailored Agents. Approved direction: October 29, 2026; company-email priority updated October 30, 2026.
 
-This plan follows the owner's supplied email/business-line/pricing discussion and supersedes the individually purchased specialist model for new simulated subscriptions. Phase 1 is implemented and pushed as `414fb0d`; Phase 2 is pushed as `e9d21b2`. Phase 3, Copilot’s inbox workflow, is implemented and pushed as `77e69b7` to `TailoredAgents/AgentdeskNW`. Phase 4 is now prioritized around New Western’s company-email workflow inside Salesforce, based on the owner’s October 30 report from Alex; Phases 4–6 remain planned. No live payment collection, phone-number purchase, investor message or Render deployment is part of this work.
+This plan follows the owner's supplied email/business-line/pricing discussion and supersedes the individually purchased specialist model for new simulated subscriptions. Phase 1 is implemented and pushed as `414fb0d`; Phase 2 is pushed as `e9d21b2`. Phase 3, Copilot’s inbox workflow, is implemented and pushed as `77e69b7` to `TailoredAgents/AgentdeskNW`. Phase 4 is now prioritized around New Western’s company-email workflow inside Salesforce, based on the owner’s October 30 report from Alex; Phase 4A is now implemented; live company access in Phase 4B and Phases 5–6 remain planned. No live payment collection, phone-number purchase, investor message or Render deployment is part of this work.
 
 ## Product outcome
 
@@ -74,6 +74,8 @@ Acceptance: incoming email → investor/context retrieval → grounded draft →
 **Priority update, October 30:** Alex reportedly uses the company-provided email workflow only inside Salesforce. AgentDesk should support that existing workflow without making a separate personal Gmail/Outlook connection the default. This identifies the employee experience, not the underlying mail host or permitted APIs. Gmail/Workspace and Outlook/Microsoft 365 remain optional adapters and may also be necessary as the company-authorized transport behind Salesforce. No New Western administrator access or live configuration is assumed.
 
 ### Phase 4A — Company-workflow demonstration and discovery
+
+Status: **implemented and verified**. The owner requested this phase on October 30, including testing, documentation and commit/push. Verification passed 438 automated tests, 606 compiled HTTP checks, type/lint/build checks, desktop/phone acceptance and disposable migration-copy preservation. See [COMPANY_EMAIL_DEMO.md](COMPANY_EMAIL_DEMO.md) and PROGRESS.md. This is fictional company-email workflow work only; live Salesforce, account authorization, external messages and Render deployment remain separate.
 
 - Add a clearly fictional **Company email · Salesforce workflow** source to the demonstration and make it the primary presentation path. Preserve existing Gmail/Outlook fixtures and saved correspondence; do not relabel existing data as Salesforce-connected.
 - Separate correspondence source from delivery transport and expose explicit capabilities: CRM activity/header lookup, full-body retrieval, thread history, attachments, draft handling, reviewed send and receipt reconciliation. Missing capabilities remain unavailable rather than being inferred from a Salesforce connection.

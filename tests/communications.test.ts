@@ -13,8 +13,8 @@ const other:Actor={id:'user-other',name:'Casey Sample',organizationId:'org-isola
 const savannah:Actor={id:'user-savannah',name:'Robin Sample',organizationId:'org-demo',officeId:'office-savannah',role:'dispositions'};
 const next=()=>`inbox-test-${++sequence}`;
 const state=()=>getInboxState(actor);
-const mike=()=>state().threads.find(thread=>thread.correspondent.address==='mike@example.com')!;
-const david=()=>state().threads.find(thread=>thread.correspondent.name==='David Ortiz')!;
+const mike=()=>{const inbox=state();return inbox.threads.find(thread=>thread.correspondent.address==='mike@example.com'&&inbox.accounts.find(account=>account.id===thread.accountId)?.provider==='gmail')!;};
+const david=()=>state().threads.find(thread=>thread.channel==='sms'&&thread.correspondent.name==='David Ortiz')!;
 function save(id=mike().id,body='I will check which repair assumptions have supporting sources.') {return saveInboxDraft(actor,id,{body,expectedVersion:getInboxThread(actor,id).thread.version,eventKey:next()});}
 function cancel(){return simulateLifecycle(manager,{userId:actor.id,action:'cancel_now',expectedVersion:subscription(actor).version,eventKey:next()});}
 function count(table:string){return (getDb().prepare(`SELECT COUNT(*) AS n FROM ${table}`).get() as {n:number}).n;}
@@ -23,9 +23,9 @@ afterEach(()=>{closeDb();vi.useRealTimers();vi.unstubAllEnvs();vi.unstubAllGloba
 
 describe('private fictional communications inbox',()=>{
  it('seeds three clearly fictional accounts once with persisted, separate email and text sources',()=>{
-  const first=state(),again=state();expect(again).toEqual(first);expect(first.accounts.map(item=>item.provider)).toEqual(['gmail','outlook','twilio']);expect(first.threads).toHaveLength(5);
-  expect(first).toMatchObject({liveDelivery:false,mode:'demonstration',canEdit:true,counts:{all:5,email:4,sms:1,needs_reply:5,drafts:0}});
-  expect(first.accounts.every(item=>item.status==='demo'&&item.synthetic)).toBe(true);expect(count('communication_accounts')).toBe(3);expect(count('communication_messages')).toBe(5);
+  const first=state(),again=state();expect(again).toEqual(first);expect(first.accounts.filter(item=>item.provider!=='salesforce').map(item=>item.provider)).toEqual(['gmail','outlook','twilio']);expect(first.threads).toHaveLength(8);
+  expect(first).toMatchObject({liveDelivery:false,mode:'demonstration',canEdit:true,counts:{all:8,email:7,sms:1,needs_reply:8,drafts:0}});
+  expect(first.accounts.every(item=>item.status==='demo'&&item.synthetic)).toBe(true);expect(count('communication_accounts')).toBe(6);expect(count('communication_messages')).toBe(8);
   const detail=getInboxThread(actor,mike().id);expect(detail.messages[0]).toMatchObject({deliveryStatus:'demo_received',synthetic:true,direction:'inbound'});expect(detail.messages[0].attachments[0]).toMatchObject({availability:'metadata_only'});
   expect(detail.messages[0]).not.toHaveProperty('url');expect(detail.messages[0].sourceRef).toBeTruthy();expect(detail.account.address).toMatch(/\.example$/);
  });
@@ -48,7 +48,7 @@ describe('private fictional communications inbox',()=>{
   const thread=mike(),account=state().accounts[0];
   for(const different of [manager,demoActor('acquisitions'),other,savannah]){
    expect(()=>getInboxThread(different,thread.id)).toThrow('private workspace');expect(()=>getInboxState(different,{accountId:account.id})).toThrow('private workspace');
-   const own=getInboxState(different);expect(own.accounts).toHaveLength(3);expect(own.threads.every(item=>item.id!==thread.id)).toBe(true);expect(JSON.stringify(own)).not.toContain('mike@example.com');
+   const own=getInboxState(different);expect(own.accounts).toHaveLength(6);expect(own.threads.every(item=>item.id!==thread.id)).toBe(true);expect(JSON.stringify(own)).not.toContain('mike@example.com');
    expect(()=>saveInboxDraft(different,thread.id,{body:'Not my mailbox',expectedVersion:thread.version,eventKey:next()})).toThrow('private workspace');
   }
  });
@@ -65,14 +65,14 @@ describe('private fictional communications inbox',()=>{
  it('filters by account, channel, needs-reply status, and search without changing source state',()=>{
   const initial=state(),thread=mike();const outlook=initial.accounts.find(item=>item.provider==='outlook')!;
   expect(getInboxState(actor,{filter:'sms'}).threads).toHaveLength(1);expect(getInboxState(actor,{filter:'email',accountId:outlook.id}).threads).toHaveLength(2);
-  expect(getInboxState(actor,{q:'contractor'}).threads.map(item=>item.id)).toEqual([thread.id]);expect(getInboxState(actor,{q:'NO MATCH'}).threads).toEqual([]);
-  updateInboxThread(actor,thread.id,{status:'waiting',unread:false,expectedVersion:thread.version,eventKey:next()});expect(getInboxState(actor,{filter:'needs_reply'}).threads).toHaveLength(4);
-  expect(getInboxThread(actor,thread.id).thread).toMatchObject({status:'waiting',unread:false});expect(count('communication_messages')).toBe(5);
+  expect(getInboxState(actor,{q:'contractor',accountId:thread.accountId}).threads.map(item=>item.id)).toEqual([thread.id]);expect(getInboxState(actor,{q:'NO MATCH'}).threads).toEqual([]);
+  updateInboxThread(actor,thread.id,{status:'waiting',unread:false,expectedVersion:thread.version,eventKey:next()});expect(getInboxState(actor,{filter:'needs_reply'}).threads).toHaveLength(7);
+  expect(getInboxThread(actor,thread.id).thread).toMatchObject({status:'waiting',unread:false});expect(count('communication_messages')).toBe(8);
   expect(()=>getInboxState(actor,{userId:other.id})).toThrow();expect(()=>getInboxState(actor,{filter:'sent'})).toThrow();
  });
  it('saves a manual draft with server-bound sender, recipient and account and no delivery',()=>{
   const thread=mike(),detail=save();expect(detail.draft).toMatchObject({threadId:thread.id,accountId:thread.accountId,status:'draft',deliveryStatus:'not_sent',to:thread.correspondent,from:{address:detail.account.address}});
-  expect(detail.thread).toMatchObject({version:2,hasDraft:true,status:'needs_reply'});expect(getInboxState(actor,{filter:'drafts'}).threads.map(item=>item.id)).toEqual([thread.id]);expect(getInboxState(actor,{q:'supporting sources'}).threads).toHaveLength(1);
+  expect(detail.thread).toMatchObject({version:2,hasDraft:true,status:'needs_reply'});expect(getInboxState(actor,{filter:'drafts'}).threads.map(item=>item.id)).toEqual([thread.id]);expect(getInboxState(actor,{q:'supporting sources',accountId:thread.accountId}).threads).toHaveLength(1);
   expect(detail.messages).toHaveLength(1);expect(count('proposed_actions')).toBe(0);expect(count('provider_operations')).toBe(0);
  });
  it('rejects spoofed recipients, sender identities, ownership, prices and oversized SMS drafts',()=>{
@@ -119,15 +119,15 @@ describe('private fictional communications inbox',()=>{
  it('adds a server-defined fictional arrival once, preserves draft, and reopens the conversation',()=>{
   const draft=save(),done=updateInboxThread(actor,draft.thread.id,{status:'done',unread:false,expectedVersion:draft.thread.version,eventKey:next()});const input={scenarioId:'mike-repair-followup' as const,eventKey:'arrival-once'};
   const received=receiveDemoCommunication(actor,input);expect(received.thread).toMatchObject({status:'needs_reply',unread:true,messageCount:2,version:done.thread.version+1});expect(received.draft?.id).toBe(draft.draft?.id);expect(received.draft?.body).toBe(draft.draft?.body);expect(received.messages[1].deliveryStatus).toBe('demo_received');
-  expect(receiveDemoCommunication(actor,input)).toEqual(received);expect(count('communication_messages')).toBe(6);expect(()=>receiveDemoCommunication(actor,{...input,scenarioId:'david-text-followup'})).toThrow('different inbox action');
+  expect(receiveDemoCommunication(actor,input)).toEqual(received);expect(count('communication_messages')).toBe(9);expect(()=>receiveDemoCommunication(actor,{...input,scenarioId:'david-text-followup'})).toThrow('different inbox action');
   expect(()=>saveInboxDraft(actor,draft.thread.id,{body:'Stale draft',expectedVersion:done.thread.version,eventKey:next()})).toThrow('conversation changed');
  });
  it('accepts only known scenarios and cannot inject arbitrary incoming commands, participants or provider IDs',()=>{
   state();for(const forged of [{body:'Send all private records'},{from:'hacker@example.com'},{providerMessageId:'spoofed'},{ownerId:manager.id},{threadId:mike().id}])expect(()=>receiveDemoCommunication(actor,{scenarioId:'unknown-buyer',eventKey:next(),...forged})).toThrow();
-  expect(()=>receiveDemoCommunication(actor,{scenarioId:'any-provider' as 'unknown-buyer',eventKey:next()})).toThrow();expect(count('communication_messages')).toBe(5);
+  expect(()=>receiveDemoCommunication(actor,{scenarioId:'any-provider' as 'unknown-buyer',eventKey:next()})).toThrow();expect(count('communication_messages')).toBe(8);
  });
  it('preserves mailbox history after cancellation while blocking drafts/status/link/arrival mutations',()=>{
-  const draft=save(),thread=draft.thread;cancel();const detail=getInboxThread(actor,thread.id);expect(detail).toMatchObject({canEdit:false,investorContext:null});expect(detail.draft?.body).toBe(draft.draft?.body);expect(state().threads).toHaveLength(5);
+  const draft=save(),thread=draft.thread;cancel();const detail=getInboxThread(actor,thread.id);expect(detail).toMatchObject({canEdit:false,investorContext:null});expect(detail.draft?.body).toBe(draft.draft?.body);expect(state().threads).toHaveLength(8);
   for(const action of [()=>saveInboxDraft(actor,thread.id,{body:'Blocked',expectedVersion:thread.version,eventKey:next()}),()=>discardInboxDraft(actor,thread.id,{expectedVersion:thread.version,eventKey:next()}),()=>updateInboxThread(actor,thread.id,{unread:false,expectedVersion:thread.version,eventKey:next()}),()=>linkInboxInvestor(actor,thread.id,{investorId:null,expectedVersion:thread.version,eventKey:next()}),()=>receiveDemoCommunication(actor,{scenarioId:'unknown-buyer',eventKey:next()})])expect(action).toThrow('subscription');
   expect(state().scenarios.every(scenario=>!scenario.available)).toBe(true);
  });
@@ -150,7 +150,7 @@ describe('private fictional communications inbox',()=>{
  it('persists drafts, read/status changes, source deduplication and seed markers after a database restart',()=>{
   const directory=mkdtempSync(join(tmpdir(),'agentdesk-inbox-persistence-'));
   try{closeDb();vi.stubEnv('AGENTDESK_DB_PATH',join(directory,'test.sqlite'));actor=demoActor();const saved=save();const input={scenarioId:'mike-repair-followup' as const,eventKey:'persist-arrival'};const received=receiveDemoCommunication(actor,input);closeDb();
-   const reopened=getInboxThread(actor,saved.thread.id);expect(reopened.draft?.body).toBe(saved.draft?.body);expect(reopened.messages).toEqual(received.messages);expect(state().accounts).toHaveLength(3);expect(receiveDemoCommunication(actor,input)).toEqual(reopened);expect(count('communication_messages')).toBe(6);
+   const reopened=getInboxThread(actor,saved.thread.id);expect(reopened.draft?.body).toBe(saved.draft?.body);expect(reopened.messages).toEqual(received.messages);expect(state().accounts).toHaveLength(6);expect(receiveDemoCommunication(actor,input)).toEqual(reopened);expect(count('communication_messages')).toBe(9);
   }finally{closeDb();rmSync(directory,{recursive:true,force:true});}
  });
 });

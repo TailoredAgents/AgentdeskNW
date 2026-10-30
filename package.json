@@ -21,7 +21,8 @@
     "test:conversation": "node scripts/smoke-runner.mjs conversation",
     "test:wallet": "node scripts/smoke-runner.mjs wallet",
     "test:inbox": "node scripts/smoke-runner.mjs inbox",
-    "test:communications": "node scripts/smoke-runner.mjs communications"
+    "test:communications": "node scripts/smoke-runner.mjs communications",
+    "test:company-email": "node scripts/smoke-runner.mjs company-email"
   },
   "dependencies": {
     "@slack/socket-mode": "3.1.0",

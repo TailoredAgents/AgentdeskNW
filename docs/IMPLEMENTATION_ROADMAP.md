@@ -2,7 +2,9 @@
 
 ## Current authorized sequence
 
-The [communications and credits plan](COMMUNICATIONS_AND_CREDITS_PLAN.md) is the current sequence: (1) workforce subscription and simulated wallet; (2) fictional unified inbox; (3) Copilot communication workflow; (4) live email connectors; (5) dedicated investor SMS; (6) real billing and controlled company rollout. Phase 1 is complete (`414fb0d`); Phase 2 is implemented and verified, including documentation and the owner-authorized repository checkpoint. Phase 3 is the next planned work. Earlier milestones below remain historical context.
+The [communications and credits plan](COMMUNICATIONS_AND_CREDITS_PLAN.md) is the current sequence: (1) workforce subscription and simulated wallet; (2) fictional unified inbox; (3) reviewed Copilot communication workflow; (4A) fictional company-email presentation and capability boundaries; (4B) approved live company-email connection; (5) dedicated investor SMS; (6) real billing and controlled company rollout. Phases 1–3 and the Phase 4A company-email demonstration are implemented. Earlier milestones below retain their historical numbering.
+
+Phase 4A makes Company email · Salesforce the primary fictional source, preserves optional legacy inboxes, and exercises activity/header limits, duplicate-source reconciliation, access revocation and company-specific Copilot requests. See [COMPANY_EMAIL_DEMO.md](COMPANY_EMAIL_DEMO.md) and [PROGRESS.md](PROGRESS.md) for behavior and actual verification. The next integration gate is Phase 4B administrator discovery: confirm source coverage, actual mailbox identity, delegated read permissions, approved delivery route and sandbox acceptance before enabling a live connection. Optional Gmail/Outlook adapters do not bypass that approval.
 
 
 Completion evidence belongs in [PROGRESS](PROGRESS.md). This roadmap describes gates, not claims of finished implementation.

@@ -16,9 +16,11 @@ A private hosted demo entrance and Render blueprint are implemented. **Repositor
 
 ## Unified inbox preview
 
-The communications preview brings fictional Gmail, Outlook and investor-text accounts into one private Inbox. Copilot can search the inbox and prepare a relationship reply grounded in source messages, investor history and saved writing preferences. The employee reviews exact content before simulated sending, then separately reviews a relationship note or personal follow-up. Custom drafts stay saved; only current generated relationship replies use the bounded simulator. No live mailbox or investor delivery is connected. See [Copilot workflow and walkthrough](docs/COMMUNICATIONS_WORKFLOW.md), [Inbox foundation](docs/COMMUNICATIONS_INBOX.md) and the [delivery plan](docs/COMMUNICATIONS_AND_CREDITS_PLAN.md).
+Communications Phase 4A makes **Company email · Salesforce** the default fictional Inbox. Optional Gmail, Outlook and investor-text examples remain available, with their saved identities, messages and drafts preserved. Copilot can search the inbox and prepare a relationship reply grounded in source messages, investor history and saved writing preferences. The employee reviews exact content before simulated sending, then separately reviews a relationship note or personal follow-up. Custom drafts stay saved; only current generated relationship replies use the bounded simulator. No live mailbox or investor delivery is connected. See [Copilot workflow and walkthrough](docs/COMMUNICATIONS_WORKFLOW.md), [Inbox foundation](docs/COMMUNICATIONS_INBOX.md) and the [delivery plan](docs/COMMUNICATIONS_AND_CREDITS_PLAN.md).
 
-The next integration priority is **company email through Salesforce**, reflecting Alex’s reported New Western workflow. Gmail and Outlook remain optional adapters. The current inbox is still fictional; Salesforce email capabilities and the company-approved delivery route must be confirmed before live connection. See [Salesforce discovery and design](docs/SALESFORCE_INTEGRATION.md).
+The company-email demonstration separates full correspondence, captured CRM activity and headers-only access. Visible capabilities explain what can be read, drafted or simulated. Examples show one message with two source references and paused access that hides protected content and invalidates earlier reviews. Typed Copilot understands “show my company email,” while exact conversation links open the relevant account. See [the implemented company-email demonstration](docs/COMPANY_EMAIL_DEMO.md) and [current verification](docs/PROGRESS.md).
+
+Live company connection is Phase 4B: Salesforce capabilities, mailbox ownership, delegated permissions and the approved delivery route still require administrator confirmation. No Salesforce organization or real mailbox is connected. See [Salesforce discovery and design](docs/SALESFORCE_INTEGRATION.md).
 
 ## Local setup
 
@@ -58,6 +60,7 @@ npm run test:smoke
 npm run test:hosted
 npm run test:inbox
 npm run test:communications
+npm run test:company-email
 ```
 
 The smoke suite requires the compiled build. By default it starts the built application and worker on a temporary loopback port with a disposable SQLite database, disables model credentials, runs HTTP workflow checks, then stops the processes and removes its temporary database. No manually started server is needed, and your demonstration data is unchanged.

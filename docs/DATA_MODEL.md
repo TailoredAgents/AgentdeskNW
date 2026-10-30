@@ -1,5 +1,11 @@
 # Data model
 
+## Company correspondence — communications Phase 4A
+
+Migration 018 adds `communication_company_demo_seeds` and immutable `communication_source_links`. Company seeding is separate and additive: original Gmail/Outlook/text account IDs, source records, draft histories and statuses are not renamed or rewritten. Source links bind organization, office, owner, account and message through composite foreign keys; a scoped unique source-system/reference key prevents duplicate mappings. A second trusted fictional reference attaches to the existing message rather than creating another message or workflow action.
+
+Account JSON now carries source system/coverage/label, demo transport, access state/revision and primary-account status. Server normalization projects legacy records into the new capability contract without rewriting stored legacy data. Capabilities distinguish body access, full history, local drafts and simulated sending; attachment files remain unavailable. Send-review context and Copilot access references bind the current account state, so revocation/restoration cannot reuse an earlier authorization snapshot. Redaction is a read projection; it does not delete saved correspondence. See [COMPANY_EMAIL_DEMO.md](COMPANY_EMAIL_DEMO.md) and [PROGRESS.md](PROGRESS.md).
+
 ## Reviewed communications — Phase 3
 
 Migration 017 adds private immutable `communication_send_reviews`, `communication_send_receipts` and `communication_workflow_actions`. Reviews bind exact saved sender/recipient/content, versions, expiration and protected-context hash. One review can produce only one simulated receipt; scoped event keys make repeats safe. The outgoing message remains explicitly `simulated_sent`, and its archived draft distinguishes simulation from ordinary discard. Source-linked action receipts retain the original private message/source reference and reviewed text; shared journey observations carry only minimal channel/time/source labels. No provider send or payment ledger is created. See COMMUNICATIONS_WORKFLOW.md.

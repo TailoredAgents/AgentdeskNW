@@ -23,7 +23,7 @@ const initial=await request<Bootstrap>('bootstrap'),employeeCookie=cookie;
 check(!initial.integrations.openai,'The acceptance flow uses no live AI provider');
 const walletBefore=await request<WalletState>('wallet');
 const inbox=await request<InboxState>('inbox');
-const thread=inbox.threads.find(item=>item.correspondent.address==='mike@example.com');assert.ok(thread);
+const thread=inbox.threads.find(item=>item.correspondent.address==='mike@example.com'&&inbox.accounts.some(account=>account.id===item.accountId&&account.provider==='gmail'));assert.ok(thread);
 const path=`inbox/${thread.id}`;
 let detail=await request<InboxThreadDetail>(path);
 const beforeJourney=await request<InvestorJourney>('investors/investor-mike/journey');

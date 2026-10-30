@@ -1,6 +1,8 @@
 # Copilot communications workflow — Phase 3
 
-Status: **implemented and verified**. Phase 2 is checkpointed at `e9d21b2`; this phase is the next owner-authorized documentation/implementation/commit/push checkpoint. Verification passed 413 automated tests, 535 compiled HTTP checks, typecheck, lint, production build, desktop/phone inspection and a migration-copy preservation rehearsal. Render deployment and live connections remain separate.
+Historical Phase 3 status: **implemented and verified**. Phase 2 is checkpointed at `e9d21b2`; Phase 3 at `77e69b7`. Its verification passed 413 automated tests, 535 compiled HTTP checks, typecheck, lint, production build, desktop/phone inspection and a migration-copy preservation rehearsal. Render deployment and live connections remain separate.
+
+Current extension: [Phase 4A company-email demonstration](COMPANY_EMAIL_DEMO.md) makes fictional Company email · Salesforce the primary path without replacing legacy account histories. The same reviewed services enforce source body/draft/send limits, duplicate-source identity and current access revisions. Captured activity permits local drafts but no sending; headers-only sources cannot support body-derived work. Revoked access masks content and blocks actions/replays; restoration requires fresh review. Company-specific Copilot requests use exact source/thread links. Current verification belongs in [PROGRESS.md](PROGRESS.md).
 
 ## Employee experience
 
@@ -32,14 +34,14 @@ Copilot's protected context and stored history must respect current mailbox acce
 
 ## Presentation walkthrough
 
-1. Open Mike's Gmail conversation in **Inbox**. Inspect his original repair-cost request and its fictional source label.
+1. Open Mike's **Company email · Salesforce** conversation in **Inbox**. Inspect his original repair-cost request and its fictional source label. The original Gmail example remains available under other inboxes.
 2. Open Copilot assistance. Show the concern, source excerpts, missing information and saved writing preferences. Explain that knowing this relationship changes the suggested next step.
 3. Prepare the reply. Read its cautious request for verified repair detail. Confirm no unsupported price or completed contractor work is invented.
 4. Review the exact saved message, sender and recipient. Confirm simulated sending, then show the local outbound message and explicit simulation receipt.
-5. Add a fictional repair-cost follow-up. It becomes unread and needs a reply; it invalidates any older unsent review.
+5. Use **Explore examples → Company-email follow-up**. It becomes unread and needs a reply; it invalidates any older unsent review.
 6. Review the suggested relationship note. Save it deliberately and inspect its employee-reported provenance in the investor journey.
 7. Review the follow-up title, choose a due date/time, and create the personal task. Confirm it appears once in the Work queue.
-8. In typed Copilot, try “Search my inbox for repair.” Open the returned conversation link. Explain that linked employee Slack/SMS use this same assistant service while investor messages remain separate evidence.
+8. In typed Copilot, try “Find Mike company email” or “Search my company email for repair.” Open the exact returned conversation link. Explain that linked employee Slack/SMS use this same assistant service while investor messages remain separate evidence.
 
 ## Acceptance
 
@@ -47,4 +49,4 @@ Verify full incoming → grounded draft → exact review → simulated receipt �
 
 Run typecheck, lint, automated tests, production build and isolated HTTP suites, including `npm run test:communications`. Inspect desktop and phone layouts, conflict/dirty-edit behavior and review states. Apply the additive migration to a disposable copy and confirm preserved business IDs and invoices. Record final evidence in PROGRESS.md before commit/push.
 
-Phase 4 now prioritizes a fictional Salesforce company-email workflow and administrator discovery, followed by the approved company source/delivery connection. Gmail/Microsoft remain optional adapters or approved underlying company infrastructure. Dedicated investor Twilio lines and actual delivery are Phase 5. Real cost settlement, payments and company rollout are Phase 6.
+Phase 4A now implements the fictional Salesforce company-email workflow and capability examples. Phase 4B is the approved live company source/delivery connection after administrator discovery. Gmail/Microsoft remain optional adapters or approved underlying company infrastructure. Dedicated investor Twilio lines and actual delivery are Phase 5. Real cost settlement, payments and company rollout are Phase 6.

@@ -8,7 +8,7 @@ The core CRM vocabulary is independent of Salesforce object names. Investor IDs 
 
 ## Company-email priority — October 30, 2026
 
-The founder reports that Alex uses company-provided email and opens it **only inside Salesforce**. The owner has therefore prioritized the **company Salesforce email workflow** for AgentDesk NW. Optional Gmail/Google Workspace and Outlook/Microsoft 365 connections remain useful for other approved accounts and customers. The report establishes the intended employee experience, but not which service hosts the mailbox or which email records/actions this Salesforce org exposes. This section specifies a planned integration, not an implemented connector.
+The founder reports that Alex uses company-provided email and opens it **only inside Salesforce**. The owner has therefore prioritized the **company Salesforce email workflow** for AgentDesk NW. Optional Gmail/Google Workspace and Outlook/Microsoft 365 connections remain useful for other approved accounts and customers. The report establishes the intended employee experience, but not which service hosts the mailbox or which email records/actions this Salesforce org exposes. Phase 4A implements the fictional company-email presentation described in [COMPANY_EMAIL_DEMO.md](COMPANY_EMAIL_DEMO.md). The live integration described below remains Phase 4B discovery; no company source or sending route is connected.
 
 Salesforce documents several outgoing routes: Salesforce, Gmail, Microsoft 365 and a company relay. Using the Salesforce interface therefore does not identify the configured transport. [Salesforce email setup guidance](https://help.salesforce.com/s/articleView?id=000382640&language=en_US&type=1).
 
@@ -28,9 +28,9 @@ Treat the source of readable correspondence and the approved sending route as se
 | Log a confirmed outcome | Approved activity schema, allowed write path, external identifiers and duplicate rules | Keep local receipts separate from remote CRM write status |
 | Read or share attachments | File access, recipient eligibility, company policy and approved transfer mechanism | Metadata only; unavailable files cannot be read, attached or described as sent |
 
-### Planned adapter and permission boundaries
+### Implemented demo boundary and planned live adapters
 
-Reuse the existing Inbox, relationship context and exact-review services. Extend the provider contract deliberately: the current code supports fictional `gmail`, `outlook` and `twilio` accounts only. A future Salesforce activity source needs its own source identity and coverage metadata, distinct from its optional sending transport. A label change alone is not an integration.
+The current contract supports fictional `salesforce`, `gmail`, `outlook` and `twilio` accounts through the existing Inbox, relationship and exact-review services. The company demonstration adds source system/coverage, a distinct simulated transport, access state/revision and explicit body/history/draft/send capabilities. Original optional mailbox accounts and drafts remain unchanged. Captured activity supports reading and local drafts without a sending route; header-only sources cannot establish message content or authorize source-linked actions. These implemented boundaries prepare for discovery; they are not live provider adapters.
 
 Retain organization, office, employee and remote-source bindings for every account, thread and message. Use only administrator-approved schema mappings and delegated source permissions. Reading an investor or managing an office must not grant general mailbox access. Do not copy email activity visible through a broader CRM role into another employee's private mailbox or assistant history by default. Source access, mailbox access, field visibility and sender permission must each be checked under the approved policy, including replay and revocation.
 
@@ -38,9 +38,9 @@ Correlate permitted CRM activity, mailbox messages and local receipts without mi
 
 Bind each send approval to the exact account/transport, allowed sender and reply-to, recipients, content, attachments, thread context and current property/disclosure eligibility. Changes require fresh review. Provider acceptance, delivery confirmation, failure and uncertain outcomes remain different states. Only a confirmed remote outcome can advance the corresponding live state; existing simulated receipts remain visibly fictional.
 
-### Next demonstration and live acceptance
+### Implemented Phase 4A demonstration and Phase 4B live acceptance
 
-Before New Western authorizes access, implement a fictional company-email/Salesforce source in the existing communications demonstration. Show email linked to the permitted investor, Copilot retrieving relevant history, a grounded draft, exact reviewed simulated sending, a fictional reply and separately reviewed follow-through. Exercise both an activity-only account with no sending capability and a company-email account with simulated send capability so the interface explains actual capabilities instead of assuming them. Gmail/Outlook remain optional external examples. No New Western host, custom field, connected org or authorization is fabricated.
+Phase 4A now opens on fictional Company email · Salesforce. It demonstrates a permitted investor relationship, Copilot retrieval, a grounded reply, exact reviewed simulated sending, a fictional reply and separately reviewed follow-through. Additional source examples distinguish captured activity and headers-only access. A trusted correlation example retains one message with both company-mailbox and Salesforce activity references. Access pause/restoration masks protected content, blocks actions and invalidates prior reviews/history snapshots; restoration requires fresh review. Gmail/Outlook remain optional examples with preserved records. No New Western host, custom field, connected org or authorization is fabricated. See [COMPANY_EMAIL_DEMO.md](COMPANY_EMAIL_DEMO.md) and [PROGRESS.md](PROGRESS.md) for the implemented scope and verification.
 
 After discovery, implement one approved company-email route end to end in an authorized test environment. Acceptance must demonstrate restricted reads, sender binding, exact approval, disconnect/revocation, duplicate-safe synchronization and send reconciliation, with CRM logging tested separately from transport delivery. Live sending stays unavailable if only activity reading is approved or technically available.
 

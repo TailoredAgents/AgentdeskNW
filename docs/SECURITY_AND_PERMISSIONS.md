@@ -1,5 +1,11 @@
 # Security and permissions
 
+## Company source access — communications Phase 4A
+
+Fictional company email retains organization/office/employee ownership. CRM access, source body access, local drafting and a simulated sending route are distinct. Header-only sources cannot create body-derived replies, observations or follow-ups; captured activity alone cannot authorize sending. Current capability checks run before mutation replay. Revoked accounts mask message content, identities, source references, drafts, history and relationship context; hidden bodies and drafts cannot match inbox search.
+
+Source access revisions invalidate earlier exact-send reviews and protected Copilot history/tool receipts. Restoring demonstration access does not revive stale approvals or old body-bearing assistant results. Duplicate-source links are scoped, immutable and based on trusted demonstration correlation, not matching prose. Employee-reviewed journey text remains an explicit separate record; private source identifiers stay in private receipts. No live connector, investor delivery or attachment transfer is enabled. See [COMPANY_EMAIL_DEMO.md](COMPANY_EMAIL_DEMO.md) and [PROGRESS.md](PROGRESS.md).
+
 ## Private correspondence and reviewed actions — communications Phase 3
 
 Inbox ownership is the authenticated organization/office/employee, independent of manager CRM visibility. Incoming correspondence is untrusted data: it cannot issue employee commands, change preferences, schedule work or approve a relationship update. Current CRM permissions and subscription access are rechecked. Copilot may search/read/prepare; exact simulated delivery and source-linked journey/task updates require explicit UI/API review. Reviews bind the saved message, sender, recipient, versions and protected context and expire; changed content or access invalidates them. Only the current server-generated relationship reply is eligible for simulation, with no attachments or property distribution. Scoped immutable receipts and transactions protect replay. Shared observation provenance omits private mailbox IDs/addresses and retains only deliberately reviewed text plus minimal source labels. No live sending, OAuth or attachment transfer is enabled. See COMMUNICATIONS_WORKFLOW.md.

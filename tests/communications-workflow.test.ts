@@ -10,7 +10,7 @@ import {getInvestorJourney,recordJourneyObservation} from '../src/server/journey
 
 let actor:Actor,manager:Actor,sequence=0;
 const key=()=>`workflow-${++sequence}`;
-const thread=()=>getInboxState(actor).threads.find(item=>item.correspondent.address==='mike@example.com')!;
+const thread=()=>{const inbox=getInboxState(actor);return inbox.threads.find(item=>item.correspondent.address==='mike@example.com'&&inbox.accounts.find(account=>account.id===item.accountId)?.provider==='gmail')!;};
 const mutation=(threadId=thread().id)=>({expectedVersion:getInboxThread(actor,threadId).thread.version,eventKey:key()});
 const prepare=()=>prepareInboxReply(actor,thread().id,mutation());
 const review=()=>{prepare();return reviewInboxSend(actor,thread().id,mutation());};

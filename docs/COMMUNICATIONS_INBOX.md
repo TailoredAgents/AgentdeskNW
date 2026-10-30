@@ -2,6 +2,10 @@
 
 Foundation status: **implemented and verified at `e9d21b2`**. This document preserves the Phase 2 acceptance boundary. The current Phase 3 additions—Copilot retrieval, grounded replies, reviewed simulated sending and source-linked actions—are specified in [COMMUNICATIONS_WORKFLOW.md](COMMUNICATIONS_WORKFLOW.md). 379 automated tests across 19 files and 475 compiled HTTP checks passed, including 119 inbox checks. Desktop/phone verification and migration-copy preservation also passed. This is the second phase of [COMMUNICATIONS_AND_CREDITS_PLAN.md](COMMUNICATIONS_AND_CREDITS_PLAN.md), following workforce/wallet commit `414fb0d`. Detailed evidence is recorded in [PROGRESS.md](PROGRESS.md).
 
+## Current extension — communications Phase 4A
+
+The foundation below remains the Phase 2 checkpoint. The implemented [company-email demonstration](COMPANY_EMAIL_DEMO.md) now makes fictional Company email · Salesforce the primary Inbox entry, while preserving the original optional Gmail/Outlook/text records. It adds visible source capabilities, activity/header-only examples, scoped duplicate-source provenance and access revocation/restoration. The reviewed workflow remains in [COMMUNICATIONS_WORKFLOW.md](COMMUNICATIONS_WORKFLOW.md); current verification is in [PROGRESS.md](PROGRESS.md). No live company connector or investor delivery is enabled.
+
 ## User outcome
 
 An employee can open Inbox, see fictional Gmail, Outlook and investor-text conversations together, inspect the appropriate investor's existing relationship context, and save a reply draft under the correct sender identity. The same inbox supports multiple mailboxes, account/search filters, All/Email/Texts/Needs reply/Drafts views and explicit read/handling status. The phone layout opens a thread from the list and returns to the same inbox.
@@ -61,4 +65,4 @@ Unsaved edits trigger a choice before switching threads or leaving Inbox. A vers
 
 ## Phase 3 extension
 
-The authorized Phase 3 extension adds bounded Copilot tools to retrieve permitted inbox content, create grounded drafts in the employee's style, suggest follow-ups and review exact simulated sending. Live Gmail/Microsoft synchronization and Twilio investor texting remain separately gated later work.
+The implemented Phase 3 extension adds bounded Copilot tools to retrieve permitted inbox content, create grounded drafts in the employee's style, suggest follow-ups and review exact simulated sending. Phase 4A extends those services with fictional company-email source capabilities; see [COMPANY_EMAIL_DEMO.md](COMPANY_EMAIL_DEMO.md). Live company access is Phase 4B after administrator discovery; optional live Gmail/Microsoft adapters and Twilio investor texting remain separately gated later work.

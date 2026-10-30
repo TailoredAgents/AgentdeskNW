@@ -17,11 +17,15 @@ Use the [Monday walkthrough](MONDAY_DEMO.md), [communications/credits plan](COMM
 4. Add a simulated $10 top-up. Show purchased credit separately and inspect the recorded activity. No card or payment is involved.
 5. Change the monthly sample-spending limit and show that a new estimate cannot exceed the remaining limit. This limit applies to the wallet simulator; live provider usage remains in the operational-usage section.
 6. Show that ordinary task completion and navigation do not consume the wallet. Current real AI/provider usage is not yet debited from it.
-7. Show planned email and Business Line cards. They do not imply a connected mailbox, purchased number or investor sending capability.
+7. Show the fictional company-email preview and planned Business Line card. They do not imply a connected company mailbox, purchased number or live investor sending capability.
 
-## Inbox preview story
+## Company-email demonstration story — Phase 4A
 
-Open **Inbox** as Alex and show the fictional Gmail, Outlook and investor-text accounts. Open Mike’s repair-cost question, inspect its source and Copilot’s relationship context, and prepare a grounded reply in the saved writing style. Review sender, recipient and exact text before confirming **simulated sending**. Add a fictional follow-up arrival, then separately review and save a relationship observation and personal follow-up. No provider delivery, automatic CRM approval or wallet charge occurs. Custom edits remain saved drafts; only current generated relationship replies use this simulator. Follow [COMMUNICATIONS_WORKFLOW.md](COMMUNICATIONS_WORKFLOW.md) for the complete sequence.
+Open **Inbox** as Alex. The default **Company email · Salesforce** account contains fictional correspondence and shows its source capabilities. Open Mike’s repair-cost question, inspect its source and permitted relationship context, and prepare a grounded reply in the saved writing style. Review sender, recipient and exact text before confirming **simulated sending**. Use **Explore examples → Company-email follow-up**, then separately review and save a journey observation and personal follow-up. No provider delivery, automatic CRM approval or wallet charge occurs. Custom edits remain saved drafts; only current generated relationship replies use this simulator.
+
+Expand **Other inboxes & source examples** to inspect captured activity with local drafts but no sending route, and headers-only records without subject/body analysis or sourced actions. Optional Gmail, Outlook and investor-text accounts retain their prior identities, messages and drafts. In **Explore examples**, choose **Same email, second source** and expand the message’s source details: two references belong to one message. Pause company-email access to demonstrate redacted content and blocked actions, then restore access and obtain a fresh review before continuing.
+
+Typed Copilot supports “Show my company email,” “Find Mike company email,” and “Draft reply to Mike company email.” Exact thread links open the proper account even when it is not the primary source. Unqualified inbox requests may include optional accounts and require clarification when a correspondent has multiple conversations. Linked employee Slack/SMS use the same service; actual channel setup and delivery acceptance remain separate. Follow [COMPANY_EMAIL_DEMO.md](COMPANY_EMAIL_DEMO.md) and [COMMUNICATIONS_WORKFLOW.md](COMMUNICATIONS_WORKFLOW.md) for the sequence and boundaries.
 
 ## Company-seat story
 
@@ -37,7 +41,7 @@ The workforce plan includes available role-authorized matching, briefing, packag
 
 ## Verification
 
-`npm run test:smoke`, `npm run test:wallet` and `npm run test:inbox` use disposable local servers and databases. Do not set `SMOKE_BASE_URL` unless intentionally testing and mutating that instance. All checks use authenticated service routes; there is no runtime entitlement bypass. See PROGRESS for final counts and browser evidence.
+`npm run test:smoke`, `npm run test:wallet`, `npm run test:inbox`, `npm run test:communications` and `npm run test:company-email` use disposable local servers and databases. Do not set `SMOKE_BASE_URL` unless intentionally testing and mutating that instance. All checks use authenticated service routes; there is no runtime entitlement bypass. See PROGRESS for final counts and browser evidence.
 
 ---
 

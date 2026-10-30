@@ -1,8 +1,12 @@
 # System architecture
 
-## Planned company-email integration — October 30 priority
+## Company-email demonstration — communications Phase 4A
 
-Prioritize the employee’s company-email workflow inside Salesforce. The current provider enum and demo account model are not a completed Salesforce email adapter. Extend the common correspondence boundary to distinguish source system, underlying mail/delivery service, delegated identity, provider IDs and explicit read/body/attachment/draft/send capabilities. Salesforce activity records and mailbox records may represent the same message; reconcile them without duplicate drafts, sends, activities or journey evidence. Keep the existing private mailbox policy; any company activity view requires its own approved visibility model and must not silently share an employee’s entire inbox. No implementation or live configuration is asserted by this plan. See SALESFORCE_INTEGRATION.md.
+The common correspondence contract now includes fictional `salesforce` accounts alongside preserved `gmail`, `outlook` and `twilio` accounts. `communications-capabilities.ts` derives body/history/local-draft/simulated-send availability from source coverage, access state and transport; attachment files remain unavailable. The primary company account supports full fictional correspondence and reviewed simulation. Captured activity allows reading and local drafts without sending; headers-only records cannot support body-derived replies or journey changes. `InboxSources.tsx` presents those limits without claiming a live connection.
+
+Migration 018 adds separate company seed markers and scoped immutable source links. A server-owned correlation example attaches a second origin to one existing message without creating a duplicate message or action. Account access revisions participate in protected context and review hashes; Copilot history and cached tool results recheck saved access references. Revocation masks source content and blocks actions before replay, while restoration requires fresh review. Company-specific typed Copilot requests and linked employee channels call these same services. See [COMPANY_EMAIL_DEMO.md](COMPANY_EMAIL_DEMO.md).
+
+Live Phase 4B remains subject to administrator discovery in [SALESFORCE_INTEGRATION.md](SALESFORCE_INTEGRATION.md). No company mailbox, Salesforce organization, synchronization or live sending adapter is connected. Company CRM visibility still does not grant access to an employee’s private mailbox.
 
 ## Unified inbox and Copilot — communications Phases 2–3
 

@@ -26,9 +26,25 @@ export const inboxScenarios:InboxScenario[]=[
  {id:'david-text-followup',name:'Investor text follow-up',description:'A fictional investor text arrives at the demo business line.',channel:'sms',available:true},
  {id:'unknown-buyer',name:'New buyer message',description:'Another fictional message arrives from an unmatched contact.',channel:'email',available:true},
 ];
-export function demoFollowup(actor:Actor,id:InboxScenarioId){
+export function demoFollowup(actor:Actor,id:Exclude<InboxScenarioId,'company-repair-followup'|'company-duplicate-source'|'company-revoke-access'|'company-restore-access'>){
  const key=({'mike-repair-followup':'mike','sarah-rental-followup':'sarah','david-text-followup':'david','unknown-buyer':'unknown'} as const)[id];
  const fixture=demoThreadFixtures(actor).find(item=>item.key===key)!;
  const body=primary(actor)?({'mike-repair-followup':'Hi Alex, following up on the repair breakdown. Please separate confirmed figures from rough assumptions before we plan a walkthrough. Fictional follow-up; no contractor estimate has been verified.','sarah-rental-followup':'One more question: which rental operating costs are assumptions, and which have a source? Fictional follow-up.','david-text-followup':'Next Tuesday afternoon could work for a conversation. Please confirm before putting anything on the calendar. Fictional investor text.','unknown-buyer':'Thanks for taking a look. My preferred area is still open, and I can share more about my goals when we talk. Fictional follow-up.'}[id]):`Following up on my earlier message to ${actor.name.split(' ')[0]}. Please confirm the next step. This is a fictional incoming message.`;
  return {...fixture,body,attachments:[]};
 }
+
+/** These are separate fictional company records, never renamed Gmail or Outlook messages. */
+export function companyThreadFixtures(actor:Actor):DemoThreadFixture[]{
+ const own=primary(actor);
+ return [
+  {key:'company-mike',provider:'salesforce',subject:'Company email: repair questions before our next review',correspondent:own?{name:'Mike Bennett',address:'mike@example.com'}:{name:'Morgan Sample',address:'morgan.company@example.com'},body:`Hi ${actor.name.split(' ')[0]},\n\nBefore our next review, please help me understand the repair breakdown. Which figures have supporting sources, and which still need a contractor’s review? I would like to resolve those questions before planning another walkthrough.\n\nFictional company email for the Salesforce workflow demonstration. No company system is connected.`,attachments:[]},
+  {key:'company-activity',provider:'salesforce',subject:'Recorded company activity: operating-cost questions',correspondent:own?{name:'Sarah Chen',address:'sarah@example.com'}:{name:'Casey Sample',address:'casey.activity@example.com'},body:'Could we confirm which rental operating costs have supporting records before choosing a next step? This fictional email was captured as CRM activity only. Its source does not provide a sending route or complete mailbox history.',attachments:[]},
+  {key:'company-headers',provider:'salesforce',subject:'Subject unavailable · headers only',correspondent:own?{name:'David Ortiz',address:'david@example.com'}:{name:'Jamie Sample',address:'jamie.headers@example.com'},body:'',attachments:[]},
+ ];
+}
+export const companyInboxScenarios:InboxScenario[]=[
+ {id:'company-repair-followup',name:'Company-email follow-up',description:'A fictional reply arrives in the primary Salesforce company-email conversation.',channel:'email',available:true},
+ {id:'company-duplicate-source',name:'Same email, second source',description:'The original company email appears as CRM activity too; retain one message with both source references.',channel:'email',available:true},
+ {id:'company-revoke-access',name:'Pause company-email access',description:'Demonstrate revoked source access: hide protected content and invalidate earlier reviews.',channel:'email',available:true},
+ {id:'company-restore-access',name:'Restore demo company-email access',description:'Restore fictional source access while requiring fresh review of any earlier draft.',channel:'email',available:true},
+];

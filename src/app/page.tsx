@@ -74,11 +74,11 @@ export default function Workspace() {
   useEffect(() => { chatEnd.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }); }, [messageCount, sending, conversationId, view]);
   useEffect(() => { window.scrollTo({top:0,behavior:'instant'}); }, [view]);
   const finishNavigation = (next: View) => { if (next === 'queue') setQueueTab('tasks'); setView(next); setMobileNav(false); setNotifications(false); setPendingNavigation(null); };
-  const navigate = (next: View) => { if (view === 'inbox' && (inboxDirty || inboxBusy) && next !== view) {setPendingNavigation(next);setMobileNav(false);return;} finishNavigation(next); };
+  const navigate = (next: View, inboxThreadId?:string) => { if(next==='inbox'&&data&&(view!=='inbox'||inboxThreadId))setInboxSelection({actorId:data.actor.id,threadId:inboxThreadId}); if (view === 'inbox' && (inboxDirty || inboxBusy) && next !== view) {setPendingNavigation(next);setMobileNav(false);return;} finishNavigation(next); };
   const preparePackage = (selection: PackageSelection = {}) => { setBriefing(null); setPackageSelection(selection); setWorkflowKey(key => key + 1); navigate('packages'); };
   const captureDebrief = (selection: DebriefSelection = {}) => { setBriefing(null); setDebriefSelection(selection); setDraftNotes(null); setWorkflowKey(key => key + 1); navigate('notes'); };
   const openBriefing = (investorId: string, propertyId?: string) => setBriefing({ investorId, propertyId });
-  const openInbox = (threadId?:string) => { if(data)setInboxSelection({actorId:data.actor.id,threadId});navigate('inbox'); };
+  const openInbox = (threadId?:string) => navigate('inbox',threadId);
   const reviewActions = () => { navigate('queue'); setQueueTab('approvals'); };
   const report = (e: unknown) => setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
   const changed = async (message?: string) => { await refresh(); if (message) setNotice(message); };
@@ -160,7 +160,7 @@ export default function Workspace() {
     </div>
     {demoGuide && <Modal title="A day with AgentDesk" onClose={()=>setDemoGuide(false)}><p className="panel-description demo-guide-intro">Follow one connected workflow through the fictional Georgia office. Every step opens the working product.</p><div className="demo-guide-steps">{[
       {view:'assistant' as View,title:'Start with a clear plan',text:'Ask Copilot what to focus on today. It can read your tasks and workspace context.'},
-      {view:'inbox' as View,title:'Bring the conversation into focus',text:'Read fictional email and investor texts, inspect the linked relationship, and save a reply draft. Nothing is sent.'},
+      {view:'inbox' as View,title:'Bring company email into focus',text:'Explore a fictional Salesforce email workflow. Review a sourced reply, simulate delivery, and save a journey note or follow-up. No company system is connected.'},
       {view:'calling' as View,title:'Know the relationship, choose the next step',text:'Open Mike’s briefing, record a concern, and see the recommendation change.'},
       {view:'settings' as View,title:'Make it sound like you',text:'Inspect the writing preferences Copilot remembers. Edit or forget them, then compare the next draft.'},
       {view:'notes' as View,title:'Turn a conversation into action',text:'Load sample call notes, review the extracted facts, and prepare the next steps.'},

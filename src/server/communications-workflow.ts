@@ -6,6 +6,7 @@ import {AppError,audit,getDb,newId,now,requireRole} from './db';
 import {featureAccess,requireFeature} from './billing';
 import {readInvestorRow,writableInvestor} from './access';
 import {getInboxThread,saveInboxDraft} from './communications';
+import {requireCommunicationCapability} from './communications-capabilities';
 import {getEmployeeMemory} from './memory';
 import {getInvestorJourney,recordJourneyObservation} from './journey';
 import {createTask} from './services';
@@ -20,7 +21,7 @@ export const inboxFollowUpSchema=z.object({...mutation,messageId:id,title:z.stri
 const scope=(actor:Actor)=>[actor.organizationId,actor.officeId,actor.id];
 const hash=(value:unknown)=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const simulationNotice='Simulated send only. This reply is stored in your fictional inbox; no email or text was delivered and no provider or wallet charge was incurred.';
-function current(actor:Actor,threadId:string){const detail=getInboxThread(actor,id.parse(threadId));requireFeature(actor,'core');return detail;}
+function current(actor:Actor,threadId:string){const detail=getInboxThread(actor,id.parse(threadId));requireFeature(actor,'core');if(detail.account.access==='revoked')throw new AppError(403,detail.capabilityNotice);return detail;}
 function expected(detail:InboxThreadDetail,version:number){if(detail.thread.version!==version)throw new AppError(409,'This conversation changed. Reload it and review the current information.');}
 function inbound(detail:InboxThreadDetail,messageId:string){const message=detail.messages.find(item=>item.id===messageId&&item.direction==='inbound');if(!message)throw new AppError(404,'The incoming source message was not found in this private conversation.');return message;}
 function linked(detail:InboxThreadDetail){const investor=detail.thread.association.investor;if(!investor)throw new AppError(409,'Review and link a permitted investor before recording relationship work.');return investor;}
@@ -30,6 +31,7 @@ function canFollowUp(actor:Actor,detail:InboxThreadDetail){if(!featureAccess(act
 /** Bounded, inspectable reasoning over one private conversation. Source text cannot choose tools or write facts. */
 export function getInboxAssistance(actor:Actor,threadId:string):InboxAssistance {
  const detail=current(actor,threadId),memory=getEmployeeMemory(actor),messages=detail.messages.slice(-12),latest=[...messages].reverse().find(item=>item.direction==='inbound');
+ if(!detail.account.capabilities.readBody)return {threadId,threadVersion:detail.thread.version,summary:'Only sender, recipients and message time are available. The subject and body were not captured.',nextStep:'Obtain approved access to the original message before preparing a reply or recording what the investor said.',sources:messages.map(message=>({id:message.id,kind:'message',label:message.sourceLabel,excerpt:`Headers only · from ${message.from.name} <${message.from.address}> · received ${message.receivedAt}. Subject and body unavailable.`,recordedAt:message.receivedAt,verification:'fictional_headers_only'})),unknowns:[detail.capabilityNotice,'The message topic, request and investor intent cannot be inferred from metadata.'],suggestedReply:{subject:'Subject unavailable · headers only',body:'',scope:'relationship_only',deliveryStatus:'not_sent',eligible:false,reasons:[detail.capabilityNotice]},suggestedObservation:null,suggestedFollowUp:null,preferencesUsed:{tone:memory.tone,length:memory.length,avoidPhrases:memory.avoidPhrases,priorities:memory.priorities,version:memory.version},canRecordObservation:false,canCreateFollowUp:false,processing:{mode:'deterministic',messageCount:0,messageLimit:12,background:false,walletChargeCents:0,notice:'Metadata-only review. No message body was available or analyzed; no model request or wallet charge.'},synthetic:true};
  const journey=detail.investorContext,latestText=latest?.body??'';
  const repair=/\b(repair|rehab|renovation|contractor|scope of work)\b/i.test(latestText);
  const operating=/\b(operating|taxes|insurance|expenses|rental|rent)\b/i.test(latestText);
@@ -59,7 +61,7 @@ export function getInboxAssistance(actor:Actor,threadId:string):InboxAssistance 
  }
  const observation=latestTopic==='repair'?'Employee reviewed correspondence raising a need to clarify repair scope and cost assumptions before another opportunity.':latestTopic==='operating'?'Employee reviewed correspondence requesting more clarity about rental or operating-cost assumptions.':latestTopic==='timing'?'Employee reviewed correspondence suggesting purchase timing should be confirmed.':null;
  const title=paused?'Confirm a suitable check-in while buying plans are paused':topic==='repair'?'Verify repair-scope information and contractor-review availability':topic==='operating'?'Check supporting information for operating-cost questions':topic==='timing'?'Confirm current buying timeline and criteria':'Review the latest investor question and next step';
- const unknowns=[...(journey?.unknowns??[]),'Incoming correspondence is fictional, unverified source material; it does not approve CRM or memory changes.','Property details and attachments require the separate eligible Deal packages workflow.'];
+ const unknowns=[...(!detail.account.capabilities.threadHistory?[detail.capabilityNotice]:[]),...(journey?.unknowns??[]),'Incoming correspondence is fictional, unverified source material; it does not approve CRM or memory changes.','Property details and attachments require the separate eligible Deal packages workflow.'];
  if(topic==='repair')unknowns.push('A sourced repair breakdown, contractor availability and estimate accuracy have not been established.');
  if(!journey)unknowns.push('Review the investor association before using relationship history or recording an observation.');
  if(messages.some(item=>item.attachments.length))unknowns.push('Attachment metadata is available, but file contents have not been read or forwarded.');
@@ -68,7 +70,7 @@ export function getInboxAssistance(actor:Actor,threadId:string):InboxAssistance 
 }
 
 export function prepareInboxReply(actor:Actor,threadId:string,input:InboxMutation):InboxThreadDetail {
- const parsed=inboxWorkflowMutationSchema.parse(input),assistance=getInboxAssistance(actor,threadId),detail=current(actor,threadId);
+ const parsed=inboxWorkflowMutationSchema.parse(input),detail=current(actor,threadId);requireCommunicationCapability(detail.account,'localDraft');const assistance=getInboxAssistance(actor,threadId);
  if(!assistance.suggestedReply.eligible)throw new AppError(409,assistance.suggestedReply.reasons.join(' '));
  return saveInboxDraft(actor,threadId,{...parsed,body:assistance.suggestedReply.body,...(detail.thread.channel==='email'?{subject:assistance.suggestedReply.subject}:{})});
 }
@@ -90,11 +92,11 @@ function eligibleDraft(actor:Actor,detail:InboxThreadDetail){
 export function reviewInboxSend(actor:Actor,threadId:string,input:InboxMutation):InboxSendReview {
  const parsed=inboxWorkflowMutationSchema.parse(input);
  return getDb().transaction(()=>{
-  const detail=current(actor,threadId),payloadHash=hash({threadId,input:parsed});
+  const detail=current(actor,threadId);requireCommunicationCapability(detail.account,'simulateSend');const payloadHash=hash({threadId,input:parsed});
   const prior=getDb().prepare('SELECT payload_hash,context_hash,data FROM communication_send_reviews WHERE organization_id=? AND office_id=? AND owner_id=? AND event_key=?').get(...scope(actor),parsed.eventKey) as {payload_hash:string;context_hash:string;data:string}|undefined;
   if(prior){if(prior.payload_hash!==payloadHash)throw new AppError(409,'This review request key was used for different content.');const value=JSON.parse(prior.data) as InboxSendReview;if(prior.context_hash!==contextHash(actor,detail)||value.expiresAt<=now())throw new AppError(409,'This review is stale. Review the current reply again.');return value;}
   expected(detail,parsed.expectedVersion);const draft=eligibleDraft(actor,detail),timestamp=now();
-  const review:InboxSendReview={id:newId('send_review'),threadId,threadVersion:detail.thread.version,draftId:draft.id,draftVersion:draft.version,accountId:detail.account.id,channel:detail.thread.channel,from:draft.from,to:draft.to,subject:draft.subject,body:draft.body,attachments:[],createdAt:timestamp,expiresAt:new Date(Date.now()+10*60_000).toISOString(),scope:'relationship_only',notice:simulationNotice,liveDelivery:false};
+  const review:InboxSendReview={id:newId('send_review'),threadId,threadVersion:detail.thread.version,draftId:draft.id,draftVersion:draft.version,accountId:detail.account.id,accountContext:{source:detail.account.source,transport:detail.account.transport,capabilities:detail.account.capabilities,accessVersion:detail.account.accessVersion},channel:detail.thread.channel,from:draft.from,to:draft.to,subject:draft.subject,body:draft.body,attachments:[],createdAt:timestamp,expiresAt:new Date(Date.now()+10*60_000).toISOString(),scope:'relationship_only',notice:simulationNotice,liveDelivery:false};
   getDb().prepare('INSERT INTO communication_send_reviews VALUES(?,?,?,?,?,?,?,?,?)').run(review.id,...scope(actor),threadId,parsed.eventKey,payloadHash,contextHash(actor,detail),JSON.stringify(review));audit(actor,'communications.send.reviewed',review.id);return review;
  }).immediate();
 }
@@ -105,7 +107,7 @@ function updateThread(actor:Actor,threadId:string,changes:Record<string,unknown>
 export function simulateInboxSend(actor:Actor,threadId:string,input:SimulateInboxSend):InboxSendResult {
  const parsed=simulateInboxSendSchema.parse(input);
  return getDb().transaction(()=>{
-  const detail=current(actor,threadId),payloadHash=hash({threadId,input:parsed});
+  const detail=current(actor,threadId);requireCommunicationCapability(detail.account,'simulateSend');const payloadHash=hash({threadId,input:parsed});
   const prior=getDb().prepare('SELECT payload_hash,data FROM communication_send_receipts WHERE organization_id=? AND office_id=? AND owner_id=? AND event_key=?').get(...scope(actor),parsed.eventKey) as {payload_hash:string;data:string}|undefined;
   if(prior){if(prior.payload_hash!==payloadHash)throw new AppError(409,'This send request key was used for a different simulation.');return {detail,receipt:JSON.parse(prior.data) as InboxSendReceipt};}
   const row=getDb().prepare('SELECT context_hash,data FROM communication_send_reviews WHERE id=? AND thread_id=? AND organization_id=? AND office_id=? AND owner_id=?').get(parsed.reviewId,threadId,...scope(actor)) as {context_hash:string;data:string}|undefined;
@@ -133,7 +135,7 @@ function recordAction(actor:Actor,threadId:string,key:string,payload:unknown,sou
 export function recordInboxObservation(actor:Actor,threadId:string,input:RecordInboxObservation):InboxObservationResult {
  const parsed=inboxObservationSchema.parse(input);
  return getDb().transaction(()=>{
-  const detail=current(actor,threadId);requireRole(actor,['dispositions','manager']);const investor=linked(detail);writableInvestor(actor,investor.id);const source=inbound(detail,parsed.messageId),payload={kind:'observation',threadId,input:parsed},prior=priorAction(actor,parsed.eventKey,payload);
+  const detail=current(actor,threadId);requireCommunicationCapability(detail.account,'readBody');requireRole(actor,['dispositions','manager']);const investor=linked(detail);writableInvestor(actor,investor.id);const source=inbound(detail,parsed.messageId),payload={kind:'observation',threadId,input:parsed},prior=priorAction(actor,parsed.eventKey,payload);
   if(prior){const observation=getInvestorJourney(actor,investor.id).observations.find(item=>item.id===prior.recordId);if(!observation)throw new AppError(409,'The reviewed observation no longer belongs to the current relationship.');return {detail,observation};}
   expected(detail,parsed.expectedVersion);
   const observation=recordJourneyObservation(actor,{investorId:investor.id,kind:parsed.kind,text:parsed.text,eventKey:`inbox:${hash({threadId,eventKey:parsed.eventKey})}`},{channel:detail.thread.channel,receivedAt:source.receivedAt,label:'Employee-reviewed fictional correspondence'});
@@ -144,7 +146,7 @@ export function recordInboxObservation(actor:Actor,threadId:string,input:RecordI
 export function createInboxFollowUp(actor:Actor,threadId:string,input:CreateInboxFollowUp):InboxFollowUpResult {
  const parsed=inboxFollowUpSchema.parse(input);
  return getDb().transaction(()=>{
-  const detail=current(actor,threadId);requireFeature(actor,'daily-coordinator');const source=inbound(detail,parsed.messageId),investorId=detail.thread.association.investor?.id??null,payload={kind:'follow_up',threadId,input:parsed},prior=priorAction(actor,parsed.eventKey,payload);
+  const detail=current(actor,threadId);requireCommunicationCapability(detail.account,'readBody');requireFeature(actor,'daily-coordinator');const source=inbound(detail,parsed.messageId),investorId=detail.thread.association.investor?.id??null,payload={kind:'follow_up',threadId,input:parsed},prior=priorAction(actor,parsed.eventKey,payload);
   if(detail.thread.association.status==='unavailable')throw new AppError(403,'Review the unavailable relationship association before scheduling work.');
   if(prior)return {detail,task:getPersonalTask(actor,prior.recordId)};
   expected(detail,parsed.expectedVersion);if(parsed.dueAt&&Date.parse(parsed.dueAt)<=Date.now())throw new AppError(400,'Choose a future reminder time or leave the task without a deadline.');

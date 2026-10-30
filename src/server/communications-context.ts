@@ -1,6 +1,27 @@
 import {createHash} from 'node:crypto';
 import type {Actor,Conversation} from '../lib/contracts';
-import {assertActor,getDb} from './db';
+import {AppError,assertActor,getDb} from './db';
+
+function accountForThread(actor:Actor,threadId:string){
+ assertActor(actor);
+ return getDb().prepare('SELECT a.data FROM communication_threads t JOIN communication_accounts a ON a.id=t.account_id AND a.organization_id=t.organization_id AND a.office_id=t.office_id AND a.owner_id=t.owner_id WHERE t.id=? AND t.organization_id=? AND t.office_id=? AND t.owner_id=?').get(threadId,actor.organizationId,actor.officeId,actor.id) as {data:string}|undefined;
+}
+
+/** Account metadata contains the source capabilities and access revision, never a message body. */
+export function inboxAccessReference(actor:Actor,threadId:string):string {
+ const account=accountForThread(actor,threadId);
+ if(!account)throw new AppError(404,'Inbox conversation not found in your private workspace.');
+ return `${threadId}|${createHash('sha256').update(account.data).digest('hex')}`;
+}
+
+export function inboxAccessReferenceCurrent(actor:Actor,threadId:string,references:string[]):boolean {
+ const account=accountForThread(actor,threadId);if(!account)return false;
+ const saved=references.filter(reference=>reference.startsWith(`${threadId}|`));
+ if(saved.length)return saved.every(reference=>reference===`${threadId}|${createHash('sha256').update(account.data).digest('hex')}`);
+ // Historical Phase 3 results predate capability snapshots and only used full demo mailboxes.
+ const value=JSON.parse(account.data) as {provider?:string;access?:string;accessVersion?:number;capabilities?:{readBody?:boolean};source?:{coverage?:string}};
+ return value.provider!=='salesforce'&&value.access!=='revoked'&&(value.accessVersion??1)===1&&value.capabilities?.readBody!==false&&value.source?.coverage!=='headers_only';
+}
 
 /** Hash private correspondence without supplying an entire mailbox to the model. */
 export function inboxContextFingerprint(actor:Actor):string {

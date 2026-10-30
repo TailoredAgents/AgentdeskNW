@@ -1,8 +1,10 @@
 # Product requirements
 
-## Next communications priority — company email through Salesforce
+## Implemented communications Phase 4A — fictional company email
 
-The owner reports that Alex uses company email only inside Salesforce. The next build should make that company workflow the primary experience, retaining optional Gmail/Outlook adapters. First demonstrate a clearly fictional Salesforce-associated email source and capability limits; connect actual company data only after approval and administrator discovery. Salesforce activity access, full mailbox access and sending authority are separate capabilities. Existing Inbox data must be preserved rather than relabeled as a live Salesforce integration. See COMMUNICATIONS_AND_CREDITS_PLAN.md Phase 4 and SALESFORCE_INTEGRATION.md.
+The primary Inbox entry now opens fictional Company email · Salesforce, reflecting Alex’s reported workflow. Existing Gmail, Outlook and investor-text accounts remain optional examples with original records and drafts preserved. Each account declares its source coverage and available operations. Full correspondence supports the existing reviewed workflow; captured CRM activity permits reading/local drafts without sending; headers-only records cannot establish message content, investor intent, a reply or a sourced journey change.
+
+The demonstration correlates two source records to one message and supports access pause/restoration. Revoked content is hidden from reads, search, cached tool results and prior Copilot history; mutations stop and restored access requires fresh review. Typed Copilot can find company email explicitly and open its exact thread; unqualified inbox requests can include optional sources. See [COMPANY_EMAIL_DEMO.md](COMPANY_EMAIL_DEMO.md) for acceptance behavior and [PROGRESS.md](PROGRESS.md) for verification. Live Phase 4B still requires approved source, mailbox and sending capability discovery in [SALESFORCE_INTEGRATION.md](SALESFORCE_INTEGRATION.md).
 
 ## Communications Phase 3 — useful, reviewed inbox work
 
@@ -10,7 +12,7 @@ An employee can use multiple fictional email and investor-text accounts through 
 
 ## Communications and credits update — October 29, 2026
 
-The owner-approved communications and credits plan supersedes individual specialist shopping: one workforce subscription, included retail credits, optional communication services and a future unified email/investor-text workspace. Phase 1 implements the workforce and simulated wallet only. Preserve private assistant commands separately from investor correspondence; source relationship knowledge and review outbound/CRM changes. All customer-provider connectivity and actual payment collection remain gated future acceptance.
+The owner-approved communications and credits plan supersedes individual specialist shopping: one workforce subscription, included retail credits, optional communication services and the private unified email/investor-text workspace. Phase 1 established the workforce and simulated wallet foundation; the later implemented communications phases are described above. Preserve private assistant commands separately from investor correspondence; source relationship knowledge and review outbound/CRM changes. All customer-provider connectivity and actual payment collection remain gated future acceptance.
 
 
 ## Phase 2 operational acceptance — local implementation
