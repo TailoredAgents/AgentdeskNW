@@ -1,5 +1,10 @@
 # Architecture decisions
 
+## Communications and credits update — October 29, 2026
+
+The owner approved a workforce subscription with $15 retail credits instead of individual specialist purchases, plus phased email and business-number communications. Phase 1 deliberately demonstrates monetary accounting with server-owned fictional scenarios while preserving actual provider receipt tracking separately. One paid employee seat has one wallet across its office memberships. External investor conversations will be distinct from private Copilot commands. See COMMUNICATIONS_AND_CREDITS_PLAN.md for scope and acceptance.
+
+
 ## ADR-011 — Preserve the application and add investor intelligence
 
 Accepted October 29, 2026. Keep Next.js, SQLite migrations, the central Copilot, worker, PWA, voice interface and sixteen specialist IDs. Add structured buy boxes and provenance beside the existing investor record. Existing CRM fields remain the primary-profile compatibility projection; additional profiles stay separate. Phase 1 source checkpoint: `cded4cd`. A private local database backup was taken before applying additive Phase 2 migrations.

@@ -11,6 +11,7 @@ export async function billingRoute(request:NextRequest,actor:Actor,path:string[]
  if(operation==='subscription'&&method==='POST')return json(billing.changeSubscription(actor,await readBody() as Parameters<typeof billing.changeSubscription>[1]));
  if(operation==='lifecycle'&&method==='POST')return json(billing.simulateLifecycle(actor,await readBody() as Parameters<typeof billing.simulateLifecycle>[1]));
  if(operation==='admin'&&method==='GET')return json(billing.adminBillingState(actor));
+ if(operation==='enterprise-seat'&&method==='POST')return json(billing.assignEnterpriseSeat(actor,await readBody() as Parameters<typeof billing.assignEnterpriseSeat>[1]));
  if(operation==='policy'&&method==='POST')return json(billing.saveBillingPolicy(actor,await readBody()));
  if(operation==='trial'&&method==='POST')return json(billing.grantTrial(actor,await readBody() as Parameters<typeof billing.grantTrial>[1]));
  if(operation==='credits'&&method==='POST')return json(grantCredits(actor,await readBody() as Parameters<typeof grantCredits>[1]));

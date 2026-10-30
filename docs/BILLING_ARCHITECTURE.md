@@ -1,4 +1,20 @@
-# Billing architecture — Phase 3
+# Billing architecture — workforce and credits
+
+## Current workforce extension
+
+Migrations 014/015 extend the existing simulator. `billing_enterprise_seats` stores explicit administrator assignments and agreement labels. `billing_subscription_migrations` preserves original and migrated subscription snapshots. `wallet_accounts`, `wallet_quotes`, `wallet_operations`, `wallet_ledger` and `wallet_events` hold scoped balances, reviewed estimates, operations and immutable ledger/idempotency records. One wallet binds organization and employee across their authorized office memberships, consistent with subscription ownership. Ledger actions retain office provenance; each operation validates current membership and owner scope. Corporate base-seat assignment also binds organization and employee.
+
+`workforce` is the $50 retail plan; `workforce-enterprise` is the $30 administrator-assigned company plan. Both carry a `wallet_cents:1500` monthly allowance and all sixteen specialist feature IDs. `featureAccess` still separately resolves role, organization restrictions, active foundation and implementation. Company assignment cannot override any of those checks. Only employee Copilot SMS remains a selectable current add-on. Retired plan/component records stay readable for historical quotes but cannot be newly selected.
+
+Legacy subscription migration is lazy and transaction-bound when the scoped subscription is loaded. It preserves ID, period, status, cancellation scheduling and old invoices, stores before/after snapshots, and removes redundant specialist selections. Reopening the app does not repeat the migration. Company-seat removal selects retail in canceled state so it cannot silently begin employee billing. Explicit company assignments override legacy base-sponsorship policies, including after removal. A removed company seat cannot silently fall back to a higher-priced company plan. Independent SMS sponsorship remains separate. Billing administrators can recover company payments when personal purchases are disabled.
+
+`POST /api/billing/enterprise-seat` requires the existing billing-admin role plus an explicit assignment, target subscription version and event key. Company-funded base and optional personal SMS totals remain distinct. No provider funds move.
+
+The wallet HTTP service uses `/api/wallet` for private state; `/topup`, `/settings`, `/estimate`, `/simulate` and `/resolve` for explicitly labeled demonstration actions. All requests use the same authentication/origin/body validation as the app. Estimate and operation records are scoped, expire when appropriate, and carry server-owned price snapshots. The client cannot supply a provider cost or grant itself a different price. No model tool can buy credits or manipulate the wallet.
+
+Monthly included credit and purchased credit are separate buckets. Reservations retain their original funding sources across period boundaries. The ledger is append-only; events prevent duplicate top-ups, grants and settlements. Unknown outcomes retain holds. Spending limits cover settled sample work and active holds. See `USAGE_METERING.md` and the new phased plan for the deliberate boundary between this demonstration and real provider usage billing.
+
+The original Phase 3 foundation below describes reusable historical infrastructure; individual specialist shopping has been superseded by the current workforce offer.
 
 ## Boundary and persistence
 

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import './presentation.css';
 import './intelligence.css';
+import './commerce.css';
 export const metadata: Metadata = {
   title: 'AgentDesk NW — Your work, moving forward',
   description: 'Your personal assistant, backed by a specialized AI workforce. A private concept demonstration by Tailored Agents.',

@@ -1,0 +1,140 @@
+/* Workforce subscription and credit wallet presentation. */
+.commerce-v2{min-width:0;}
+.commerce-v2 .commerce-notice{line-height:1.65;align-items:flex-start;}
+.commerce-v2 .commerce-notice svg{margin-top:1px;}
+.commerce-v2 .small-copy{line-height:1.8;}
+.workforce-hero{display:flex;align-items:center;justify-content:space-between;gap:40px;padding:36px 40px;border:1px solid #d9e5d9;border-radius:17px;background:linear-gradient(115deg,#edf5e9,#f9fbf6);margin-bottom:30px;overflow:hidden;}
+.workforce-hero>div:first-child{max-width:560px;}
+.workforce-hero h2{font-size:38px;line-height:1.2;letter-spacing:-1.6px;margin:17px 0 14px;color:#264b39;}
+.workforce-hero p{font-size:13px;line-height:1.8;color:#61765d;max-width:460px;}
+.workforce-hero-number{display:flex;flex-direction:column;align-items:center;text-align:center;padding:26px 20px;border-left:1px solid #dce7d6;min-width:220px;}
+.workforce-hero-number strong{font-family:var(--heading);font-size:98px;letter-spacing:-7px;line-height:1;color:#426941;font-weight:450;}
+.workforce-hero-number span{font-size:12px;margin-top:15px;color:#526e4a;}
+.workforce-hero-number small{font-size:10px;margin-top:8px;color:#768b6c;}
+.commerce-v2 .commerce-layout{grid-template-columns:minmax(0,1fr) 310px;gap:25px;}
+.workforce-employee{padding:24px;}
+.workforce-employee .employee-card-top{margin-bottom:19px;}
+.workforce-category{font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:#83917c;margin-bottom:8px;}
+.workforce-employee h3{font-size:17px;letter-spacing:-.4px;}
+.workforce-employee>p{margin:1px 0 17px;}
+.workforce-employee ul{margin:0 0 20px;}
+.workforce-card-bottom{margin-top:auto;border-top:1px solid var(--border);padding-top:16px;}
+.workforce-card-bottom>span{font-size:10px;color:#71846a;display:block;margin-bottom:12px;}
+.workforce-card-bottom .employee-actions{justify-content:space-between;gap:8px;}
+.workforce-card-bottom .button{padding:10px 11px;}
+.workforce-plan h3{font-size:19px;margin-top:18px;line-height:1.45;}
+.workforce-plan>.badge{white-space:normal;}
+.plan-credit-note{display:flex;gap:10px;padding:14px 12px;background:#f1f7ec;border:1px solid #e0ead7;border-radius:10px;margin-bottom:23px;}
+.plan-credit-note svg{color:#698f52;margin-top:2px;}
+.plan-credit-note strong{font-size:11px;display:block;line-height:1.6;color:#4c6c3e;}
+.plan-credit-note small{display:block;font-size:10px;line-height:1.7;color:#789067;margin-top:4px;}
+.workforce-plan .sms-choice{border-bottom:1px solid var(--border);padding-bottom:20px;}
+.workforce-plan .sms-choice input{margin-top:3px;}
+.workforce-plan .sms-choice>span{font-size:12px;line-height:1.6;}
+.workforce-plan .subscription-total{border-top:0;padding-top:0;}
+.workforce-plan>.button{white-space:normal;}
+.connections-preview{margin-top:36px;padding-top:25px;border-top:1px solid var(--border);}
+.connection-preview-grid{display:grid;gap:12px;}
+.connection-preview-grid article{display:flex;gap:16px;border:1px solid var(--border);background:#f9fbf8;border-radius:12px;padding:20px;}
+.connection-preview-grid h3{font-size:14px;margin-bottom:7px;}
+.connection-preview-grid p{font-size:12px;line-height:1.8;color:var(--muted);margin-bottom:9px;}
+.connection-preview-grid small{font-size:10px;color:#84927c;line-height:1.7;display:block;}
+.workforce-detail>p{font-size:13px;line-height:1.8;margin:18px 0;}
+.workforce-detail h3{font-size:12px;margin-top:20px;}
+.workforce-detail ul{font-size:12px;line-height:1.9;color:var(--muted);padding-left:19px;margin:12px 0 20px;}
+.workforce-detail .commerce-notice{font-size:11px;margin-top:22px;}
+.commerce-v2 .workforce-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
+.billing-subscription-summary{margin-bottom:28px;}
+.billing-subscription-summary .panel{padding:24px;}
+.billing-subscription-summary h3{font-size:14px;line-height:1.65;margin-top:12px;}
+.billing-summary-label{display:flex;gap:8px;align-items:center;}
+.billing-summary-label svg{color:#688b62;}
+.commerce-details{font-size:11px;margin-top:18px;}
+.commerce-details summary{cursor:pointer;color:#71816a;}
+.commerce-details>.text-link{margin-top:13px;}
+.provider-allowance-details{margin:28px 0;border:1px solid var(--border);border-radius:12px;padding:20px;background:#fafcf8;}
+.provider-allowance-details>summary{display:flex;align-items:center;gap:10px;font-size:12px;cursor:pointer;color:#667c5b;list-style:none;}
+.provider-allowance-details>summary>span{flex:1;}
+.provider-allowance-details>summary::-webkit-details-marker,.commerce-admin-details>summary::-webkit-details-marker{display:none;}
+.provider-allowance-details[open]>summary>svg:last-child,.commerce-admin-details[open]>summary>svg{transform:rotate(90deg);}
+.provider-allowance-details .commerce-grid{margin-top:20px;margin-bottom:10px;}
+.billing-history{align-items:start;}
+.billing-history .billing-table>div{font-size:12px;}
+.billing-history .billing-event small{line-height:1.7;}
+.commerce-admin-details{margin-top:20px;}
+.commerce-admin-details>summary{display:flex;justify-content:space-between;align-items:center;gap:15px;cursor:pointer;font-size:13px;padding:17px 0;list-style:none;color:#677d5e;}
+.commerce-admin-details>.panel{margin-top:18px;}
+.commerce-v2 .billing-admin .section-head{gap:15px;}
+.commerce-v2 .billing-admin .commerce-form input,.commerce-v2 .billing-admin .commerce-form select{min-width:0;}
+.commerce-v2 .billing-table>div>span{min-width:0;overflow-wrap:anywhere;}
+.commerce-v2 .billing-table>div>span:last-child{text-align:right;flex-shrink:0;}
+.credit-wallet{margin:28px 0;min-width:0;}
+.wallet-heading{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:19px;}
+.wallet-heading h2{font-size:22px;letter-spacing:-.6px;}
+.wallet-heading p{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.7;}
+.wallet-balance-grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:20px;}
+.wallet-balance-card{padding:29px 30px;border-radius:15px;border:1px solid #d1e1c7;background:linear-gradient(120deg,#ecf4e5,#f5f9ee);position:relative;overflow:hidden;}
+.wallet-balance-card>.wallet-balance-label{display:flex;align-items:center;gap:9px;font-size:12px;color:#627c50;}
+.wallet-balance-card>.wallet-balance-amount{display:block;font-family:var(--heading);font-size:57px;letter-spacing:-2.5px;font-weight:500;color:#31532b;line-height:1.35;margin:12px 0 3px;}
+.wallet-balance-card>.wallet-balance-caption{font-size:11px;color:#728965;line-height:1.7;}
+.wallet-split{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:24px;padding-top:20px;border-top:1px solid #d9e6cc;}
+.wallet-split>div{min-width:0;}
+.wallet-split strong{font-size:20px;letter-spacing:-.5px;color:#436739;display:block;margin-top:5px;}
+.wallet-split span,.wallet-split small{display:block;font-size:10px;color:#778c69;line-height:1.7;}
+.wallet-topups{display:flex;flex-direction:column;min-width:0;}
+.wallet-topups h3{font-size:16px;margin-bottom:7px;}
+.wallet-topups p{font-size:12px;line-height:1.8;color:var(--muted);}
+.wallet-topup-options{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:21px 0 12px;}
+.wallet-topup-options button{padding:13px 8px;border:1px solid #dfe7da;border-radius:9px;background:#f9fbf7;color:#4e6e42;font-size:15px;font-weight:550;}
+.wallet-topup-options button:hover:not(:disabled){background:#edf4e6;border-color:#c5d8b7;}
+.wallet-topups .wallet-meter{margin-top:auto;padding-top:20px;}
+.wallet-meter>div{display:flex;justify-content:space-between;align-items:center;gap:15px;font-size:11px;color:#6c805e;}
+.wallet-meter progress{appearance:none;width:100%;height:6px;border:0;border-radius:6px;overflow:hidden;margin:12px 0 5px;}
+.wallet-meter>small{font-size:10px;line-height:1.7;}
+.wallet-notice{display:flex;align-items:flex-start;gap:9px;border:1px solid var(--border);background:#fff;padding:13px 16px;border-radius:10px;margin:16px 0;font-size:11px;line-height:1.7;color:#718368;}
+.wallet-notice svg{margin-top:1px;}
+.wallet-notice.low{background:#fff9ec;border-color:#eadebf;color:#906e30;}
+.wallet-notice.error{background:#fff3ef;border-color:#ecd4c8;color:#a15d45;}
+.wallet-notice.success{background:#f0f6ea;border-color:#d7e5cb;color:#597a45;}
+.wallet-tools-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;margin:20px 0;align-items:start;}
+.wallet-tools-grid .panel{min-width:0;}
+.wallet-limit-form{display:flex;align-items:end;gap:10px;margin:20px 0 15px;}
+.wallet-limit-form label{flex:1;min-width:0;}
+.wallet-limit-form input{font-size:14px;}
+.wallet-limit-form .button{flex-shrink:0;}
+.wallet-scenarios{display:grid;gap:9px;margin:18px 0 10px;}
+.wallet-scenario{display:flex;align-items:center;gap:12px;border:1px solid var(--border);border-radius:10px;padding:14px;background:#fafcf8;text-align:left;}
+.wallet-scenario>span{flex:1;min-width:0;}
+.wallet-scenario strong{font-size:12px;display:block;line-height:1.6;}
+.wallet-scenario small{display:block;font-size:10px;margin-top:4px;line-height:1.6;}
+.wallet-scenario>b{font-size:14px;font-weight:550;color:#4d723e;white-space:nowrap;}
+.wallet-scenario:hover:not(:disabled){border-color:#cbdcbd;background:#f1f7eb;}
+.wallet-ledger{margin-top:21px;}
+.wallet-activity-row{display:flex;align-items:flex-start;gap:12px;border-bottom:1px solid var(--border);padding:15px 0;}
+.wallet-activity-icon{width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:#f2f6ed;color:#73925e;flex-shrink:0;}
+.wallet-activity-row>div:nth-child(2){min-width:0;flex:1;}
+.wallet-activity-row strong{font-size:12px;display:block;overflow-wrap:anywhere;}
+.wallet-activity-row small{font-size:10px;display:block;margin-top:5px;line-height:1.7;}
+.wallet-activity-row>span{font-size:12px;white-space:nowrap;color:#5f7952;}
+.wallet-operation{border:1px solid var(--border);background:#fafcf8;border-radius:10px;padding:15px;margin-top:12px;}
+.wallet-operation-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;}
+.wallet-operation-heading strong{font-size:12px;}
+.wallet-operation p{font-size:11px;color:var(--muted);line-height:1.75;margin:10px 0;}
+.wallet-operation .employee-actions{margin-top:13px;}
+.wallet-operation .button{font-size:10px;white-space:normal;}
+.wallet-review>p{font-size:12px;line-height:1.8;color:var(--muted);margin:15px 0;}
+.wallet-review h3{font-size:19px;margin:17px 0 12px;line-height:1.5;}
+.wallet-review-amount{padding:20px;border-radius:11px;background:#f1f6e9;border:1px solid #dbe8d0;margin:20px 0;}
+.wallet-review-amount>span,.wallet-review-amount>small{display:block;color:#6c865b;font-size:11px;line-height:1.7;}
+.wallet-review-amount>strong{display:block;font-size:35px;letter-spacing:-1px;color:#486937;margin:7px 0;}
+.wallet-review-breakdown{display:grid;gap:10px;font-size:12px;padding:16px 0;border-bottom:1px solid var(--border);margin-bottom:20px;}
+.wallet-review-breakdown>div{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;}
+.wallet-review-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-top:24px;}
+.wallet-review>label{margin:19px 0;}
+.wallet-review .button{white-space:normal;}
+.wallet-loading{padding:28px 0;}
+@media(min-width:1600px){.commerce-v2 .commerce-grid{grid-template-columns:repeat(3,minmax(0,1fr));}}
+@media(max-width:1200px){.commerce-v2 .commerce-layout{grid-template-columns:minmax(0,1fr) 285px;gap:19px;}.commerce-v2 .commerce-layout .commerce-grid{grid-template-columns:1fr;}.commerce-v2 .workforce-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.workforce-hero{padding:29px;gap:25px;}.workforce-hero h2{font-size:32px;}.workforce-hero-number{min-width:190px;}.wallet-balance-grid{grid-template-columns:1fr 1fr;}.wallet-balance-card{padding:25px;}.wallet-split{gap:13px;}.wallet-tools-grid{gap:16px;}}
+@media(max-width:950px){.wallet-balance-grid,.wallet-tools-grid{grid-template-columns:1fr;}.wallet-topups .wallet-meter{margin-top:8px;}.billing-subscription-summary{grid-template-columns:1fr;}.workforce-hero-number{min-width:150px;padding:20px 10px;}.workforce-hero-number strong{font-size:77px;}.workforce-hero-number small{max-width:130px;}}
+@media(max-width:800px){.commerce-v2 .commerce-layout{display:flex;}.commerce-v2 .commerce-layout .commerce-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.commerce-v2 .workforce-plan{order:0;}.workforce-hero{padding:26px;gap:15px;}.workforce-hero .commerce-benefits{gap:10px;font-size:10px;}.workforce-hero h2{font-size:30px;}.workforce-hero p{font-size:12px;}.workforce-card-bottom .employee-actions{align-items:flex-start;flex-direction:column;}.wallet-heading h2{font-size:20px;}.wallet-heading{align-items:flex-start;}.wallet-balance-card>.wallet-balance-amount{font-size:50px;}.commerce-v2 .billing-admin .section-head{align-items:flex-start;flex-wrap:wrap;}.commerce-v2 .commerce-form .button{white-space:normal;}.commerce-v2 .workforce-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
+@media(max-width:560px){.workforce-hero{display:block;padding:24px;}.workforce-hero-number{border-left:0;border-top:1px solid #dce7d6;margin-top:24px;padding:20px 0 0;align-items:flex-start;text-align:left;}.workforce-hero-number strong{font-size:58px;letter-spacing:-3px;}.workforce-hero-number span{margin-top:9px;}.workforce-hero-number small{max-width:none;}.commerce-v2 .commerce-layout .commerce-grid,.commerce-v2 .workforce-grid{grid-template-columns:1fr;}.workforce-card-bottom .employee-actions{align-items:center;flex-direction:row;}.wallet-topup-options{gap:6px;}.wallet-topup-options button{font-size:14px;}.wallet-split{gap:10px;}.wallet-split strong{font-size:18px;}.wallet-balance-card{padding:24px;}.wallet-limit-form{flex-wrap:wrap;}.wallet-limit-form label{flex-basis:100%;}.wallet-limit-form .button{width:100%;}.wallet-operation-heading{flex-wrap:wrap;}.wallet-review-actions{flex-direction:column;}.wallet-review-actions .button{width:100%;}.wallet-activity-row{gap:9px;}.wallet-activity-row>span{font-size:11px;}.connection-preview-grid article{padding:18px;gap:12px;}.connection-preview-grid .commerce-icon{width:36px;height:36px;}.connections-preview{margin-top:22px;}.wallet-scenario{padding:13px;gap:10px;}.wallet-scenario>b{font-size:12px;}.billing-subscription-summary .panel{padding:22px;}.provider-allowance-details{padding:17px;}.provider-allowance-details>summary{font-size:11px;}}

@@ -1,5 +1,10 @@
 # Security and permissions
 
+## Communications and credits update — October 29, 2026
+
+The workforce offer changes entitlement packaging without widening employee record access or completing planned specialists. Company-seat assignment requires an explicitly authorized billing admin; employee requests cannot grant the company discount. Wallet quotes/operations are private to an organization and employee, with office membership verified and provenance retained. Clients cannot supply fictional provider prices, rewrite ledger entries or settle real provider usage. Simulator mutations are unavailable outside configured demo mode.
+
+
 ## Deployment boundary
 
 This build is a **local demonstration**, not a system approved to store real customer data. Fixed demo identities are permitted only with explicit demo configuration and loopback restrictions. A signed session prevents casual client field tampering; it does not substitute for real employee authentication. Production SSO, user lifecycle, access reviews and secure deployment are release gates.

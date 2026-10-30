@@ -2,6 +2,7 @@ import { messagingRoute } from '@/server/messaging-api';
 import { getPersonalTask, listPersonalTasks, mutateTask, taskMutationSchema } from '@/server/task-actions';
 import { memoryJourneyRoute } from '@/server/memory-journey-api';
 import { billingRoute } from '@/server/billing-api';
+import { walletRoute } from '@/server/wallet-api';
 import { EntitlementError } from '@/server/billing';
 import { NextRequest,NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -55,6 +56,7 @@ async function route(request:NextRequest,{params}:{params:Promise<{path:string[]
     if(resource==='voice'&&id==='status'&&method==='GET')return json(getVoiceStatus(actor,idSchema.parse(request.nextUrl.searchParams.get('voiceSessionId'))));
     const messaging=await messagingRoute(request,actor,path,()=>body(request));if(messaging)return messaging;
     const billing=await billingRoute(request,actor,path,()=>body(request));if(billing)return billing;
+    const wallet=await walletRoute(request,actor,path,()=>body(request));if(wallet)return wallet;
     const memoryJourney=await memoryJourneyRoute(request,actor,path,()=>body(request));if(memoryJourney)return memoryJourney;
     const phaseTwo=await phaseTwoRoute(request,actor,path,()=>body(request));if(phaseTwo)return phaseTwo;
     if(resource==='chat'&&method==='POST'){

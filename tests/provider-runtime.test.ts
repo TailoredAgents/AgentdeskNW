@@ -1,5 +1,6 @@
 import { afterEach,beforeEach,describe,expect,it,vi } from 'vitest';
 import { closeDb,demoActor } from '../src/server/db';
+import { billingPolicy,saveBillingPolicy } from '../src/server/billing';
 import { textProviderConfig } from '../src/server/provider-config';
 import { beginProviderOperation,fingerprint,providerOperations,recordProviderChildUsage,recordProviderUsage } from '../src/server/provider-runtime';
 import { reconcileTextUsage,reserveUsage,usageBalances } from '../src/server/metering';
@@ -32,8 +33,9 @@ describe('durable provider receipts',()=>{
   expect(()=>beginProviderOperation(actor,{...operation,requestHash:fingerprint('different request')})).toThrow('conflict');
   expect(first).toMatchObject({status:'started',usage:{},actualCostCents:null,estimatedCostCents:null});
  });
- it('enforces paid access before beginning provider work',()=>{
-  expect(()=>beginProviderOperation(demoActor(),{...operation,feature:'investor-hunter'})).toThrow('optional upgrade');
+ it('enforces company restrictions before beginning provider work',()=>{
+  const admin=demoActor('manager'),policy=billingPolicy(admin);policy.restricted=['investor-hunter'];saveBillingPolicy(admin,policy);
+  expect(()=>beginProviderOperation(demoActor(),{...operation,feature:'investor-hunter'})).toThrow('Restricted');
   expect(providerOperations(demoActor())).toHaveLength(0);
  });
  it('isolates operations and response identifiers by the authenticated employee',()=>{

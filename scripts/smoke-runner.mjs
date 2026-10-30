@@ -4,8 +4,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createServer } from 'node:net';
 const suite=process.argv[2]||'workflows';
-if(!['workflows','intelligence','conversation'].includes(suite))throw new Error('Unknown smoke suite.');
-const script=suite==='conversation'?'scripts/conversation-smoke.ts':suite==='intelligence'?'scripts/intelligence-smoke.ts':'scripts/smoke.ts';
+if(!['workflows','intelligence','conversation','wallet'].includes(suite))throw new Error('Unknown smoke suite.');
+const script=suite==='wallet'?'scripts/wallet-smoke.ts':suite==='conversation'?'scripts/conversation-smoke.ts':suite==='intelligence'?'scripts/intelligence-smoke.ts':'scripts/smoke.ts';
 
 if(process.env.SMOKE_BASE_URL){
  const child=spawn(process.execPath,['--import','tsx',script],{stdio:'inherit',env:process.env});

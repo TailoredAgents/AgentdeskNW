@@ -1,5 +1,10 @@
 # System architecture
 
+## Communications and credits update — October 29, 2026
+
+The workforce subscription and wallet simulator extend the same monolith. All implemented role-authorized specialists share one base plan. Company seats require explicit billing-admin assignment. The wallet has reviewed server-priced sample quotes, transactional holds/settlement and append-only history; it is separate from live provider admission/receipts until production cost reconciliation. See COMMUNICATIONS_AND_CREDITS_PLAN.md for email, investor inbox and dedicated number phases.
+
+
 ## Local implementation structure
 
 ```mermaid

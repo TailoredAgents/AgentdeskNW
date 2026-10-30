@@ -3,12 +3,15 @@ import type { Actor } from '../lib/contracts';
 import type { AllowanceBalance,MeterRecord } from '../lib/billing-contracts';
 import { AppError,assertActor,audit,getDb,newId,now } from './db';
 import { catalog,hasFeature,memberActor,requireFeature,subscription,trial,quoteSubscription } from './billing';
+import { isWorkforcePlan } from './billing-catalog';
 export const meterCategories={text_tokens:{unit:'tokens',feature:'core'},voice_minutes:{unit:'minutes',feature:'core'},research_jobs:{unit:'jobs',feature:'investor-hunter'},research_credits:{unit:'credits',feature:'investor-hunter'},external_search:{unit:'searches',feature:'investor-hunter'},provider_requests:{unit:'requests',feature:'investor-hunter'},sms_segments:{unit:'segments',feature:'sms'},other:{unit:'operations',feature:'core'}};
 export type MeterCategory=keyof typeof meterCategories;
 const metered=['text_tokens','voice_minutes','research_credits','sms_segments'];
 export function allowanceConfig(actor:Actor):Record<string,number>{
  const sub=subscription(actor),result:Record<string,number>={};const current=catalog();const quote=quoteSubscription(actor,sub.selection,sub.prices);
- const products=[...(sub.status==='active'?[sub.prices[sub.selection.planId],...sub.selection.addons.map(id=>sub.prices[id])]:[]),...quote.sponsored.map(id=>current.find(p=>p.id===id)).filter((p):p is NonNullable<typeof p>=>!!p)];
+ const companyPlan=isWorkforcePlan(sub.selection.planId)&&quote.sponsored.includes('core')&&hasFeature(actor,'core')?sub.prices[sub.selection.planId]:null;
+ const sponsoredExtras=quote.sponsored.map(id=>current.find(p=>p.id===id)).filter((p):p is NonNullable<typeof p>=>!!p&&(!isWorkforcePlan(sub.selection.planId)||p.kind==='sms'));
+ const products=[...(sub.status==='active'?[sub.prices[sub.selection.planId],...sub.selection.addons.map(id=>sub.prices[id])]:[]),...(companyPlan?[companyPlan]:[]),...sponsoredExtras];
  for(const product of products)for(const [category,amount] of Object.entries(product.allowances))result[category]=Math.max(result[category]??0,amount);
  const t=trial(actor);if(t?.active)for(const [category,amount] of Object.entries(t.allowances))result[category]=Math.max(result[category]??0,amount);
  for(const category of metered)if(!hasFeature(actor,meterCategories[category as MeterCategory].feature))result[category]=0;
@@ -28,7 +31,7 @@ export function reserveUsage(actor:Actor,input:{category:MeterCategory;operation
  const definition=meterCategories[parsed.category];requireFeature(actor,definition.feature);
  return getDb().transaction(()=>{const prior=findUsage(actor,parsed.category,parsed.operationId);if(prior&&prior.status!=='released'){if(prior.quantity!==parsed.quantity||prior.source!==parsed.source)throw new AppError(409,'This usage operation already exists with different details.');return prior;}
  const sub=subscription(actor),balance=usageBalances(actor).find(b=>b.category===parsed.category)!;
- if(balance.remaining!==null&&parsed.quantity>balance.remaining&&!(parsed.category==='sms_segments'&&parsed.allowOverage))throw new AppError(402,`Insufficient ${parsed.category.replaceAll('_',' ')} allowance. Review Usage & billing or ask your billing administrator for demo credits.`);
+ if(balance.remaining!==null&&parsed.quantity>balance.remaining&&!(parsed.category==='sms_segments'&&parsed.allowOverage))throw new AppError(402,`Insufficient ${parsed.category.replaceAll('_',' ')} allowance. Review Credits & billing or ask your billing administrator for demo credits.`);
  const value:MeterRecord={id:prior?.id??newId('meter'),feature:definition.feature,operationId:parsed.operationId,category:parsed.category,quantity:parsed.quantity,unit:definition.unit,allowanceId:balance.included===null?null:`${sub.id}:${sub.periodStart}:${parsed.category}`,providerCostCents:null,status:'reserved',billingStatus:'not_billable',createdAt:now(),periodStart:sub.periodStart,source:parsed.source};return saveUsage(actor,value);
  }).immediate();
 }

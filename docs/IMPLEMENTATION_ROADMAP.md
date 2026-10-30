@@ -1,5 +1,10 @@
 # Implementation roadmap
 
+## Current authorized sequence
+
+The [communications and credits plan](COMMUNICATIONS_AND_CREDITS_PLAN.md) is the current sequence: (1) workforce subscription and simulated wallet; (2) fictional unified inbox; (3) Copilot communication workflow; (4) live email connectors; (5) dedicated investor SMS; (6) real billing and controlled company rollout. The owner authorized Phase 1 plus commit/push. Earlier milestones below remain historical context.
+
+
 Completion evidence belongs in [PROGRESS](PROGRESS.md). This roadmap describes gates, not claims of finished implementation.
 
 ## Phase 4 development directive — intelligence activation

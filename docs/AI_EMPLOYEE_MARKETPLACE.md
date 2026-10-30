@@ -1,21 +1,21 @@
-# AI Employee Marketplace — Phase 3
+# AI workforce and credits experience
 
-The existing charcoal/mint AgentDesk workspace now has **AI Employee Marketplace**, **My AI Workforce**, and **Usage & billing**. All use the same personal Copilot and saved conversation history.
+The former specialist marketplace is now **AI workforce**. It explains the sixteen specialist capabilities, availability for the employee's role, and what is still in development. All implemented role-authorized specialists are included with the workforce plan; employees do not add or remove separate AI brains to complete a workflow.
 
-Marketplace cards show the registered name/icon/purpose, capability outputs, proposed monthly price, local-demo/development status, current access, Core/bundle inclusion, sponsorship and role restrictions. Filters cover the employee's role, all employees, dispositions, acquisitions, management and general operations. Add/remove edits a live server-calculated quote; **Save simulated subscription** persists it. The form supports immediate or next-period application. Included/sponsored items cannot be charged twice. Every price panel identifies the local simulator.
+**My workforce** offers shortcuts into available work. The sidebar counts executable capabilities rather than catalog entries. A company restriction, missing subscription, provider setup requirement and unfinished implementation remain different states. Copilot explains the actual access reason and links to workforce access; it does not recommend buying an individual specialist.
 
-My AI Workforce shows entitled specialists and whether they can actually execute; selection is different from technical readiness. The sidebar counts only available capabilities. Buttons take the employee to the existing workflows or issue a request in their same Copilot. No additional chatbot or persona is created.
+**Credits & billing** contains the new wallet demonstration, the plan/payer summary, the existing operational usage record and simulated billing history. Monthly credit, purchased rollover and reserved sample spending are distinct. Top-ups and sample-work controls explicitly say they are simulations. Live provider activity is tracked separately and does not automatically debit this wallet yet.
 
-Usage & billing shows personal and company totals, simulated renewal, pending changes, cancellation, current allowances, estimated SMS overage, invoice snapshots and lifecycle events. Taylor's organization area adds sponsored/required role policies, restrictions, purchase/trial eligibility, seat totals, temporary trials, credit grants, usage simulation and payment/renewal simulation. The server independently enforces every admin action.
+## Administration
 
-The offline assistant recognizes premium requests and returns a marketplace link when denied. Live-model instructions include current entitlement decisions, but tools are still the authority. Models cannot change subscriptions or approve CRM changes. Historical work remains accessible under its normal scope after an add-on is removed.
+Taylor is the explicitly assigned fictional billing administrator. The company-seat controls assign an employee the $30 company-paid workforce under a named demonstration agreement, with version and replay protection. Removal leaves the personal retail plan canceled until deliberately resumed. Ordinary employees cannot assign seats or claim the company discount. Company policy, operational trial/allowance controls and billing lifecycle administration remain subject to the existing backend checks.
 
-## Working and planned capabilities
+## Upcoming connections
 
-The existing 16 specialists remain registered. Twelve have local/demo capability; four remain planned: Investment Deal Analyst, Acquisition Lead, Valuation & Due Diligence, and Onboarding & Coaching. A simulated purchase never makes them operational. OpenAI, voice, Salesforce, external research and messaging connectivity remain distinct from subscription status.
+Email and the Business Line appear as planned additions with no functioning purchase or connection claim. Email will support multiple Gmail/Workspace and Outlook/Microsoft 365 accounts. The Business Line will provide a dedicated investor-facing SMS inbox; it is separate from today's employee-to-Copilot SMS connection. Pricing/packaging choices are documented in `COMMUNICATIONS_AND_CREDITS_PLAN.md`.
 
-Qualification's dedicated review reads authorized buy boxes/provenance and workflow context. Transaction Coordinator summarizes recorded upstream/downstream stages and missing closing dates. Core's ordinary missing-information guidance, debrief and CRM approvals remain available without those add-ons.
+## Demonstration
 
-## Responsive verification
+Open AI workforce, inspect available and planned specialists, then open Credits & billing. Show the $15 included balance; review a sample usage estimate; reserve and settle or cancel it; add a simulated top-up; inspect the activity and monthly spend cap. Use the administrator persona to demonstrate company versus personal payer totals. No payment, provider call or investor message occurs through these controls.
 
-The local browser walkthrough exercised the $147 configuration, persistent activation, workforce count, $179 duplicate-free bundle quote, specialist removal, usage balances and the 390×844 layout. Screenshots are in `docs/screenshots/`. Mobile uses the existing navigation drawer, a single-column catalog and an accessible plan form. The desktop configurator scrolls within the viewport when necessary.
+See `PROGRESS.md` for current verification. Older Phase 3 screenshots and reports remain historical artifacts and describe the superseded per-specialist offering.

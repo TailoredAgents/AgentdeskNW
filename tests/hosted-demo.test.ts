@@ -68,7 +68,7 @@ describe('repeatable fictional presentation setup',()=>{
  it('creates reviewable work and role-scoped temporary access once, without applying proposals or sending messages',()=>{
   expect(prepareDemoScenario()).toEqual({prepared:true});
   const actor=demoActor(),before=getDb().prepare('SELECT data FROM investors WHERE id=?').get('investor-mike');
-  expect(featureAccess(actor,'investor-hunter').source).toBe('trial');
+  expect(featureAccess(actor,'investor-hunter').source).toBe('bundle');
   expect(featureAccess(actor,'team-performance').allowed).toBe(false);
   expect(featureAccess(actor,'deal-analyst').allowed).toBe(false);
   expect(listReleases(actor)).toHaveLength(1);expect(listPackages(actor).length).toBeGreaterThan(0);

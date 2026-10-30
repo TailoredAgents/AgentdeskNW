@@ -1,6 +1,9 @@
 import type { CatalogProduct } from '../lib/billing-contracts';
 export const coreFeatures=['call-notetaker','workflow-navigator','salesforce-assistant','daily-coordinator'];
 export const addonPrices:Record<string,number>={'investor-hunter':79,'buyer-matchmaker':25,'investor-qualification':15,'investor-relationship':19,'deal-marketing':19,'deal-analyst':29,'transaction-coordinator':19,'acquisition-lead':19,'valuation-diligence':29,'acquisition-disposition':15,'team-performance':39,'onboarding-coaching':19};
+export const workforceFeatures=[...coreFeatures,...Object.keys(addonPrices)];
+export const workforcePlanIds=['workforce','workforce-enterprise'];
+export const isWorkforcePlan=(id:string)=>workforcePlanIds.includes(id);
 export const planSeeds:CatalogProduct[]=[
  {id:'core',name:'AgentDesk Core',kind:'plan',version:1,monthlyCents:4900,features:coreFeatures,allowances:{voice_minutes:60,text_tokens:100000},provisional:true},
  {id:'dispositions-productivity',name:'Dispositions Productivity',kind:'plan',version:1,monthlyCents:10800,features:[...coreFeatures,'buyer-matchmaker','investor-qualification','investor-relationship','deal-marketing'],allowances:{voice_minutes:60,text_tokens:100000},provisional:true},
@@ -8,4 +11,10 @@ export const planSeeds:CatalogProduct[]=[
  {id:'acquisitions-suite',name:'Acquisitions Suite',kind:'plan',version:1,monthlyCents:9800,features:[...coreFeatures,'acquisition-lead','valuation-diligence','acquisition-disposition'],allowances:{voice_minutes:60,text_tokens:100000},provisional:true},
  {id:'management-suite',name:'Management Suite',kind:'plan',version:1,monthlyCents:9800,features:[...coreFeatures,'team-performance','onboarding-coaching'],allowances:{voice_minutes:60,text_tokens:100000},provisional:true},
 ];
-export const pricingNotice='Proposed USD monthly pricing. Local simulation only; no payment collected. Text allowance of 100,000 tokens is a configurable planning assumption; provider costs are unknown.';
+export const legacyPlanIds=planSeeds.map(plan=>plan.id);
+for(const plan of planSeeds)plan.retired=true;
+planSeeds.unshift(
+ {id:'workforce',name:'AgentDesk Workforce',kind:'plan',version:1,monthlyCents:5000,features:workforceFeatures,allowances:{wallet_cents:1500,voice_minutes:60,text_tokens:100000,research_credits:1,research_target:25},provisional:true},
+ {id:'workforce-enterprise',name:'AgentDesk Company Seat',kind:'plan',version:1,monthlyCents:3000,features:workforceFeatures,allowances:{wallet_cents:1500,voice_minutes:60,text_tokens:100000,research_credits:1,research_target:25},provisional:true,adminOnly:true},
+);
+export const pricingNotice='Proposed USD monthly pricing. Demonstration only: no payments collected. Workforce includes $15 in simulated monthly AgentDesk Credits. Provider allowances remain operational safeguards; the wallet demonstration is separate from live provider billing.';

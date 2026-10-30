@@ -1,47 +1,42 @@
-# Proposed pricing and packages — Phase 3
+# Workforce pricing and packages
 
-All amounts are proposed USD monthly prices, not finalized customer commitments. This application simulates billing locally. It never collects payment or stores payment-card data. No New Western sponsorship agreement is assumed.
+This is a provisional commercial demonstration. No payment is collected, no card is stored, and no New Western agreement is assumed. The current direction supersedes individual specialist purchases. The complete delivery plan is [COMMUNICATIONS_AND_CREDITS_PLAN](COMMUNICATIONS_AND_CREDITS_PLAN.md).
 
-## Catalog
+## Current simulated catalog
 
-| Product | Monthly price | Included specialists |
-|---|---:|---|
-| AgentDesk Core | $49 | Conversation & Call Notetaker, Workflow Navigator, Salesforce Assistant, Daily Coordinator |
-| Dispositions Productivity | $108 total | Core + Buyer Matchmaker, Investor Qualification, Investor Relationship, Deal Marketing |
-| Dispositions Complete | $179 total | Productivity + Investor Hunter + Investment Deal Analyst |
-| Acquisitions Suite | $98 total | Core + Acquisition Lead, Valuation & Due Diligence, Acquisition-to-Disposition |
-| Management Suite | $98 total | Core + Team Performance + Onboarding & Coaching |
+| Offering | Monthly price | Payer and access |
+| --- | ---: | --- |
+| AgentDesk Workforce | $50 | Employee, unless the company sponsors the retail seat; all available role-authorized specialists |
+| AgentDesk Company Seat | $30 | Company; explicitly assigned by a billing administrator under a named demonstration agreement |
+| Included AgentDesk Credits | $15 retail value | Once per billing period on either workforce plan |
+| Employee Copilot SMS access | $19 | Existing optional employee-to-assistant channel; provider setup and usage allowances remain separate |
+| Purchased AgentDesk Credits | $10 / $25 / $50 / $100 | Simulated employee top-up; unused purchased balance rolls over |
 
-| Individual add-on | Monthly price |
-|---|---:|
-| Investor Hunter | $79 |
-| Buyer Matchmaker | $25 |
-| Investor Qualification | $15 |
-| Investor Relationship Manager | $19 |
-| Deal Marketing & Package Composer | $19 |
-| Investment Deal Analyst | $29 |
-| Transaction & Document Coordinator | $19 |
-| Acquisition Lead Assistant | $19 |
-| Valuation & Due Diligence Assistant | $29 |
-| Acquisition-to-Disposition Coordinator | $15 |
-| Team Performance Assistant | $39 |
-| Onboarding & Coaching Assistant | $19 |
-| Optional SMS | $19 |
+The workforce includes all sixteen catalog capabilities, with role/company restrictions and actual implementation readiness enforced separately. Twelve have limited local/demo capabilities; four remain planned. There is no individual specialist purchase needed to coordinate authorized implemented work.
 
-## Arithmetic and sponsorship
+Email connectors and the dedicated investor-facing Business Line are **planned**, not purchasable connections in this phase. A $39 business-line price is provisional; allowance, registration, account ownership and actual delivery economics require later acceptance. Whether the first mailbox is included and what extra mailboxes cost remain open choices. Future business-line packaging should remove overlapping employee SMS fees where included.
 
-- Core + Hunter + Deal Marketing = **$147/month personal**, $0 company.
-- Company-sponsored Core + personally selected Hunter and Deal Marketing = **$98/month personal**, **$49/month company**.
-- Selecting Dispositions Complete with Hunter and Deal Marketing again still costs **$179**; redundant add-ons are removed from the quote.
-- Productivity + Hunter + Transaction Coordinator = **$206**.
-- Required capabilities are company-sponsored. Repeated required/sponsored entries are counted once.
-- A bundle allocates the Core amount first, then allocates its remaining price across premium components in proportion to their standalone prices, in integer cents with the last component absorbing rounding. Sponsored components credit that allocated personal share. Organization cost is the standalone sponsored seat price; no organization volume discount has been invented.
-- Role restrictions remain independent. A dispositions employee cannot activate the Acquisitions or Management bundle. Managers can select bundles for their permitted capabilities.
+## Company seats and payer separation
 
-## Configurable versions
+An employee cannot select the $30 rate or assert a company agreement. Only an explicitly assigned billing administrator can assign/remove a company seat, with target subscription version and an idempotent event key. Assignment activates the simulated corporate subscription; payment failure/cancellation still blocks execution. A company seat does not permit another role's records or unfinished specialists.
 
-`src/server/billing-catalog.ts` supplies initial records; `billing_catalog` owns persisted versions. The secured `POST /api/billing/price` endpoint accepts a product ID, `monthlyCents` and its complete `allowances` map. Only the explicitly assigned platform demo administrator Taylor can version global prices. Existing subscriptions retain their price/allowance snapshots until a deliberate plan change; a new quote uses current prices. All arithmetic uses cents.
+Removing a company seat leaves a canceled retail selection. The employee must explicitly resume it before a personal subscription starts. An explicit company-seat removal also overrides legacy base sponsorship for that employee, so it cannot restart a higher-priced company seat. Independent legacy sponsorship can still fund retail seats that have never received an explicit company assignment; it does not create the $30 discount. SMS sponsorship remains independent. The modern quote counts the base once; included legacy specialist sponsorship does not add individual specialist fees. Employee-selected SMS remains a separate personal line unless sponsored.
 
-Core initially includes 60 voice minutes and a **100,000 text-token planning assumption**. The latter is a configurable implementation assumption, not a user-approved final commercial allowance. Hunter includes one research credit targeting up to 25 candidates. SMS includes 500 combined incoming/outgoing segments, with proposed 4¢ segment overage. These do not represent confirmed provider economics.
+Examples with no other sponsorship:
 
-The four unfinished specialists remain labeled **In development** even when selected. Their selection is simulated; no money is taken. Real commercial launch needs explicit decisions about selling or discounting unfinished capabilities.
+- Retail workforce: $50 personal, $0 company.
+- Assigned company workforce: $0 personal, $30 company.
+- Assigned company workforce plus personal Copilot SMS: $19 personal, $30 company.
+- All included specialists selected again: no duplicate charge.
+
+## Credit demonstration
+
+One dollar of AgentDesk Credits represents one dollar of retail usage value, not one dollar of provider cost. The wallet separates included and purchased funds, holds, settled sample spending, spend limits and history. Included credit resets each subscription period; purchased credit rolls over. An estimate must be reviewed before sample spending. The default monthly sample-spending cap is $25 and can be adjusted deliberately.
+
+The demonstration uses server-owned fictional cost scenarios with a versioned 5× multiplier. These are examples for testing the experience, not measured provider costs or proven margins. It does not debit real AI, research, voice or SMS activity yet. Existing operational allowances/receipts remain separate until real usage settlement is integrated in Phase 6. Ordinary navigation and deterministic task controls do not debit the wallet.
+
+## Versions and historical migration
+
+Prices and allowances remain versioned catalog records; subscriptions store snapshots. Existing simulated legacy subscriptions migrate once to the workforce offering while retaining ID, status, calendar period, history and valid SMS selection. Original subscription snapshots are preserved in `billing_subscription_migrations`, and old invoice rows retain their original amounts. Specialist add-ons are absorbed into the workforce. Retired plan/component records remain for history and historical quote compatibility; new subscriptions cannot select them.
+
+The old $49 Core / $147 Core + Hunter + Marketing examples are historical Phase 3 scenarios, documented in `PHASE_3_REPORT.md`. They are no longer the current offer. This migration moves no money and performs no live payment-provider change.

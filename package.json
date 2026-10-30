@@ -18,7 +18,8 @@
     "channels:check": "node --import tsx scripts/check-messaging.ts",
     "test:messaging": "node --import tsx scripts/messaging-smoke.ts",
     "test:intelligence": "node scripts/smoke-runner.mjs intelligence",
-    "test:conversation": "node scripts/smoke-runner.mjs conversation"
+    "test:conversation": "node scripts/smoke-runner.mjs conversation",
+    "test:wallet": "node scripts/smoke-runner.mjs wallet"
   },
   "dependencies": {
     "@slack/socket-mode": "3.1.0",

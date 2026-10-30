@@ -9,7 +9,7 @@ import { completeTask, createTask, getInvestor } from '../src/server/services';
 import { recordCallOutcome, recordDemoDisclosure, setInvestorSharing } from '../src/server/intelligence';
 import { forgetEmployeeMemory, saveEmployeeMemory } from '../src/server/memory';
 import { saveRelease } from '../src/server/workflows';
-import { changeSubscription, simulateLifecycle, subscription } from '../src/server/billing';
+import { billingPolicy, saveBillingPolicy, simulateLifecycle, subscription } from '../src/server/billing';
 
 let actor: Actor, manager: Actor, acquisitions: Actor;
 const other: Actor = {id:'user-other', name:'Casey Sample', organizationId:'org-isolation', officeId:'office-other', role:'dispositions'};
@@ -177,16 +177,17 @@ describe('relationship-specific next action and saved style', () => {
     getDb().prepare('DELETE FROM billing_trials WHERE organization_id=? AND user_id=?').run(actor.organizationId, actor.id);
     expect(getInvestorJourney(actor, 'investor-mike').investorId).toBe('investor-mike');
     report();
-    expect(() => recommendInvestorNextStep(actor, 'investor-mike')).toThrow('optional upgrade');
+    const policy=billingPolicy(manager);policy.restricted=['investor-relationship'];saveBillingPolicy(manager,policy);
+    expect(() => recommendInvestorNextStep(actor, 'investor-mike')).toThrow('Restricted');
     simulateLifecycle(actor, {action:'cancel_now', expectedVersion:subscription(actor).version, eventKey:'cancel-core'});
-    expect(() => getInvestorJourney(actor, 'investor-mike')).toThrow('active Core');
-    expect(() => recordJourneyObservation(actor, {investorId:'investor-mike', kind:'preference', text:'New preference', eventKey:'inactive-core'})).toThrow('active Core');
+    expect(() => getInvestorJourney(actor, 'investor-mike')).toThrow(/active .*subscription/i);
+    expect(() => recordJourneyObservation(actor, {investorId:'investor-mike', kind:'preference', text:'New preference', eventKey:'inactive-core'})).toThrow(/active .*subscription/i);
   });
 
   it('uses safe equivalent property gates without requiring buyer-matchmaker or deal-marketing', () => {
     const release = saveRelease(acquisitions, releaseInput());
     getDb().prepare('DELETE FROM billing_trials WHERE organization_id=? AND user_id=?').run(actor.organizationId, actor.id);
-    changeSubscription(actor, {selection:{planId:'core', addons:['investor-relationship']}, expectedVersion:subscription(actor).version, eventKey:'only-relationship', timing:'now'});
+    const policy=billingPolicy(manager);policy.restricted=['buyer-matchmaker','deal-marketing'];saveBillingPolicy(manager,policy);
     report();
     const next = recommendInvestorNextStep(actor, 'investor-mike', 'property-maple');
     expect(next.draftEligibility.allowed).toBe(true);

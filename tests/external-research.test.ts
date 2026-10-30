@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Actor, ResearchInput } from '../src/lib/contracts';
 import { closeDb, demoActor, getDb, now } from '../src/server/db';
-import { changeSubscription, subscription } from '../src/server/billing';
+import { billingPolicy, saveBillingPolicy } from '../src/server/billing';
 import { grantLegacyTestWorkforce } from './fixtures';
 import { cancelJob, createResearchJob, getResearchJob, listJobs, processQueuedJobs, retryJob } from '../src/server/services';
 import { processExternalResearchJobs } from '../src/server/external-research-worker';
@@ -98,10 +98,10 @@ describe('external research authorization and durable execution',()=>{
   vi.mocked(fetch).mockResolvedValue(reply(response('missing',[candidate()],{missingUsage:true})));const job=createResearchJob(actor,input);await tick();expect(getResearchJob(actor,job.id)).toMatchObject({status:'failed',external:{receiptStatus:'unknown'}});expect(getResearchJob(actor,job.id).prospects).toHaveLength(1);expect(providerOperations(actor)[0].usage).not.toHaveProperty('input_tokens');expect(()=>retryJob(actor,job.id)).toThrow('incomplete');
  });
  it('rechecks subscription restrictions before each stage and isolates historical results',async()=>{
-  const job=createResearchJob(actor,input);await tick();getDb().prepare('DELETE FROM billing_trials').run();changeSubscription(actor,{selection:{planId:'core',addons:[]},timing:'now',expectedVersion:subscription(actor).version,eventKey:'remove'});await tick();expect(getResearchJob(actor,job.id).status).toBe('failed');expect(fetch).toHaveBeenCalledTimes(1);expect(()=>getResearchJob(other,job.id)).toThrow('not found');expect(await processExternalResearchJobs(other)).toBe(0);expect(()=>retryJob(actor,job.id)).toThrow('optional upgrade');
+  const job=createResearchJob(actor,input);await tick();getDb().prepare('DELETE FROM billing_trials').run();const admin=demoActor('manager'),policy=billingPolicy(admin);policy.restricted=['investor-hunter'];saveBillingPolicy(admin,policy);await tick();expect(getResearchJob(actor,job.id).status).toBe('failed');expect(fetch).toHaveBeenCalledTimes(1);expect(()=>getResearchJob(other,job.id)).toThrow('not found');expect(await processExternalResearchJobs(other)).toBe(0);expect(()=>retryJob(actor,job.id)).toThrow('Restricted');
  });
  it('records returned usage even when entitlement is removed while the request is running',async()=>{
-  const job=createResearchJob(actor,input);vi.mocked(fetch).mockImplementation(async()=>{getDb().prepare('DELETE FROM billing_trials').run();return reply();});await tick();expect(getResearchJob(actor,job.id).status).toBe('failed');expect(providerOperations(actor)[0]).toMatchObject({status:'succeeded',usage:{input_tokens:100,output_tokens:200}});expect(getDb().prepare("SELECT state FROM research_provider_calls WHERE job_id=?").get(job.id)).toEqual({state:'completed'});
+  const job=createResearchJob(actor,input);vi.mocked(fetch).mockImplementation(async()=>{getDb().prepare('DELETE FROM billing_trials').run();const admin=demoActor('manager'),policy=billingPolicy(admin);policy.restricted=['investor-hunter'];saveBillingPolicy(admin,policy);return reply();});await tick();expect(getResearchJob(actor,job.id).status).toBe('failed');expect(providerOperations(actor)[0]).toMatchObject({status:'succeeded',usage:{input_tokens:100,output_tokens:200}});expect(getDb().prepare("SELECT state FROM research_provider_calls WHERE job_id=?").get(job.id)).toEqual({state:'completed'});
  });
  it('records every reported search above its admission estimate and stops further requests',async()=>{
   vi.mocked(fetch).mockResolvedValue(reply(response('excess',[candidate()],{searchCount:3})));const job=createResearchJob(actor,input);await tick();expect(getResearchJob(actor,job.id)).toMatchObject({status:'failed',external:{searchCalls:3}});expect(balance('external_search').consumed).toBe(3);expect(providerOperations(actor)[0].usage.web_search_calls).toBe(3);expect(()=>retryJob(actor,job.id)).toThrow('tool-call bound');await tick();expect(fetch).toHaveBeenCalledTimes(1);

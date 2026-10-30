@@ -1,5 +1,9 @@
 # AgentDesk master plan
 
+## Communications and credits — Phase 1 implemented
+
+The owner approved the phased [communications and credits delivery plan](docs/COMMUNICATIONS_AND_CREDITS_PLAN.md), implementation of its first phase, and commit/push to AgentdeskNW. Phase 1 replaces individual specialist shopping with a proposed $50 workforce subscription or explicitly administrator-assigned $30 company seat, each with $15 in included retail credits, plus a persistent **simulated** wallet. Roles, organization restrictions, unfinished capabilities and provider connection requirements remain separate. Legacy billing history and business data must survive. Live wallet settlement, payments, email connections and investor texting belong to later phases; Render deployment is not part of this authorization. Phase 1 is implemented and verified with 355 automated tests and 356 compiled HTTP checks; final details are recorded in `docs/PROGRESS.md`. The next planned phase is a unified fictional email/SMS inbox.
+
 ## Conversational follow-through — October 29, 2026
 
 Typed Copilot and linked employee Slack/SMS can now finish, cancel, snooze and reschedule personal tasks, and explicitly resolve a named investor concern with the employee's explanation. The dashboard defaults to the ongoing channel conversation; separate chats remain deliberate. Structured task references, versions, delivery receipts and numbered clarification keep short replies attached to the intended work. The Work queue exposes the same task services with history and rescheduling controls. See `docs/CONVERSATION_WORKFLOWS.md` for supported commands and the presentation sequence.

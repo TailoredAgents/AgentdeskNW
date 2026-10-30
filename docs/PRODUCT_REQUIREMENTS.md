@@ -1,5 +1,10 @@
 # Product requirements
 
+## Communications and credits update — October 29, 2026
+
+The owner-approved communications and credits plan supersedes individual specialist shopping: one workforce subscription, included retail credits, optional communication services and a future unified email/investor-text workspace. Phase 1 implements the workforce and simulated wallet only. Preserve private assistant commands separately from investor correspondence; source relationship knowledge and review outbound/CRM changes. All customer-provider connectivity and actual payment collection remain gated future acceptance.
+
+
 ## Phase 2 operational acceptance — local implementation
 
 Discovery source and unverified policy questions are recorded in [NEW_WESTERN_DISCOVERY](NEW_WESTERN_DISCOVERY.md). The same AgentDesk application and sixteen-specialist catalog now support the following connected work:

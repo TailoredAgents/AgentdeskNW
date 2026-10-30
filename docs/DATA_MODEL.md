@@ -1,5 +1,10 @@
 # Data model
 
+## Communications and credits update — October 29, 2026
+
+Migrations 014/015 add enterprise seat assignments, preserved legacy subscription migration snapshots, and the credit wallet (accounts, reviewed quotes, operations, append-only ledger and events). The wallet belongs to the organization/employee paid seat across office memberships; actions retain office provenance and validate current membership. Included monthly credit and purchased rollover are distinct. Business records and old invoice rows are retained. See BILLING_ARCHITECTURE.md.
+
+
 ## Principles
 
 Every business row belongs to an organization and, when applicable, an office and owner. References between scoped entities must not permit cross-tenant joins. The initial implementation uses SQLite with foreign keys and migrations; exact table names/constraints in `src/server/migrations` are authoritative. Shared API types are in `src/lib/contracts.ts` and `src/lib/intelligence-contracts.ts`.

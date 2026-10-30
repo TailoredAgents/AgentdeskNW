@@ -7,7 +7,7 @@ import * as services from '../src/server/services';
 import { chat,toolDefinitions } from '../src/server/orchestrator';
 import { providerOperations } from '../src/server/provider-runtime';
 import { usageBalances } from '../src/server/metering';
-import { featureAccess,grantTrial } from '../src/server/billing';
+import { featureAccess,grantTrial,billingPolicy,saveBillingPolicy } from '../src/server/billing';
 import { listReleases,saveRelease } from '../src/server/workflows';
 import { specialists } from '../src/server/registry';
 import { runLiveText } from '../src/server/text-runtime';
@@ -94,15 +94,16 @@ describe('live text protocol with mocked Responses',()=>{
   await expect(runLiveText({actor,conversationId:conversation.id,requestId:'stale-initial-context',message:'Review my work',instructions:'Test instructions',context:{sensitive:'do not transmit stale facts'},scope:{permission:'previous'},currentScope:()=>({permission:'revoked'}),history:[],tools:[],dispatch:()=>({message:'Should not execute',specialistIds:[],artifacts:[]}),artifacts:[],specialists:new Set()})).rejects.toThrow(/changed|context|scope|permissions/i);
   expect(mock).not.toHaveBeenCalled();expect(providerOperations(actor)).toHaveLength(0);expect(usageBalances(actor).find(item=>item.category==='text_tokens')?.reserved).toBe(0);
  });
- it('enforces Core entitlements even when a model requests premium research',async()=>{
-  const mock=vi.fn().mockResolvedValueOnce(answer([call('research_investors',{address:'123 Example Street',county:'Cobb',price:235000,strategy:'Fix & flip',propertyType:null,limit:25})])).mockResolvedValueOnce(answer([message('Investor Hunter requires an optional upgrade.')]));vi.stubGlobal('fetch',mock);
-  const actor=demoActor();const response=await chat(actor,'Research new buyers',undefined,'denied-premium');
-  expect(services.listJobs(actor)).toHaveLength(0);expect(featureAccess(actor,'investor-hunter').allowed).toBe(false);expect(response.result.artifacts.some(item=>item.type==='marketplace')).toBe(true);expect(JSON.stringify(results(mock,1))).toContain('optional upgrade');
+ it('enforces company restrictions even when a model requests included research',async()=>{
+  const mock=vi.fn().mockResolvedValueOnce(answer([call('research_investors',{address:'123 Example Street',county:'Cobb',price:235000,strategy:'Fix & flip',propertyType:null,limit:25})])).mockResolvedValueOnce(answer([message('Investor Hunter is restricted by your organization.')]));vi.stubGlobal('fetch',mock);
+  const actor=demoActor(),admin=demoActor('manager'),policy=billingPolicy(admin);policy.restricted=['investor-hunter'];saveBillingPolicy(admin,policy);const response=await chat(actor,'Research new buyers',undefined,'denied-premium');
+  expect(services.listJobs(actor)).toHaveLength(0);expect(featureAccess(actor,'investor-hunter').allowed).toBe(false);expect(response.result.artifacts.some(item=>item.type==='marketplace')).toBe(true);expect(JSON.stringify(results(mock,1))).toContain('Restricted');
  });
- it('keeps acquisition context behind paid access and returns saved releases without changing them',async()=>{
-  const acquisitions=demoActor('acquisitions'),manager=demoActor('manager');
-  const mock=vi.fn().mockResolvedValueOnce(answer([call('acquisition_context',{releaseId:null},'acq-denied')])).mockResolvedValueOnce(answer([message('This capability requires an upgrade.')]));vi.stubGlobal('fetch',mock);
-  const denied=await chat(acquisitions,'Review my acquisition handoffs',undefined,'acq-core-only');expect(denied.result.artifacts.some(item=>item.type==='marketplace')).toBe(true);expect(JSON.stringify(results(mock,1))).toContain('optional upgrade');
+ it('keeps acquisition context behind company access and returns saved releases without changing them',async()=>{
+  const acquisitions=demoActor('acquisitions'),manager=demoActor('manager'),policy=billingPolicy(manager);policy.restricted=['acquisition-disposition'];saveBillingPolicy(manager,policy);
+  const mock=vi.fn().mockResolvedValueOnce(answer([call('acquisition_context',{releaseId:null},'acq-denied')])).mockResolvedValueOnce(answer([message('This capability is restricted by your organization.')]));vi.stubGlobal('fetch',mock);
+  const denied=await chat(acquisitions,'Review my acquisition handoffs',undefined,'acq-core-only');expect(denied.result.artifacts.some(item=>item.type==='marketplace')).toBe(true);expect(JSON.stringify(results(mock,1))).toContain('Restricted');
+  policy.restricted=[];saveBillingPolicy(manager,policy);
   for(const actor of [acquisitions,manager])grantTrial(manager,{userId:actor.id,features:['acquisition-disposition']});
   const release=saveRelease(acquisitions,{propertyId:'property-maple',status:'draft',source:'Fictional acquisition source for protocol testing',eventKey:'acq-protocol-release',propertyType:'Single-family',description:'Fictional property requiring a reviewed handoff.',notes:'Draft, not published.',mediaUrl:null,mediaAccess:'unverified',arv:null,repairEstimate:null,economicsSource:'',showingInstructions:'',authorizedUserIds:[],upstreamParty:'Fictional seller',upstreamStage:'Review pending',downstreamStage:'',closingStructure:'unspecified',closingAt:null});
   const before=JSON.stringify(listReleases(manager));

@@ -1,17 +1,27 @@
-# Usage metering — Phase 4
+# Usage metering and credit-wallet demonstration
 
 The local subscription simulator and real provider evidence are separate ledgers. Proposed subscription rates are not actual charges. No customer payment is collected. Unknown provider expense remains `null`.
 
-## Allowances and admission
+## Current retail-credit wallet
+
+The workforce plans include $15 of simulated retail credits per billing period. Purchased simulated top-ups of $10/$25/$50/$100 roll over separately. `wallet.ts` performs scoped, transaction-bound estimates, reservations, sample settlement/release, pending/unknown handling and spending-limit checks. Monetary arithmetic uses integer cents, and the ledger/events are append-only. Monthly credit is spent before purchased credit. Expired included credit cannot be recreated by canceling an old reservation in a newer period.
+
+The sample-work rate card has a version and server-owned provider-cost examples multiplied by 5. An estimate returns a scoped quote valid for 15 minutes. The employee explicitly confirms that quote to reserve/finish/cancel/sample an unknown outcome. Stable event keys and expected wallet versions prevent duplicate or stale changes. Unknown operations remain reserved until a reviewed simulator resolution. The monthly cap is $25 by default, configurable from $0 to $1,000; this is a sample-spending cap, not a cap on existing live provider calls.
+
+**Live provider activity does not debit the new wallet in this phase.** Existing text, voice, research and SMS allowances remain independent operational safeguards. Simulated wallet top-ups do not increase those allowances. Before live wallet billing, Phase 6 must integrate real usage with versioned model/tool/audio rates, cost reconciliation, holds, failure/refund policy and payment settlement. Unknown provider dollars remain unknown. No estimated or fictional amount is relabeled as an invoice.
+
+Ordinary navigation and deterministic task management do not consume retail credits. Background communications processing will need explicit scope and budgets in later phases.
+
+## Existing operational allowances and admission
 
 | Category | Provisional allowance | Current behavior |
 |---|---|---|
-| Text | Core: 100,000 tokens/month | Reserve serialized request bytes (including tools) plus maximum output tokens. Settle provider-reported input/output tokens, including above-estimate usage. Known rejection releases the hold; timeout/missing/invalid receipt retains it. |
-| Voice | Core: 60 minutes/month | Hold at most 10 remaining minutes per session. Realtime reports token/audio usage, not authoritative session minutes; connected-session holds remain unresolved. Never settle guessed elapsed minutes. |
-| Hunter | 1 credit/month; target 25 candidates/credit | Reserve before queueing, consume once on successful bounded completion, release unused credits on failure/cancel. Retain incurred provider receipts independently. A target is not a promised count. |
+| Text | Workforce: 100,000 tokens/month (operational guardrail) | Reserve serialized request bytes (including tools) plus maximum output tokens. Settle provider-reported input/output tokens, including above-estimate usage. Known rejection releases the hold; timeout/missing/invalid receipt retains it. |
+| Voice | Workforce: 60 minutes/month (operational guardrail) | Hold at most 10 remaining minutes per session. Realtime reports token/audio usage, not authoritative session minutes; connected-session holds remain unresolved. Never settle guessed elapsed minutes. |
+| Hunter | 1 operational research credit/month; target 25 candidates/credit | Reserve before queueing, consume once on successful bounded completion, release unused credits on failure/cancel. Retain incurred provider receipts independently. A target is not a promised count. |
 | External search | Accounting counter | Record actual provider search-call counts, even above an admission estimate. Unknown outcomes retain unresolved holds and stop further work. |
 | Provider requests | Accounting counter | Record durable dispatch once. A failed or canceled job may still have incurred expense. |
-| SMS | 500 segments/month in optional add-on | Simulation only; no Twilio calls. Configured provisional overage is not a provider bill. |
+| SMS | 500 segments/month in optional add-on | Actual channel usage can be recorded when explicitly configured; current accounts remain disconnected. Provisional overage is not a provider bill. |
 
 All service, text, voice, direct API and worker admission checks use existing roles, policies and entitlements. Expiration cannot erase incurred usage. Late trusted voice receipts inherit the original scoped operation and may be recorded after subscription cancellation; they grant no execution permission.
 
@@ -37,9 +47,9 @@ Completion may return fewer candidates than requested. Public web claims, compan
 
 ## Reporting and economics
 
-Settings → Provider verification and authenticated `/api/providers` show the latest 100 employee-scoped operations, usage totals, unresolved operations, cost coverage and source boundaries. Usage & billing shows current-period consumed/reserved allowance. Provider receipts are a bounded operational view, not a complete monthly cost/profit report. Pricing decisions need full-period aggregation, provider invoice reconciliation, real task success rates and cost per qualified lead.
+Settings → Provider verification and authenticated `/api/providers` show the latest 100 employee-scoped operations, usage totals, unresolved operations, cost coverage and source boundaries. Credits & billing shows current-period consumed/reserved allowance. Provider receipts are a bounded operational view, not a complete monthly cost/profit report. Pricing decisions need full-period aggregation, provider invoice reconciliation, real task success rates and cost per qualified lead.
 
-The proposed $49 Core and $79 Hunter prices have not been validated against actual provider costs. No live provider was exercised during this credential-free implementation run. All payment, SMS and subscription lifecycle events remain simulations.
+The former $49 Core and $79 Hunter prices are historical. Current workforce and communication prices remain provisional. Prior live OpenAI acceptance is documented in PROGRESS; no live provider call is required by the wallet demonstration. Payment and subscription lifecycle events still collect no money.
 
 ## Employee SMS receipts (October 29)
 

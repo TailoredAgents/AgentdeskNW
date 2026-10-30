@@ -1,5 +1,5 @@
 import type { ProviderStatus } from '../src/lib/provider-contracts';
-import type { BillingState,SubscriptionRecord } from '../src/lib/billing-contracts';
+import type { BillingState } from '../src/lib/billing-contracts';
 import assert from 'node:assert/strict';
 import type { Bootstrap,ResearchJob,ProposedAction,NoteSummary,Conversation,Task } from '../src/lib/contracts';
 import type { PhaseTwoState,PropertyRelease,DealPackage,Debrief,DebriefProposal,InvestorIntelligence,CallBriefing } from '../src/lib/intelligence-contracts';
@@ -25,20 +25,26 @@ const turnReplay=await request<typeof turn>('chat','POST',turnRequest);assert.eq
 await request('chat','POST',{...turnRequest,message:'Create different work'},409);
 const badOrigin=await fetch(`${base}/api/tasks`,{method:'POST',headers:{Cookie:cookie,Origin:'https://untrusted.example','X-AgentDesk-Request':'1','Content-Type':'application/json'},body:JSON.stringify({title:'Must not be created'})});assert.equal(badOrigin.status,403);checks++;
 const badCsrf=await fetch(`${base}/api/tasks`,{method:'POST',headers:{Cookie:cookie,'Content-Type':'application/json'},body:JSON.stringify({title:'Must not be created'})});assert.equal(badCsrf.status,403);checks++;
-// Phase 3: use the real authenticated API, with no test-only entitlement bypass.
-let billing=await request<BillingState>('billing');assert.equal(billing.quote.personalCents,4900);assert.equal(billing.access.filter(a=>a.allowed).length,4);
+// Workforce plans preserve service authorization and historical work.
+const billing=await request<BillingState>('billing');assert.equal(billing.quote.personalCents,5000);
+assert.equal(billing.access.filter(a=>a.allowed).length,start.specialists.filter(spec=>spec.roles.includes(start.actor.role)&&spec.status!=='planned').length);
 const unauth=await fetch(`${base}/api/billing`);assert.equal(unauth.status,401);checks++;
 await request('billing/admin','GET',undefined,403);
 await request('billing/trial','POST',{userId:start.actor.id,features:['investor-hunter']},403);
+await request('billing/subscription','POST',{selection:{planId:'workforce-enterprise',addons:[]},expectedVersion:billing.subscription.version,eventKey:'self-enterprise-denied',timing:'now'},403);
 const researchInput={address:'123 Example Street',county:'Cobb',price:235000,strategy:'Fix & flip',limit:25};
-await request('research','POST',researchInput,402);
+const employeeCookie=cookie;
+await request('session','POST',{role:'manager'});
+await request('billing/policy','POST',{...billing.policy,restricted:['investor-hunter']});
+cookie=employeeCookie;
+await request('research','POST',researchInput,403);
 const denied=await request<{conversation:Conversation}>('chat','POST',{message:'Find me 100 new investors for this property.'});assert(denied.conversation.messages.at(-1)!.artifacts.some(a=>a.type==='marketplace'));
-const activated=await request<SubscriptionRecord>('billing/subscription','POST',{selection:{planId:'core',addons:['investor-hunter','deal-marketing']},expectedVersion:billing.subscription.version,eventKey:'smoke-activate',timing:'now'});
-billing=await request<BillingState>('billing');assert.equal(billing.quote.personalCents,14700);
+await request('session','POST',{role:'manager'});await request('billing/policy','POST',billing.policy);cookie=employeeCookie;
 const revokedJob=await request<ResearchJob>('research','POST',researchInput,201);
-await request('billing/subscription','POST',{selection:{planId:'core',addons:[]},expectedVersion:activated.version,eventKey:'smoke-remove',timing:'now'});
-await request('research','POST',researchInput,402);
+await request('session','POST',{role:'manager'});await request('billing/policy','POST',{...billing.policy,restricted:['investor-hunter']});cookie=employeeCookie;
+await request('research','POST',researchInput,403);
 await request(`research/${revokedJob.id}`); // Existing work remains readable.
+await request('session','POST',{role:'manager'});await request('billing/policy','POST',billing.policy);cookie=employeeCookie;
 const originalCookie=cookie;
 await request('session','POST',{role:'manager'});
 const adminBootstrap=await request<Bootstrap>('bootstrap');
@@ -108,4 +114,4 @@ await request('research','POST',{address:'123 Example Street',county:'Cobb',pric
 await request(`conversations/${conversation.id}`,'GET',undefined,404);
 cookie=ownCookie;
 assert.equal((await request<Conversation>(`conversations/${conversation.id}`)).id,conversation.id);
-console.info(`PASS: ${checks} HTTP checks. Billing authentication, $147 pricing, direct entitlement denial, assistant upgrade link, removal/history preservation, secured trials; research and approvals; recap → reviewed criteria → multiple buy boxes; calling and briefing; release replay/versioning; disclosure/media-gated package review/handoff; withdrawal scrubbing; role boundaries, request protection, CSV, and voice configuration.`);
+console.info(`PASS: ${checks} HTTP checks. Billing authentication, workforce pricing, direct company restriction, assistant access link, restriction/history preservation, secured trials; research and approvals; recap → reviewed criteria → multiple buy boxes; calling and briefing; release replay/versioning; disclosure/media-gated package review/handoff; withdrawal scrubbing; role boundaries, request protection, CSV, and voice configuration.`);

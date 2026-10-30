@@ -4,6 +4,7 @@ import type { Bootstrap,Conversation,ToolResult } from '../src/lib/contracts';
 import type { EmployeeMemory } from '../src/lib/memory-contracts';
 import type { InvestorJourney,InvestorNextStep,JourneyObservation } from '../src/lib/journey-contracts';
 import type { ProviderStatus } from '../src/lib/provider-contracts';
+import type { BillingState } from '../src/lib/billing-contracts';
 
 const base=process.env.SMOKE_BASE_URL||'http://127.0.0.1:3000';
 const runId=`intelligence-smoke-${randomUUID()}`;
@@ -29,14 +30,14 @@ check(!start.integrations.openai&&!start.integrations.voice,'Isolated smoke must
 const providerStart=await request<ProviderStatus>('providers');assert.equal(providerStart.text.state,'setup_required');assert.equal(providerStart.usage.operations,0);
 const originalInvestor=start.investors.find(investor=>investor.id==='investor-mike');assert.ok(originalInvestor);check(originalInvestor.synthetic,'Only the fictional Mike fixture is used');
 assertBlankMemory(await request<EmployeeMemory>('memory'));
-await request('investors/investor-mike/recommendation','POST',{propertyId:null},402);
+const billing=await request<BillingState>('billing');
+check(billing.access.some(access=>access.id==='investor-relationship'&&access.allowed),'The workforce plan includes relationship recommendations without a specialist purchase');
 await request('billing/trial','POST',{userId:start.actor.id,features:['investor-relationship']},403);
 
-// Exercise the real manager trial API; no entitlement bypass or provider call.
+// Capture the administrator identity without granting access already included in the workforce.
 const employeeCookie=cookie;
 await request('session','POST',{role:'manager'});
 const manager=await request<Bootstrap>('bootstrap');
-for(const userId of [start.actor.id,manager.actor.id])await request('billing/trial','POST',{userId,features:['investor-relationship'],days:90});
 cookie=employeeCookie;
 
 const initialJourney=await request<InvestorJourney>('investors/investor-mike/journey');
@@ -56,6 +57,18 @@ check(learnedJourney.evidence.some(item=>item.sourceRecordId===observation.id&&i
 const learned=await recommendation();assert.equal(learned.action.kind,'resolve_objection');assert.match(learned.action.description,/repair scope/i);assert.ok(learned.draft);assert.equal(learned.deliveryStatus,'not_sent');
 check(learned.why.some(reason=>reason.includes(observation.id)),'The recommendation cites the concern it is responding to');
 check(learned.unknowns.some(item=>/does not establish the actual repair/.test(item)),'The concern is not presented as verified repair economics');
+
+// Organization policy still governs included capabilities; historical relationship evidence stays readable.
+await request('session','POST',{role:'manager'});
+await request('billing/policy','POST',{...billing.policy,restricted:['investor-relationship']});
+await request('billing/trial','POST',{userId:start.actor.id,features:['investor-relationship'],days:90},403);
+cookie=employeeCookie;
+await request('investors/investor-mike/recommendation','POST',{propertyId:null},403);
+const restrictedJourney=await request<InvestorJourney>('investors/investor-mike/journey');
+check(restrictedJourney.observations.some(item=>item.id===observation.id),'Restricting new recommendations preserves the permitted relationship history');
+await request('session','POST',{role:'manager'});
+await request('billing/policy','POST',billing.policy);
+cookie=employeeCookie;
 
 const preferenceMessage='Remember: keep my messages short and direct';
 const styled=await request<ChatResult>('chat','POST',{requestId:`${runId}-style`,conversationId:recorded.conversation.id,message:preferenceMessage});
@@ -102,4 +115,4 @@ const resolvedNext=await recommendation();assert.notEqual(resolvedNext.action.ki
 check(resolvedNext.evidence.some(item=>item.sourceRecordId===observation.id&&item.label.includes('resolved')),'The next recommendation preserves the correction’s provenance');
 const finalState=await request<Bootstrap>('bootstrap');assert.deepEqual(finalState.investors.find(investor=>investor.id==='investor-mike'),originalInvestor);assert.equal(finalState.approvals.length,start.approvals.length);assert.equal(finalState.tasks.length,start.tasks.length);
 const providers=await request<ProviderStatus>('providers');assert.equal(providers.usage.operations,0);
-console.info(`PASS: ${checks} intelligence HTTP checks. Explicit concern → sourced recommendation → remembered writing correction → shorter draft; version conflicts and forget; exact concern resolution and replay; private employee memory/conversations with scoped relationship sharing. No CRM changes, investor messages, or AI provider calls.`);
+console.info(`PASS: ${checks} intelligence HTTP checks. Included workforce access with organization restrictions and preserved history; explicit concern → sourced recommendation → remembered writing correction → shorter draft; version conflicts and forget; exact concern resolution and replay; private employee memory/conversations with scoped relationship sharing. No CRM changes, investor messages, or AI provider calls.`);

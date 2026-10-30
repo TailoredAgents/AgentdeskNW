@@ -101,9 +101,17 @@ All seeded investor, property, research, disclosure and package examples are fic
 
 Start with [MASTER_PLAN](MASTER_PLAN.md), [DEMO_RUNBOOK](docs/DEMO_RUNBOOK.md), and [PROGRESS](docs/PROGRESS.md). The supplied specifications are retained in [ORIGINAL_BRIEF](docs/ORIGINAL_BRIEF.md) and [PHASE_2_DIRECTIVE](docs/PHASE_2_DIRECTIVE.md). Discovery observations and unresolved corporate questions are separated in [NEW_WESTERN_DISCOVERY](docs/NEW_WESTERN_DISCOVERY.md).
 
+## Current commercial milestone — workforce and credit wallet
+
+The proposed $50 workforce plan includes all implemented role-authorized specialists and $15 in monthly simulated credits. A billing administrator can assign a $30 company-paid seat under a named demonstration agreement. Four specialists remain planned. Legacy subscriptions migrate once with original snapshots and invoices retained.
+
+Credits & billing adds included/purchased balances, rollover, spending limits, simulated top-ups, reviewed sample estimates and reliable hold/settlement/release history. It does not collect money or debit live AI usage yet. Email connectors and investor-facing business numbers are planned, separate from existing employee Copilot messaging.
+
+Read the [phased communications and credits plan](docs/COMMUNICATIONS_AND_CREDITS_PLAN.md), [current pricing](docs/PRICING_AND_PACKAGES.md), [billing architecture](docs/BILLING_ARCHITECTURE.md), [workforce experience](docs/AI_EMPLOYEE_MARKETPLACE.md), and [metering boundaries](docs/USAGE_METERING.md). Current verification and release status are in [PROGRESS](docs/PROGRESS.md).
+
 ## Preserved milestone — Phase 3 commercial simulator
 
-AgentDesk now includes the AI Employee Marketplace, My AI Workforce, subscription configurator, organization sponsorship/required policies, temporary trials, usage ledger and simulated billing lifecycle. Core is $49 proposed monthly; Core + Hunter + Deal Marketing is $147. All prices/allowances are configurable records, all payments are simulated, and planned specialists remain unavailable.
+At the preserved Phase 3 checkpoint, AgentDesk included the AI Employee Marketplace, My AI Workforce, subscription configurator, organization sponsorship/required policies, temporary trials, usage ledger and simulated billing lifecycle. The historical proposal was $49 Core and $147 for Core + Hunter + Deal Marketing; the workforce milestone above supersedes those offers. All prices/allowances are configurable records, all payments are simulated, and planned specialists remain unavailable.
 
 Premium access is enforced by the same backend services used by API requests, text/voice tools and worker stages. Removing an add-on preserves saved work. Core remains independently useful for notes, CRM approvals, daily coordination and workflow guidance.
 

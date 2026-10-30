@@ -139,7 +139,7 @@ describe('channel boundaries remain disconnected',()=>{
   expect(()=>linkDemoSlackIdentity(manager,{userId:other.id,workspaceId:'TOTHER',externalId:'UOTHER'})).toThrow('no longer an authorized');
  });
  it('cannot send or incur SMS charges without entitlement or provider',()=>{
-  expect(getSmsEntitlement(actor).providerConfigured).toBe(false);expect(()=>requestSmsDelivery(actor)).toThrow('paid add-on');changeSubscription(actor,{selection:{planId:'core',addons:['sms']},expectedVersion:subscription(actor).version,eventKey:'sms-test',timing:'now'});expect(()=>requestSmsDelivery(actor)).toThrow('not configured');expect(getSmsEntitlement(actor).used).toBe(0);expect(getDisclosure(actor,'investor-mike').synthetic).toBe(true);
+  expect(getSmsEntitlement(actor).providerConfigured).toBe(false);expect(()=>requestSmsDelivery(actor)).toThrow('paid add-on');changeSubscription(actor,{selection:{planId:'workforce',addons:['sms']},expectedVersion:subscription(actor).version,eventKey:'sms-test',timing:'now'});expect(()=>requestSmsDelivery(actor)).toThrow('not configured');expect(getSmsEntitlement(actor).used).toBe(0);expect(getDisclosure(actor,'investor-mike').synthetic).toBe(true);
  });
 });
 
