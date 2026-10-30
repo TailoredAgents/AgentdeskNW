@@ -6,6 +6,10 @@ Owner direction: proceed with stages 1 and 2 of the seven-stage plan. Starting c
 
 Stages 1–2 implemented and verified on October 30, 2026. Development cases improved from 8/24 on the original observation interface to 24/24; twelve reserved variations also passed. These measure representation and application behavior, not model expertise. See [quality evidence and limitations](RELATIONSHIP_QUALITY.md) for 459 tests, 648 HTTP checks, browser acceptance and migration preservation. Stage 3 is next; stages 3–7 remain unimplemented by this checkpoint.
 
+## Relationship to the wider workforce plan
+
+Continue this specialist's stages within the [capable workforce plan](CAPABLE_WORKFORCE_PLAN.md). Its sourced record and quality cases are foundations for reusable context, durable multi-step work and stronger methods. Deepening this specialist alone does not finish Copilot or the acquisitions/management experiences. Broader capability, delegated actions and proactive work require their own implementation and acceptance.
+
 ## Specialist standard
 
 Help an authorized employee understand an investor's current situation, identify what needs clarification, choose a supported next step and follow through. Use evidence, dates and explicit employee reports. Never turn an interpretation into a confirmed fact, infer a promise from task completion, or treat a matching property as investor interest.

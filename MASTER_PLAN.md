@@ -1,5 +1,11 @@
 # AgentDesk master plan
 
+## Capable workforce direction
+
+The owner wants a broadly useful personal Copilot that can plan and complete work, use connected tools, remember business context and follow through across the dashboard, SMS and Slack. Use the [capable workforce plan](docs/CAPABLE_WORKFORCE_PLAN.md) to coordinate shared execution, deeper specialist methods, complete workflows for all three roles, configurable standing authorization, proactive work and comparative acceptance. The goal is high capability with few unnecessary interruptions, not a fixed menu of scripted commands.
+
+This expands the implementation roadmap without claiming new capabilities are already live. The current relationship milestone and communications foundations are retained. The next shared foundation is durable multi-step work that can resume, verify results and use existing services; completing every specialist still requires role-specific methods, tools and evaluation. Live company approval and existing execution authority remain unchanged until their respective replacement capabilities are implemented and tested.
+
 ## Company-wide scope and role-specific discovery
 
 AgentDesk NW is intended for company-wide rollout across **dispositions, acquisitions and management**. All three are primary product audiences. They share one platform and Copilot foundation, with workspaces, specialist capabilities, knowledge and access appropriate to their jobs. Dispositions should have a broader specialist roster and greater workflow depth where its work requires it; that does not make dispositions the center of the product or make the other roles companion features.

@@ -1,5 +1,9 @@
 # Implementation roadmap
 
+## Shared capability expansion
+
+The [capable workforce plan](CAPABLE_WORKFORCE_PLAN.md) coordinates six development phases: shared durable work execution; specialist knowledge/business context; complete role workflows and delegated actions; proactive follow-through; approved connections/company operation; and comparative acceptance/rollout. It incorporates the existing specialist and communications plans below. All three employee roles retain their own acceptance track. Current runtime limits are not removed by this document; autonomy expands through implemented tools, tested delegation and verified results.
+
 ## Company-wide delivery scope
 
 Plan for dispositions, acquisitions and management as three primary audiences. Maintain a requirements and acceptance track for each, supported by shared Copilot, record, communication and permission foundations. Dispositions should have more agents and deeper workflows; staffing and specialist count do not make the platform dispositions-centered. Alex's examples inform the dispositions track. Dedicated acquisitions and management inputs remain necessary. The current specialist milestone below is an implementation sequence within that broader scope.

@@ -1,5 +1,15 @@
 # AgentDesk progress log
 
+## October 30, 2026 — Broad Copilot capability and autonomy plan
+
+**Owner direction:** complete a highly capable workforce for all three roles, with convenient dashboard/SMS/Slack use, connected tools, persistent business context, autonomous follow-through and fewer unnecessary approval interruptions. The competitive reference is Grok Bot and ChatGPT's agent/task experiences. Alex's dispositions example supplies an end-to-end buyer-search, reply, briefing and title-coordination acceptance journey.
+
+**Inspection and plan:** reviewed the current typed tool registry, bounded text runner, specialist statuses and communications limits. Added CAPABLE_WORKFORCE_PLAN.md with durable work execution, role-specific knowledge and business context, complete specialist workflows, explicit standing authorization, scheduling/events, approved connectors/browser-assisted expansion and measurable acceptance. The plan integrates existing milestones and keeps acquisitions and management as primary audiences. It does not treat removing checks or adding agent names as new capability.
+
+**Evidence and scope:** inspected official Grok Bot and OpenAI scheduled-task documentation; exact sources and fair-comparison criteria are recorded in the plan. No competitive performance claim is established. This checkpoint changes documentation only; no runtime guard, provider account, live send, scheduled task, payment or deployment changed. Documentation consistency/diff checks apply; prior application tests are not represented as newly run. Commit/push follows the owner's standing instruction.
+
+---
+
 ## October 30, 2026 — Company-wide scope correction
 
 **Owner direction:** AgentDesk NW is for company-wide rollout to dispositions, acquisitions and management. All three are primary audiences. Dispositions should have more agents and greater depth where its workflows need them; that does not make the product dispositions-centered. Alex is a dispositions agent helping inform that role's design.
