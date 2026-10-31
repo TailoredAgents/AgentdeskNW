@@ -33,7 +33,7 @@ try{
  current=await request<InboxThreadDetail>(`inbox/${company.id}/draft`,'POST',save);await request(`inbox/${company.id}/draft`,'POST',save);check(current.draft?.body===save.body&&current.draft?.deliveryStatus==='not_sent','Phone saves one manual draft without sending');
  check((await request<InboxThreadDetail>(`inbox/${company.id}`,'GET',undefined,200,true)).draft?.body===save.body,'Desktop reads the same saved mobile draft');
  await request(`inbox/${company.id}/draft`,'POST',{...mutation(beforeDraft),body:'Stale overwrite'},409);check((await detail(company.id)).draft?.body===save.body,'Stale editor cannot overwrite another saved revision');
- await request(`inbox/${company.id}/review-send`,'POST',mutation(current),409);
+ await request(`inbox/${company.id}/review-send`,'POST',mutation(current),200);
  current=await request<InboxThreadDetail>(`inbox/${company.id}/prepare-reply`,'POST',mutation(current));
  let review=await request<InboxSendReview>(`inbox/${company.id}/review-send`,'POST',mutation(current));
  check(review.body===current.draft?.body&&review.to.address===current.thread.correspondent.address&&review.attachments.length===0,'Phone review binds exact saved sender, recipient, body and empty attachment set');
@@ -55,6 +55,19 @@ try{
  captured=await request<InboxThreadDetail>(`inbox/${activity.id}/draft`,'POST',{...mutation(captured),body:'Saved from captured activity.'});await request(`inbox/${activity.id}/review-send`,'POST',mutation(captured),403);
  for(const role of ['acquisitions','manager'] as const){await pair(role);const own=await request<InboxState>('inbox');check(own.threads.every(item=>item.id!==company.id),`${role} keeps a separate private inbox`);await request(`inbox/${company.id}`,'GET',undefined,404);await request(`inbox/${company.id}/draft`,'POST',save,404);}
  cookie=alexCookie;token=alex.token;
+ current=await detail(company.id);
+ const editedRequest={...mutation(current),subject:'Fictional repair clarification',body:'Please confirm the repair scope and who can supply the dated breakdown.',cc:[{name:'Demo coordinator',address:'coordinator@example.com'}]};
+ current=await request<InboxThreadDetail>(`inbox/${company.id}/draft`,'POST',editedRequest);
+ const repeated=await request<InboxThreadDetail>(`inbox/${company.id}/draft`,'POST',editedRequest);check(repeated.draft?.version===current.draft?.version,'Edited phone draft retries once with CC');
+ review=await request<InboxSendReview>(`inbox/${company.id}/review-send`,'POST',mutation(current));check(review.scope==='employee_correspondence'&&review.cc?.[0].address==='coordinator@example.com','Exact review includes employee authorship and CC');
+ current=await request<InboxThreadDetail>(`inbox/${company.id}/draft`,'POST',{...mutation(current),body:editedRequest.body,cc:[]});
+ await request(`inbox/${company.id}/simulate-send`,'POST',{reviewId:review.id,eventKey:randomUUID()},409);
+ current=await request<InboxThreadDetail>(`inbox/${company.id}/draft`,'POST',{...mutation(current),body:editedRequest.body,cc:editedRequest.cc});
+ review=await request<InboxSendReview>(`inbox/${company.id}/review-send`,'POST',mutation(current));
+ const editedSend={reviewId:review.id,eventKey:randomUUID()},editedResult=await request<InboxSendResult>(`inbox/${company.id}/simulate-send`,'POST',editedSend);current=editedResult.detail;
+ check(current.messages.find(m=>m.id===editedResult.receipt.messageId)?.cc?.[0].address==='coordinator@example.com','Simulated outbound preserves reviewed CC');
+ check((await request<InboxSendResult>(`inbox/${company.id}/simulate-send`,'POST',editedSend)).receipt.id===editedResult.receipt.id,'Edited send retries with one receipt');
+ await request(`inbox/${company.id}/draft`,'POST',{...mutation(current),body:'Reject malformed CC.',cc:[{name:'',address:'not-an-email'}]},400);
  current=await detail(company.id);current=await request<InboxThreadDetail>(`inbox/${company.id}/prepare-reply`,'POST',mutation(current));review=await request<InboxSendReview>(`inbox/${company.id}/review-send`,'POST',mutation(current));
  await request('inbox/receive-demo','POST',{scenarioId:'company-revoke-access',eventKey:randomUUID()},200,true);
  const withheld=await detail(company.id);check(withheld.bodyAccess==='revoked'&&withheld.draft===null&&withheld.investorContext===null,'Revoked source clears phone correspondence context and draft');

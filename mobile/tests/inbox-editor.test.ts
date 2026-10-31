@@ -27,3 +27,10 @@ test('a simulation review only authorizes its exact current draft and source',()
  for(const changed of [detail({canEdit:false}),detail({bodyAccess:'revoked'}),detail({thread:{...first.thread,version:2}}),detail({account:{...first.account,accessVersion:2}}),detail({draft:{...first.draft!,body:'Changed'}}),detail({draft:null})])assert.equal(reviewMatches(review,changed,editor,at),false);
  assert.equal(reviewMatches(review,first,{...editor,body:'Unsaved change'},at),false);assert.equal(reviewMatches(review,first,editor,Date.parse(review.expiresAt)),false);
 });
+test('CC-only edits stay dirty and survive comparison without adopting a newer version silently',()=>{
+ const first=detail(),local={...editorFor(first),cc:'attorney@example.com'},updated=detail({thread:{...first.thread,version:2},draft:{...first.draft!,cc:[{name:'',address:'other@example.com'}],version:2}});
+ assert.equal(editorDirty(local),true);const pending=reconcileEditor(local,updated);assert.equal(pending.baseVersion,1);assert.equal(pending.cc,'attorney@example.com');const reviewed=keepReviewedEdits(pending,updated);assert.equal(reviewed.cc,'attorney@example.com');assert.equal(reviewed.savedCc,'other@example.com');assert.equal(reviewed.baseVersion,2);
+});
+test('CC identity and authorship remain part of exact send review',()=>{
+ const first=detail();first.draft={...first.draft!,authorship:'employee',cc:[{name:'',address:'attorney@example.com'}]};const editor=editorFor(first),review={threadId:'thread-one',threadVersion:1,accountId:'account-one',accountContext:{accessVersion:1},draftId:'draft-one',draftVersion:1,body:'Saved text',subject:'Following up',cc:first.draft.cc,authorship:'employee',expiresAt:'2026-10-30T12:10:00Z'} as InboxSendReview,at=Date.parse('2026-10-30T12:00:00Z');assert.equal(reviewMatches(review,first,editor,at),true);assert.equal(reviewMatches({...review,cc:[]},first,editor,at),false);assert.equal(reviewMatches({...review,authorship:'copilot'},first,editor,at),false);assert.equal(reviewMatches(review,first,{...editor,cc:'changed@example.com'},at),false);assert.equal(reconcileEditor(editor,detail({bodyAccess:'revoked',draft:null})).cc,'');
+});

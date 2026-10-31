@@ -75,7 +75,7 @@ export function getInboxAssistance(actor:Actor,threadId:string):InboxAssistance 
 export function prepareInboxReply(actor:Actor,threadId:string,input:InboxMutation):InboxThreadDetail {
  const parsed=inboxWorkflowMutationSchema.parse(input),detail=current(actor,threadId);requireCommunicationCapability(detail.account,'localDraft');const assistance=getInboxAssistance(actor,threadId);
  if(!assistance.suggestedReply.eligible)throw new AppError(409,assistance.suggestedReply.reasons.join(' '));
- return saveInboxDraft(actor,threadId,{...parsed,body:assistance.suggestedReply.body,...(detail.thread.channel==='email'?{subject:assistance.suggestedReply.subject}:{})});
+ return saveInboxDraft(actor,threadId,{...parsed,body:assistance.suggestedReply.body,...(detail.thread.channel==='email'?{subject:assistance.suggestedReply.subject}:{})},'copilot');
 }
 function contextHash(actor:Actor,detail:InboxThreadDetail){
  const journey=detail.investorContext?{...detail.investorContext,generatedAt:undefined,record:{...detail.investorContext.record,generatedAt:undefined}}:null;
@@ -86,9 +86,11 @@ function contextHash(actor:Actor,detail:InboxThreadDetail){
 }
 function eligibleDraft(actor:Actor,detail:InboxThreadDetail){
  const draft=detail.draft;if(!draft)throw new AppError(409,'Prepare and save a reply before reviewing a simulated send.');
- const generated=getInboxAssistance(actor,detail.thread.id).suggestedReply;
- if(!generated.eligible)throw new AppError(409,generated.reasons.join(' '));
- if(draft.body!==generated.body||draft.subject!==generated.subject)throw new AppError(409,'This simulator supports only the current Copilot relationship reply. Prepare that reply again to review a simulation. Custom edits stay saved as drafts; property details use Deal packages.');
+ if(draft.authorship!=='employee'){
+  const generated=getInboxAssistance(actor,detail.thread.id).suggestedReply;
+  if(!generated.eligible)throw new AppError(409,generated.reasons.join(' '));
+  if(draft.body!==generated.body||draft.subject!==generated.subject||(draft.cc?.length??0)>0)throw new AppError(409,'This generated reply is no longer current. Prepare it again, or save your own edited reply before reviewing it.');
+ }
  if(detail.thread.association.status==='unavailable')throw new AppError(403,'The relationship context is no longer available. Review the association before preparing a new reply.');
  return draft;
 }
@@ -99,7 +101,7 @@ export function reviewInboxSend(actor:Actor,threadId:string,input:InboxMutation)
   const prior=getDb().prepare('SELECT payload_hash,context_hash,data FROM communication_send_reviews WHERE organization_id=? AND office_id=? AND owner_id=? AND event_key=?').get(...scope(actor),parsed.eventKey) as {payload_hash:string;context_hash:string;data:string}|undefined;
   if(prior){if(prior.payload_hash!==payloadHash)throw new AppError(409,'This review request key was used for different content.');const value=JSON.parse(prior.data) as InboxSendReview;if(prior.context_hash!==contextHash(actor,detail)||value.expiresAt<=now())throw new AppError(409,'This review is stale. Review the current reply again.');return value;}
   expected(detail,parsed.expectedVersion);const draft=eligibleDraft(actor,detail),timestamp=now();
-  const review:InboxSendReview={id:newId('send_review'),threadId,threadVersion:detail.thread.version,draftId:draft.id,draftVersion:draft.version,accountId:detail.account.id,accountContext:{source:detail.account.source,transport:detail.account.transport,capabilities:detail.account.capabilities,accessVersion:detail.account.accessVersion},channel:detail.thread.channel,from:draft.from,to:draft.to,subject:draft.subject,body:draft.body,attachments:[],createdAt:timestamp,expiresAt:new Date(Date.now()+10*60_000).toISOString(),scope:'relationship_only',notice:simulationNotice,liveDelivery:false};
+  const review:InboxSendReview={id:newId('send_review'),threadId,threadVersion:detail.thread.version,draftId:draft.id,draftVersion:draft.version,accountId:detail.account.id,accountContext:{source:detail.account.source,transport:detail.account.transport,capabilities:detail.account.capabilities,accessVersion:detail.account.accessVersion},channel:detail.thread.channel,from:draft.from,to:draft.to,cc:draft.cc??[],authorship:draft.authorship??'copilot',subject:draft.subject,body:draft.body,attachments:[],createdAt:timestamp,expiresAt:new Date(Date.now()+10*60_000).toISOString(),scope:draft.authorship==='employee'?'employee_correspondence':'relationship_only',notice:simulationNotice,liveDelivery:false};
   getDb().prepare('INSERT INTO communication_send_reviews VALUES(?,?,?,?,?,?,?,?,?)').run(review.id,...scope(actor),threadId,parsed.eventKey,payloadHash,contextHash(actor,detail),JSON.stringify(review));audit(actor,'communications.send.reviewed',review.id);return review;
  }).immediate();
 }
@@ -120,7 +122,7 @@ export function simulateInboxSend(actor:Actor,threadId:string,input:SimulateInbo
   if(review.expiresAt<=now()||row.context_hash!==contextHash(actor,detail))throw new AppError(409,'The reply, conversation, preferences or relationship context changed. Review the current reply again.');
   const draft=eligibleDraft(actor,detail);if(detail.messages.length>=200)throw new AppError(409,'This conversation has reached its demonstration message limit.');
   const timestamp=now(),receiptId=newId('send_receipt');
-  const message:CommunicationMessage={id:newId('inbox_message'),threadId,accountId:review.accountId,direction:'outbound',from:review.from,to:[review.to],subject:review.subject,body:review.body,receivedAt:timestamp,sourceRef:`demo:simulated:${review.id}`,sourceLabel:'Employee-reviewed simulated reply · no external delivery',deliveryStatus:'simulated_sent',attachments:[],synthetic:true};
+  const message:CommunicationMessage={id:newId('inbox_message'),threadId,accountId:review.accountId,direction:'outbound',from:review.from,to:[review.to],cc:review.cc??[],subject:review.subject,body:review.body,receivedAt:timestamp,sourceRef:`demo:simulated:${review.id}`,sourceLabel:'Employee-reviewed simulated reply · no external delivery',deliveryStatus:'simulated_sent',attachments:[],synthetic:true};
   getDb().prepare('INSERT INTO communication_messages VALUES(?,?,?,?,?,?,?,?)').run(message.id,...scope(actor),review.accountId,threadId,message.sourceRef,JSON.stringify(message));
   const archived:CommunicationDraft={...draft,status:'discarded',deliveryStatus:'simulated_sent',version:draft.version+1,updatedAt:timestamp};
   getDb().prepare("UPDATE communication_drafts SET status='discarded',data=? WHERE id=? AND organization_id=? AND office_id=? AND owner_id=?").run(JSON.stringify(archived),draft.id,...scope(actor));

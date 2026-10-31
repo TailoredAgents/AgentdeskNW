@@ -1,5 +1,17 @@
 # AgentDesk progress log
 
+## October 30, 2026 — Employee-edited correspondence and CC accepted locally
+
+**Scope:** extends `a586dd2`; no schema or dependency change. Employees now save and explicitly review edited email/text replies. Email CC supports up to ten validated unique addresses; sender/primary correspondent remain bound to the private thread. SMS remains one-to-one. Employee-written text is labeled accordingly, not verified business evidence or a property package. Generated drafts retain current relationship-method eligibility and clear previously entered CC with a replacement notice. Models cannot choose employee authorship, approve or send.
+
+**Durability and access:** review binds exact subject/body/CC, authorship, draft/thread versions, source capabilities, relationship/method/memory context and expiry. Changed recipients invalidate old review. Draft and outbound history retain CC. Existing private scope, source revocation, no-transport and entitlement checks remain in force. Optional JSON fields preserve older records; a compatibility branch recognizes pre-authorship request hashes without rewriting old data. New employee/generated requests have distinct identities. Unknown retries retain the same key; a successful review creates one simulated receipt only.
+
+**Verification:** 793 root tests across 43 files passed in full; an added legacy-replay case and all 30 affected workflow tests then passed, for **794 verified root tests**. Root typecheck/lint/build passed on final source. Independent mobile typecheck, **37 tests** and final iOS/Android/production-web/development-web exports passed. **1,413 HTTP/workflow checks** passed (mobile Inbox grew from 75 to 90; other totals unchanged), plus twelve separate metered restart/adapter checks. The old smoke assertion that manual replies must be refused was updated to the newly authorized behavior; stale-review and no-approval cases remain enforced. Final affected HTTP suites reran after compatibility handling. No actual providers, messages, wallet debits or payments.
+
+**Interface:** desktop saved edited subject/body/CC, showed exact review, and the native browser export loaded the identical saved draft. Phone confirmation produced an outgoing record with the same CC, explicitly simulated and not delivered. Screenshots: ignored `artifacts/mobile/edited-correspondence-review.png` and `edited-correspondence-result.png`. This is browser/export evidence, not actual phone acceptance. Earlier schema-032 preservation evidence remains applicable; this increment has no migration.
+
+**Next:** new-conversation composition, usable source-bound documents and transaction coordination for the closing workflow, followed by remaining role depth, standing authority and live-host spending integration. All C1–C7 completion limits remain in the canonical roadmap. Source commit/push is authorized; no Render deployment or real-world acceptance is claimed.
+
 ## October 30, 2026 — Shared role guidance and private coaching accepted locally
 
 **Scope:** extends `b4ebe75`, with migration 032 and no dependencies added. Managers maintain fictional office sources, dates, roles, prerequisites, steps, exceptions, examples and practice criteria. Draft save, exact publication review and withdrawal are separate audited/versioned actions with idempotent retries. Published revisions are immutable; future-effective revisions wait. Role narrowing, expiry and withdrawal cannot fall back to older guidance. Future-dated restoration does not resurrect withdrawn text.

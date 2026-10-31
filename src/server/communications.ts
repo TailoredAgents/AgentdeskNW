@@ -17,7 +17,8 @@ const idSchema=z.string().min(1).max(150);
 const mutation={expectedVersion:z.number().int().positive(),eventKey:z.string().trim().min(1).max(150)};
 export const inboxQuerySchema=z.object({filter:z.enum(['all','email','sms','needs_reply','drafts']).default('all'),accountId:idSchema.optional(),q:z.string().trim().max(200).default('')}).strict();
 export const threadUpdateSchema=z.object({...mutation,status:z.enum(['needs_reply','waiting','done']).optional(),unread:z.boolean().optional()}).strict().refine(value=>value.status!==undefined||value.unread!==undefined,'Choose a status or read-state change.');
-export const saveDraftSchema=z.object({...mutation,body:z.string().trim().min(1).max(12000),subject:z.string().trim().min(1).max(240).optional()}).strict();
+const ccPartySchema=z.object({name:z.string().trim().max(150).refine(v=>!/[\r\n]/.test(v),'Names must be on one line.'),address:z.email().max(254).transform(v=>v.toLowerCase())}).strict();
+export const saveDraftSchema=z.object({...mutation,body:z.string().trim().min(1).max(12000),subject:z.string().trim().min(1).max(240).refine(v=>!/[\r\n]/.test(v),'Subject must be on one line.').optional(),cc:z.array(ccPartySchema).max(10).refine(v=>new Set(v.map(p=>p.address)).size===v.length,'Duplicate CC recipients are not allowed.').optional()}).strict();
 export const discardDraftSchema=z.object(mutation).strict();
 export const linkInvestorSchema=z.object({...mutation,investorId:idSchema.nullable()}).strict();
 export const receiveDemoSchema=z.object({scenarioId:z.enum(['mike-repair-followup','sarah-rental-followup','david-text-followup','unknown-buyer','company-repair-followup','company-duplicate-source','company-revoke-access','company-restore-access']),eventKey:z.string().trim().min(1).max(150)}).strict();
@@ -118,9 +119,9 @@ export function getInboxThread(actor:Actor,id:string):InboxThreadDetail {
  if(thread.association.investor&&access.allowed&&account.capabilities.readBody)investorContext=getInvestorJourney(actor,thread.association.investor.id);
  return {bodyAccess:account.access==='revoked'?'revoked':account.capabilities.readBody?'full':'headers_only',capabilityNotice:account.capabilityNotice,thread,account,messages,draft,draftHistory,investorContext,contextNotice:account.access==='revoked'||!account.capabilities.readBody?account.capabilityNotice:investorContext?'Existing authorized relationship history. Inbox messages are separate source material and have not updated CRM facts automatically. Only explicitly reviewed notes and follow-ups are added to relationship work.':!access.allowed?'Mailbox history remains available. An active workforce subscription is required for relationship context and changes.':thread.association.notice,availableInvestors:account.access==='revoked'?[]:readInvestors(actor).map(value=>investorMatch(value,'Permitted CRM relationship; linking requires your review.')),canEdit:access.allowed&&account.access==='available',accessReason:account.access==='revoked'?account.capabilityNotice:access.reason,liveDelivery:false};
 }
-function replay(actor:Actor,key:string,payload:unknown){
+function replay(actor:Actor,key:string,payload:unknown,legacyPayload?:unknown){
  const row=getDb().prepare('SELECT payload_hash,thread_id FROM communication_events WHERE organization_id=? AND office_id=? AND owner_id=? AND event_key=?').get(...scope(actor),key) as {payload_hash:string;thread_id:string}|undefined;
- if(row&&row.payload_hash!==fingerprint(payload))throw new AppError(409,'This request key was already used for a different inbox action.');
+ if(row&&row.payload_hash!==fingerprint(payload)&&(legacyPayload===undefined||row.payload_hash!==fingerprint(legacyPayload)))throw new AppError(409,'This request key was already used for a different inbox action.');
  return row?.thread_id??null;
 }
 function recordEvent(actor:Actor,key:string,payload:unknown,threadId:string,kind:string){getDb().prepare('INSERT INTO communication_events VALUES(?,?,?,?,?,?,?,?)').run(newId('inbox_event'),...scope(actor),key,fingerprint(payload),threadId,now());audit(actor,`communications.${kind}`,threadId);}
@@ -131,7 +132,9 @@ function mutateThread(actor:Actor,id:string,kind:string,input:InboxMutation,chan
   if(account.access==='revoked')throw new AppError(403,account.capabilityNotice);
   if(kind.startsWith('draft.'))requireCommunicationCapability(account,'localDraft');
   const payload={kind,threadId:id,input};
-  if(replay(actor,input.eventKey,payload))return getInboxThread(actor,id);
+  // Old draft request identities predate authorship; recognize their exact payload without rewriting the draft.
+  const legacy=kind==='draft.saved'&&'authorship' in input?{...payload,input:Object.fromEntries(Object.entries(input).filter(([key])=>key!=='authorship'))}:undefined;
+  if(replay(actor,input.eventKey,payload,legacy))return getInboxThread(actor,id);
   if(thread.version!==input.expectedVersion)throw new AppError(409,'This conversation changed. Reload it before saving your change.');
   const updated=change(thread);saveThread(actor,{...updated,version:thread.version+1,updatedAt:now()});recordEvent(actor,input.eventKey,payload,id,kind);
   return getInboxThread(actor,id);
@@ -142,13 +145,17 @@ function saveDraftRecord(actor:Actor,value:CommunicationDraft){
  getDb().prepare('INSERT INTO communication_drafts VALUES(?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET status=excluded.status,data=excluded.data').run(value.id,...scope(actor),value.threadId,value.status,JSON.stringify(value));
  getDb().prepare('INSERT INTO communication_draft_revisions VALUES(?,?,?,?,?,?,?,?)').run(newId('draft_revision'),...scope(actor),value.threadId,value.id,value.version,JSON.stringify(value));
 }
-export function saveInboxDraft(actor:Actor,id:string,input:SaveCommunicationDraft){
+export function saveInboxDraft(actor:Actor,id:string,input:SaveCommunicationDraft,authorship:'employee'|'copilot'='employee'){
  const parsed=saveDraftSchema.parse(input);
- return mutateThread(actor,id,'draft.saved',parsed,thread=>{
+ return mutateThread(actor,id,'draft.saved',{...parsed,authorship} as typeof parsed,thread=>{
+  if(thread.channel==='sms'&&parsed.cc?.length)throw new AppError(400,'Text-message replies are one-to-one and cannot have CC recipients.');
+  if(authorship==='copilot'&&parsed.cc?.length)throw new AppError(400,'The relationship reply cannot add recipients.');
   if(thread.channel==='sms'&&parsed.subject!==undefined)throw new AppError(400,'Text-message drafts do not have an editable subject.');
   if(thread.channel==='sms'&&parsed.body.length>1600)throw new AppError(400,'Keep this text-message draft to 1,600 characters or fewer.');
   const account=getCommunicationAccount(actor,thread.accountId),existing=activeDraft(actor,id),timestamp=now();
-  const draft:CommunicationDraft={id:existing?.id??newId('inbox_draft'),threadId:id,accountId:account.id,from:{name:actor.name,address:account.address},to:thread.correspondent,subject:thread.channel==='sms'?thread.subject:parsed.subject??existing?.subject??`Re: ${thread.subject}`,body:parsed.body,status:'draft',createdAt:existing?.createdAt??timestamp,updatedAt:timestamp,version:(existing?.version??0)+1,deliveryStatus:'not_sent',synthetic:true};
+  const cc=authorship==='copilot'?[]:parsed.cc??existing?.cc??[];
+  if(cc.some(p=>[account.address.toLowerCase(),thread.correspondent.address.toLowerCase()].includes(p.address)))throw new AppError(400,'CC must not duplicate the sender or primary recipient.');
+  const draft:CommunicationDraft={cc,authorship,id:existing?.id??newId('inbox_draft'),threadId:id,accountId:account.id,from:{name:actor.name,address:account.address},to:thread.correspondent,subject:thread.channel==='sms'?thread.subject:parsed.subject??existing?.subject??`Re: ${thread.subject}`,body:parsed.body,status:'draft',createdAt:existing?.createdAt??timestamp,updatedAt:timestamp,version:(existing?.version??0)+1,deliveryStatus:'not_sent',synthetic:true};
   saveDraftRecord(actor,draft);return thread;
  });
 }

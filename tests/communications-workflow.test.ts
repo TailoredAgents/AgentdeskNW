@@ -1,3 +1,4 @@
+import {createHash} from 'node:crypto';
 import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest';
 import type {Actor,Investor} from '../src/lib/contracts';
 import {closeDb,demoActor,getDb,newId} from '../src/server/db';
@@ -55,8 +56,8 @@ describe('reviewed communications workflow',()=>{
  it('rejects forged review and send payloads or an absent review',()=>{
   prepare();expect(()=>reviewInboxSend(actor,thread().id,{...mutation(),to:'hacker@example.com'} as never)).toThrow();expect(()=>simulateInboxSend(actor,thread().id,{reviewId:'missing',eventKey:key()})).toThrow('review was not found');const inspected=reviewInboxSend(actor,thread().id,mutation());expect(()=>simulateInboxSend(actor,thread().id,{reviewId:inspected.id,eventKey:key(),body:'replacement'} as never)).toThrow();expect(count('communication_send_receipts')).toBe(0);
  });
- it('invalidates a reviewed draft after employee edits and refuses custom property content',()=>{
-  const inspected=review();saveInboxDraft(actor,thread().id,{...mutation(),body:'Price is $100,000 at 123 Secret Street; see https://example.com/private'});expect(()=>simulateInboxSend(actor,thread().id,{reviewId:inspected.id,eventKey:key()})).toThrow('changed');expect(()=>reviewInboxSend(actor,thread().id,mutation())).toThrow('current Copilot relationship reply');expect(count('communication_send_receipts')).toBe(0);
+ it('invalidates the old review and requires a fresh exact review of employee-written content',()=>{
+  const inspected=review();saveInboxDraft(actor,thread().id,{...mutation(),body:'Price is $100,000 at 123 Secret Street; see https://example.com/private'});expect(()=>simulateInboxSend(actor,thread().id,{reviewId:inspected.id,eventKey:key()})).toThrow('changed');const edited=reviewInboxSend(actor,thread().id,mutation());expect(edited.scope).toBe('employee_correspondence');expect(edited.authorship).toBe('employee');expect(edited.body).toContain('123 Secret Street');expect(count('communication_send_receipts')).toBe(0);
  });
  it('invalidates review on incoming mail and on changed memory',()=>{
   let inspected=review();receiveDemoCommunication(actor,{scenarioId:'mike-repair-followup',eventKey:key()});expect(()=>simulateInboxSend(actor,thread().id,{reviewId:inspected.id,eventKey:key()})).toThrow('changed');inspected=review();saveEmployeeMemory(actor,{tone:'direct',expectedVersion:0});expect(()=>simulateInboxSend(actor,thread().id,{reviewId:inspected.id,eventKey:key()})).toThrow('changed');
@@ -93,4 +94,39 @@ describe('reviewed communications workflow',()=>{
   const fetch=vi.fn(()=>{throw new Error('Network prohibited');});vi.stubGlobal('fetch',fetch);const inspected=review();simulateInboxSend(actor,thread().id,{reviewId:inspected.id,eventKey:key()});const assistance=getInboxAssistance(actor,thread().id);recordInboxObservation(actor,thread().id,{...mutation(),...assistance.suggestedObservation!});
   for(const table of ['communication_send_reviews','communication_send_receipts','communication_workflow_actions']){expect(()=>getDb().prepare(`DELETE FROM ${table}`).run()).toThrow('immutable');expect(()=>getDb().prepare(`UPDATE ${table} SET id=id`).run()).toThrow('immutable');}expect(fetch).not.toHaveBeenCalled();expect(count('provider_operations')).toBe(0);expect(count('wallet_operations')).toBe(0);
  });
+});
+
+describe('employee-written correspondence and explicit email CC',()=>{
+ it('reviews and simulates the exact employee-edited subject, body and CC once',()=>{
+  const input={...mutation(),subject:'Repair scope follow-up',body:'Please confirm the dated repair scope before we arrange the walkthrough.',cc:[{name:'Demo Coordinator',address:'COORDINATOR@example.com'}]};const saved=saveInboxDraft(actor,thread().id,input);expect(saveInboxDraft(actor,thread().id,input).draft).toEqual(saved.draft);expect(saved.draft?.authorship).toBe('employee');expect(saved.draft?.cc?.[0].address).toBe('coordinator@example.com');
+  const inspected=reviewInboxSend(actor,thread().id,mutation());expect(inspected).toMatchObject({scope:'employee_correspondence',authorship:'employee',cc:[{name:'Demo Coordinator',address:'coordinator@example.com'}]});const send={reviewId:inspected.id,eventKey:key()},sent=simulateInboxSend(actor,thread().id,send);expect(simulateInboxSend(actor,thread().id,send).receipt).toEqual(sent.receipt);const message=sent.detail.messages.find(m=>m.id===sent.receipt.messageId)!;expect(message.body).toBe(input.body);expect(message.cc).toEqual(inspected.cc);expect(message.to).toEqual([inspected.to]);expect(sent.detail.draftHistory[0].cc).toEqual(inspected.cc);expect(count('communication_send_receipts')).toBe(1);
+ });
+ it('binds CC changes and clear-to-empty changes to a new draft and review',()=>{
+  saveInboxDraft(actor,thread().id,{...mutation(),body:'Check the scope first.',cc:[{name:'',address:'coordinator@example.com'}]});const review=reviewInboxSend(actor,thread().id,mutation());saveInboxDraft(actor,thread().id,{...mutation(),body:'Check the scope first.',cc:[]});expect(()=>simulateInboxSend(actor,thread().id,{reviewId:review.id,eventKey:key()})).toThrow('changed');expect(reviewInboxSend(actor,thread().id,mutation()).cc).toEqual([]);
+ });
+ it('rejects malformed, repeated, sender and primary CC recipients before saving',()=>{
+  const address=getInboxThread(actor,thread().id).account.address;
+  for(const cc of [[{name:'',address:'invalid'}],[{name:'',address:'mike@example.com'}],[{name:'',address}],[{name:'',address:'a@example.com'},{name:'',address:'A@example.com'}],[{name:'Bad\r\nHeader',address:'a@example.com'}],Array.from({length:11},(_,i)=>({name:'',address:`person${i}@example.com`}))])expect(()=>saveInboxDraft(actor,thread().id,{...mutation(),body:'A fictional reply.',cc})).toThrow();expect(getInboxThread(actor,thread().id).draft).toBeNull();
+ });
+ it('keeps SMS one-to-one while allowing reviewed employee-written replies',()=>{
+  const sms=getInboxState(actor).threads.find(t=>t.channel==='sms')!;expect(()=>saveInboxDraft(actor,sms.id,{...mutation(sms.id),body:'Confirm the next step.',cc:[{name:'',address:'a@example.com'}]})).toThrow('one-to-one');const saved=saveInboxDraft(actor,sms.id,{...mutation(sms.id),body:'Please confirm a useful time for a follow-up.'});const review=reviewInboxSend(actor,sms.id,mutation(sms.id));expect(review.body).toBe(saved.draft?.body);expect(review.cc).toEqual([]);
+ });
+ it('preparing a Copilot relationship reply deliberately clears employee CC without retaining authority',()=>{
+  saveInboxDraft(actor,thread().id,{...mutation(),body:'A manually written draft.',cc:[{name:'',address:'a@example.com'}]});const next=prepare();expect(next.draft).toMatchObject({authorship:'copilot',cc:[]});expect(reviewInboxSend(actor,thread().id,mutation()).scope).toBe('relationship_only');expect(next.draftHistory.some(d=>d.cc?.length===1)).toBe(true);
+ });
+ it('does not accept claimed authorship, sender, approval or recipients in review/send arguments',()=>{
+  for(const patch of [{authorship:'copilot'},{from:{address:'forged@example.com'}},{approved:true}])expect(()=>saveInboxDraft(actor,thread().id,{...mutation(),body:'A fictional reply.',...patch} as never)).toThrow();saveInboxDraft(actor,thread().id,{...mutation(),body:'Review this exact text.'});expect(()=>reviewInboxSend(actor,thread().id,{...mutation(),cc:[{name:'',address:'a@example.com'}]} as never)).toThrow();
+ });
+ it('employee authorship does not bypass private mailbox or revoked relationship context',()=>{
+  saveInboxDraft(actor,thread().id,{...mutation(),body:'A fictional employee reply.'});expect(()=>reviewInboxSend(manager,thread().id,mutation())).toThrow();const reviewed=reviewInboxSend(actor,thread().id,mutation());revoke();expect(()=>simulateInboxSend(actor,thread().id,{reviewId:reviewed.id,eventKey:key()})).toThrow();expect(count('communication_send_receipts')).toBe(0);
+ });
+ it('changes draft event identity when the same key is reused for a different authoring path',()=>{
+  const input=mutation();prepareInboxReply(actor,thread().id,input);const draft=getInboxThread(actor,thread().id).draft!;expect(()=>saveInboxDraft(actor,thread().id,{...input,body:draft.body,subject:draft.subject})).toThrow('different');
+ });
+});
+
+it('replays a pre-authorship draft request without rewriting its old version',()=>{
+ const initial={...mutation(),body:'A saved legacy employee draft.'},id=thread().id;const saved=saveInboxDraft(actor,id,initial),input={...initial,eventKey:key()};const hash=createHash('sha256').update(JSON.stringify({kind:'draft.saved',threadId:id,input})).digest('hex');
+ getDb().prepare('INSERT INTO communication_events SELECT ?,organization_id,office_id,owner_id,?,?,thread_id,created_at FROM communication_events WHERE event_key=?').run(newId('legacy_event'),input.eventKey,hash,initial.eventKey);
+ expect(saveInboxDraft(actor,id,input).draft).toEqual(saved.draft);expect(getInboxThread(actor,id).thread.version).toBe(saved.thread.version);
 });
