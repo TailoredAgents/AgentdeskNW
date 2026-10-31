@@ -1,5 +1,10 @@
 # AgentDesk progress log
 
+## October 31, 2026 — Transaction draft portability refinement
+
+Extends transaction checkpoint `5bfbce7`. Shared transaction editing and uncertain-save snapshots now copy their JSON-safe inputs without depending on a newer runtime cloning global. Six affected client tests, root/mobile typechecks, root lint/build and iOS/Android exports passed. No schema, API, provider or workflow behavior change. The 903-root/57-mobile/1,553-HTTP acceptance evidence remains at the transaction checkpoint; physical-device acceptance is still deferred.
+
+
 ## October 31, 2026 — Private transaction coordination accepted locally
 
 **Scope:** extends `b94b7bb` with migration 034; no dependency change. Desktop Transactions and native Work → Transactions share owner-private property/investor-bound records, buyer/attorney/acquisition/lender contacts, financing and closing target, seven independent sourced milestone reports, unresolved/resolved issues and immutable versions. Manager CRM access does not expose private records. The specialist launcher opens this workspace; conversational tools/automated execution are not added in this slice.
