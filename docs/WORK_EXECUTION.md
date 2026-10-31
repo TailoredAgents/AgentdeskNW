@@ -38,7 +38,7 @@ Real SMS/Slack, installed-device behavior and model-quality acceptance remain de
 
 ## Capability execution
 
-The server-owned catalog in work-capabilities.ts declares input schemas, output fields, role/feature requirements, effect and fictional rate version. The twelve implemented capabilities are role-specific investment/diligence analysis review, typed missing-information questions, pre-inventory opportunity review, property inspection, existing-buyer matching, relationship next step, acquisition handoff review, office priorities, personal follow-up, synthetic research start and synthetic research result collection. The planner composes up to twelve steps with explicit dependencies; it does not rely on only the three UI presets.
+The server-owned catalog in work-capabilities.ts declares input schemas, output fields, role/feature requirements, effect and fictional rate version. The fourteen implemented capabilities are private transaction review and title-email preparation, role-specific investment/diligence analysis review, typed missing-information questions, pre-inventory opportunity review, property inspection, existing-buyer matching, relationship next step, acquisition handoff review, office priorities, personal follow-up, synthetic research start and synthetic research result collection. The planner composes up to twelve steps with explicit dependencies; it does not rely on only the three UI presets.
 
 Input references may select a field inside a completed dependency's structured result. The server validates reference paths and concrete inputs again at dispatch. Models cannot supply tenant/role overrides, arbitrary code, private credentials, arbitrary tools or prices. Cycles, unknown capabilities, malformed inputs and undeclared/prototype-path references fail validation. Research must follow existing-buyer matching for the same property and include a result-collection step. Changed property facts require refreshing the shortlist before starting research.
 
@@ -103,3 +103,10 @@ Local acceptance includes 23 work-conversation tests, the 96-check mobile HTTP s
 ## Shared economics review
 
 The two analysis capabilities retrieve employee-reviewed private scenarios through [DEAL_ANALYSIS](DEAL_ANALYSIS.md). Their lens/role/feature and source references are rechecked at plan validation, execution and result display. They perform deterministic mathematics at zero fictional cost, preserve dated receipts and hide obsolete results. Model tools cannot write assumptions or certify valuation.
+
+
+### Private transaction jobs
+
+`review_transaction` reads current employee-reported deal context. `prepare_title_email` saves or reopens a private source-bound Inbox draft using its current preparation reference. Both are deterministic and carry zero fictional charge. A local request such as “Prepare title email for that transaction as a saved job” creates review → preparation steps; the reference comes from the review output. The model tool additionally binds transaction/account to the actual employee request. Neither capability sends, verifies milestones or grants shared-office access. Source changes invalidate dispatch, saved results and inherited conversation references; exact repetitions preserve edited or consumed drafts. Transaction and Inbox result links open the exact record on desktop/native Work. See [DOCUMENT_WORK](DOCUMENT_WORK.md).
+
+Database initialization serializes migration checks, schema application and demo seeding in one immediate transaction across local app/worker processes. A failed initializer clears its handle. This supports the single-host SQLite demonstration; it does not replace the production persistence requirement.

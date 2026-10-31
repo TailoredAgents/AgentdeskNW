@@ -1,9 +1,13 @@
+import {getTransaction} from './transactions';
+import {transactionReviewResult} from './transaction-context';
+import {requestsTitleDraft,resolveTitleCommand} from './transaction-tooling';
 import {workQuestionText} from './work-questions';
 import {workConversationReference} from './work-conversation';
 import {z} from 'zod';
 import type {Actor,ToolResult} from '../lib/contracts';
 import type {WorkRun,WorkStepInput} from '../lib/work-contracts';
 import {AppError} from './db';
+import {requireFeature} from './billing';
 import {fingerprint} from './provider-runtime';
 import {createWorkRun,getWorkRun,listWorkRuns} from './work-runs';
 import {listWorkCapabilities} from './work-capabilities';
@@ -38,6 +42,7 @@ export function dispatchWorkTool(actor:Actor,name:string,raw:unknown,command?:Co
  const input=workToolSchemas.start_work.parse(raw);
  const steps:WorkStepInput[]=input.steps.map(step=>{let value:unknown;try{value=JSON.parse(step.inputJson);}catch{throw new AppError(400,'A job step has invalid input JSON.');}if(!value||Array.isArray(value)||typeof value!=='object')throw new AppError(400,'Each step input must be an object.');return {key:step.key,capabilityId:step.capabilityId,input:value as Record<string,unknown>,dependsOn:step.dependsOn};});
  const text=command.message;
+ if(steps.some(step=>step.capabilityId==='prepare_title_email')){const selected=resolveTitleCommand(actor,command);for(const step of steps.filter(s=>s.capabilityId==='prepare_title_email'))if(step.input.transactionId!==selected.transactionId||step.input.accountId!==selected.accountId)throw new AppError(422,'Title work must name the transaction and account selected by the employee; model references cannot replace that selection.');}
  if(steps.some(step=>step.capabilityId==='create_followup')&&(!/\b(?:create|add|save|set|schedule|make)\b[\s\S]{0,120}\b(?:task|reminder|follow.up)\b|\bremind me\b/i.test(text)||/\b(?:do not|don't|never|without)\b[\s\S]{0,60}\b(?:task|reminder|follow.up)\b/i.test(text)))throw new AppError(422,'The employee has not explicitly requested a saved personal follow-up. Prepare the other steps or ask whether to add one.');
  if(steps.some(step=>step.capabilityId==='start_synthetic_research')&&!requestsResearch(text))throw new AppError(422,'New-investor research needs the employee’s deliberate request. Search existing buyers first.');
  const requestId=`turn-work:${fingerprint({requestId:command.requestId,conversationId:command.conversationId})}`;
@@ -46,6 +51,12 @@ export function dispatchWorkTool(actor:Actor,name:string,raw:unknown,command?:Co
 
 /** Narrow, explicitly local starter route; the configured model can compose arbitrary supported steps. */
 export function localWorkReply(actor:Actor,message:string,command:Command):ToolResult|null {
+ if(requestsTitleDraft(message)&&/\b(?:job|workflow|background)\b/i.test(message)){
+  requireFeature(actor,'transaction-coordinator');
+  const selected=resolveTitleCommand(actor,command),detail=getTransaction(actor,selected.transactionId);
+  if(!detail.preparation.ready)return transactionReviewResult(actor,selected.transactionId);
+  return dispatchWorkTool(actor,'start_work',{title:`Prepare title: ${detail.property.address}`.slice(0,160),steps:[{key:'review',capabilityId:'review_transaction',inputJson:JSON.stringify({transactionId:selected.transactionId}),dependsOn:[]},{key:'draft',capabilityId:'prepare_title_email',inputJson:JSON.stringify({...selected,transactionAccessReference:{$step:'review',path:'transactionAccessReference'}}),dependsOn:['review']}]},command);
+ }
  if(/\b(?:show|list|status|check)\b.*\b(?:copilot jobs|saved jobs|work jobs)\b/i.test(message))return dispatchWorkTool(actor,'work_status',{runId:null},command);
  if(!/\b(?:start|prepare|run)\b[\s\S]*\b(?:job|workflow)\b/i.test(message))return null;
  if(/\b(?:do not|don't|never)\b/i.test(message))return {specialistIds:[],message:'No job was started. Use the Work queue to review the exact starter scope, or describe the work you want Copilot to perform.',artifacts:[{type:'work_run',title:'Open Copilot jobs'}]};

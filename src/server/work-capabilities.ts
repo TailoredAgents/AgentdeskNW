@@ -1,3 +1,7 @@
+import {transactionReviewResult,transactionReferenceCurrent} from './transaction-context';
+import {prepareTitleResult} from './transaction-results';
+import {getTransaction} from './transactions';
+import {createHash} from 'node:crypto';
 import {getAnalysis,reviewSavedAnalysis,analysisReferenceCurrent,analysisMessage} from './deal-analysis';
 import {getOpportunity,opportunityReferenceCurrent} from './opportunities';
 import {handoffReferenceCurrent} from './handoffs';
@@ -17,10 +21,12 @@ const id=z.string().trim().min(1).max(150);
 const reference=z.object({$step:id,path:z.string().min(1).max(240)}).strict();
 const valueId=z.union([id,reference]);
 const all:Role[]=['dispositions','acquisitions','manager'];
-type Capability={name:string;description:string;feature:string;roles:Role[];schema:z.ZodObject;estimatedCents:number;maximumCents:number;effect:'read'|'personal_task'|'synthetic_research';output:string};
+type Capability={name:string;description:string;feature:string;roles:Role[];schema:z.ZodObject;estimatedCents:number;maximumCents:number;effect:'read'|'personal_task'|'synthetic_research'|'private_draft';output:string};
 // Fictional analysis prices exercise admission/settlement. These are not provider prices.
 // Existing direct lookups, navigation and task controls remain unmetered by the wallet.
 const catalog:Record<string,Capability>={
+ review_transaction:{name:'Review private transaction',description:'Read current employee reports, missing facts, issues and unsent title preparation. No file text, shared mailbox access or verified outcome.',feature:'transaction-coordinator',roles:all,schema:z.object({transactionId:valueId}).strict(),estimatedCents:0,maximumCents:0,effect:'read',output:'transactionId, transactionAccessReference, reports, preparation'},
+ prepare_title_email:{name:'Prepare title Inbox draft',description:'Save current private title preparation only when explicitly requested. Exact current sources and account required; never send or change milestones. Reuses existing drafts and preserves edits.',feature:'transaction-coordinator',roles:all,schema:z.object({transactionId:valueId,accountId:valueId,transactionAccessReference:z.union([z.string().min(1).max(240),reference])}).strict(),estimatedCents:0,maximumCents:0,effect:'private_draft',output:'transactionId, transactionAccessReference, threadId, hasDraft, liveDelivery false'},
  request_information:{name:'Ask for missing information',description:'Ask the employee for a property, investor, text, number or explicit time. Wait for their answer; never invent it. Use answer (or propertyId/investorId) in dependent steps. Answers are supplied information, not approval or verified CRM facts.',feature:'core',roles:all,schema:workQuestionSchema,estimatedCents:0,maximumCents:0,effect:'read',output:'answer, provenance, questionReference; propertyId/investorId for record selections'},
  inspect_property:{name:'Read property facts',description:'Retrieve current authorized fictional property facts.',feature:'core',roles:all,schema:z.object({propertyId:valueId}).strict(),estimatedCents:0,maximumCents:0,effect:'read',output:'propertyId, property'},
  match_existing_buyers:{name:'Prepare existing-buyer shortlist',description:'Match current permitted CRM buy boxes first. Fit does not imply investor interest. Fictional analysis cost.',feature:'buyer-matchmaker',roles:['dispositions','manager'],schema:z.object({propertyId:valueId}).strict(),estimatedCents:40,maximumCents:50,effect:'read',output:'propertyId, property, matches[] (investorId, reasons, conflicts, missing)'},
@@ -86,6 +92,8 @@ export function validateStoredWorkOutput(actor:Actor,step:WorkStepInput,output:T
   if('$step' in value)return;
   for(const [key,item] of Object.entries(value)){
    if(typeof item==='string'){
+    if(key==='transactionAccessReference'&&!transactionReferenceCurrent(actor,item))throw new AppError(409,'The transaction source changed. Prepare current transaction work.');
+    if(key==='transactionId')getTransaction(actor,item);
     if(key==='analysisAccessReference'&&!analysisReferenceCurrent(actor,item))throw new AppError(409,'The analysis source changed. Prepare a fresh review.');
     if(key==='analysisId'||key==='id'&&/^analysis_/.test(item)){const detail=getAnalysis(actor,item);if(key==='analysisId'&&step.capabilityId.startsWith('review_')&&step.capabilityId.endsWith('_analysis')&&detail.record.input.lens!==(step.capabilityId==='review_investment_analysis'?'investment':'diligence'))throw new AppError(409,'This scenario belongs to a different specialist.');}
     if(key==='opportunityAccessReference'&&!opportunityReferenceCurrent(actor,item))throw new AppError(409,'The opportunity source changed. Prepare a fresh review.');
@@ -115,6 +123,8 @@ export function executeWorkCapability(actor:Actor,step:WorkStepInput,_priorOutpu
  const item=definition(step.capabilityId),input=validateConcreteWorkInput(actor,step);
  const result:ToolResult={specialistIds:item.feature==='core'?[]:[item.feature],message:'',artifacts:[]};
  switch(step.capabilityId){
+  case 'review_transaction':return transactionReviewResult(actor,input.transactionId as string);
+  case 'prepare_title_email':return prepareTitleResult(actor,input as {transactionId:string;accountId:string;transactionAccessReference:string},`title-work:${createHash('sha256').update(JSON.stringify([actor.organizationId,actor.officeId,actor.id,input])).digest('hex')}`);
   case 'request_information':throw new AppError(409,'This step requires the employee’s answer through the saved job.');
   case 'inspect_property':{const property=readProperty(actor,input.propertyId as string);result.data={propertyId:property.id,property};result.message=`${property.address}: ${property.status}, $${property.price.toLocaleString()}, ${property.county} County. Fictional property record.`;break;}
   case 'match_existing_buyers':{

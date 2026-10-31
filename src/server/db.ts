@@ -16,29 +16,35 @@ export class AppError extends Error {
 export function getDb(): Database.Database {
   const path = process.env.AGENTDESK_DB_PATH ?? process.env.DATABASE_PATH ?? resolve(process.cwd(), 'data/agentdesk.sqlite');
   if (database && path === databasePath) return database;
-  database?.close();
+  closeDb();
   // The runtime database is mutable data; it must not be traced into a deployment bundle.
   if (path !== ':memory:') mkdirSync(dirname(resolve(/* turbopackIgnore: true */ path)), { recursive: true });
   database = new Database(path);
   databasePath = path;
-  database.pragma('foreign_keys = ON');
-  database.pragma('journal_mode = WAL');
-  database.pragma('busy_timeout = 5000');
-  database.exec('CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL)');
-  for (const [version, file] of [[1,'001_initial.sql'],[2,'002_voice.sql'],[3,'003_investor_intelligence.sql'],[4,'004_workflows.sql'],[5,'005_billing.sql'],[6,'006_provider_runtime.sql'],[7,'007_voice_live.sql'],[8,'008_external_research.sql'],[9,'009_messaging.sql'],[10,'010_employee_memory.sql'],[11,'011_journey_observations.sql'],[12,'012_task_actions.sql'],[13,'013_conversation_focus.sql'],[14,'014_workforce_plans.sql'],[15,'015_credit_wallet.sql'],[16,'016_communications.sql'],[17,'017_communication_workflows.sql'],[18,'018_company_communications.sql'],[19,'019_relationship_reports.sql'],[20,'020_work_runs.sql'],[21,'021_work_budgets.sql'],[22,'022_work_conversation.sql'],[23,'023_mobile_sessions.sql'],[24,'024_mobile_notifications.sql'],[25,'025_handoff_coordination.sql'],[26,'026_acquisition_opportunities.sql'],[27,'027_deal_analyses.sql'],[28,'028_automatic_topups.sql'],[29,'029_metered_assignments.sql'],[30,'030_proactive_updates.sql'],[31,'031_proactive_delivery.sql'],[32,'032_role_knowledge.sql'],[33,'033_source_documents.sql'],[34,'034_transaction_coordination.sql'],[35,'035_transaction_correspondence.sql']] as const) {
-    const migrationPath=resolve(process.cwd(), 'src/server/migrations',file);
-    if (!existsSync(migrationPath)) continue;
-    if (!database.prepare('SELECT 1 FROM schema_migrations WHERE version=?').get(version)) {
-      const sql = readFileSync(migrationPath, 'utf8');
-      database.transaction(() => {
-        database!.exec(sql);
-        database!.prepare('INSERT INTO schema_migrations VALUES(?,?)').run(version,now());
-      })();
-    }
+  try {
+    database.pragma('busy_timeout = 5000');
+    database.pragma('foreign_keys = ON');
+    database.pragma('journal_mode = WAL');
+    // Serialize the migration checks, schema changes and fictional seed as one unit.
+    database.transaction(() => {
+      database!.exec('CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL)');
+      for (const [version, file] of [[1,'001_initial.sql'],[2,'002_voice.sql'],[3,'003_investor_intelligence.sql'],[4,'004_workflows.sql'],[5,'005_billing.sql'],[6,'006_provider_runtime.sql'],[7,'007_voice_live.sql'],[8,'008_external_research.sql'],[9,'009_messaging.sql'],[10,'010_employee_memory.sql'],[11,'011_journey_observations.sql'],[12,'012_task_actions.sql'],[13,'013_conversation_focus.sql'],[14,'014_workforce_plans.sql'],[15,'015_credit_wallet.sql'],[16,'016_communications.sql'],[17,'017_communication_workflows.sql'],[18,'018_company_communications.sql'],[19,'019_relationship_reports.sql'],[20,'020_work_runs.sql'],[21,'021_work_budgets.sql'],[22,'022_work_conversation.sql'],[23,'023_mobile_sessions.sql'],[24,'024_mobile_notifications.sql'],[25,'025_handoff_coordination.sql'],[26,'026_acquisition_opportunities.sql'],[27,'027_deal_analyses.sql'],[28,'028_automatic_topups.sql'],[29,'029_metered_assignments.sql'],[30,'030_proactive_updates.sql'],[31,'031_proactive_delivery.sql'],[32,'032_role_knowledge.sql'],[33,'033_source_documents.sql'],[34,'034_transaction_coordination.sql'],[35,'035_transaction_correspondence.sql']] as const) {
+        const migrationPath=resolve(process.cwd(), 'src/server/migrations',file);
+        if (!existsSync(migrationPath)) continue;
+        if (!database!.prepare('SELECT 1 FROM schema_migrations WHERE version=?').get(version)) {
+          const sql = readFileSync(migrationPath, 'utf8');
+          database!.exec(sql);
+          database!.prepare('INSERT INTO schema_migrations VALUES(?,?)').run(version,now());
+        }
+      }
+      seed(database!);
+      seedPrivateDuplicate(database!);
+      database!.prepare("INSERT OR IGNORE INTO billing_admins SELECT organization_id,user_id FROM memberships WHERE organization_id='org-demo' AND user_id='user-taylor' AND role='manager'").run();
+    }).immediate();
+  } catch (error) {
+    closeDb();
+    throw error;
   }
-  seed(database);
-  seedPrivateDuplicate(database);
-  database.prepare("INSERT OR IGNORE INTO billing_admins SELECT organization_id,user_id FROM memberships WHERE organization_id='org-demo' AND user_id='user-taylor' AND role='manager'").run();
   return database;
 }
 

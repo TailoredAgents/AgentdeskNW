@@ -3,9 +3,9 @@ import {useEffect,useMemo,useState} from 'react';
 import {TransactionController} from '@/lib/transaction-controller';
 import {transactionPartyRoles,transactionPartyLabels,transactionMilestones,transactionMilestoneLabels,type TransactionInput} from '@/lib/transaction-contracts';
 import {api,PageHeading,Panel,SectionHead} from './ui';
-export function TransactionsPanel({onDirtyChange,onBusyChange,onInbox}:{onInbox:(id:string)=>void;onDirtyChange:(value:boolean)=>void;onBusyChange:(value:boolean)=>void}){
+export function TransactionsPanel({initialId,onDirtyChange,onBusyChange,onInbox}:{initialId?:string;onInbox:(id:string)=>void;onDirtyChange:(value:boolean)=>void;onBusyChange:(value:boolean)=>void}){
  const controller=useMemo(()=>new TransactionController(api,()=>crypto.randomUUID()),[]),[state,setState]=useState(controller.value);
- useEffect(()=>{controller.activate();const unsubscribe=controller.subscribe(setState);void controller.load();const timer=setInterval(()=>void controller.load(),7000);return()=>{unsubscribe();clearInterval(timer);controller.dispose();};},[controller]);
+ useEffect(()=>{controller.activate();const unsubscribe=controller.subscribe(setState);void controller.load().then(()=>{if(initialId)return controller.select(initialId);});const timer=setInterval(()=>void controller.load(),7000);return()=>{unsubscribe();clearInterval(timer);controller.dispose();};},[controller,initialId]);
  useEffect(()=>{onDirtyChange(controller.dirty);onBusyChange(controller.locked);return()=>{onDirtyChange(false);onBusyChange(false);};},[state,controller,onDirtyChange,onBusyChange]);
  useEffect(()=>{if(!controller.dirty&&!controller.locked)return;const protect=(event:BeforeUnloadEvent)=>{event.preventDefault();event.returnValue='';};window.addEventListener('beforeunload',protect);return()=>window.removeEventListener('beforeunload',protect);},[state,controller]);
  const {board,detail,form,historical}=state,locked=controller.locked,view=historical?.input??detail?.record.input;

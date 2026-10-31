@@ -6,9 +6,9 @@ import {transactionPartyRoles,transactionPartyLabels,transactionMilestones,trans
 import {createApi} from './client';
 import {Button} from './WorkScreen';
 import {styles as s} from './styles';
-export function TransactionsScreen({api,onGuard,onInbox}:{onInbox:(id:string)=>void;api:ReturnType<typeof createApi>;onGuard:(guard:((leave:()=>void)=>void)|null)=>void}){
+export function TransactionsScreen({api,initialId,onGuard,onInbox}:{initialId?:string|null;onInbox:(id:string)=>void;api:ReturnType<typeof createApi>;onGuard:(guard:((leave:()=>void)=>void)|null)=>void}){
  const controller=useMemo(()=>new TransactionController(api,()=>Crypto.randomUUID()),[api]),[state,setState]=useState(controller.value),[partyKey,setPartyKey]=useState<TransactionPartyRole|null>(null),[reportKey,setReportKey]=useState<TransactionMilestone|null>(null),[showFiles,setShowFiles]=useState(false);
- useEffect(()=>{controller.activate();const unsubscribe=controller.subscribe(setState);void controller.load();const timer=setInterval(()=>void controller.load(),7000);return()=>{unsubscribe();clearInterval(timer);controller.dispose();};},[controller]);
+ useEffect(()=>{controller.activate();const unsubscribe=controller.subscribe(setState);void controller.load().then(()=>{if(initialId)return controller.select(initialId);});const timer=setInterval(()=>void controller.load(),7000);return()=>{unsubscribe();clearInterval(timer);controller.dispose();};},[controller,initialId]);
  useEffect(()=>{onGuard(action=>controller.leave(action));return()=>onGuard(null);},[controller,onGuard]);
  const {board,detail,form,historical}=state,locked=controller.locked,view=historical?.input??detail?.record.input;
  const button=(label:string,action:()=>unknown,disabled=false,primary=false)=><Button label={label} secondary={!primary} disabled={locked||disabled} onPress={()=>void action()}/>;
