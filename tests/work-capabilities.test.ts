@@ -140,14 +140,15 @@ describe('registered durable-work capabilities and typed Copilot integration',()
   const run=createWorkRun(actor,{requestId:next(),...preset});decideWorkCost(actor,run.id,{expectedVersion:run.version,eventKey:next(),quoteId:run.budget.quoteId,decision:'approve'});processWorkRuns(actor,2);
   const property=JSON.parse((getDb().prepare("SELECT data FROM properties WHERE id='property-maple'").get() as {data:string}).data) as Property;
   getDb().prepare("UPDATE properties SET data=? WHERE id='property-maple'").run(JSON.stringify({...property,price:property.price+200000}));
-  expect(processWorkRuns(actor,1)).toBe(0);const stopped=getWorkRun(actor,run.id);expect(stopped.status).toBe('waiting_for_input');expect(stopped.lastError).toContain('Property facts changed');
+  expect(processWorkRuns(actor,1)).toBe(0);const stopped=getWorkRun(actor,run.id);expect(stopped.status).toBe('waiting_for_input');expect(stopped.contentRestricted).toBe(true); // The obsolete recommendations are withheld until an explicit refresh replaces them.
   expect(getDb().prepare('SELECT COUNT(*) n FROM research_jobs').get()).toEqual({n:0});expect(stopped.budget.spentCents).toBe(40);
   const fresh:WorkStepInput={...preset.steps.find(step=>step.key==='buyers')!,key:'fresh_buyers'};
-  const steps=[...preset.steps.slice(0,2),fresh,...preset.steps.slice(2).map(step=>step.key==='research'?{...step,dependsOn:['property','fresh_buyers']}:step)];
+  const steps=[...preset.steps.slice(0,2),fresh,...preset.steps.slice(2).map(step=>({...step,dependsOn:step.dependsOn.map(key=>key==='buyers'?'fresh_buyers':key)}))];
   const revised=reviseWorkRun(actor,run.id,{expectedVersion:stopped.version,eventKey:next(),instructions:'Refresh existing buyers for the changed property before researching new investors.',steps});
   expect(revised.status).toBe('waiting_cost_approval');decideWorkCost(actor,run.id,{expectedVersion:revised.version,eventKey:next(),quoteId:revised.budget.quoteId,decision:'approve'});
   expect(processWorkRuns(actor,2)).toBe(2);expect(getDb().prepare('SELECT COUNT(*) n FROM research_jobs').get()).toEqual({n:1});
-  expect(getWorkRun(actor,run.id).steps.find(step=>step.key==='buyers')?.result).toEqual(stopped.steps.find(step=>step.key==='buyers')?.result);
+  expect(getWorkRun(actor,run.id).steps.find(step=>step.key==='buyers')?.result?.message).toContain('earlier shortlist was replaced');
+  expect(getWorkRun(actor,run.id).budget.spentCents).toBeGreaterThanOrEqual(80); // Both completed matching receipts remain charged.
  });
  it('stops pending child research after the property is no longer available',()=>{
   const run=createWorkRun(actor,{requestId:next(),...buildWorkPreset(actor,{presetId:'dispositions',propertyId:'property-maple',includeResearch:true})});

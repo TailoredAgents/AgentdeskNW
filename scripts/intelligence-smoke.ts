@@ -58,6 +58,12 @@ const learned=await recommendation();assert.equal(learned.action.kind,'resolve_o
 check(learned.why.some(reason=>reason.includes(observation.id)),'The recommendation cites the concern it is responding to');
 check(learned.unknowns.some(item=>/does not establish the actual repair/.test(item)),'The concern is not presented as verified repair economics');
 
+// The same concern changes the compiled application's buyer shortlist, not only a separate recommendation.
+const subject=start.properties.find(property=>property.id==='property-maple');assert.ok(subject);
+const shortlist=await request<ChatResult>('chat','POST',{requestId:`${runId}-shortlist`,message:`Match buyers for ${subject.address}`});
+check(shortlist.result.message.includes('Resolve the repair concern first'),'Buyer Matchmaker uses the recorded concern in its next action');
+check(shortlist.result.message.includes('not interest or purchase probability'),'Fit is not presented as investor interest');
+
 // Organization policy still governs included capabilities; historical relationship evidence stays readable.
 await request('session','POST',{role:'manager'});
 await request('billing/policy','POST',{...billing.policy,restricted:['investor-relationship']});
@@ -113,6 +119,10 @@ const resolvedOriginal=resolvedJourney.observations.find(item=>item.id===observa
 check(!resolvedJourney.openIssues.some(item=>item.id===observation.id),'Resolution removes the original concern from open issues without erasing its history');
 const resolvedNext=await recommendation();assert.notEqual(resolvedNext.action.kind,'resolve_objection');assert.equal(resolvedNext.action.kind,baseline.action.kind);assert.equal(resolvedNext.deliveryStatus,'not_sent');
 check(resolvedNext.evidence.some(item=>item.sourceRecordId===observation.id&&item.label.includes('resolved')),'The next recommendation preserves the correction’s provenance');
+const currentShortlist=await request<ChatResult>('chat','POST',{requestId:`${runId}-shortlist-resolved`,conversationId:shortlist.conversation.id,message:`Match buyers for ${subject.address}`});
+check(!currentShortlist.result.message.includes('Resolve the repair concern first'),'Resolved concern changes the next shortlist');
+const shortlistHistory=await request<Conversation>(`conversations/${shortlist.conversation.id}`);
+check(!shortlistHistory.messages.some(message=>message.role==='assistant'&&message.content.includes('Resolve the repair concern first')),'Obsolete shortlist history is withheld after correction');
 const finalState=await request<Bootstrap>('bootstrap');assert.deepEqual(finalState.investors.find(investor=>investor.id==='investor-mike'),originalInvestor);assert.equal(finalState.approvals.length,start.approvals.length);assert.equal(finalState.tasks.length,start.tasks.length);
 const providers=await request<ProviderStatus>('providers');assert.equal(providers.usage.operations,0);
 console.info(`PASS: ${checks} intelligence HTTP checks. Included workforce access with organization restrictions and preserved history; explicit concern → sourced recommendation → remembered writing correction → shorter draft; version conflicts and forget; exact concern resolution and replay; private employee memory/conversations with scoped relationship sharing. No CRM changes, investor messages, or AI provider calls.`);

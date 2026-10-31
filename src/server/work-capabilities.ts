@@ -1,3 +1,4 @@
+import {buyerShortlistMessage,buyerShortlistReferenceCurrent} from './buyer-shortlist';
 import {reviewSourceDocument,documentContextReferenceCurrent} from './document-context';
 import {getDocument} from './documents';
 import {teamTransactionReviewResult,teamContextReferenceCurrent} from './transaction-team-context';
@@ -35,7 +36,7 @@ const catalog:Record<string,Capability>={
  prepare_title_email:{name:'Prepare title Inbox draft',description:'Save current private title preparation only when explicitly requested. Exact current sources and account required; never send or change milestones. Reuses existing drafts and preserves edits.',feature:'transaction-coordinator',roles:all,schema:z.object({transactionId:valueId,accountId:valueId,transactionAccessReference:z.union([z.string().min(1).max(240),reference])}).strict(),estimatedCents:0,maximumCents:0,effect:'private_draft',output:'transactionId, transactionAccessReference, threadId, hasDraft, liveDelivery false'},
  request_information:{name:'Ask for missing information',description:'Ask the employee for a property, investor, text, number or explicit time. Wait for their answer; never invent it. Use answer (or propertyId/investorId) in dependent steps. Answers are supplied information, not approval or verified CRM facts.',feature:'core',roles:all,schema:workQuestionSchema,estimatedCents:0,maximumCents:0,effect:'read',output:'answer, provenance, questionReference; propertyId/investorId for record selections'},
  inspect_property:{name:'Read property facts',description:'Retrieve current authorized fictional property facts.',feature:'core',roles:all,schema:z.object({propertyId:valueId}).strict(),estimatedCents:0,maximumCents:0,effect:'read',output:'propertyId, property'},
- match_existing_buyers:{name:'Prepare existing-buyer shortlist',description:'Match current permitted CRM buy boxes first. Fit does not imply investor interest. Fictional analysis cost.',feature:'buyer-matchmaker',roles:['dispositions','manager'],schema:z.object({propertyId:valueId}).strict(),estimatedCents:40,maximumCents:50,effect:'read',output:'propertyId, property, matches[] (investorId, reasons, conflicts, missing)'},
+ match_existing_buyers:{name:'Prepare existing-buyer shortlist',description:'Match current permitted CRM buy boxes first, with relationship concerns, pauses and sourced next actions. Fit does not imply interest. Fictional analysis cost.',feature:'buyer-matchmaker',roles:['dispositions','manager'],schema:z.object({propertyId:valueId}).strict(),estimatedCents:40,maximumCents:50,effect:'read',output:'propertyId, property, matches[] (investorId, fit score, readiness, nextAction, funding, timing, evidence, cautions), buyerShortlistReference'},
  relationship_next_step:{name:'Prepare relationship next step',description:'Use sourced relationship history and saved employee preferences. Produces a relationship-only draft; nothing is sent. Fictional analysis cost.',feature:'investor-relationship',roles:['dispositions','manager'],schema:z.object({investorId:valueId}).strict(),estimatedCents:35,maximumCents:50,effect:'read',output:'investorId, recommendation (action, draft, evidence, unknowns)'},
  review_investment_analysis:{name:'Review investment scenario',description:'Read a current private, employee-reviewed flip/rental calculation, sensitivities and unresolved assumptions. No market fetch, verified value or action.',feature:'deal-analyst',roles:['dispositions','manager'],schema:z.object({analysisId:valueId}).strict(),estimatedCents:0,maximumCents:0,effect:'read',output:'analysisId, analysisReview'},
  review_diligence_analysis:{name:'Review diligence scenario',description:'Review current private sourced assumptions, provisional comparable screening and shared deal calculations. No appraisal, publication or offer.',feature:'valuation-diligence',roles:['acquisitions','manager'],schema:z.object({analysisId:valueId}).strict(),estimatedCents:0,maximumCents:0,effect:'read',output:'analysisId, analysisReview'},
@@ -92,7 +93,7 @@ export function estimateWorkStep(actor:Actor,step:WorkStepInput,includedLocal=fa
 }
 
 /** Historical results retain their receipt, but never retain access to another person's records. */
-export function validateStoredWorkOutput(actor:Actor,step:WorkStepInput,output:ToolResult):void {
+export function validateStoredWorkOutput(actor:Actor,step:WorkStepInput,output:ToolResult,options:{retiredShortlist?:boolean}={}):void {
  assertActor(actor);requireRole(actor,definition(step.capabilityId).roles);
  const acquisition=(output.data as {acquisitionReview?:{property:{id:string};version:number;method:{version:number}}}|undefined)?.acquisitionReview;
  const handoff=(output.data as {overview?:{handoffs?:{handoffAccessReference:string}}}|undefined)?.overview?.handoffs;
@@ -104,6 +105,7 @@ export function validateStoredWorkOutput(actor:Actor,step:WorkStepInput,output:T
   if('$step' in value)return;
   for(const [key,item] of Object.entries(value)){
    if(typeof item==='string'){
+    if(key==='buyerShortlistReference'&&!options.retiredShortlist&&!buyerShortlistReferenceCurrent(actor,item))throw new AppError(409,'Buyer criteria or relationship context changed. Refresh this shortlist.');
     if(key==='documentAccessReference'&&!documentContextReferenceCurrent(actor,item))throw new AppError(409,'The source document changed. Retrieve its current revision.');
     if(key==='documentId'&&step.capabilityId==='review_source_document')getDocument(actor,item);
     if(key==='transactionTeamAccessReference'&&!teamContextReferenceCurrent(actor,item))throw new AppError(409,'Shared coordination changed. Retrieve current team work.');
@@ -146,7 +148,7 @@ export function executeWorkCapability(actor:Actor,step:WorkStepInput,_priorOutpu
   case 'request_information':throw new AppError(409,'This step requires the employee’s answer through the saved job.');
   case 'inspect_property':{const property=readProperty(actor,input.propertyId as string);result.data={propertyId:property.id,property};result.message=`${property.address}: ${property.status}, $${property.price.toLocaleString()}, ${property.county} County. Fictional property record.`;break;}
   case 'match_existing_buyers':{
-   const matched=matchBuyers(actor,input.propertyId as string);result.data={propertyId:matched.property.id,...matched};result.message=matched.matches.length?`Existing CRM shortlist for ${matched.property.address}:\n${matched.matches.slice(0,12).map(m=>`${m.investor.name}: ${m.reasons.join('; ')||'Review criteria'}${m.conflicts.length?` · Concerns: ${m.conflicts.join('; ')}`:''}`).join('\n')}\nFit is not confirmed interest; review current relationship concerns before outreach.`:'No existing permitted buyers match this property. No new prospects were invented.';break;
+   const matched=matchBuyers(actor,input.propertyId as string);result.data={propertyId:matched.property.id,...matched};result.message=buyerShortlistMessage(matched);break;
   }
   case 'relationship_next_step':{const recommendation=recommendInvestorNextStep(actor,input.investorId as string);result.data={investorId:input.investorId,recommendation};result.message=`${recommendation.action.title}\n${recommendation.action.description}${recommendation.draft?`\n\nRelationship-only draft: ${recommendation.draft}`:''}\n${recommendation.unknowns.length?`Missing: ${recommendation.unknowns.join('; ')}\n`:''}Nothing has been sent.`;break;}
   case 'review_investment_analysis':case 'review_diligence_analysis':{const review=reviewSavedAnalysis(actor,input.analysisId as string);result.data={analysisId:review.record.id,analysisReview:review};result.message=analysisMessage(review);result.artifacts=[{type:'analysis',id:review.record.id,title:'Review deal analysis',data:{analysisAccessReference:review.analysisAccessReference}}];break;}
@@ -179,4 +181,21 @@ export function cancelWorkChildren(actor:Actor,steps:WorkStep[]):void {
  for(const step of steps){if(step.capabilityId!=='start_synthetic_research'||!step.result?.data)continue;const {jobId}=step.result.data as {jobId?:string};if(!jobId)continue;
   const job=getResearchJob(actor,jobId);if(job.ownerId===actor.id&&job.provider==='synthetic-fixtures-v1'&&['queued','running','awaiting_input'].includes(job.status))cancelJob(actor,jobId);
  }
+}
+
+/** An explicit plan revision can refresh matching without rerunning or discarding its paid receipt.
+ * Retired output is withheld on display and may not feed any unfinished transitive dependency.
+ */
+export function retiredBuyerShortlists(steps:Array<WorkStepInput & {status:string}>):Set<string> {
+ const retired=new Set<string>();
+ const uses=(step:WorkStepInput,key:string,seen=new Set<string>()):boolean=>{
+  if(seen.has(step.key))return false;seen.add(step.key);
+  return step.dependsOn.some(parent=>parent===key||!!steps.find(s=>s.key===parent&&uses(s,key,seen)));
+ };
+ steps.forEach((step,index)=>{
+  if(step.status!=='completed'||step.capabilityId!=='match_existing_buyers')return;
+  const replacement=steps.slice(index+1).some(s=>s.capabilityId==='match_existing_buyers'&&JSON.stringify(s.input)===JSON.stringify(step.input));
+  if(replacement&&!steps.some(s=>s.status!=='completed'&&uses(s,step.key)))retired.add(step.key);
+ });
+ return retired;
 }

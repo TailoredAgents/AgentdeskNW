@@ -1,3 +1,4 @@
+import {buyerShortlistMessage} from './buyer-shortlist';
 import {executeAssignmentConversationAction,assignmentConversationIntent} from './assignment-conversation';
 import {queueTextContinuationReply} from './text-delivery';
 import {bindAssignment,withAssignment} from './assignment-roots';
@@ -124,7 +125,7 @@ const descriptions: Record<ToolName,string> = {
   prepare_investor_update:'Prepare employee-confirmed qualification fields for explicit human review. Use null for unchanged or unconfirmed fields. Never infer a confirmed budget from researched transaction prices. Does not apply or approve the change.',
   create_task:'Create a real internal task or reminder. Require explicit user request. dueAt must be an ISO timestamp with timezone or null. investorId must be verified from context or null.',
   next_steps:'Use the selected authorized investor and demonstration qualification checklist to identify missing information and the next action. Not official New Western SOP.',
-  match_buyers:'Match existing authorized CRM buyers with a known property. Distinct from discovering new investors.',
+  match_buyers:'Build an existing-CRM buyer shortlist with separate criteria fit, pauses, objections, current funding/timing evidence and one sourced next action per investor. Do not infer interest, send outreach or start external research from a shortlist.',
   calling_queue:'Rank the employee’s authorized investors for calls, with explicit property-fit, engagement, disclosure, qualification and follow-up reasons. Null propertyId considers current accessible releases.',
   pre_call_briefing:'Prepare a concise briefing for an authorized investor: prior conversation, separate buy boxes, commitments, disclosure blockers, best property matches and call objective.',
   property_releases:'Retrieve authorized property release versions, sources, approved audience, media and existing buyer matches. These are local synthetic fixtures, not Marketplace data.',
@@ -287,10 +288,10 @@ function dispatchToolSync(actor: Actor,name: string,raw:unknown,command?:TurnCom
       result.specialistIds=['workflow-navigator'];result.message=`${data.nextAction}\n\n${data.explanation}\n\nThen: ${data.followingStep}${profile?`\n\nDisclosure: ${profile.disclosure.status}. ${profile.disclosure.status==='signed'?'Rechecked whenever a property package is prepared or handed off.':'Use the authorized disclosure process before sharing restricted property details.'}`:''}${pending.length?`\n\n${pending.length} property package${pending.length===1?'':'s'} awaiting review or blocker resolution.`:''}\n\nSource: ${data.source}`;result.artifacts=[{type:'guidance',title:'Recommended next steps',data}];result.data=data;break;
     }
     case 'match_buyers':{
-      const {propertyId}=toolSchemas.match_buyers.parse(raw);const property=service.listProperties(actor).find(item=>item.id===propertyId)||(!propertyId?service.listProperties(actor)[0]:undefined);
+      const {propertyId}=toolSchemas.match_buyers.parse(raw);const property=service.listProperties(actor).find(item=>item.id===propertyId);
       if(!property)throw new service.AppError(404,'Select an authorized property to match.');
-      const data={property,matches:intelligence.matchProperty(actor,property.id)};
-      result.specialistIds=['buyer-matchmaker'];result.message=`Existing buyer matches for ${data.property.address}:\n${data.matches.map(x=>`${x.investorName}: property match ${x.score}/100; engagement ${x.engagementScore}/100 — ${x.reasons.join('; ')}${x.conflicts.length?`. Conflicts: ${x.conflicts.join('; ')}`:''}${x.missing.length?`. Missing: ${x.missing.join('; ')}`:''}`).join('\n')||'No matching authorized buyers.'}\n\nThese are separate match and relationship-readiness scores, not external research evidence.`;result.data=data;result.artifacts=[{type:'investors',title:'Existing buyer matches',data}];break;
+      const data=service.matchBuyers(actor,property.id);
+      result.specialistIds=['buyer-matchmaker'];result.message=buyerShortlistMessage(data);result.data=data;result.artifacts=[{type:'investors',title:'Existing buyer shortlist',data}];break;
     }
     case 'calling_queue':{
       const {propertyId}=toolSchemas.calling_queue.parse(raw);const queue=intelligence.getCallingQueue(actor,{propertyId:propertyId??undefined});
@@ -445,7 +446,13 @@ async function localReply(actor:Actor,message:string,conversation:Conversation,c
     if(!property)return {specialistIds:['investor-hunter'],message:'I can start property-specific sample research. Open Investor Hunter and enter the address, county, price and strategy, or name one of the sample properties in Deals. The offline assistant needs an exact property match; no research has started yet.',artifacts:[]};
     return dispatch('research_investors',{address:property.address,county:property.county,price:property.price,strategy:property.strategy,propertyType:null,limit:Math.min(100,Number(message.match(/\b(\d{1,3})\s+(?:new )?(?:investors|buyers)/i)?.[1]||12))});
   }
-  if(/match|buy box/i.test(message))return dispatch('match_buyers',{propertyId:state.properties.find(x=>lower.includes(x.address.toLowerCase())||lower.includes(x.city.toLowerCase()))?.id??null});
+  if(/match|buy box/i.test(message)){
+    requireFeature(actor,'buyer-matchmaker');
+    const exact=state.properties.filter(x=>lower.includes(x.address.toLowerCase()));
+    const candidates=exact.length?exact:state.properties.filter(x=>lower.includes(x.city.toLowerCase()));
+    if(candidates.length!==1)return {specialistIds:['buyer-matchmaker'],message:'Which property should I match? Name its address so I use the right buying criteria. No shortlist or new research has started.',artifacts:[]};
+    return dispatch('match_buyers',{propertyId:candidates[0].id});
+  }
   if(found||/(search|show|find).*(crm|investor|buyer)/i.test(message))return dispatch('search_crm',{query:found?.name??''});
   return {specialistIds:[],message:'I’m running the local demo command assistant. Try “Who should I call today?”, “Get me ready to call Mike”, or “I just talked to Mike…” with your recap. I can also check research, identify next steps, match existing buyers and prepare a property package for review. The dedicated workflow screens handle exact selections and approvals. Add a server-side OpenAI key for full natural-language, multi-step conversations.',artifacts:[]};
 }

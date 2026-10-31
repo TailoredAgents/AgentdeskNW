@@ -1,7 +1,7 @@
 import type {Actor,Role,ToolResult} from '../lib/contracts';
 import type {WorkSourceReferences,WorkStep,WorkStepInput} from '../lib/work-contracts';
 import {AppError,assertActor,getDb} from './db';
-import {validateStoredWorkOutput} from './work-capabilities';
+import {retiredBuyerShortlists,validateStoredWorkOutput} from './work-capabilities';
 import {historyReferencesVisible} from './history';
 
 const empty:ToolResult={specialistIds:[],message:'',artifacts:[]};
@@ -14,7 +14,7 @@ export function workRunVisible(actor:Actor,id:string,planVersion?:number):boolea
  if(!row)return false;
  try{
   const run=JSON.parse(row.data) as {steps:WorkStep[];sourceReferences?:WorkSourceReferences;sourceRole?:Role};validateWorkSourceReferences(actor,run.sourceReferences,run.sourceRole);
-  for(const step of run.steps)validateStoredWorkOutput(actor,{...step,input:step.resolvedInput??step.input},step.result??empty);
+  for(const step of run.steps)validateStoredWorkOutput(actor,{...step,input:step.resolvedInput??step.input},step.result??empty,{retiredShortlist:retiredBuyerShortlists(run.steps).has(step.key)});
   if(planVersion!==undefined){
    const saved=getDb().prepare('SELECT data FROM work_run_plans WHERE run_id=? AND plan_version=?').get(id,planVersion) as {data:string}|undefined;if(!saved)return false;
    const plan=JSON.parse(saved.data) as {steps:WorkStepInput[];sourceReferences?:WorkSourceReferences;sourceRole?:Role};validateWorkSourceReferences(actor,plan.sourceReferences,plan.sourceRole);

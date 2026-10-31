@@ -138,7 +138,7 @@ function propertyContext(actor:Actor,propertyId:string) {
  const releases=authorizedReleases(actor);const release=releases.find(item=>item.propertyId===propertyId);
  const exists=getDb().prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='property_releases'").get();
  if(exists&&!release&&getDb().prepare('SELECT 1 FROM property_releases WHERE organization_id=? AND office_id=? AND property_id=?').get(actor.organizationId,actor.officeId,propertyId))throw new AppError(404,'This property release is not available in your authorized workspace.');
- return {property:release?.property??property,propertyType:release?.propertyType??(property.synthetic&&['property-maple','property-cedar','property-oak'].includes(property.id)?'Single-family':''),arv:release?.arv??null,release};
+ return {property,propertyType:release?.propertyType??(property.synthetic&&['property-maple','property-cedar','property-oak'].includes(property.id)?'Single-family':''),arv:release?.arv??null,release};
 }
 function engagement(investor:Investor,data:StoredIntelligence):number {
  let score=investor.lastContactAt?Math.max(0,35-Math.floor((Date.now()-Date.parse(investor.lastContactAt))/86400000)):0;
@@ -150,6 +150,7 @@ function engagement(investor:Investor,data:StoredIntelligence):number {
 function rehabLevel(value:string):number {const key=value.toLowerCase();return /ground|teardown|rebuild/.test(key)?5:/gut/.test(key)?4:/heavy/.test(key)?3:/medium|moderate/.test(key)?2:/light|cosmetic/.test(key)?1:0;}
 function scoreBox(investor:Investor,box:BuyBox,context:ReturnType<typeof propertyContext>,data:StoredIntelligence,disclosure:Disclosure):BuyerMatch {
  const {property,propertyType,arv}=context;let score=0;const reasons:string[]=[],conflicts:string[]=[],missing:string[]=[];
+ if(context.release&&JSON.stringify(context.release.property)!==JSON.stringify(property))missing.push('Current inventory differs from the saved release; refresh publication facts before sharing.');
  const geo=[...box.counties.map(normalizeCounty),...box.cities.map(normalizeCounty)];
  const location=[property.county,property.city,property.address].map(normalizeCounty);
  if(box.excludedAreas.some(area=>location.some(place=>place.includes(normalizeCounty(area)))))conflicts.push('Property is in an explicitly excluded area.');
@@ -175,7 +176,7 @@ export function compareProperty(actor:Actor,propertyId:string):BuyerMatch[] {
  const context=propertyContext(actor,propertyId);
  return readInvestors(actor).map(investor=>{
  const data=initialize(actor,investor.id);const disclosure=getDisclosure(actor,investor.id);
- const matches=listBuyBoxes(actor,investor.id).filter(box=>box.active).map(box=>scoreBox(investor,box,context,data,disclosure)).sort((a,b)=>b.score-a.score||a.conflicts.length-b.conflicts.length);
+ const matches=listBuyBoxes(actor,investor.id).filter(box=>box.active&&box.provenance.reviewStatus==='approved').map(box=>scoreBox(investor,box,context,data,disclosure)).sort((a,b)=>Number(a.conflicts.length>0)-Number(b.conflicts.length>0)||b.score-a.score||a.missing.length-b.missing.length);
  return matches[0]??{investorId:investor.id,investorName:investor.name,propertyId,buyBoxId:null,buyBoxLabel:'No active buy box',score:0,reasons:[],conflicts:[],missing:['Active buying criteria'],disclosureReady:false,engagementScore:engagement(investor,data)};
  }).sort((a,b)=>b.score-a.score||a.investorId.localeCompare(b.investorId));
 }

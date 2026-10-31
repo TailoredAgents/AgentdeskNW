@@ -1,3 +1,4 @@
+import {retiredBuyerShortlists} from './work-capabilities';
 import {bindAssignment,getAssignmentBinding,withAssignment} from './assignment-roots';
 import {localWorkParent,bindLocalWork,isIncludedLocalWork,localWorkAdmission,finishLocalAssignment} from './local-assignment-work';
 import {createHash} from 'node:crypto';
@@ -16,7 +17,7 @@ import {validateWorkSteps,validateConcreteWorkInput,estimateWorkStep,executeWork
 const id=z.string().trim().min(1).max(150);
 const stepKey=z.string().regex(/^[a-zA-Z0-9_-]{1,60}$/,'Use a short step key containing letters, numbers, underscores or dashes.');
 const stepSchema=z.object({key:stepKey,capabilityId:id,input:z.record(z.string(),z.unknown()),dependsOn:z.array(stepKey).max(12)}).strict();
-const sourceReferencesSchema=z.object({assignmentReviews:z.array(z.string().min(1).max(400)).max(200).optional(),documentAccess:z.array(z.string().min(1).max(240)).max(200).optional(),transactionTeamAccess:z.array(z.string().min(1).max(240)).max(200).optional(),transactionAccess:z.array(z.string().min(1).max(240)).max(200).optional(),knowledgeAccess:z.array(z.string().min(1).max(300)).max(200).optional(),updatesAccess:z.array(z.string().min(1).max(500)).max(200).optional(),analysisAccess:z.array(z.string().min(1).max(200)).max(200).optional(),opportunityAccess:z.array(z.string().min(1).max(200)).max(200).optional(),workQuestions:z.array(z.string().min(1).max(200)).max(200).optional(),handoffAccess:z.array(z.string().regex(/^[a-f0-9]{64}$/)).max(200).optional(),investors:z.array(id).max(200),properties:z.array(id).max(200),releases:z.array(id).max(200),packages:z.array(id).max(200),debriefs:z.array(id).max(200),inboxThreads:z.array(id).max(200),inboxAccess:z.array(z.string().min(1).max(500)).max(200)}).strict();
+const sourceReferencesSchema=z.object({buyerShortlists:z.array(z.string().min(1).max(240)).max(200).optional(),assignmentReviews:z.array(z.string().min(1).max(400)).max(200).optional(),documentAccess:z.array(z.string().min(1).max(240)).max(200).optional(),transactionTeamAccess:z.array(z.string().min(1).max(240)).max(200).optional(),transactionAccess:z.array(z.string().min(1).max(240)).max(200).optional(),knowledgeAccess:z.array(z.string().min(1).max(300)).max(200).optional(),updatesAccess:z.array(z.string().min(1).max(500)).max(200).optional(),analysisAccess:z.array(z.string().min(1).max(200)).max(200).optional(),opportunityAccess:z.array(z.string().min(1).max(200)).max(200).optional(),workQuestions:z.array(z.string().min(1).max(200)).max(200).optional(),handoffAccess:z.array(z.string().regex(/^[a-f0-9]{64}$/)).max(200).optional(),investors:z.array(id).max(200),properties:z.array(id).max(200),releases:z.array(id).max(200),packages:z.array(id).max(200),debriefs:z.array(id).max(200),inboxThreads:z.array(id).max(200),inboxAccess:z.array(z.string().min(1).max(500)).max(200)}).strict();
 export const createWorkRunSchema=z.object({requestId:id,title:z.string().trim().min(3).max(180),instructions:z.string().trim().min(3).max(6000),conversationId:id.optional(),steps:z.array(stepSchema).min(1).max(12),sourceReferences:sourceReferencesSchema.optional()}).strict();
 const change={expectedVersion:z.number().int().positive(),eventKey:id};
 export const reviseWorkRunSchema=z.object({...change,title:z.string().trim().min(3).max(180).optional(),instructions:z.string().trim().min(3).max(6000),steps:z.array(stepSchema).min(1).max(12)}).strict();
@@ -59,8 +60,8 @@ function display(actor:Actor,row:RunRow):WorkRun {
  const visibleRun={...savedRun,...(isIncludedLocalWork(actor,run.id)?{costScope:'included_local' as const}:{})};
  let restricted=false;
  try{validateWorkSourceReferences(actor,sourceReferences,sourceRole);}catch(error){if(error instanceof AppError&&[403,404,409].includes(error.status))restricted=true;else throw error;}
- for(const step of run.steps){try{validateStoredWorkOutput(actor,concreteStep(step),step.result??emptyResult);}catch(error){if(error instanceof AppError&&[403,404,409].includes(error.status)){restricted=true;break;}throw error;}}
- if(!restricted)return {...visibleRun,question:getWorkQuestion(actor,run),budget:getWorkBudget(actor,run.id),events,contentRestricted:false};
+ for(const step of run.steps){try{validateStoredWorkOutput(actor,concreteStep(step),step.result??emptyResult,{retiredShortlist:retiredBuyerShortlists(run.steps).has(step.key)});}catch(error){if(error instanceof AppError&&[403,404,409].includes(error.status)){restricted=true;break;}throw error;}}
+ if(!restricted)return {...visibleRun,steps:visibleRun.steps.map(step=>retiredBuyerShortlists(run.steps).has(step.key)?{...step,result:{specialistIds:[],artifacts:[],message:'This earlier shortlist was replaced by an explicit refresh. Review the later matching step for current recommendations. Its original result and charge remain in the execution receipt.'}}:step),question:getWorkQuestion(actor,run),budget:getWorkBudget(actor,run.id),events,contentRestricted:false};
  return {...visibleRun,title:'Saved work with restricted context',instructions:'Some source records are no longer available. Saved content is hidden; you can still stop this work.',lastError:'Current source access is required to inspect or continue this work.',steps:run.steps.map((step,index)=>({...step,key:`step-${index+1}`,input:{},resolvedInput:null,dependsOn:[],result:null,error:null})),budget:getWorkBudget(actor,run.id),events:events.map(entry=>({...entry,message:'Saved work history; source content is restricted.',stepKey:null})),contentRestricted:true};
 }
 export function getWorkRun(actor:Actor,runId:string):WorkRun {return display(actor,readRow(actor,runId));}
@@ -152,7 +153,7 @@ export function reviseWorkRun(actor:Actor,runId:string,input:ReviseWorkRunInput)
 export function answerWorkQuestion(actor:Actor,runId:string,input:AnswerWorkInput):WorkRun {
  const parsed=answerWorkSchema.parse(input);return changeRun(actor,runId,parsed,'answered',parsed,run=>{
   requireFeature(actor,'core');validateWorkSourceReferences(actor,run.sourceReferences,run.sourceRole);validatePlan(actor,run.steps.map(inputOf));
-  for(const step of run.steps.filter(step=>step.status==='completed'))validateStoredWorkOutput(actor,concreteStep(step),step.result??emptyResult);
+  for(const step of run.steps.filter(step=>step.status==='completed'))validateStoredWorkOutput(actor,concreteStep(step),step.result??emptyResult,{retiredShortlist:retiredBuyerShortlists(run.steps).has(step.key)});
   const question=getWorkQuestion(actor,run);
   if(!question||question.reference!==parsed.questionReference)throw new AppError(409,'This question or its source context changed. Retrieve the current question before answering.');
   const result=parseWorkAnswer(question,parsed.answer),step=run.steps.find(step=>step.key===question.stepKey)!;
@@ -240,7 +241,7 @@ export function claimNextWorkStep(actor?:Actor):WorkStepClaim|null {
     if(admission==='stopped'){cancelWorkChildren(owner,run.steps);releaseWorkBudget(owner,run.id);for(const step of run.steps)if(step.status!=='completed')step.status='canceled';run.status='canceled';run.lastError='The original assignment stopped before this local work could continue.';appendEvent(run,'canceled',run.lastError);write(run,true);continue;}
     validateWorkSourceReferences(owner,run.sourceReferences,run.sourceRole);resetLeasedStep(run);
     validatePlan(owner,run.steps.map(inputOf));
-    for(const completed of run.steps.filter(step=>step.status==='completed'))validateStoredWorkOutput(owner,concreteStep(completed),completed.result??emptyResult);
+    for(const completed of run.steps.filter(step=>step.status==='completed'))validateStoredWorkOutput(owner,concreteStep(completed),completed.result??emptyResult,{retiredShortlist:retiredBuyerShortlists(run.steps).has(completed.key)});
     const step=run.steps.find(item=>item.status==='pending'&&item.dependsOn.every(key=>run.steps.some(dependency=>dependency.key===key&&dependency.status==='completed')));
     if(!step){
      if(run.steps.every(item=>item.status==='completed')){releaseWorkBudget(owner,run.id);run.status='completed';run.lastError=null;appendEvent(run,'completed','Every planned step completed. Unused simulated credits were released.');write(run,true);finishLocalAssignment(owner,run.id);}
@@ -276,7 +277,7 @@ export function executeClaimedWorkStep(claim:WorkStepClaim):boolean {
   if(!['ordinary','ready'].includes(localWorkAdmission(actor,run.id)))throw new AppError(409,'The original assignment is not ready for this local step.');
   validateWorkSourceReferences(actor,run.sourceReferences,run.sourceRole);validatePlan(actor,run.steps.map(inputOf));
   const step=run.steps.find(item=>item.key===claim.stepKey);if(!step||step.status!=='running')return false;
-  for(const completed of run.steps.filter(item=>item.status==='completed'))validateStoredWorkOutput(actor,concreteStep(completed),completed.result??emptyResult);
+  for(const completed of run.steps.filter(item=>item.status==='completed'))validateStoredWorkOutput(actor,concreteStep(completed),completed.result??emptyResult,{retiredShortlist:retiredBuyerShortlists(run.steps).has(completed.key)});
   const resolvedInput=resolveWorkInput(step,run.steps),concrete={...inputOf(step),input:resolvedInput};
   const estimate=estimateWorkStep(actor,concrete,isIncludedLocalWork(actor,run.id));
   if(estimate.maximumCents>step.maximumCents||estimate.estimatedCents>step.estimatedCents||estimate.rateVersion!==step.rateVersion)throw new AppError(409,'The step estimate changed. Revise and review the remaining work before continuing.');

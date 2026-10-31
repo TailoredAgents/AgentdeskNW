@@ -1,5 +1,17 @@
 # AgentDesk progress log
 
+## October 31, 2026 — Relationship-aware existing-buyer shortlists
+
+**Scope:** extends `c3d12c6`. Buyer Matchmaker now returns a single-property CRM shortlist with separate numerical fit and readiness, current funding/timing evidence, relationship concerns and one sourced next action. It honors pauses, distinguishes a pass on the selected property from unrelated passes, carries unresolved objections from earlier opportunities, scopes criteria conflicts to the selected buy box, and uses only the requesting employee's follow-ups. Resolving an exact concern or correcting a report changes subsequent recommendations. No draft is sent and no external research is started.
+
+**Matching:** approved active boxes remain separate. A box without a known conflict takes precedence over a higher-scoring conflicting alternative. Current inventory supplies current comparison facts; disagreement with a saved release is explicitly flagged for publication review. An ambiguous offline matching request asks for the property rather than selecting the first record. The model tool requires an authorized property ID.
+
+**Continuity and recovery:** the same service powers typed Copilot, reviewed dictation, employee messaging entry points and saved matching jobs. Exact employee/source fingerprints protect saved conversation and derived work after changes. An explicit same-property plan refresh can retain old matching receipts/charges while replacing obsolete output with a notice. No unfinished direct or transitive dependency may consume that retired output, and source permissions remain enforced. Existing compiled HTTP tests now demonstrate concern → matching next action → resolution → changed shortlist and withheld obsolete history.
+
+**Verification:** all 1,171 backend tests across 64 files passed, including 17 new shortlist cases and the revised saved-plan recovery regression. Types, lint and production build passed. All 21 isolated HTTP/workflow suites passed, totaling 1,721 checks, including 80 intelligence checks and the existing mobile, billing, communications, work and document suites. The separate authored relationship development benchmark passed 24 cases / 36 checks. All transport was simulated or disabled. There were no live AI calls, investor messages, real payments or company-data changes. No schema/dependency or native UI change; no new native export or physical-device acceptance is claimed.
+
+**Release and remaining work:** Render was inspected October 31 and still ran `529486f`; its blueprint has automatic deployments off. This checkpoint updates source for GitHub publication, not the live service. Buyer Matchmaker remains demo-rated: broader geography/multiple-property reasoning, conditional-language depth, complete outreach and independent effectiveness remain open. All C1–C7 scope is preserved; this is concrete C4 progress, not full-roadmap completion.
+
 ## October 31, 2026 — Original unstarted-request quote renewal
 
 **Scope:** extends `6830f03` with migration 044. Desktop/native reviews and exact Renew/Refresh S-reference commands replace an unstarted admitted-text quote using the current configured tariff and a new expiry. The original request/root/host remains; above-$1 replacement scope needs fresh approval. Renewal does not dispatch a model call. Stable retry identity persists the replacement across restart. The service rejects changed business context/configuration, claimed/in-flight/paid work and canceled/denied requests; these require separate scope/recovery work.

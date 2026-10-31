@@ -1,3 +1,4 @@
+import {buildBuyerShortlist} from './buyer-shortlist';
 import {bindAssignment,withAssignment} from './assignment-roots';
 import {proactiveOwnsTopic} from './proactive-policy';
 import {employeeTimeZone} from './proactive-time';
@@ -323,8 +324,7 @@ export function matchBuyers(actor:Actor,propertyId?:string) {
  requireRole(actor,researchRoles);
  const property=propertyId?readProperty(actor,propertyId):listProperties(actor)[0];
  if(!property)throw new AppError(404,'No authorized property is available to match.');
- const matches=matchProperty(actor,property.id).map(match=>({...match,investor:getInvestor(actor,match.investorId)}));
- return {property,matches};
+ return buildBuyerShortlist(actor,property.id);
 }
 export function getDailyBrief(actor:Actor) {
  const tasks=listTasks(actor).filter(task=>task.status==='open');
