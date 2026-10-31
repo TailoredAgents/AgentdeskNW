@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {ApiError,createApi,normalizeOrigin,RequestIdentity,SessionEpoch,workIdFromUrl} from '../src/client';
+import {ApiError,createApi,normalizeOrigin,RequestIdentity,SessionEpoch,workIdFromUrl,updateIdFromUrl} from '../src/client';
 
 test('workspace address permits HTTPS and rejects embedded credential/path tricks',()=>{
  assert.equal(normalizeOrigin(' https://agent.example.com/ '),'https://agent.example.com');
@@ -39,3 +39,5 @@ test('inbox status changes use PATCH with the same authenticated transport',asyn
  const api=createApi('https://workspace.example','test-device-token',async(_url,init)=>{assert.equal(init?.method,'PATCH');assert.equal(init?.redirect,'error');assert.equal(init?.credentials,'omit');assert.deepEqual(JSON.parse(init?.body as string),{status:'done',expectedVersion:3,eventKey:'one'});return new Response('{}');});
  await api('/inbox/inbox_thread_one',{status:'done',expectedVersion:3,eventKey:'one'},'PATCH');
 });
+
+test('update links accept only the exact native route and safe identifier',()=>{assert.equal(updateIdFromUrl('agentdesknw://updates/update_demo-123'),'update_demo-123');for(const url of ['https://updates/update_demo','agentdesknw://updates/update_demo?token=x','agentdesknw://updates/update_demo#fragment','agentdesknw://user@updates/update_demo','agentdesknw://updates/work_demo','agentdesknw://updates/update_a/extra','agentdesknw://updates/%2e%2e','agentdesknw://updates:80/update_demo'])assert.equal(updateIdFromUrl(url),null);});

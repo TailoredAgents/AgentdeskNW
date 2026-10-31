@@ -35,8 +35,8 @@ export function inboxContextFingerprint(actor:Actor):string {
 export function withoutInboxHistory(actor:Actor,conversation:Conversation):Conversation {
  assertActor(actor);
  const excluded=new Set((getDb().prepare('SELECT id,data FROM messages WHERE conversation_id=? AND organization_id=? AND office_id=? AND owner_id=?').all(conversation.id,actor.organizationId,actor.officeId,actor.id) as {id:string;data:string}[]).filter(row=>{
-  const value=JSON.parse(row.data) as {references?:{inboxThreads?:string[]};artifacts?:{type:string}[]};
-  return !!value.references?.inboxThreads?.length||!!value.artifacts?.some(artifact=>artifact.type==='inbox');
+  const value=JSON.parse(row.data) as {references?:{inboxThreads?:string[];updatesAccess?:string[]};artifacts?:{type:string}[]};
+  return !!value.references?.updatesAccess?.length||!!value.references?.inboxThreads?.length||!!value.artifacts?.some(artifact=>artifact.type==='inbox');
  }).map(row=>row.id));
  return {...conversation,messages:conversation.messages.filter(message=>!excluded.has(message.id))};
 }

@@ -1,3 +1,4 @@
+import {proactiveOwnsTopic} from './proactive-policy';
 import {employeeTimeZone} from './proactive-time';
 import {getHandoffBoard} from './handoffs';
 import { researchConfig } from './external-research-provider';
@@ -72,7 +73,7 @@ export function notify(actor:Actor,dedupeKey:string,title:string,body:string,lin
 }
 export function processNotifications(actor:Actor) {
  assertActor(actor);
- if(hasFeature(actor,'core')&&hasFeature(actor,'daily-coordinator'))for(const task of listPersonalTasks(actor))if(task.status==='open'&&task.dueAt&&Date.parse(task.dueAt)<=Date.now())notify(actor,taskReminderKey(task),'Follow-up is due',task.title,'queue');
+ if(!proactiveOwnsTopic(actor,'tasks')&&hasFeature(actor,'core')&&hasFeature(actor,'daily-coordinator'))for(const task of listPersonalTasks(actor))if(task.status==='open'&&task.dueAt&&Date.parse(task.dueAt)<=Date.now())notify(actor,taskReminderKey(task),'Follow-up is due',task.title,'queue');
  for(const job of scopedRows<ResearchJob>(actor,'research_jobs',true))if(job.status==='completed')notify(actor,`research-done:${job.id}`,'Your research is ready',`${job.prospects.length} ${job.provider===syntheticResearchProvider.id?'synthetic prospects':'public-source candidates; identities and purchases unverified'} for ${job.input.address}. Review evidence and duplicates before importing.`,'hunter');
  for(const job of scopedRows<ResearchJob>(actor,'research_jobs',true))if(job.status==='failed'&&job.provider===externalResearchProviderId)notify(actor,`research-stopped:${job.id}:${job.attempt}`,'External research stopped',`${job.prospects.length} saved candidates remain available. Review the job for its stop reason and remaining scope.`,'hunter');
  if(!notificationsAllowed(actor))return;
@@ -115,7 +116,7 @@ export function getConversation(actor:Actor,id:string):Conversation {
 export function listConversations(actor:Actor):Conversation[] {
  return scopedRows<Conversation>(actor,'conversations',true).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt)).slice(0,50).map(item=>getConversation(actor,item.id));
 }
-const messageSchema=z.object({role:z.enum(['user','assistant']),content:z.string().trim().min(1).max(50000),specialistIds:z.array(z.string().max(100)).max(16).optional(),artifacts:z.array(z.object({type:z.enum(['analysis','opportunity','handoff','work_run','job','approval','notes','task','investors','guidance','package','debrief','release','calling_queue','briefing','marketplace','inbox']),id:z.string().max(150).optional(),title:z.string().max(300),data:z.unknown().optional()})).max(20).optional()}).strict();
+const messageSchema=z.object({role:z.enum(['user','assistant']),content:z.string().trim().min(1).max(50000),specialistIds:z.array(z.string().max(100)).max(16).optional(),artifacts:z.array(z.object({type:z.enum(['updates','analysis','opportunity','handoff','work_run','job','approval','notes','task','investors','guidance','package','debrief','release','calling_queue','briefing','marketplace','inbox']),id:z.string().max(150).optional(),title:z.string().max(300),data:z.unknown().optional()})).max(20).optional()}).strict();
 export function addMessage(actor:Actor,conversationId:string,input:{role:'user'|'assistant';content:string;specialistIds?:string[];artifacts?:Artifact[]},context?:{investors:{id:string}[];properties:{id:string}[]}):Message {
  const parsed=messageSchema.parse(input);
  return getDb().transaction(()=>{

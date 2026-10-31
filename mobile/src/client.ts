@@ -41,3 +41,5 @@ export class SessionEpoch {private current=0;next(){return ++this.current;}captu
 export function workIdFromUrl(raw:string):string|null {
  try{const url=new URL(raw);if(url.protocol!=='agentdesknw:'||url.hostname!=='work'||url.search||url.hash)return null;const id=decodeURIComponent(url.pathname.slice(1));return /^work_[a-zA-Z0-9_-]{1,150}$/.test(id)?id:null;}catch{return null;}
 }
+
+export function updateIdFromUrl(raw:string):string|null {try{const url=new URL(raw);if(url.protocol!=='agentdesknw:'||url.hostname!=='updates'||url.username||url.password||url.port||url.search||url.hash)return null;const id=decodeURIComponent(url.pathname.slice(1));return /^update_[a-zA-Z0-9_-]{1,150}$/.test(id)?id:null;}catch{return null;}}

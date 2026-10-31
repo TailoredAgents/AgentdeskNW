@@ -1,3 +1,4 @@
+import {proactiveDeliveryState} from './proactive-delivery-state';
 import {z} from 'zod';
 import type {Actor,Role} from '../lib/contracts';
 import {proactiveTopics,type ProactiveItem,type ProactivePreferences,type ProactiveState,type ProactiveUpdate} from '../lib/proactive-contracts';
@@ -14,7 +15,7 @@ import {dueBriefingSlot,validTimeZone} from './proactive-time';
 const id=z.string().trim().min(1).max(150),time=z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/);
 export const proactiveSettingsSchema=z.object({expectedVersion:z.number().int().nonnegative(),eventKey:id,enabled:z.boolean(),timeZone:z.string().max(100).refine(validTimeZone,'Choose a valid IANA timezone, such as America/New_York.'),times:z.array(time).min(1).max(3),weekdays:z.array(z.number().int().min(0).max(6)).min(1).max(7),topics:z.array(z.enum(proactiveTopics)).min(1).max(4),watchChanges:z.boolean(),preferredChannel:z.enum(['app','sms','slack'])}).strict().refine(v=>new Set(v.times).size===v.times.length&&new Set(v.weekdays).size===v.weekdays.length&&new Set(v.topics).size===v.topics.length,'Remove duplicate times, weekdays or topics.');
 type Cursor={slot:string|null;seen:string[];sequence:number;lastCreatedAt:string|null};
-type StoredUpdate=Omit<ProactiveUpdate,'items'|'withheldCount'|'summary'>&{references:{key:string;reference:string}[]};
+export type StoredUpdate=Omit<ProactiveUpdate,'items'|'withheldCount'|'summary'>&{preferenceVersion?:number;references:{key:string;reference:string}[]};
 const owner=(actor:Actor)=>[actor.organizationId,actor.officeId,actor.id];
 const initial:ProactivePreferences={version:0,enabled:false,timeZone:'America/New_York',times:['09:00','13:00','16:30'],weekdays:[1,2,3,4,5],topics:['replies','tasks','jobs','handoffs'],watchChanges:true,preferredChannel:'app',updatedAt:null};
 function prefs(actor:Actor){assertActor(actor);const row=getDb().prepare('SELECT data,cursor FROM proactive_preferences WHERE organization_id=? AND office_id=? AND user_id=?').get(...owner(actor)) as {data:string;cursor:string}|undefined;return row?{preferences:JSON.parse(row.data) as ProactivePreferences,cursor:JSON.parse(row.cursor) as Cursor}:{preferences:structuredClone(initial),cursor:{slot:null,seen:[],sequence:0,lastCreatedAt:null} as Cursor};}
@@ -48,9 +49,9 @@ export function currentProactiveItems(actor:Actor,preferences=prefs(actor).prefe
 function project(value:StoredUpdate,current:ProactiveItem[]):ProactiveUpdate {
  const items=value.references.flatMap(ref=>{const item=current.find(item=>item.key===ref.key&&item.reference===ref.reference);return item?[item]:[];}),withheldCount=value.references.length-items.length;
  const {references:_references,...rest}=value;void _references;
- return {...rest,items,withheldCount,summary:items.length?`${items.length} current item${items.length===1?'':'s'} to review.${withheldCount?' Changed, resolved or unavailable references are withheld.':''}`:withheldCount?'These items changed, were resolved or are no longer available. Open current work for the latest state.':'No current items need attention for your selected topics.'};
+ return {...rest,delivery:proactiveDeliveryState(value.id,value.delivery),items,withheldCount,summary:items.length?`${items.length} current item${items.length===1?'':'s'} to review.${withheldCount?' Changed, resolved or unavailable references are withheld.':''}`:withheldCount?'These items changed, were resolved or are no longer available. Open current work for the latest state.':'No current items need attention for your selected topics.'};
 }
-export function getProactiveState(actor:Actor):ProactiveState {const {preferences}=prefs(actor),current=currentProactiveItems(actor,preferences),rows=getDb().prepare('SELECT data FROM proactive_updates WHERE organization_id=? AND office_id=? AND user_id=? ORDER BY rowid DESC LIMIT 30').all(...owner(actor)) as {data:string}[];return {preferences,current,updates:rows.map(row=>project(JSON.parse(row.data),current)),notice:'Fictional workspace · Deterministic updates, no AI credit charge. Current source access is checked whenever an update opens. Phone delivery and external-channel acceptance remain separate from an in-app update.'};}
+export function getProactiveState(actor:Actor):ProactiveState {const {preferences}=prefs(actor),current=currentProactiveItems(actor,preferences),rows=getDb().prepare('SELECT data FROM proactive_updates WHERE organization_id=? AND office_id=? AND user_id=? ORDER BY rowid DESC LIMIT 30').all(...owner(actor)) as {data:string}[];return {preferences,current,updates:rows.map(row=>project(JSON.parse(row.data),current)),notice:'Fictional workspace · Deterministic updates, no AI credit charge. Current source access is checked whenever an update opens. Selected-channel delivery requires an active connection and server sending. Provider receipts do not prove phone display.'};}
 export function saveProactivePreferences(actor:Actor,raw:z.input<typeof proactiveSettingsSchema>):ProactiveState {
  assertActor(actor);const input=proactiveSettingsSchema.parse(raw);return getDb().transaction(()=>{
   if(replay(actor,input.eventKey,input))return getProactiveState(actor);const old=prefs(actor);if(input.expectedVersion!==old.preferences.version)throw new AppError(409,'Update preferences changed. Reload before saving.');if(input.enabled)requireFeature(actor,'core');
@@ -59,7 +60,7 @@ export function saveProactivePreferences(actor:Actor,raw:z.input<typeof proactiv
  }).immediate();
 }
 function createUpdate(actor:Actor,preferences:ProactivePreferences,items:ProactiveItem[],kind:'briefing'|'changes',dedupeKey:string){
- const value:StoredUpdate={id:newId('update'),kind,createdAt:now(),read:false,title:kind==='briefing'?'Your scheduled briefing':'Since your last update',references:items.map(({key,reference})=>({key,reference})),channel:preferences.preferredChannel,delivery:preferences.preferredChannel==='app'?'in_app':'connection_required'};
+ const value:StoredUpdate={id:newId('update'),kind,preferenceVersion:preferences.version,createdAt:now(),read:false,title:kind==='briefing'?'Your scheduled briefing':'Since your last update',references:items.map(({key,reference})=>({key,reference})),channel:preferences.preferredChannel,delivery:preferences.preferredChannel==='app'?'in_app':'connection_required'};
  const db=getDb(),insert=db.prepare('INSERT OR IGNORE INTO proactive_updates VALUES(?,?,?,?,?,?)').run(value.id,...owner(actor),dedupeKey,JSON.stringify(value));if(!insert.changes)return;
  // Generic notice only; private current content is read behind the same employee scope.
  notify(actor,`proactive:${value.id}`,value.title,'Open AgentDesk to review current replies, deadlines and saved work.','updates');
@@ -83,5 +84,13 @@ export function processProactiveUpdates():number {
  return rows.reduce((sum,row)=>sum+processProactiveActor({organizationId:row.organization_id,officeId:row.office_id,id:row.user_id,name:row.name,role:row.role}),0);
 }
 export function readProactiveUpdate(actor:Actor,updateId:string,eventKey:string):ProactiveState {
- assertActor(actor);id.parse(updateId);id.parse(eventKey);return getDb().transaction(()=>{const payload={updateId,read:true};if(replay(actor,eventKey,payload))return getProactiveState(actor);const row=getDb().prepare('SELECT data FROM proactive_updates WHERE id=? AND organization_id=? AND office_id=? AND user_id=?').get(updateId,...owner(actor)) as {data:string}|undefined;if(!row)throw new AppError(404,'Update not found in your workspace.');const value=JSON.parse(row.data) as StoredUpdate;getDb().prepare('UPDATE proactive_updates SET data=? WHERE id=?').run(JSON.stringify({...value,read:true}),updateId);event(actor,eventKey,payload);return getProactiveState(actor);}).immediate();
+ assertActor(actor);id.parse(updateId);id.parse(eventKey);return getDb().transaction(()=>{const payload={updateId,read:true};if(replay(actor,eventKey,payload))return getProactiveState(actor);const row=getDb().prepare('SELECT data FROM proactive_updates WHERE id=? AND organization_id=? AND office_id=? AND user_id=?').get(updateId,...owner(actor)) as {data:string}|undefined;if(!row)throw new AppError(404,'Update not found in your workspace.');const value=JSON.parse(row.data) as StoredUpdate;getDb().prepare('UPDATE proactive_updates SET data=? WHERE id=?').run(JSON.stringify({...value,read:true}),updateId);getDb().prepare("UPDATE notifications SET data=json_set(data,'$.read',json('true')) WHERE organization_id=? AND office_id=? AND owner_id=? AND dedupe_key=?").run(...owner(actor),`proactive:${updateId}`);event(actor,eventKey,payload);return getProactiveState(actor);}).immediate();
+}
+
+/** Exact saved update retrieval also supports links older than the thirty-item list. */
+export function getProactiveUpdate(actor:Actor,updateId:string):ProactiveUpdate {assertActor(actor);const row=getDb().prepare('SELECT data FROM proactive_updates WHERE id=? AND organization_id=? AND office_id=? AND user_id=?').get(id.parse(updateId),...owner(actor)) as {data:string}|undefined;if(!row)throw new AppError(404,'Update not found in your workspace.');return project(JSON.parse(row.data),currentProactiveItems(actor));}
+/** References for non-job summaries never recurse through job/history validation. */
+export function proactiveItemReference(item:ProactiveItem):string{return JSON.stringify({key:item.key,reference:item.reference});}
+export function proactiveReferenceCurrent(actor:Actor,reference:string):boolean {
+ try{const saved=JSON.parse(reference) as {key:string;reference:string};return currentProactiveItems(actor,{...prefs(actor).preferences,topics:['tasks','replies','handoffs']}).some(item=>item.key===saved.key&&item.reference===saved.reference);}catch(error){if(error instanceof SyntaxError||error instanceof AppError&&[402,403,404].includes(error.status))return false;throw error;}
 }

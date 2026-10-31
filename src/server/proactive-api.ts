@@ -2,10 +2,11 @@ import {NextRequest,NextResponse} from 'next/server';
 import {z} from 'zod';
 import {AppError} from './db';
 import type {Actor} from '../lib/contracts';
-import {getProactiveState,saveProactivePreferences,processProactiveActor,readProactiveUpdate} from './proactive';
+import {getProactiveUpdate,getProactiveState,saveProactivePreferences,processProactiveActor,readProactiveUpdate} from './proactive';
 export async function proactiveRoute(request:NextRequest,actor:Actor,path:string[],body:()=>Promise<unknown>){
  if(path[0]!=='updates')return undefined;const json=(value:unknown)=>NextResponse.json(value,{headers:{'Cache-Control':'no-store'}});
  if(path.length===1&&request.method==='GET')return json(getProactiveState(actor));
+ if(path.length===2&&request.method==='GET')return json(getProactiveUpdate(actor,path[1]));
  if(request.method!=='POST')throw new AppError(405,'Unsupported update request.');
  const input=await body();
  if(path.length===1)return json(saveProactivePreferences(actor,input as Parameters<typeof saveProactivePreferences>[1]));

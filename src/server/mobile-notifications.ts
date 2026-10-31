@@ -1,3 +1,4 @@
+import {proactiveOwnsTopic} from './proactive-policy';
 import {z} from 'zod';
 import type {Actor} from '../lib/contracts';
 import type {MobileNoticeKind,MobileNoticeStatus,MobileNotificationState} from '../lib/mobile-notification-contracts';
@@ -16,7 +17,7 @@ const pushSendingEnabled=()=>process.env.AGENTDESK_MOBILE_PUSH_SEND_ENABLED==='t
 const owner=(actor:Actor)=>[actor.organizationId,actor.officeId,actor.id];
 function activeSession(actor:Actor,sessionId:string){assertActor(actor);const current=requireMobileSession(sessionId);if(current.actor.id!==actor.id||current.actor.organizationId!==actor.organizationId||current.actor.officeId!==actor.officeId)throw new AppError(404,'Mobile connection not found in your workspace.');return current;}
 function deviceFor(actor:Actor,sessionId:string):Device|undefined {activeSession(actor,sessionId);return getDb().prepare('SELECT * FROM mobile_push_devices WHERE session_id=? AND organization_id=? AND office_id=? AND user_id=?').get(sessionId,...owner(actor)) as Device|undefined;}
-function requireDevice(id:string){const device=getDb().prepare('SELECT * FROM mobile_push_devices WHERE id=?').get(id) as Device|undefined;if(!device||!device.enabled||!device.expo_push_token)throw new AppError(403,'Mobile notifications are disabled.');const {actor}=requireMobileSession(device.session_id);if(device.organization_id!==actor.organizationId||device.office_id!==actor.officeId||device.user_id!==actor.id)throw new AppError(403,'Mobile notification ownership changed.');requireFeature(actor,'core');return {actor,device};}
+export function requirePushDevice(id:string){const device=getDb().prepare('SELECT * FROM mobile_push_devices WHERE id=?').get(id) as Device|undefined;if(!device||!device.enabled||!device.expo_push_token)throw new AppError(403,'Mobile notifications are disabled.');const {actor}=requireMobileSession(device.session_id);if(device.organization_id!==actor.organizationId||device.office_id!==actor.officeId||device.user_id!==actor.id)throw new AppError(403,'Mobile notification ownership changed.');requireFeature(actor,'core');return {actor,device};}
 function cancelPending(deviceId:string){getDb().prepare("UPDATE mobile_push_outbox SET status='canceled',error_code='connection_changed',updated_at=? WHERE device_id=? AND status='queued'").run(now(),deviceId);}
 export function mobileNotificationState(actor:Actor,sessionId:string):MobileNotificationState {
  const device=deviceFor(actor,sessionId),sendingEnabled=pushSendingEnabled();
@@ -42,20 +43,20 @@ export function queueMobileJobNotifications():number {
  const db=getDb();let count=0;
  for(const device of db.prepare('SELECT * FROM mobile_push_devices WHERE enabled=1').all() as Device[]){
   try{
-   const {actor}=requireDevice(device.id);
+   const {actor}=requirePushDevice(device.id);if(proactiveOwnsTopic(actor,'jobs'))continue;
    const runs=db.prepare("SELECT id FROM work_runs WHERE organization_id=? AND office_id=? AND owner_id=? AND updated_at>=? AND status IN ('waiting_cost_approval','completed','failed','waiting_for_input','reconciling') ORDER BY updated_at DESC LIMIT 100").all(...owner(actor),device.enabled_at) as {id:string}[];
    for(const item of runs){const run=getWorkRun(actor,item.id),kind=kindFor(run);if(run.contentRestricted||!kind)continue;const stamp=now();count+=db.prepare("INSERT OR IGNORE INTO mobile_push_outbox VALUES(?,?,?,?,?,'queued',NULL,NULL,?,?,NULL)").run(newId('mobile_notice'),device.id,run.id,run.planVersion,kind,stamp,stamp).changes;}
   }catch(error){if(error instanceof AppError&&[401,402,403,404].includes(error.status)){cancelPending(device.id);continue;}throw error;}
  }
  return count;
 }
-export interface MobilePushPayload {to:string;title:string;body:string;data:{url:string;workRunId:string;notificationId:string};sound:'default';channelId:'work';ttl:number}
+export interface MobilePushPayload {to:string;title:string;body:string;data:{url:string;workRunId?:string;updateId?:string;notificationId:string};sound:'default';channelId:'work';ttl:number}
 export interface MobilePushTransport {send:(payload:MobilePushPayload)=>Promise<{ticketId:string}>;receipt:(ticketId:string)=>Promise<'pending'|'service_received'|'device_not_registered'|'failed'>}
-class PushRejected extends Error {constructor(readonly code:string){super('The notification service rejected this request.');}}
+export class PushRejected extends Error {constructor(readonly code:string){super('The notification service rejected this request.');}}
 const responseEnvelope=z.object({data:z.unknown().optional(),errors:z.array(z.unknown()).optional()});
 const ticket=z.object({status:z.enum(['ok','error']),id:z.string().min(1).max(200).optional(),details:z.object({error:z.string().max(120).optional()}).optional()});
 const headers=()=>({'Content-Type':'application/json',...(process.env.EXPO_ACCESS_TOKEN?{Authorization:`Bearer ${process.env.EXPO_ACCESS_TOKEN}`}:{})});
-const expoTransport:MobilePushTransport={
+export const expoTransport:MobilePushTransport={
  async send(payload){
   const response=await fetch('https://exp.host/--/api/v2/push/send',{method:'POST',headers:headers(),body:JSON.stringify(payload),signal:AbortSignal.timeout(15000)});
   if(!response.ok){if([400,401,403,404,413,429].includes(response.status))throw new PushRejected('service_rejected');throw new Error('Unconfirmed notification send');}
@@ -74,13 +75,13 @@ export async function processMobilePushOutbox(transport:MobilePushTransport=expo
  const db=getDb();db.prepare("UPDATE mobile_push_outbox SET status='unknown',error_code='interrupted_send',updated_at=? WHERE status='dispatching' AND updated_at<?").run(now(),new Date(Date.now()-60_000).toISOString());if(!pushSendingEnabled())return 0;let count=0;
  for(const row of db.prepare("SELECT * FROM mobile_push_outbox WHERE status='queued' ORDER BY updated_at,rowid LIMIT 20").all() as Notice[]){
   try{
-   const {actor,device}=requireDevice(row.device_id);
+   const {actor,device}=requirePushDevice(row.device_id);
    if(Date.now()-Date.parse(row.created_at)>86400_000){db.prepare("UPDATE mobile_push_outbox SET status='expired',updated_at=? WHERE id=? AND status='queued'").run(now(),row.id);continue;}
-   if(!currentNotice(actor,row)){db.prepare("UPDATE mobile_push_outbox SET status='canceled',error_code='work_changed',updated_at=? WHERE id=? AND status='queued'").run(now(),row.id);continue;}
+   if(proactiveOwnsTopic(actor,'jobs')||!currentNotice(actor,row)){db.prepare("UPDATE mobile_push_outbox SET status='canceled',error_code='work_changed',updated_at=? WHERE id=? AND status='queued'").run(now(),row.id);continue;}
    if(!notificationsAllowed(actor)){db.prepare("UPDATE mobile_push_outbox SET updated_at=? WHERE id=? AND status='queued'").run(now(),row.id);continue;}
    const recent=db.prepare("SELECT COUNT(*) n FROM mobile_push_outbox WHERE device_id=? AND status IN ('dispatching','accepted','service_received','unknown') AND updated_at>?").get(device.id,new Date(Date.now()-3600_000).toISOString()) as {n:number};if(recent.n>=12){db.prepare("UPDATE mobile_push_outbox SET updated_at=? WHERE id=? AND status='queued'").run(now(),row.id);continue;}
    if(!db.prepare("UPDATE mobile_push_outbox SET status='dispatching',updated_at=? WHERE id=? AND status='queued'").run(now(),row.id).changes)continue;
-   requireDevice(row.device_id);const result=await transport.send(payloadFor(device,row));
+   requirePushDevice(row.device_id);const result=await transport.send(payloadFor(device,row));
    db.prepare("UPDATE mobile_push_outbox SET status='accepted',ticket_id=?,updated_at=? WHERE id=? AND status='dispatching'").run(z.string().min(1).max(200).parse(result.ticketId),now(),row.id);count++;
   }catch(error){const rejected=error instanceof PushRejected,denied=error instanceof AppError&&[401,402,403,404].includes(error.status);if(rejected&&error.code==='device_not_registered')disableDevice(row.device_id);db.prepare("UPDATE mobile_push_outbox SET status=?,error_code=?,updated_at=? WHERE id=? AND status IN ('queued','dispatching')").run(denied?'canceled':rejected?'failed':'unknown',denied?'access_changed':rejected?error.code:'unconfirmed_send',now(),row.id);}
  }
@@ -91,7 +92,7 @@ export async function reconcileMobilePushReceipts(transport:MobilePushTransport=
  const rows=db.prepare("SELECT * FROM mobile_push_outbox WHERE status='accepted' AND ticket_id IS NOT NULL AND COALESCE(reconcile_at,updated_at)<? ORDER BY COALESCE(reconcile_at,updated_at) LIMIT 10").all(new Date(Date.now()-15*60_000).toISOString()) as Notice[];
  for(const row of rows){
   db.prepare('UPDATE mobile_push_outbox SET reconcile_at=? WHERE id=?').run(now(),row.id);
-  try{requireDevice(row.device_id);const result=await transport.receipt(row.ticket_id!);if(result==='pending'){if(Date.now()-Date.parse(row.created_at)>24*3600_000)db.prepare("UPDATE mobile_push_outbox SET status='unknown',error_code='receipt_unavailable',updated_at=? WHERE id=? AND status='accepted'").run(now(),row.id);continue;}if(result==='device_not_registered')disableDevice(row.device_id);db.prepare("UPDATE mobile_push_outbox SET status=?,error_code=?,updated_at=? WHERE id=? AND status='accepted'").run(result==='service_received'?'service_received':'failed',result==='service_received'?null:result,now(),row.id);count++;}
+  try{requirePushDevice(row.device_id);const result=await transport.receipt(row.ticket_id!);if(result==='pending'){if(Date.now()-Date.parse(row.created_at)>24*3600_000)db.prepare("UPDATE mobile_push_outbox SET status='unknown',error_code='receipt_unavailable',updated_at=? WHERE id=? AND status='accepted'").run(now(),row.id);continue;}if(result==='device_not_registered')disableDevice(row.device_id);db.prepare("UPDATE mobile_push_outbox SET status=?,error_code=?,updated_at=? WHERE id=? AND status='accepted'").run(result==='service_received'?'service_received':'failed',result==='service_received'?null:result,now(),row.id);count++;}
   catch(error){if(error instanceof AppError&&[401,402,403,404].includes(error.status))db.prepare("UPDATE mobile_push_outbox SET status='unknown',error_code='connection_changed_after_send',updated_at=? WHERE id=? AND status='accepted'").run(now(),row.id);}
  }
  return count;

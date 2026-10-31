@@ -1,3 +1,5 @@
+import {proactiveMessageFor} from './proactive-delivery';
+import {proactiveOwnsTopic} from './proactive-policy';
 import type { Actor,Notification,ResearchJob } from '../lib/contracts';
 import { AppError,getDb,now,scopedGet } from './db';
 import { chat } from './orchestrator';
@@ -39,6 +41,7 @@ function noticeText(actor:Actor,id:string){
  const notice=scopedGet<Notification>(actor,'notifications',id,true);if(notice.read)return null;
  const row=getDb().prepare('SELECT dedupe_key FROM notifications WHERE id=?').get(id) as {dedupe_key:string};
  if(row.dedupe_key.startsWith('task-due:')){
+  if(proactiveOwnsTopic(actor,'tasks'))return null;
   const task=taskForReminder(actor,id);if(!task)return null;
   return `Reminder: ${task.title}\nReply “done”, “snooze 2 hours”, or “move it to tomorrow at 9am”. If several reminders are active, include the task name.`;
  }
@@ -90,6 +93,7 @@ function deliveryBody(row:Outbox,actor:Actor,link:MessagingLink){
  if(row.kind==='system')return row.body;
  if(row.kind==='notice'){
   if(!link.reminders)return null;
+  if(row.reference_id?.startsWith('proactive:'))return proactiveMessageFor(actor,row.reference_id.slice(10),link);
   const text=noticeText(actor,row.reference_id!);return text?formatChannelReply(text,link.provider,conversationId):null;
  }
  const answer=getConversation(actor,conversationId).messages.find(message=>message.id===row.reference_id&&message.role==='assistant');

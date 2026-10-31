@@ -2,6 +2,10 @@
 
 [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) is the sole authority for completion status and development order. This document records schema contracts and historical preservation evidence, not permission to apply migrations to the active database.
 
+## Chosen update delivery — migration 031
+
+`proactive_deliveries` binds one saved update to one channel and target. App attempts retain dispatch state and provider ticket/receipt separately; SMS/Slack use the existing `messaging_outbox` and SMS allowance ledger. The update ID is unique, so changed preferences, uncertain delivery or retries cannot create a second destination. Push transitions also enter append-only proactive events without private content or tokens. Exact update reads remain employee-scoped. Migration 031 preserved 316 prior rows across 104 tables on a disposable schema-030 copy, with clean integrity/foreign keys and no active database use.
+
 ## Personal updates — migration 030
 
 `proactive_preferences` holds employee-scoped versioned settings and scheduler cursors. `proactive_updates` holds generic saved-update metadata and source keys/fingerprints, not copied correspondence or work content. Current authorized records are reprojected on every read. `proactive_events` preserves append-only settings/read/creation evidence and exact-retry hashes. Unique scope/dedupe keys and immediate transactions prevent overlapping workers from repeating a slot or change batch. Migration 030 preserved all 316 previous rows across 101 tables on a disposable schema-029 copy, with clean integrity/foreign keys. No active database was used.
