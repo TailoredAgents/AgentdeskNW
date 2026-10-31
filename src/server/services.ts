@@ -1,3 +1,4 @@
+import {bindAssignment,withAssignment} from './assignment-roots';
 import {proactiveOwnsTopic} from './proactive-policy';
 import {employeeTimeZone} from './proactive-time';
 import {getHandoffBoard} from './handoffs';
@@ -139,7 +140,7 @@ export function createResearchJob(actor:Actor,input:ResearchInput):ResearchJob {
  const external=provider===externalResearchProviderId?prepareExternalResearch(parsed):undefined;
  const missing=!parsed.county||!parsed.price||!parsed.strategy;
  const job:ResearchJob={id:newId('research'),input:parsed,status:missing?'awaiting_input':'queued',progress:0,stage:missing?'Add county, price and investment strategy to continue.':external?'Waiting for bounded external research':'Waiting for the local research worker',provider,prospects:[],error:null,createdAt:now(),updatedAt:now(),ownerId:actor.id,attempt:0,...(external?{external}:{})};
- return getDb().transaction(()=>{if(!missing)reserveUsage(actor,{category:'research_credits',operationId:job.id,quantity:researchCredits(actor,parsed.limit),source:external?'External research target reservation':'Synthetic research target reservation'});insertRecord(actor,'research_jobs',job); audit(actor,'research.queued',job.id,{provider:job.provider,target:parsed.limit,maxEstimatedCostCents:external?.maxCostCents??null});return job;}).immediate();
+ return getDb().transaction(()=>{if(!missing)reserveUsage(actor,{category:'research_credits',operationId:job.id,quantity:researchCredits(actor,parsed.limit),source:external?'External research target reservation':'Synthetic research target reservation'});insertRecord(actor,'research_jobs',job);bindAssignment(actor,{kind:'research',id:job.id}); audit(actor,'research.queued',job.id,{provider:job.provider,target:parsed.limit,maxEstimatedCostCents:external?.maxCostCents??null});return job;}).immediate();
 }
 export function getResearchJob(actor:Actor,id:string) { return refreshDuplicateStatus(actor,scopedGet<ResearchJob>(actor,'research_jobs',idSchema.parse(id))); }
 export function cancelJob(actor:Actor,id:string):ResearchJob {
@@ -197,7 +198,7 @@ export function processQueuedJobs(actor?:Actor):number {
     else if(job.progress<50)next={...job,progress:50,stage:'Scoring fictional buying-activity evidence',updatedAt:now()};
     else if(job.progress<80)next={...job,progress:80,stage:'Checking duplicates against your authorized demo CRM records',updatedAt:now()};
     else{
-     const prospects=syntheticResearchProvider.discover(job.input).map(prospect=>({...prospect,...classifyAuthorizedDuplicate(owner,prospect)}));
+     const prospects=withAssignment(owner,{kind:'research',id:job.id},()=>syntheticResearchProvider.discover(job.input)).map(prospect=>({...prospect,...classifyAuthorizedDuplicate(owner,prospect)}));
      next={...job,status:'completed',progress:100,stage:`Completed: ${prospects.length} synthetic candidates (${prospects.filter(item=>item.duplicateStatus==='net_new').length} eligible as new after privacy-preserving CRM duplicate checks). Dataset contains 12 candidates.`,prospects,updatedAt:now()};
      settleUsage(owner,'research_credits',job.id);recordMeter(owner,{category:'research_jobs',operationId:job.id,quantity:1,source:'Completed synthetic research; provider cost unknown'});recordUsage(owner,'research_jobs',1);audit(owner,'research.completed',job.id,{count:prospects.length,synthetic:true});
     }

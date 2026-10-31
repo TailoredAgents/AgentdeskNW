@@ -1,3 +1,4 @@
+import {withAssignment} from './assignment-roots';
 import { createHash } from 'node:crypto';
 import type { Actor, ExternalResearchState, Prospect, ResearchJob } from '../lib/contracts';
 import { AppError, assertActor, audit, getDb, newId, now, requireRole, updateRecord } from './db';
@@ -138,7 +139,7 @@ export async function processExternalResearchJobs(actor?:Actor):Promise<number>{
   const owner=actorForMember(row.organization_id,row.office_id,row.owner_id),token=newId('research-lease');
   const claim=getDb().prepare("UPDATE research_jobs SET worker_token=?,lease_until=?,next_attempt_at=NULL WHERE id=? AND status IN ('queued','running') AND (lease_until IS NULL OR lease_until<=?)").run(token,new Date(Date.now()+130000).toISOString(),row.id,stamp);
   if(!claim.changes)continue;
-  try{await step(owner,row.id,token);processed++;}finally{getDb().prepare('UPDATE research_jobs SET worker_token=NULL,lease_until=NULL WHERE id=? AND worker_token=?').run(row.id,token);processNotifications(actorForMember(owner.organizationId,owner.officeId,owner.id));}
+  try{await withAssignment(owner,{kind:'research',id:row.id},()=>step(owner,row.id,token));processed++;}finally{getDb().prepare('UPDATE research_jobs SET worker_token=NULL,lease_until=NULL WHERE id=? AND worker_token=?').run(row.id,token);processNotifications(actorForMember(owner.organizationId,owner.officeId,owner.id));}
  }
  return processed;
 }

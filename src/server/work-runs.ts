@@ -1,3 +1,4 @@
+import {bindAssignment,getAssignmentBinding,withAssignment} from './assignment-roots';
 import {createHash} from 'node:crypto';
 import type {AnswerWorkInput} from '../lib/work-contracts';
 import {getWorkQuestion,nextReadyStep,parseWorkAnswer} from './work-questions';
@@ -114,12 +115,12 @@ export function createWorkRun(actor:Actor,input:CreateWorkRunInput):WorkRun {
  const parsed=createWorkRunSchema.parse(input);assertActor(actor);const digest=hash(parsed);
  const runId=getDb().transaction(()=>{
   const prior=getDb().prepare('SELECT id,request_hash FROM work_runs WHERE organization_id=? AND office_id=? AND owner_id=? AND request_id=?').get(...scope(actor),parsed.requestId) as {id:string;request_hash:string}|undefined;
-  if(prior){if(prior.request_hash!==digest)throw new AppError(409,'This request already represents different work.');return prior.id;}
+  if(prior){if(prior.request_hash!==digest)throw new AppError(409,'This request already represents different work.');if(!getAssignmentBinding(actor,{kind:'work',id:prior.id}))withAssignment(actor,{kind:'work',id:prior.id},()=>null);bindAssignment(actor,{kind:'work',id:prior.id});return prior.id;}
   requireFeature(actor,'core');validateWorkSourceReferences(actor,parsed.sourceReferences);const inputs=validatePlan(actor,parsed.steps);
   if(parsed.conversationId&&!getDb().prepare('SELECT 1 FROM conversations WHERE id=? AND organization_id=? AND office_id=? AND owner_id=?').get(parsed.conversationId,...scope(actor)))throw new AppError(404,'Conversation not found in your workspace.');
   const stamp=now(),run:StoredRun={id:newId('work'),ownerId:actor.id,title:parsed.title,instructions:parsed.instructions,conversationId:parsed.conversationId??null,version:1,planVersion:1,status:'queued',steps:makeSteps(actor,inputs,1),createdAt:stamp,updatedAt:stamp,lastError:null,simulation:true,...(parsed.sourceReferences?{sourceReferences:parsed.sourceReferences,sourceRole:actor.role}:{})};
   getDb().prepare('INSERT INTO work_runs(id,organization_id,office_id,owner_id,request_id,request_hash,status,version,plan_version,data,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)').run(run.id,...scope(actor),parsed.requestId,digest,run.status,run.version,run.planVersion,JSON.stringify(run),stamp,stamp);
-  savePlan(actor,run);getDb().prepare('UPDATE work_runs SET status=?,data=? WHERE id=?').run(run.status,JSON.stringify(run),run.id);
+  bindAssignment(actor,{kind:'work',id:run.id});savePlan(actor,run);getDb().prepare('UPDATE work_runs SET status=?,data=? WHERE id=?').run(run.status,JSON.stringify(run),run.id);
   appendEvent(run,'created',run.status==='waiting_for_input'?'Work saved. Answer the pending question to continue.':run.status==='waiting_cost_approval'?'Work saved. Review the complete simulated estimate before it starts.':'Work saved and queued with a bounded simulated estimate.');
   audit(actor,'work.created',run.id,{planVersion:1,stepCount:run.steps.length,simulated:true});return run.id;
  }).immediate();return getWorkRun(actor,runId);
@@ -270,7 +271,7 @@ export function executeClaimedWorkStep(claim:WorkStepClaim):boolean {
   const estimate=estimateWorkStep(actor,concrete);
   if(estimate.maximumCents>step.maximumCents||estimate.estimatedCents>step.estimatedCents||estimate.rateVersion!==step.rateVersion)throw new AppError(409,'The step estimate changed. Revise and review the remaining work before continuing.');
   reserveWorkBudget(actor,run.id);
-  const result=executeWorkCapability(actor,concrete,Object.fromEntries(run.steps.filter(item=>item.status==='completed'&&item.result).map(item=>[item.key,item.result!])));
+  const result=withAssignment(actor,{kind:'work',id:run.id},()=>executeWorkCapability(actor,concrete,Object.fromEntries(run.steps.filter(item=>item.status==='completed'&&item.result).map(item=>[item.key,item.result!]))));
   if(!result||typeof result.message!=='string'||!Array.isArray(result.artifacts)||!Array.isArray(result.specialistIds))throw new AppError(500,'The work step did not return a verifiable result.');
   if(JSON.stringify(result).length>500_000)throw new AppError(500,'The work result is too large to save safely.');
   validateStoredWorkOutput(actor,concrete,result);

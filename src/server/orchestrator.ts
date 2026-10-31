@@ -1,3 +1,4 @@
+import {bindAssignment,withAssignment} from './assignment-roots';
 import {documentToolSchemas,documentToolDescriptions,dispatchDocumentTool,localDocumentReply} from './document-tooling';
 import {documentContextReference} from './document-context';
 import {teamTransactionToolSchema,dispatchTeamTransactionTool,localTeamTransactionReply,transactionTeamContextReference} from './transaction-team-context';
@@ -466,9 +467,13 @@ export async function chat(actor:Actor,message:string,conversationId?:string,req
     service.addMessage(actor,conversation.id,{role:'user',content:message});
     explicitResult=executeWorkConversationAction(actor,message,conversation.id,requestId,{channel,receivedAt:options.receivedAt})??explicitMemoryCommand(actor,message,requestId)??executeConversationAction(actor,message,conversation.id,requestId,{asOf:options.receivedAt});
     if(explicitResult)rememberTaskResults(actor,explicitResult,{conversationId:conversation.id,requestId,message,receivedAt:options.receivedAt},'employee_command');
+    const continued=[...new Set(explicitResult?.artifacts.filter(a=>a.type==='work_run'&&a.id).map(a=>a.id!)??[])];
+    if(continued.length===1)withAssignment(actor,{kind:'work',id:continued[0]},()=>bindAssignment(actor,{kind:'turn',id:requestId}));
+    else bindAssignment(actor,{kind:'turn',id:requestId});
     return {conversation,cached:null};
   }).immediate();
   const {conversation}=start;if(start.cached)return {conversation,result:start.cached};
+  return withAssignment(actor,{kind:'turn',id:requestId},async()=>{
   const command:TurnCommandContext={conversationId:conversation.id,requestId,message,receivedAt:options.receivedAt};
   let result:ToolResult;const artifacts:Artifact[]=[];const specialists=new Set<string>();
   let historyContext:{investors:{id:string}[];properties:{id:string}[]}|undefined;
@@ -502,4 +507,5 @@ export async function chat(actor:Actor,message:string,conversationId?:string,req
   db.transaction(()=>{const saved=service.addMessage(actor,conversation.id,{role:'assistant',content:result.message,specialistIds:result.specialistIds,artifacts:result.artifacts},historyContext);db.prepare("UPDATE assistant_turns SET status='completed',result=? WHERE organization_id=? AND office_id=? AND user_id=? AND request_id=?").run(JSON.stringify({messageId:saved.id}),actor.organizationId,actor.officeId,actor.id,requestId);}).immediate();
   const current=service.getConversation(actor,conversation.id),answer=current.messages.at(-1)!;
   return {conversation:current,result:{message:answer.content,specialistIds:answer.specialistIds,artifacts:answer.artifacts}};
+  });
 }

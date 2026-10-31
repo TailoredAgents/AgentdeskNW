@@ -1,3 +1,4 @@
+import {getAssignmentBinding} from '../src/server/assignment-roots';
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import {spawn} from 'node:child_process';
@@ -49,6 +50,7 @@ try{
 
  const firstInput={requestId:randomUUID(),presetId:'dispositions',propertyId:'property-maple',investorId:'investor-mike'};
  let first=await request<WorkRun>('work','POST',firstInput,201);
+ const originalRoot=getAssignmentBinding(actor,{kind:'work',id:first.id})!;check(!originalRoot.legacy&&!originalRoot.parentId,'Direct saved work has its own immutable assignment root');
  check(first.status==='queued'&&first.budget.maximumCents===100&&first.budget.approvedMaximumCents===100,'Exactly $1 needs no extra cost decision');
  check(first.budget.reservedCents===0&&first.steps.every(step=>step.status==='pending'),'Creation saves a plan without pretending execution');
  const duplicate=await request<WorkRun>('work','POST',firstInput,201);check(duplicate.id===first.id,'Create retry returns the same saved job');
@@ -85,6 +87,7 @@ try{
  processWorkRuns(actor,4);research=await latest(research);
  check(research.status==='waiting_for_dependency','The parent waits for actual saved research results');
  const childId=(research.steps.find(step=>step.key==='research')?.result?.data as {jobId:string}).jobId;
+ const researchRoot=getAssignmentBinding(actor,{kind:'work',id:research.id})!,childRoot=getAssignmentBinding(actor,{kind:'research',id:childId})!;check(childRoot.rootId===researchRoot.rootId&&childRoot.parentId===researchRoot.id,'Worker-created research retains the originating work assignment');
  check(count('research_jobs')===jobsBefore+1&&getResearchJob(actor,childId).provider==='synthetic-fixtures-v1','Exactly one fictional child was created');
  const beforeWait=research.budget.spentCents;processWorkRuns(actor,1);research=await latest(research);
  check(research.budget.spentCents===beforeWait&&count('research_jobs')===jobsBefore+1,'Waiting does not create duplicate children or extra charges');
@@ -146,6 +149,9 @@ try{
   await new Promise<void>(resolve=>{if(worker.exitCode!==null||worker.signalCode!==null){resolve();return;}worker.once('exit',()=>resolve());worker.kill('SIGTERM');});
  }
 
+ check(getAssignmentBinding(actor,{kind:'work',id:first.id})?.id===originalRoot.id,'Pause/resume and completion preserve the same root');
+ check(getAssignmentBinding(actor,{kind:'research',id:childId})?.rootId===researchRoot.rootId,'Research collection preserves the child root');
+ check(!!getAssignmentBinding(actor,{kind:'work',id:unattended.id}), 'Independent background worker retains persisted assignment identity');
  const budgetAfter=await request<WalletState>('wallet');
  const expectedSpent=first.budget.spentCents+research.budget.spentCents+partial.budget.spentCents+growing.budget.spentCents+unattended.budget.spentCents;
  check(budgetAfter.availableCents===walletBefore.availableCents-expectedSpent&&budgetAfter.spentThisPeriodCents===walletBefore.spentThisPeriodCents+expectedSpent&&budgetAfter.reservedCents===0,'Only this employee’s completed fictional work changes the wallet');
