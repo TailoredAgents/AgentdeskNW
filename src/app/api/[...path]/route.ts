@@ -1,10 +1,11 @@
+import {reviewOpportunityScreening} from '@/server/opportunity-screening';
 import {transactionsRoute} from '@/server/transactions-api';
 import {documentsRoute} from '@/server/documents-api';
 import {knowledgeRoute} from '@/server/knowledge-api';
 import {proactiveRoute} from '@/server/proactive-api';
 import {getAnalysisBoard,getAnalysis,previewAnalysis,saveAnalysis} from '@/server/deal-analysis';
 import {analysisPreviewSchema,analysisSaveSchema} from '@/server/analysis-schema';
-import {getOpportunityBoard,getOpportunity,previewOpportunity,saveOpportunity,opportunityPreviewSchema,opportunitySaveSchema} from '@/server/opportunities';
+import {getOpportunityBoard,previewOpportunity,saveOpportunity,opportunityPreviewSchema,opportunitySaveSchema} from '@/server/opportunities';
 import {getHandoffBoard,getHandoff,handoffMutationSchema,mutateHandoff} from '@/server/handoffs';
 import {acquisitionInputSchema,recordAcquisitionSubmission,reviewAcquisition} from '@/server/acquisitions';
 import {assertMobileRequest,getMobileAuthentication,pairMobileDevice} from '@/server/mobile-auth';
@@ -132,9 +133,9 @@ async function route(request:NextRequest,{params}:{params:Promise<{path:string[]
       if(method==='POST'&&!id)return json(saveAnalysis(actor,analysisSaveSchema.parse(await body(request))));
     }
     if(resource==='opportunities'&&path.length<=2){
-      if(method==='GET')return json(id?getOpportunity(actor,id):getOpportunityBoard(actor));
+      if(method==='GET')return json(id?reviewOpportunityScreening(actor,id):getOpportunityBoard(actor));
       if(method==='POST'&&id==='preview')return json(previewOpportunity(actor,opportunityPreviewSchema.parse(await body(request))));
-      if(method==='POST'&&!id)return json(saveOpportunity(actor,opportunitySaveSchema.parse(await body(request))));
+      if(method==='POST'&&!id)return json(reviewOpportunityScreening(actor,saveOpportunity(actor,opportunitySaveSchema.parse(await body(request))).opportunity.id));
     }
     if(resource==='acquisitions'&&id&&path.length===2){
       if(method==='GET')return json(reviewAcquisition(actor,id));

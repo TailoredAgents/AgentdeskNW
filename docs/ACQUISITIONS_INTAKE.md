@@ -1,6 +1,6 @@
 # Acquisitions intake and missing-fact review
 
-Updated October 30, 2026. This is the C4 domain contract supporting [the canonical roadmap](IMPLEMENTATION_ROADMAP.md), not another delivery schedule. Both bounded workflows below are verified locally with fictional data. Acquisitions practitioner acceptance remains pending.
+Updated October 31, 2026. This is the C4 domain contract supporting [the canonical roadmap](IMPLEMENTATION_ROADMAP.md), not another delivery schedule. Both bounded workflows below are verified locally with fictional data. Acquisitions practitioner acceptance remains pending.
 
 ## Existing-inventory outcome
 
@@ -47,4 +47,15 @@ The original existing-property workflow retains its ten root cases and 72-check 
 
 The connected walkthrough saved a submission on desktop, opened it via the same employee’s phone Copilot, protected unsaved edits, saved revised evidence and showed three remaining questions instead of six on both screens. It retained both revisions and the unverified source labels. No provider, inventory, release, investor message or payment effect occurred. These are engineering checks, not independent specialist-quality or financial benchmarks.
 
-Supported economics/valuation, verified comps, attachment ingestion, independent wholesaler relationship records, richer follow-through and reviewed promotion into inventory remain open. Company-approved methods, acquisitions practitioner acceptance and actual phone/provider testing remain deferred. Neither intake workflow completes the full C4 acquisitions journey.
+Linked saved-scenario screening now supports bounded economics review as described below. Complete valuation judgment, verified comps, attachment ingestion, independent wholesaler relationship records, richer follow-through and reviewed promotion into inventory remain open. Company-approved methods, acquisitions practitioner acceptance and actual phone/provider testing remain deferred. Neither intake workflow completes the full C4 acquisitions journey.
+
+
+## Linked acquisitions screening
+
+`opportunity-screening.ts` combines a current authorized opportunity with the same employee’s saved diligence scenarios. It does not create assumptions or calculations automatically. Desktop and native opportunity details, typed `opportunity_review`, and saved `review_opportunity` work use this same presentation service. The employee can open the exact scenario and its evidence from either interface.
+
+The review keeps supplied asking price and repairs separate from modeled inputs. Different purchase assumptions and repairs outside the modeled range become reconciliation questions. Each nonpositive flip-profit or rental-cash-flow case is shown with its explicit assumptions; favorable scenarios cannot hide adverse ones. Unknown results remain unknown. The existing calculator supplies all amounts. No company acceptance threshold, offer, independent valuation or verified evidence is inferred. A recorded not-pursuing decision remains in force until the employee revises it.
+
+Private scenario access is independent of office CRM access. Managers see only their own analyses; restricted valuation access leaves authorized intake available. A changed source withholds old computed amounts and links to fresh review. Current analysis and private-board references invalidate obsolete conversation/worker output, including an earlier conclusion that no scenario exists. Base opportunity fingerprints never depend on their derived analyses, avoiding recursive source authority. No inventory promotion, release, handoff or external message occurs.
+
+Evidence: 13 new screening cases plus 76 opportunity HTTP/worker checks cover positive/adverse/unknown outcomes, conflicting assumptions, source changes, no-scenario invalidation, ownership/role/feature boundaries and saved-work continuity. The compiled browser walkthrough showed both scenarios, retained the downside, and opened the matching analysis on desktop and native browser. These are fictional functional checks; practitioner quality and actual-device acceptance remain pending.

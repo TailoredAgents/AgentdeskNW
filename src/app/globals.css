@@ -903,3 +903,15 @@ dialog::backdrop{background:#122b2466;backdrop-filter:blur(7px)}
 .assignment-reviews { display: grid; gap: 16px; margin-bottom: 22px; }
 .assignment-review { display: grid; gap: 14px; }
 .assignment-review ul { margin: 0; padding-left: 20px; display: grid; gap: 8px; }
+
+.opportunity-screening { margin:24px 0; padding:22px; border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:12px; background:var(--panel-raised); }
+.opportunity-screening > h3 { margin-top:6px; }
+.opportunity-screening details { margin:14px 0; padding:14px; background:var(--panel); border:1px solid var(--border); border-radius:8px; }
+.opportunity-screening summary { cursor:pointer; font-weight:600; padding:4px 0; }
+.opportunity-screening details[open] summary { margin-bottom:14px; }
+.opportunity-screening details > p { margin:14px 0; }
+.opportunity-screening details > h4 { margin:20px 0 10px; }
+.opportunity-screening dt { color:var(--muted); font-size:12px; }
+.opportunity-screening dd { margin:4px 0 14px; font-size:20px; font-weight:650; }
+.opportunity-screening li { margin:8px 0; }
+@media(max-width:600px) { .opportunity-screening { padding:16px; } .opportunity-screening .summary-grid { grid-template-columns:1fr; } }

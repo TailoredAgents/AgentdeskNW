@@ -214,7 +214,7 @@ export function WorkRunsPanel({ data, initialRunId, initialAnalysisId, onChange,
     <AssignmentReviewsPanel/>
     <HandoffsPanel/>
     <AnalysisPanel key={initialAnalysisId??"board"} initialId={initialAnalysisId}/>
-    {data.actor.role!=='dispositions'&&<><OpportunitiesPanel/><AcquisitionIntakePanel data={data} onChange={onChange}/></>}
+    {data.actor.role!=='dispositions'&&<><OpportunitiesPanel onOpenAnalysis={onArtifact?id=>onArtifact({type:"analysis",id,title:"Review acquisition scenario"}):undefined}/><AcquisitionIntakePanel data={data} onChange={onChange}/></>}
     <div className="work-runs-heading"><div><h2>Put a plan in motion.</h2><p>Keep the steps, results and spending decision together. Your job stays saved when you leave this page.</p></div><button className="button primary" disabled={busy} onClick={() => { setError(''); setCreating(true); }}><Plus size={16}/>New sample job</button></div>
     <div className="work-demo-notice"><Info size={17}/><span>Fictional records and simulated job costs. These jobs do not collect payment or contact investors. AI reasoning has a separate assignment spending review when enabled; included local steps add no AI charge.</span></div>
     {notice && <p className="work-status-notice" role="status">{notice}</p>}

@@ -35,3 +35,8 @@ Desktop Work queue → Copilot jobs → Deal analysis and native Work → Deal a
 ## Evidence and remaining depth
 
 The accepted local checkpoint includes 21 root analysis cases, two phone form cases and 59 isolated HTTP/worker checks, plus existing regressions, schema preservation and desktop-to-phone revision walkthrough. These establish calculation/authorization behavior, not effectiveness against a generic AI agent. Full property/repair evidence ingestion, licensed data, rent comps, jurisdiction-specific diligence, buyer-specific underwriting targets, report sharing/handoff, richer financing, market validation and practitioner quality remain open C4/C7 scope. Source strings never substitute for documents.
+
+
+## Opportunity screening integration
+
+Pre-inventory opportunity review now brings together the employee’s linked private diligence scenarios, using this engine’s existing dated metrics and sensitivity cases. It highlights supplied-versus-modeled price/repair differences and nonpositive modeled profit/cash flow without selecting only favorable scenarios. Desktop and native links open the exact saved analysis and sources. No new formulas or automatic assumptions are introduced. Changed sources withhold obsolete amounts, while private-board and exact scenario references protect Copilot and saved-work context. See [acquisitions intake](ACQUISITIONS_INTAKE.md#linked-acquisitions-screening) for the combined service and acceptance evidence. Complete valuation judgment, richer source ingestion and reviewed promotion/handoff remain open.

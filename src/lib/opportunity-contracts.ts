@@ -1,4 +1,12 @@
 import {emptySubmission,parseSubmissionForm,submissionForm,submissionFields,type AcquisitionSubmission,type SubmissionForm} from './acquisition-contracts';
+import type {AnalysisMetric} from './analysis-contracts';
+
+export interface OpportunityScreening {
+ title:string;nextAction:string;notice:string;
+ analysisAccessReference?:string;
+ scenarios:Array<{analysisId:string;label:string;version:number;state:'current'|'source_changed';analysisAccessReference?:string;
+  asOf:string|null;metrics:AnalysisMetric[];differences:string[];risks:string[];questions:string[]}>;
+}
 
 export interface OpportunityInput {
  address:string;city:string;county:string;state:string;postalCode:string;propertyType:string;
@@ -14,6 +22,7 @@ export interface OpportunityAssessment {
  summary:string;followupDraft:string;method:string;notice:string;
 }
 export interface OpportunityDetail extends OpportunityAssessment {
+ screening?:OpportunityScreening;
  opportunity:Opportunity;opportunityAccessReference:string;
  history:{version:number;recordedAt:string;input:OpportunityInput}[];
  changes:{field:string;before:string;after:string}[];

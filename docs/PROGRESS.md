@@ -1,5 +1,17 @@
 # AgentDesk progress log
 
+## October 31, 2026 — Linked acquisitions opportunity screening
+
+**Scope:** extends `fe7dd65` without schema, dependency or calculation changes. Pre-inventory opportunity detail now combines current intake gaps with the same employee’s saved diligence scenarios. Supplied asking/repair figures remain separate from modeled assumptions; conflicts prompt reconciliation. Nonpositive flip-profit and rental-cash-flow cases remain visible beside favorable scenarios. Missing numbers remain unknown, and employee not-pursuing decisions are preserved. No scenario is invented, source verified, offer accepted or inventory promoted.
+
+**Continuity:** desktop, native phone, typed Copilot and saved opportunity-review work share the same service. Scenario links open the exact analysis and evidence; saved-job opportunity/analysis links now navigate to the corresponding native detail. Base opportunity fingerprints remain independent of derived analyses. Current private-board/scenario references invalidate obsolete results, including earlier no-scenario conclusions; stale amounts are withheld. Manager CRM scope does not grant another employee’s private analyses. No provider calls or external messages are involved.
+
+**Verification:** all 1,184 backend tests across 65 files and 78 mobile tests passed. Thirteen new screening cases cover adverse/favorable/unknown results, discrepancy questions, not-pursuing, stale sources, private scope, entitlement, no-scenario invalidation, Copilot and durable output. All 21 isolated HTTP/workflow suites passed (1,730 checks, including 76 opportunity checks). Root/mobile types, lint, production build and iOS/Android plus web exports passed. Final presentation changes were followed by focused screening tests and a rebuilt application. All fixtures and transport were fictional or disabled; active development data was untouched.
+
+**Interface:** a separate fictional opportunity with a favorable base scenario and an adverse repair/resale scenario showed its downside on desktop and phone, and the native link opened the exact adverse analysis. Phone-width layout was inspected at 390×844. Screenshots are retained under ignored `artifacts/mobile/opportunity-screening-desktop.png` and `opportunity-screening-phone.png`. Browser/export checks are not installed-device acceptance.
+
+**Remaining and release:** complete valuation/source judgment, wholesaler relationships, reviewed inventory promotion/handoff, broader acquisition follow-through and other C1–C7 work remain unfinished. Specialist readiness remains two ready/fourteen demo. Real provider/device/practitioner acceptance stays deferred. This checkpoint is for GitHub publication; Render still requires a separate deployment and no latest hosted release is claimed.
+
 ## October 31, 2026 — Relationship-aware existing-buyer shortlists
 
 **Scope:** extends `c3d12c6`. Buyer Matchmaker now returns a single-property CRM shortlist with separate numerical fit and readiness, current funding/timing evidence, relationship concerns and one sourced next action. It honors pauses, distinguishes a pass on the selected property from unrelated passes, carries unresolved objections from earlier opportunities, scopes criteria conflicts to the selected buy box, and uses only the requesting employee's follow-ups. Resolving an exact concern or correcting a report changes subsequent recommendations. No draft is sent and no external research is started.

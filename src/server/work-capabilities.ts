@@ -1,3 +1,4 @@
+import {reviewOpportunityScreening,opportunityScreeningMessage} from './opportunity-screening';
 import {buyerShortlistMessage,buyerShortlistReferenceCurrent} from './buyer-shortlist';
 import {reviewSourceDocument,documentContextReferenceCurrent} from './document-context';
 import {getDocument} from './documents';
@@ -152,7 +153,7 @@ export function executeWorkCapability(actor:Actor,step:WorkStepInput,_priorOutpu
   }
   case 'relationship_next_step':{const recommendation=recommendInvestorNextStep(actor,input.investorId as string);result.data={investorId:input.investorId,recommendation};result.message=`${recommendation.action.title}\n${recommendation.action.description}${recommendation.draft?`\n\nRelationship-only draft: ${recommendation.draft}`:''}\n${recommendation.unknowns.length?`Missing: ${recommendation.unknowns.join('; ')}\n`:''}Nothing has been sent.`;break;}
   case 'review_investment_analysis':case 'review_diligence_analysis':{const review=reviewSavedAnalysis(actor,input.analysisId as string);result.data={analysisId:review.record.id,analysisReview:review};result.message=analysisMessage(review);result.artifacts=[{type:'analysis',id:review.record.id,title:'Review deal analysis',data:{analysisAccessReference:review.analysisAccessReference}}];break;}
-  case 'review_opportunity':{const review=getOpportunity(actor,input.opportunityId as string);result.data={opportunityId:review.opportunity.id,opportunityReview:review};result.message=`${review.summary}\n${review.followupDraft}\n${review.notice}`;result.artifacts=[{type:'opportunity',id:review.opportunity.id,title:'Review wholesaler opportunity',data:{opportunityAccessReference:review.opportunityAccessReference}}];break;}
+  case 'review_opportunity':{const review=reviewOpportunityScreening(actor,input.opportunityId as string);result.data={opportunityId:review.opportunity.id,opportunityReview:review};result.message=opportunityScreeningMessage(review);result.artifacts=[{type:'opportunity',id:review.opportunity.id,title:'Review wholesaler opportunity',data:{opportunityAccessReference:review.opportunityAccessReference,screening:review.screening}}];break;}
   case 'review_handoff':{
    const review=reviewAcquisition(actor,input.propertyId as string),releases=listReleases(actor).filter(r=>r.propertyId===review.property.id);
    result.data={propertyId:review.property.id,property:review.property,releases,missing:review.questions.map(item=>item.reason),acquisitionReview:review};result.message=review.handoffDraft;break;

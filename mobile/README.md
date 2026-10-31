@@ -172,3 +172,10 @@ Native Work spending reviews now stop the current admitted assignment and includ
 ## Original quote renewal
 
 Work spending reviews now offer **Refresh original quote** for an eligible unstarted text request. The replacement retains the original request, rechecks the configured tariff and needs fresh approval above $1. Pending uncertain requests retain exact retry identity; old and new reviews cannot be mixed. Independent types, 78 mobile tests and native/production-web/development-web exports passed. Browser checks use fictional data with live AI/outbound delivery disabled; actual-phone acceptance remains deferred.
+
+
+## Linked acquisitions screening
+
+Work → New opportunities shows the same employee’s linked diligence scenarios, intake/model discrepancies, dated metrics and modeled downside. Expand a scenario and use **Open scenario and sources** to open that exact saved analysis. Saved-job analysis/opportunity artifacts also open their matching detail. Scenario access remains private and source changes withhold obsolete calculations. Navigation retains existing unsaved-edit guards.
+
+October 31 verification: 78 mobile tests, independent typecheck, iOS/Android JavaScript exports and production/development web exports passed. A paired 390×844 native-browser walkthrough displayed the shared opportunity and opened its adverse scenario; backend/API checks verify source invalidation and private ownership. This does not establish installed-phone, offline or practitioner acceptance. See [PROGRESS](../docs/PROGRESS.md) for the checkpoint evidence.
