@@ -10,7 +10,7 @@ This checkpoint adds a bounded persistent work executor around existing services
 
 The worker performs local deterministic services and fictional research only. It does not run additional reasoning-model calls, contact investors, send mail/SMS, change CRM, purchase credits or connect company systems. The existing live text request remains separately metered; the simulated $1 rule does not yet protect real provider spending. Actual usage admission and optional automatic top-up are C6 requirements, not completed by this foundation.
 
-The catalog still contains 2 locally ready, 11 demo and 3 planned specialists. These workflows demonstrate shared execution and cost authority, not completion of the 16-specialist depth plan or proven expert-level reasoning.
+The catalog still contains 2 locally ready, 13 demo and 1 planned specialists. These workflows demonstrate shared execution and cost authority, not completion of the 16-specialist depth plan or proven expert-level reasoning.
 
 ## Useful starting workflows
 
@@ -38,7 +38,7 @@ Real SMS/Slack, installed-device behavior and model-quality acceptance remain de
 
 ## Capability execution
 
-The server-owned catalog in work-capabilities.ts declares input schemas, output fields, role/feature requirements, effect and fictional rate version. The ten implemented capabilities are typed missing-information questions, pre-inventory opportunity review, property inspection, existing-buyer matching, relationship next step, acquisition handoff review, office priorities, personal follow-up, synthetic research start and synthetic research result collection. The planner composes up to twelve steps with explicit dependencies; it does not rely on only the three UI presets.
+The server-owned catalog in work-capabilities.ts declares input schemas, output fields, role/feature requirements, effect and fictional rate version. The twelve implemented capabilities are role-specific investment/diligence analysis review, typed missing-information questions, pre-inventory opportunity review, property inspection, existing-buyer matching, relationship next step, acquisition handoff review, office priorities, personal follow-up, synthetic research start and synthetic research result collection. The planner composes up to twelve steps with explicit dependencies; it does not rely on only the three UI presets.
 
 Input references may select a field inside a completed dependency's structured result. The server validates reference paths and concrete inputs again at dispatch. Models cannot supply tenant/role overrides, arbitrary code, private credentials, arbitrary tools or prices. Cycles, unknown capabilities, malformed inputs and undeclared/prototype-path references fail validation. Research must follow existing-buyer matching for the same property and include a result-collection step. Changed property facts require refreshing the shortlist before starting research.
 
@@ -100,3 +100,6 @@ Short references such as `Pause that job` require exactly one current structured
 Migration 022 adds scoped conversation command receipts and immutable exact-review records. Mobile transport and notifications are subordinate specifications in [MOBILE_DELIVERY_PLAN.md](MOBILE_DELIVERY_PLAN.md); their local foundation is verified, with installed-phone acceptance pending. New device credentials do not grant a role or permit another employee's jobs. Reviewed native dictation uses the typed command path, not the current live-voice tool path.
 
 Local acceptance includes 23 work-conversation tests, the 96-check mobile HTTP suite, existing work/conversation/messaging suites and a connected browser/phone-width walkthrough. Exact reviews, stale/replayed decisions, withheld references, pairing/session/role changes and worker persistence are covered. The full evidence ledger is in [PROGRESS.md](PROGRESS.md); real provider transport and actual-phone acceptance remain outstanding.
+## Shared economics review
+
+The two analysis capabilities retrieve employee-reviewed private scenarios through [DEAL_ANALYSIS](DEAL_ANALYSIS.md). Their lens/role/feature and source references are rechecked at plan validation, execution and result display. They perform deterministic mathematics at zero fictional cost, preserve dated receipts and hide obsolete results. Model tools cannot write assumptions or certify valuation.

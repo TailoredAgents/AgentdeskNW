@@ -6,6 +6,7 @@ import type { Artifact, Bootstrap } from '@/lib/contracts';
 import type { WorkRun, WorkRunStatus, WorkStep } from '@/lib/work-contracts';
 import {WorkQuestionPanel} from './WorkQuestionPanel';
 import {HandoffsPanel} from './HandoffsPanel';
+import {AnalysisPanel} from './AnalysisPanel';
 import {OpportunitiesPanel} from './OpportunitiesPanel';
 import {AcquisitionIntakePanel} from './AcquisitionIntakePanel';
 import { api, ApiError, Badge, EmptyState, Modal, Panel, readable, SectionHead, Spinner } from './ui';
@@ -18,7 +19,7 @@ const statusLabels: Record<WorkRunStatus, string> = {
 };
 const statusTone = (status: WorkRunStatus): 'green' | 'amber' | 'cyan' | 'neutral' | 'red' => status === 'completed' ? 'green' : ['waiting_cost_approval', 'waiting_for_input', 'reconciling'].includes(status) ? 'amber' : ['queued', 'running', 'waiting_for_dependency'].includes(status) ? 'cyan' : status === 'failed' ? 'red' : 'neutral';
 const capabilityLabels: Record<string, string> = {
-  review_opportunity: 'Review wholesaler opportunity',
+  review_investment_analysis:'Review investment scenario',review_diligence_analysis:'Review diligence scenario',review_opportunity: 'Review wholesaler opportunity',
   request_information: 'Ask for missing information',
   inspect_property: 'Read property facts', match_existing_buyers: 'Find existing buyers',
   relationship_next_step: 'Prepare the relationship next step', review_handoff: 'Review the acquisition handoff',
@@ -36,6 +37,7 @@ const presets = {
 type Props = {
   data: Bootstrap;
   initialRunId?: string;
+  initialAnalysisId?: string;
   onChange: (message?: string) => Promise<void>;
   onError: (error: unknown) => void;
   onArtifact?: (artifact: Artifact) => void;
@@ -85,7 +87,7 @@ function WorkStepScope({ step, steps, data }: { step: WorkStep; steps: WorkStep[
   return rows.length ? <dl className="work-step-scope">{rows.map(row => <div key={row.label}><dt>{row.label}</dt><dd>{row.value}</dd></div>)}</dl> : null;
 }
 
-export function WorkRunsPanel({ data, initialRunId, onChange, onError, onArtifact }: Props) {
+export function WorkRunsPanel({ data, initialRunId, initialAnalysisId, onChange, onError, onArtifact }: Props) {
   const [runs, setRuns] = useState<WorkRun[]>([]);
   const [selectedId, setSelectedId] = useState<string | undefined>(initialRunId);
   const [detail, setDetail] = useState<WorkRun | null>(null);
@@ -207,6 +209,7 @@ export function WorkRunsPanel({ data, initialRunId, onChange, onError, onArtifac
 
   return <section className="work-runs" aria-label="Saved Copilot jobs">
     <HandoffsPanel/>
+    <AnalysisPanel key={initialAnalysisId??"board"} initialId={initialAnalysisId}/>
     {data.actor.role!=='dispositions'&&<><OpportunitiesPanel/><AcquisitionIntakePanel data={data} onChange={onChange}/></>}
     <div className="work-runs-heading"><div><h2>Put a plan in motion.</h2><p>Keep the steps, results and spending decision together. Your job stays saved when you leave this page.</p></div><button className="button primary" disabled={busy} onClick={() => { setError(''); setCreating(true); }}><Plus size={16}/>New sample job</button></div>
     <div className="work-demo-notice"><Info size={17}/><span>Fictional records and simulated job costs. These jobs do not collect payment or contact investors. Live Copilot usage is not covered by this simulated job budget.</span></div>

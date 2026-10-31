@@ -1,3 +1,5 @@
+import {getAnalysisBoard,getAnalysis,previewAnalysis,saveAnalysis} from '@/server/deal-analysis';
+import {analysisPreviewSchema,analysisSaveSchema} from '@/server/analysis-schema';
 import {getOpportunityBoard,getOpportunity,previewOpportunity,saveOpportunity,opportunityPreviewSchema,opportunitySaveSchema} from '@/server/opportunities';
 import {getHandoffBoard,getHandoff,handoffMutationSchema,mutateHandoff} from '@/server/handoffs';
 import {acquisitionInputSchema,recordAcquisitionSubmission,reviewAcquisition} from '@/server/acquisitions';
@@ -110,6 +112,11 @@ async function route(request:NextRequest,{params}:{params:Promise<{path:string[]
     if(resource==='handoffs'&&path.length<=2){
       if(method==='GET')return json(id?getHandoff(actor,id):getHandoffBoard(actor));
       if(method==='POST'&&id)return json(mutateHandoff(actor,id,handoffMutationSchema.parse(await body(request))));
+    }
+    if(resource==='analyses'&&path.length<=2){
+      if(method==='GET')return json(id?getAnalysis(actor,id):getAnalysisBoard(actor));
+      if(method==='POST'&&id==='preview')return json(previewAnalysis(actor,analysisPreviewSchema.parse(await body(request))));
+      if(method==='POST'&&!id)return json(saveAnalysis(actor,analysisSaveSchema.parse(await body(request))));
     }
     if(resource==='opportunities'&&path.length<=2){
       if(method==='GET')return json(id?getOpportunity(actor,id):getOpportunityBoard(actor));

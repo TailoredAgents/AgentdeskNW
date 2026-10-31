@@ -151,3 +151,7 @@ Timestamps distinguish call attempts, actual connected contact, recap creation, 
 `relationship_reports` is an append-only, tenant/office/author/investor-scoped ledger. Each JSON report records topic, typed value, optional approved buy-box scope, exact source note, optional original statement time, server capture time and author. Corrections reference a previous report; a unique correction index prevents branches. Update/delete triggers preserve originals. Current active/superseded state is projected from correction links, not rewritten into old rows.
 
 Writes require an expected report count and a hash of current investor/buy-box/contact/activity/report context, with scoped event keys and payload hashes for exact retries. Canonical criteria, private employee memory and private correspondence remain separate. No provider event, wallet debit or automatic CRM proposal follows from adding a report. Migration 019 adds the ledger without rewriting existing records. See RELATIONSHIP_QUALITY.md for preservation verification.
+
+## Shared deal scenarios (027)
+
+`deal_analyses` stores organization/office/owner-scoped current scenario JSON, containing input sources, linked property/opportunity fingerprint, method/date and computed cases. `deal_analysis_events` preserves complete reviewed revisions and scoped idempotency keys/payload hashes. Read authority remains private to the employee, including against manager access; source changes hide obsolete results. See [DEAL_ANALYSIS](DEAL_ANALYSIS.md) for preview/save and history contracts.
