@@ -2,7 +2,7 @@ import {emptySubmission,parseSubmissionForm,submissionForm,submissionFields,type
 import type {AnalysisMetric} from './analysis-contracts';
 
 export interface OpportunityScreening {
- title:string;nextAction:string;notice:string;
+ title:string;nextAction:string;notice:string;decisionBasis?:string[];
  analysisAccessReference?:string;
  scenarios:Array<{analysisId:string;label:string;version:number;state:'current'|'source_changed';analysisAccessReference?:string;
   asOf:string|null;metrics:AnalysisMetric[];differences:string[];risks:string[];questions:string[]}>;

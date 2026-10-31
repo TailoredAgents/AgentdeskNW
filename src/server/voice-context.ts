@@ -1,3 +1,5 @@
+import {reviewQualification} from './qualification-review';
+import {featureAccess} from './billing';
 import {documentContextReference} from './document-context';
 import {transactionTeamContextReference} from './transaction-team-context';
 import {transactionContextReference} from './transaction-context';
@@ -29,6 +31,7 @@ export function voiceContextSnapshot(actor:Actor):Record<string,string> {
   add('employeeMemory',getEmployeeMemory(actor));
   const releases=listReleases(actor);
   for(const investor of listInvestors(actor)) {
+    if(['dispositions','manager'].includes(actor.role)&&featureAccess(actor,'investor-qualification').allowed)add(`qualification:${investor.id}`,reviewQualification(actor,investor.id).qualificationReference);
     const row=readInvestorRow(actor,investor.id),profile=getInvestorIntelligence(actor,investor.id);
     add(`investor:${investor.id}`,{journey:getDb().prepare('SELECT data FROM journey_observations WHERE organization_id=? AND investor_id=? ORDER BY rowid').all(actor.organizationId,investor.id),office:row.office_id,owner:row.owner_id,visibility:profile.visibility,sharedWith:profile.sharedWith,buyBoxes:profile.buyBoxes,disclosure:profile.disclosure,disclosureReady:isDisclosureReady(profile.disclosure)});
   }

@@ -16,6 +16,7 @@ export interface HandoffItem {
  actions:('assign'|'acknowledge'|'report'|'resolve')[];history:{actorName:string;action:string;record:HandoffRecord}[];
 }
 export interface HandoffBoard {
+ metrics?:{visible:number;active:number;unassigned:number;unresolvedAssigned:number;overdue:number;awaitingAcknowledgment:number;blocked:number;awaitingReview:number;resolved:number;changedSource:number;notice:string};
  items:HandoffItem[];checkedAt:string;summary:string;handoffAccessReference:string;
  method:{id:string;version:number;source:string;notice:string};
 }

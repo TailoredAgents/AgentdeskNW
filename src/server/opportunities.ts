@@ -7,7 +7,7 @@ import {billingPolicy,featureAccess,requireFeature} from './billing';
 import {readProperties} from './access';
 import {acquisitionSubmissionSchema} from './acquisition-schema';
 
-export const opportunityMethod='AgentDesk provisional wholesaler intake · v1 · 2026-10-30.1';
+export const opportunityMethod='AgentDesk provisional wholesaler intake · v2 · 2026-10-31.1';
 const text=z.string().trim().max(2000);
 export const opportunityInputSchema=z.object({
  address:z.string().trim().min(5).max(240),city:z.string().trim().min(2).max(100),county:z.string().trim().max(100),
@@ -48,8 +48,11 @@ export function assessOpportunity(actor:Actor,input:OpportunityInput,id:string|n
  else if(input.closingTarget<now().slice(0,10))ask('closing','What is the updated closing target?','The supplied target has passed.');
  const matches=duplicates(actor,input,id);
  if(matches.length)ask('duplicate','Is this a revised submission for an existing opportunity, or a separate opportunity?','An authorized record has a possible matching address. Records are never merged automatically.');
+ // Resolve identity/current terms before using a lower-impact completeness question.
+ const priority=['duplicate','sourceFreshness','sourceDate','price','repairs','access','comparables','property','closing'];
+ questions.sort((a,b)=>priority.indexOf(a.field)-priority.indexOf(b.field));
  const summary=input.status==='not_pursuing'?'Recorded as not pursuing. This is an internal employee decision, not a verified property outcome.':`${questions.length} questions to resolve before supported screening. Supplied facts remain unverified.`;
- return {questions,duplicates:matches,summary,method:opportunityMethod,notice:'Fictional pre-inventory opportunity. Sources are employee-recorded text, not fetched or verified. No property listing, valuation, offer, release, message or payment is created.',followupDraft:[`DRAFT — ${input.address}, ${input.city}`,`Source: ${s.wholesaler} · ${s.sourceReference}`,input.status==='not_pursuing'?`Internal review note: ${input.reviewNote}`:'Please help confirm the following before we complete our review:',...questions.filter(q=>q.field!=='duplicate').map(q=>`• ${q.question}`),questions.length===0?'The recorded fields are supplied. Review the original evidence, comparable relevance and current terms before a decision.':'','Draft only. Review recipients and wording before any delivery.'].filter(Boolean).join('\n')};
+ return {questions,duplicates:matches,summary,method:opportunityMethod,notice:'Fictional pre-inventory opportunity. Sources are employee-recorded text, not fetched or verified. No property listing, valuation, offer, release, message or payment is created.',followupDraft:[`DRAFT — ${input.address}, ${input.city}`,`Source: ${s.wholesaler} · ${s.sourceReference}`,input.status==='not_pursuing'?`Internal review note: ${input.reviewNote}`:'Please help confirm the following before we complete our review:',...(input.status==='not_pursuing'?[]:questions.filter(q=>q.field!=='duplicate').slice(0,3).map(q=>`• ${q.question}`)),input.status==='reviewing'&&questions.filter(q=>q.field!=='duplicate').length>3?'Additional review questions remain in the opportunity checklist. Start with these decision-changing items.':'',questions.length===0?'The recorded fields are supplied. Review the original evidence, comparable relevance and current terms before a decision.':'','Draft only. Review recipients and wording before any delivery.'].filter(Boolean).join('\n')};
 }
 export function getOpportunityBoard(actor:Actor):OpportunityBoard {const items=records(actor);return {items,canEdit:featureAccess(actor,'core').allowed&&featureAccess(actor,'acquisition-lead').allowed,opportunityAccessReference:`board@${hash({scope:scope(actor),method:opportunityMethod,items,inventory:readProperties(actor),day:now().slice(0,10)})}`};}
 export function opportunityContextReference(actor:Actor):string {return actor.role==='dispositions'||!featureAccess(actor,'acquisition-lead').allowed||!featureAccess(actor,'core').allowed?'unavailable':getOpportunityBoard(actor).opportunityAccessReference;}

@@ -1,3 +1,4 @@
+import {qualificationReferenceCurrent} from './qualification-review';
 import {isRolePreparationArtifact} from '../lib/role-preparation-contracts';
 import {rolePreparationReferenceCurrent} from './role-preparations';
 import {buyerShortlistReferenceCurrent} from './buyer-shortlist';
@@ -21,9 +22,9 @@ import { readInvestor, readProperty } from './access';
 import { getDisclosure, isDisclosureReady, listBuyBoxes } from './intelligence';
 import { inboxAccessReferenceCurrent } from './communications-context';
 
-export interface HistoryReferences {rolePreparations?:string[];buyerShortlists?:string[];assignmentReviews?:string[];documentAccess?:string[];transactionTeamAccess?:string[];transactionAccess?:string[];investors:string[];properties:string[];releases:string[];packages:string[];debriefs:string[];inboxThreads:string[];inboxAccess:string[];workRuns?:string[];handoffAccess?:string[];workQuestions?:string[];knowledgeAccess?:string[];updatesAccess?:string[];analysisAccess?:string[];opportunityAccess?:string[]}
+export interface HistoryReferences {qualificationReviews?:string[];rolePreparations?:string[];buyerShortlists?:string[];assignmentReviews?:string[];documentAccess?:string[];transactionTeamAccess?:string[];transactionAccess?:string[];investors:string[];properties:string[];releases:string[];packages:string[];debriefs:string[];inboxThreads:string[];inboxAccess:string[];workRuns?:string[];handoffAccess?:string[];workQuestions?:string[];knowledgeAccess?:string[];updatesAccess?:string[];analysisAccess?:string[];opportunityAccess?:string[]}
 export type StoredMessage=Message & {references?:HistoryReferences};
-const empty=():HistoryReferences=>({rolePreparations:[],buyerShortlists:[],assignmentReviews:[],documentAccess:[],transactionTeamAccess:[],transactionAccess:[],investors:[],properties:[],releases:[],packages:[],debriefs:[],inboxThreads:[],inboxAccess:[],workRuns:[],handoffAccess:[],workQuestions:[],knowledgeAccess:[],updatesAccess:[],analysisAccess:[],opportunityAccess:[]});
+const empty=():HistoryReferences=>({qualificationReviews:[],rolePreparations:[],buyerShortlists:[],assignmentReviews:[],documentAccess:[],transactionTeamAccess:[],transactionAccess:[],investors:[],properties:[],releases:[],packages:[],debriefs:[],inboxThreads:[],inboxAccess:[],workRuns:[],handoffAccess:[],workQuestions:[],knowledgeAccess:[],updatesAccess:[],analysisAccess:[],opportunityAccess:[]});
 export const criteriaFingerprint=(actor:Actor,investorId:string)=>createHash('sha256').update(JSON.stringify(listBuyBoxes(actor,investorId))).digest('hex');
 // Repeated inherited references are validated once per synchronous SQLite read snapshot.
 // This cache never survives a read, an awaited provider call or a subsequent mutation.
@@ -60,6 +61,7 @@ export function collectHistoryReferences(actor:Actor,artifacts:Artifact[],inheri
     if((key==='threadId'||key==='id')&&/^inbox_thread_/.test(item))refs.inboxThreads.push(item);
     if(key==='workRunId')refs.workRuns!.push(Number.isInteger((value as Record<string,unknown>).workPlanVersion)?`${item}@${(value as Record<string,unknown>).workPlanVersion}`:item);
     if(key==='questionReference'&&typeof (value as Record<string,unknown>).workRunId==='string')refs.workQuestions!.push(`${(value as Record<string,unknown>).workRunId}@${item}`);
+    if(key==='qualificationReference')refs.qualificationReviews!.push(item);
     if(key==='buyerShortlistReference')refs.buyerShortlists!.push(item);
     if(key==='assignmentReviewReference')refs.assignmentReviews!.push(item);
     if(key==='documentAccessReference')refs.documentAccess!.push(item);
@@ -93,6 +95,7 @@ function releaseRecord(actor:Actor,id:string):PropertyRelease {
 }
 export function historyReferencesVisible(actor:Actor,refs:HistoryReferences) {
  try {
+  for(const reference of refs.qualificationReviews??[])if(!currentReference(actor,'qualificationReviews',reference,()=>qualificationReferenceCurrent(actor,reference)))return false;
   for(const reference of refs.buyerShortlists??[])if(!currentReference(actor,'buyerShortlists',reference,()=>buyerShortlistReferenceCurrent(actor,reference)))return false;
   for(const reference of refs.assignmentReviews??[])if(!currentReference(actor,'assignmentReviews',reference,()=>assignmentReviewReferenceCurrent(actor,reference)))return false;
   for(const reference of refs.documentAccess??[])if(!currentReference(actor,'documentAccess',reference,()=>documentContextReferenceCurrent(actor,reference)))return false;
@@ -132,5 +135,5 @@ export function readHistoryMessage(actor:Actor,message:StoredMessage):Message {
 
 export function assertInboxToolResultVisible(actor:Actor,artifacts:Artifact[]):void {
  const refs=collectHistoryReferences(actor,artifacts);
- if((refs.rolePreparations?.length||refs.buyerShortlists?.length||refs.assignmentReviews?.length||refs.documentAccess?.length||refs.transactionTeamAccess?.length||refs.transactionAccess?.length||refs.knowledgeAccess?.length||refs.updatesAccess?.length||refs.inboxThreads.length||refs.workRuns?.length||refs.handoffAccess?.length||refs.workQuestions?.length||refs.opportunityAccess?.length||refs.analysisAccess?.length)&&!historyReferencesVisible(actor,refs))throw new AppError(403,'Access to this result or its source context changed. Retrieve the conversation again.');
+ if((refs.qualificationReviews?.length||refs.rolePreparations?.length||refs.buyerShortlists?.length||refs.assignmentReviews?.length||refs.documentAccess?.length||refs.transactionTeamAccess?.length||refs.transactionAccess?.length||refs.knowledgeAccess?.length||refs.updatesAccess?.length||refs.inboxThreads.length||refs.workRuns?.length||refs.handoffAccess?.length||refs.workQuestions?.length||refs.opportunityAccess?.length||refs.analysisAccess?.length)&&!historyReferencesVisible(actor,refs))throw new AppError(403,'Access to this result or its source context changed. Retrieve the conversation again.');
 }

@@ -38,14 +38,27 @@ export function reviewOpportunityScreening(actor:Actor,id:string):OpportunityDet
   screening.title='Scenario review is unavailable';screening.nextAction='Intake remains visible. Current access to Valuation & Due Diligence is needed to combine it with your private scenarios.';
  }
  const current=screening.scenarios.filter(s=>s.state==='current'),stale=screening.scenarios.some(s=>s.state==='source_changed');
+ const incomplete=current.filter(s=>!s.metrics.some(m=>['Pre-tax project profit','Annual pre-tax cash flow'].includes(m.label)&&m.value!==null));
+ screening.decisionBasis=[
+  ...detail.duplicates.map(d=>`Possible duplicate: ${d.reason}`),
+  ...screening.scenarios.filter(s=>s.state==='source_changed').map(s=>`${s.label}: source changed; prior calculations are withheld.`),
+  ...current.flatMap(s=>[...s.differences,...s.risks].map(value=>`${s.label}: ${value}`)),
+  ...incomplete.map(s=>`${s.label}: the core economic outcome is unknown; a favorable separate scenario cannot fill its missing assumptions.`),
+  ...detail.questions.map(q=>`${q.question} ${q.reason}`),
+ ];
+
  if(item.status==='not_pursuing'){
   screening.title='Recorded as not pursuing';screening.nextAction='Respect the employee review decision. Reopening requires an explicit opportunity revision; a scenario does not change that decision.';
+ }else if(detail.duplicates.length){
+  screening.title='Clarify the submission identity';screening.nextAction='Review the possible duplicate before interpreting these scenarios as a new opportunity. Determine whether these are revised terms; do not merge or promote records automatically.';
  }else if(current.some(s=>s.risks.length)){
   screening.title='Review the modeled downside';screening.nextAction='At least one supplied scenario reaches zero or a loss. Review the adverse assumptions and evidence before recommending further acquisition work. No acceptance threshold has been supplied by the company.';
  }else if(current.some(s=>s.differences.length)){
   screening.title='Reconcile intake and scenario assumptions';screening.nextAction=current.flatMap(s=>s.differences)[0];
  }else if(stale){
   screening.title='Refresh changed scenarios';screening.nextAction='Review changed opportunity facts in Deal analysis and save a fresh scenario. Earlier computed results are withheld; other scenarios are not silently selected as replacements.';
+ }else if(incomplete.length){
+  screening.title='Complete the missing scenario assumptions';screening.nextAction='At least one current scenario cannot calculate its core outcome. Supply the missing inputs and sources; unknown is not zero and a positive alternative is not a substitute.';
  }else if(screening.analysisAccessReference&&detail.questions.length){
   screening.title='Resolve the decision-changing gaps';screening.nextAction=detail.questions[0].question+' '+detail.questions[0].reason;
  }else if(current.length){
@@ -57,5 +70,5 @@ export function reviewOpportunityScreening(actor:Actor,id:string):OpportunityDet
 export function opportunityScreeningMessage(detail:OpportunityDetail):string {
  const screening=detail.screening;
  return [`${detail.opportunity.address} · version ${detail.opportunity.version}`,detail.summary,
-  ...(screening?[screening.title,screening.nextAction,...screening.scenarios.map(s=>`${s.label} · version ${s.version} · ${s.asOf??'Needs fresh review'}\n${s.metrics.map(m=>m.label+': '+formatAnalysisMetric(m)).join('\n')}\n${[...s.differences,...s.risks,...s.questions].join('\n')}`),screening.notice]:[]),detail.followupDraft,detail.notice].join('\n\n');
+  ...(screening?[screening.title,screening.nextAction,...(screening.decisionBasis??[]),...screening.scenarios.map(s=>`${s.label} · version ${s.version} · ${s.asOf??'Needs fresh review'}\n${s.metrics.map(m=>m.label+': '+formatAnalysisMetric(m)).join('\n')}\n${[...s.differences,...s.risks,...s.questions].join('\n')}`),screening.notice]:[]),detail.followupDraft,detail.notice].join('\n\n');
 }

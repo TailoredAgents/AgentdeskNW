@@ -26,7 +26,7 @@ describe('registered durable-work capabilities and typed Copilot integration',()
   for(const name of ['approve_work','decide_work_cost','topup_work','send_work','execute_code'])expect(names).not.toContain(name);
   for(const name of ['work_capabilities','start_work','work_status']){const tool=tools.find(item=>item.name===name)!;expect(tool.strict).toBe(true);expect(tool.parameters.additionalProperties).toBe(false);}
   const start=tools.find(item=>item.name==='start_work')!;expect(start.parameters.required).toEqual(expect.arrayContaining(['title','steps']));
-  const listing=await dispatchTool(actor,'work_capabilities',{});expect((listing.data as {capabilities:unknown[]}).capabilities).toHaveLength(19);expect((listing.data as {capabilities:{capabilityId:string}[]}).capabilities.map(c=>c.capabilityId)).toEqual(expect.arrayContaining(['review_team_transaction','review_transaction','prepare_title_email']));expect(fetch).not.toHaveBeenCalled();
+  const listing=await dispatchTool(actor,'work_capabilities',{});expect((listing.data as {capabilities:unknown[]}).capabilities).toHaveLength(20);expect((listing.data as {capabilities:{capabilityId:string}[]}).capabilities.map(c=>c.capabilityId)).toEqual(expect.arrayContaining(['review_team_transaction','review_transaction','prepare_title_email']));expect(fetch).not.toHaveBeenCalled();
   await expect(dispatchTool(actor,'work_capabilities',{ownerId:'user-other'})).rejects.toThrow();
  });
  it('keeps availability tied to role and implemented capability instead of catalog labels',()=>{

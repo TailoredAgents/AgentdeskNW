@@ -15,7 +15,7 @@ export const handoffMutationSchema=z.discriminatedUnion('action',[
  z.object({...base,action:z.literal('report'),kind:z.enum(['blocked','resolved']),note:text,evidence:text}).strict(),
  z.object({...base,action:z.literal('resolve'),note:text}).strict(),
 ]);
-export const handoffMethod={id:'handoff-follow-through',version:2,source:'AgentDesk provisional management method · 2026-10-31.1',notice:'Fictional operational records. Seven days is a provisional review window, not company policy. No tracked acknowledgment means no acknowledgment recorded here. An outcome report is not verified deal progress.'};
+export const handoffMethod={id:'handoff-follow-through',version:3,source:'AgentDesk provisional management method · 2026-10-31.2',notice:'Fictional operational records. Seven days is a provisional review window, not company policy. No tracked acknowledgment means no acknowledgment recorded here. An outcome report is not verified deal progress.'};
 function members(actor:Actor){return getDb().prepare('SELECT m.user_id AS id,u.name,m.role FROM memberships m JOIN users u ON u.id=m.user_id WHERE m.organization_id=? AND m.office_id=? ORDER BY m.user_id').all(actor.organizationId,actor.officeId) as {id:string;name:string;role:Role}[];}
 function rowFor(actor:Actor,sourceId:string){return handoffSource(actor,id.parse(sourceId));}
 function stored(actor:Actor,source:HandoffSource){const table=handoffTables(source).coordination;const row=getDb().prepare(`SELECT data FROM ${table} WHERE organization_id=? AND office_id=? AND release_id=?`).get(actor.organizationId,actor.officeId,source.id) as {data:string}|undefined;return row?JSON.parse(row.data) as HandoffRecord:null;}
@@ -42,9 +42,17 @@ export function getHandoff(actor:Actor,releaseId:string){assertActor(actor);retu
 export function getHandoffBoard(actor:Actor):HandoffBoard {
  assertActor(actor);const rows=handoffSources(actor);
  const items=rows.filter(row=>{const record=stored(actor,row);return visible(actor,row,record)&&(['released','reviewing'].includes(row.value.status)||!!record);}).map(row=>project(actor,row));
- const ranks={source_changed:0,blocked:1,overdue:2,review:3,closing_soon:4,untracked:5,waiting:6,resolved:7};items.sort((a,b)=>ranks[a.attention]-ranks[b.attention]||a.address.localeCompare(b.address));
- const handoffAccessReference=hash({actor:[actor.organizationId,actor.officeId,actor.id,actor.role,actor.name],method:handoffMethod,items});
- return {items,checkedAt:now(),handoffAccessReference,summary:`${items.length} authorized handoff${items.length===1?'':'s'}; ${items.filter(i=>i.attention!=='resolved'&&i.attention!=='waiting').length} need review. Follow-up resolution is separate from transaction progress.`,method:handoffMethod};
+ const ranks={source_changed:0,blocked:1,overdue:2,review:3,closing_soon:4,untracked:5,waiting:6,resolved:7};items.sort((a,b)=>ranks[a.attention]-ranks[b.attention]||Date.parse(a.record?.dueAt??a.closingAt??'9999-12-31')-Date.parse(b.record?.dueAt??b.closingAt??'9999-12-31')||a.address.localeCompare(b.address));
+ const active=items.filter(i=>['released','reviewing'].includes(i.releaseStatus));
+ const unresolved=active.filter(i=>i.record&&i.record.state!=='resolved'&&i.attention!=='source_changed');
+ const metrics={visible:items.length,active:active.length,unassigned:active.filter(i=>!i.record).length,unresolvedAssigned:unresolved.length,
+  overdue:unresolved.filter(i=>Date.parse(i.record!.dueAt)<Date.now()).length,
+  awaitingAcknowledgment:unresolved.filter(i=>!i.record!.acknowledgedAt).length,
+  blocked:unresolved.filter(i=>i.record!.state==='blocked').length,awaitingReview:unresolved.filter(i=>i.record!.state==='reported').length,
+  resolved:active.filter(i=>i.attention==='resolved').length,changedSource:items.filter(i=>i.attention==='source_changed').length,
+  notice:'Current authorized handoff snapshot, not sales performance or a period comparison. Overdue, blocked, pending acknowledgment and pending review can overlap; their denominator is current-source active unresolved assignments. Changed-source assignments are counted separately. No private correspondence is included.'};
+ const handoffAccessReference=hash({actor:[actor.organizationId,actor.officeId,actor.id,actor.role,actor.name],method:handoffMethod,items,metrics});
+ return {items,metrics,checkedAt:now(),handoffAccessReference,summary:`${items.length} authorized handoff${items.length===1?'':'s'}; ${items.filter(i=>i.attention!=='resolved'&&i.attention!=='waiting').length} need review. Follow-up resolution is separate from transaction progress. ${metrics.overdue} of ${metrics.unresolvedAssigned} current-source active unresolved assignments are overdue; ${metrics.awaitingAcknowledgment} await acknowledgment, ${metrics.blocked} are blocked and ${metrics.awaitingReview} await manager review (categories overlap). ${metrics.unassigned} active sources are unassigned; ${metrics.changedSource} sources need a fresh review.`,method:handoffMethod};
 }
 export function handoffReferenceCurrent(actor:Actor,reference:string){return getHandoffBoard(actor).handoffAccessReference===reference;}
 export function mutateHandoff(actor:Actor,releaseId:string,raw:HandoffMutation):HandoffItem {

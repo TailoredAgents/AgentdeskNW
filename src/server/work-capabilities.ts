@@ -1,3 +1,4 @@
+import {qualificationResult,qualificationReferenceCurrent} from './qualification-review';
 import {rolePreparationReferenceCurrent,prepareOpportunityIntake,prepareHandoffAction,handoffPreparationSchema} from './role-preparations';
 import {opportunityPreviewSchema} from './opportunities';
 import {preparePropertyOutreachResult} from './package-correspondence';
@@ -34,6 +35,7 @@ type Capability={name:string;description:string;feature:string;roles:Role[];sche
 // Fictional analysis prices exercise admission/settlement. These are not provider prices.
 // Existing direct lookups, navigation and task controls remain unmetered by the wallet.
 const catalog:Record<string,Capability>={
+ review_qualification:{name:'Review investor qualification',description:'Prioritize a sourced clarification across separate approved buying strategies, conditional or conflicting statements and freshness. No criteria update, funding verification or outreach.',feature:'investor-qualification',roles:['dispositions','manager'],schema:z.object({investorId:valueId}).strict(),estimatedCents:0,maximumCents:0,effect:'read',output:'investorId, questions, evidence, nextQuestion, qualificationReference'},
  prepare_opportunity_intake:{name:'Prepare acquisition intake review',description:'Prepare a private review of supplied wholesaler facts, unknowns and duplicates. Employee must apply it in Work; never publishes inventory.',feature:'acquisition-lead',roles:['acquisitions','manager'],schema:opportunityPreviewSchema,estimatedCents:0,maximumCents:0,effect:'private_draft',output:'preparation, opportunityAccessReference'},
  prepare_handoff_action:{name:'Prepare shared handoff review',description:'Prepare a source-bound assignment, acknowledgment, evidenced report or manager resolution. No shared change until the employee applies the review in Work.',feature:'core',roles:all,schema:handoffPreparationSchema,estimatedCents:0,maximumCents:0,effect:'private_draft',output:'preparation, handoffAccessReference'},
  review_source_document:{name:'Review private source document',description:'Retrieve up to four cited working-text sections and a provisional purpose checklist. Literal query matching only; no verified facts, semantic completeness, original PDF interpretation or actions.',feature:'core',roles:all,schema:z.object({documentId:valueId,documentAccessReference:z.union([z.string().min(1).max(240),reference]),query:z.union([z.string().max(200),reference])}).strict(),estimatedCents:0,maximumCents:0,effect:'read',output:'documentId, documentAccessReference, sections, totalSections, reviewQuestions, cautions'},
@@ -92,7 +94,7 @@ export function validateWorkSteps(actor:Actor,steps:WorkStepInput[]):WorkStepInp
  return steps;
 }
 // Explicit audited local-only scope. A future paid capability must not inherit included pricing.
-const includedLocalCapabilities=new Set(['prepare_opportunity_intake','prepare_handoff_action','prepare_property_outreach','review_source_document','review_team_transaction','review_transaction','prepare_title_email','request_information','inspect_property','match_existing_buyers','relationship_next_step','review_investment_analysis','review_diligence_analysis','review_opportunity','review_handoff','office_priorities','create_followup','start_synthetic_research','await_synthetic_research']);
+const includedLocalCapabilities=new Set(['review_qualification','prepare_opportunity_intake','prepare_handoff_action','prepare_property_outreach','review_source_document','review_team_transaction','review_transaction','prepare_title_email','request_information','inspect_property','match_existing_buyers','relationship_next_step','review_investment_analysis','review_diligence_analysis','review_opportunity','review_handoff','office_priorities','create_followup','start_synthetic_research','await_synthetic_research']);
 export function estimateWorkStep(actor:Actor,step:WorkStepInput,includedLocal=false){
  const item=definition(step.capabilityId);requireRole(actor,item.roles);requireFeature(actor,item.feature);
  if(includedLocal){if(!includedLocalCapabilities.has(step.capabilityId))throw new AppError(409,'This capability needs a separately admitted paid allocation before it can join the assignment.');return {estimatedCents:0,maximumCents:0,rateVersion:'included-local-v1'};}
@@ -121,6 +123,7 @@ export function validateStoredWorkOutput(actor:Actor,step:WorkStepInput,output:T
     if(key==='transactionId')getTransaction(actor,item);
     if(key==='analysisAccessReference'&&!analysisReferenceCurrent(actor,item))throw new AppError(409,'The analysis source changed. Prepare a fresh review.');
     if(key==='analysisId'||key==='id'&&/^analysis_/.test(item)){const detail=getAnalysis(actor,item);if(key==='analysisId'&&step.capabilityId.startsWith('review_')&&step.capabilityId.endsWith('_analysis')&&detail.record.input.lens!==(step.capabilityId==='review_investment_analysis'?'investment':'diligence'))throw new AppError(409,'This scenario belongs to a different specialist.');}
+    if(key==='qualificationReference'&&!qualificationReferenceCurrent(actor,item))throw new AppError(409,'The qualification evidence changed. Prepare a fresh review.');
     if(key==='rolePreparationReference'&&typeof item==='string'&&!rolePreparationReferenceCurrent(actor,item))throw new AppError(409,'This prepared action changed. Review its current status.');
    if(key==='opportunityAccessReference'&&!opportunityReferenceCurrent(actor,item))throw new AppError(409,'The opportunity source changed. Prepare a fresh review.');
     if(key==='opportunityId'||key==='id'&&/^opportunity_/.test(item))getOpportunity(actor,item);
@@ -154,6 +157,7 @@ export function executeWorkCapability(actor:Actor,step:WorkStepInput,_priorOutpu
   case 'review_source_document':return reviewSourceDocument(actor,input);
   case 'review_team_transaction':return teamTransactionReviewResult(actor,String(input.teamId));
   case 'review_transaction':return transactionReviewResult(actor,input.transactionId as string);
+  case 'review_qualification':return qualificationResult(actor,String(input.investorId));
   case 'prepare_opportunity_intake':return prepareOpportunityIntake(actor,input);
   case 'prepare_handoff_action':return prepareHandoffAction(actor,input);
   case 'prepare_property_outreach':return preparePropertyOutreachResult(actor,input as {packageId:string;accountId:string|null});

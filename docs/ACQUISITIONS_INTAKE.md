@@ -30,7 +30,7 @@ A separate **New wholesaler opportunities** panel under desktop Work queue → C
 
 An opportunity records a supplied address/city/state, optional county/ZIP/type, the same structured wholesaler/source/price/repair/occupancy/comparable submission, an unconfirmed closing target, access information and an internal review note. `reviewing` and `not_pursuing` are employee review states, not deal/contract milestones. Not pursuing requires a reason and may be revised later; history is retained. No separate verified wholesaler-contact directory exists yet.
 
-`opportunities.ts` applies provisional method `wholesaler intake v1 / 2026-10-30.1`. Missing facts become focused questions. Sources over 30 days old and past closing targets prompt reconfirmation; the window is AgentDesk guidance, not company policy. Supplying evidence removes only its corresponding question and never verifies the source. Even a complete submission still needs original-evidence review before supported screening. The service prepares an unsent follow-up draft, without choosing recipients or delivering it.
+`opportunities.ts` applies provisional method `wholesaler intake v2 / 2026-10-31.1`. Missing facts become focused questions. Sources over 30 days old and past closing targets prompt reconfirmation; the window is AgentDesk guidance, not company policy. Supplying evidence removes only its corresponding question and never verifies the source. Even a complete submission still needs original-evidence review before supported screening. The service prepares an unsent follow-up draft, without choosing recipients or delivering it.
 
 ### Duplicate and revision contract
 
@@ -68,3 +68,12 @@ Evidence: 13 new screening cases plus 76 opportunity HTTP/worker checks cover po
 A saved opportunity can now enter reviewed internal handoff coordination before inventory entry. A manager assigns a next action to the acquisition owner, who already has access; that employee acknowledges and reports with an operational evidence reference. A separate manager resolution closes that follow-up only. All shared source labels say Opportunity/pre-inventory; no property/release row is fabricated. Opportunity correction requires refreshed assignment/acknowledgment; `not_pursuing` disables further actions. Dispositions and unrelated acquisition employees do not inherit the private source through assignment. Existing private scenario analysis remains separate and does not become shared by this handoff.
 
 These are composable outcomes and review services, not a mandatory wholesaler script. Practitioner review, broader evidence reasoning, verified comparables and inventory promotion remain separate scope.
+
+
+## Phase 2 — decision-changing screening priorities
+
+The v2 provisional intake method prioritizes possible duplicate identity and current terms before lower-impact completeness questions. Active follow-up drafts ask at most three leading questions while preserving the complete internal checklist. A not-pursuing record retains its internal rationale without producing outward requests for more information. This prioritizes questions; it does not require a fixed work sequence or suppress legitimate alternative plans.
+
+Screening now carries an explicit decision basis across linked scenarios. Possible duplicates, changed sources, inconsistent assumptions, modeled downside and unknown economic outcomes remain visible together. A favorable scenario cannot supply a missing resale/rent assumption for another. The first useful action identifies identity uncertainty or the relevant downside/conflict/stale/incomplete scenario before suggesting further review. Source correction changes that recommendation. Values still come exclusively from the existing deterministic calculator, and company acceptance thresholds remain unknown.
+
+Excellent-output example: “One scenario is positive, but the alternate cannot calculate profit because its resale assumption is missing. Supply that input and its source before relying on the comparison.” The complete favorable arithmetic remains available; the incomplete alternative is not treated as zero or silently dropped. Authored variations also cover simultaneous downside/disagreement, duplicate submissions, a stale alternative, revised terms and withdrawn opportunities. This does not establish expert valuation or source verification.

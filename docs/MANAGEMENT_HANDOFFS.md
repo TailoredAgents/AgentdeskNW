@@ -1,6 +1,6 @@
 # Shared handoff coordination
 
-Updated October 30, 2026. This C4 specification supports [the canonical roadmap](IMPLEMENTATION_ROADMAP.md); it is not a competing schedule. The bounded workflow uses fictional operational records. Management practitioner acceptance and company procedure approval remain pending.
+Updated October 31, 2026. This C4 specification supports [the canonical roadmap](IMPLEMENTATION_ROADMAP.md); it is not a competing schedule. The bounded workflow uses fictional operational records. Management practitioner acceptance and company procedure approval remain pending.
 
 ## Purpose and supported workflow
 
@@ -51,3 +51,12 @@ Provisional method v2 extends the same reviewed coordination to saved pre-invent
 `prepare_handoff_action` lets the master prepare an assignment, acknowledgment, evidenced report or management resolution using exact current source/follow-up versions. It does not execute that action. Desktop/native Work shows the private proposal and its source, employee, instructions, deadline and implications before applying. The server rechecks permissions, eligible assignee, future deadline, version and state. The immutable employee decision and resulting coordination event commit atomically. A blocked employee report cannot be resolved as completed, and a manager cannot acknowledge an assignment on behalf of its employee. Current preparation status is available through `review_prepared_actions`.
 
 Handoff labels distinguish Opportunity from Release. The legacy source identifier/version field names remain for route compatibility; scoped readers and history/work provenance recognize both real source types. A handoff follow-up remains distinct from investor messaging, private mailbox/file access, valuation, inventory promotion, title status and completed transactions.
+
+
+## Phase 2 — defined operational metrics and priority
+
+Handoff method v3 (`2026-10-31.2`) returns a current authorized snapshot: visible/active sources, unassigned active sources, current-source active unresolved assignments, overdue work, pending acknowledgment, blocked work, pending manager review, reviewed resolutions and changed-source work. The unresolved-assignment count is the denominator for overdue/blocked/acknowledgment/review metrics. These categories can overlap and must never be summed as distinct deals. Changed-source or withdrawn work is counted separately, and a report alone never increments reviewed resolutions. Zero remains zero; no conversion rate or period trend is invented.
+
+Within the same attention category, the actual earliest follow-up/closing target sorts first. Existing source-change, blocker and review distinctions remain. Each item retains its source, responsible employee, recorded dates and available actions. Assignment retries do not inflate counts, and managers gain no access to private messages or reminders. Shared desktop/native boards, Copilot and saved office-priority work use the same projection and fingerprint; time crossing a due boundary or changed evidence retires old derived conclusions.
+
+Excellent-output example: “One of one current unresolved assignments is overdue; that same assignment is blocked. Review its recorded access issue with the assigned employee.” This is one overlapping operational issue, not two failed deals or evidence of poor employee performance. Separate manager resolution changes the count only after the employee’s outcome is reviewed. Practitioner-approved urgency rules, period comparisons, broader pipeline measures and sales-performance interpretation remain open.

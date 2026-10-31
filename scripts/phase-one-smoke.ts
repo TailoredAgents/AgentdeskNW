@@ -1,3 +1,6 @@
+import {getRelationshipRecord,recordRelationshipReport} from '../src/server/relationship-record';
+import {getInvestorIntelligence} from '../src/server/intelligence';
+import type {Conversation,ToolResult} from '../src/lib/contracts';
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import {closeDb,demoActor,getDb} from '../src/server/db';
@@ -33,6 +36,14 @@ try{
  const replyInput={expectedVersion:sent.detail.thread.version,scenario:'repair',eventKey:randomUUID()},reply=await request<InboxThreadDetail>(`inbox/${draft.thread.id}/receive-demo-reply`,'POST',replyInput,200,true);await request(`inbox/${draft.thread.id}/receive-demo-reply`,'POST',replyInput);
  check(reply.messages.length===2&&reply.messages.at(-1)?.body.includes('FICTIONAL REPLY'),'The selected thread receives one labeled controlled reply across surfaces');const advice=await request<InboxAssistance>(`inbox/${draft.thread.id}/assist`);check(advice.suggestedReply.body.includes('repair'),'Next recommendation responds to the new repair objection');
  check((await request<InboxThreadDetail>(`packages/${pkg.id}/inbox-preparation`,'POST',draftRequest)).draft===null,'Retry cannot recreate a consumed package draft');
+ const qualification=await request<{conversation:Conversation;result:ToolResult}>('chat','POST',{requestId:randomUUID(),message:'Qualify Mike'});
+ check(qualification.result.message.includes('Ask the next useful question'),'Phone Agent receives evidence-led qualification');
+ const qualificationRecord=getRelationshipRecord(demoActor(),'investor-mike'),box=getInvestorIntelligence(demoActor(),'investor-mike').buyBoxes[0];
+ recordRelationshipReport(demoActor(),{investorId:'investor-mike',buyBoxId:box.id,topic:'financing',value:['Seller financing only'],statement:'Fictional employee correction to funding plans.',statedAt:new Date().toISOString(),supersedesId:null,expectedVersion:qualificationRecord.version,expectedContext:qualificationRecord.contextVersion,eventKey:randomUUID()});
+ const changedQualification=await request<{conversation:Conversation;result:ToolResult}>('chat','POST',{conversationId:qualification.conversation.id,requestId:randomUUID(),message:'Qualify Mike'},200,true);
+ check(changedQualification.result.message.includes('sources disagree'),'Desktop Agent asks about corrected funding evidence');
+ const qualificationHistory=await request<Conversation>(`conversations/${qualification.conversation.id}`);
+ check(qualificationHistory.messages.some(m=>m.content.startsWith('This historical message is withheld')),'Phone withholds earlier qualification advice after correction');
  check(getDb().prepare('SELECT COUNT(*) n FROM provider_operations').get()&&!(getDb().prepare('SELECT COUNT(*) n FROM provider_operations').get() as {n:number}).n,'No paid provider call was made');
  console.log(`Phase-one HTTP acceptance passed: ${checks} checks.`);
 }finally{closeDb();}
