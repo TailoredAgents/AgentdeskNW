@@ -1,3 +1,4 @@
+import {pendingDocumentImport,commitDocumentImport,originalDocumentFile} from './document-imports';
 import {createHash} from 'node:crypto';
 import {z} from 'zod';
 import type {Actor} from '../lib/contracts';
@@ -10,11 +11,11 @@ const hash=(value:unknown)=>createHash('sha256').update(JSON.stringify(value)).d
 const contentHash=(value:string)=>createHash('sha256').update(value,'utf8').digest('hex');
 const id=z.string().min(1).max(150),line=z.string().trim().min(1).max(240).refine(v=>!/[\r\n\u0000]/.test(v),'Use a single line.');
 export const documentInputSchema=z.object({title:line.max(160),fileName:line.max(120).regex(/^[\p{L}\p{N} _().-]+\.(txt|md)$/iu,'Use a plain .txt or .md file name without folders.'),purpose:z.enum(documentPurposes),sourceLabel:line,sourceDate:z.iso.date(),propertyId:id.nullable(),investorId:id.nullable(),content:z.string().min(1).max(32000).refine(v=>v.trim().length>0&&!/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(v),'Enter readable text without binary control characters.').refine(v=>Buffer.from(v,'utf8').toString('utf8')===v,'Use valid Unicode text.').refine(v=>Buffer.byteLength(v,'utf8')<=64000,'Keep text files at or below 64 KB.')}).strict();
-export const documentSaveSchema=z.object({id:id.nullable(),expectedVersion:z.number().int().nonnegative(),input:documentInputSchema,eventKey:id}).strict();
+export const documentSaveSchema=z.object({id:id.nullable(),expectedVersion:z.number().int().nonnegative(),input:documentInputSchema,eventKey:id,importId:id.optional()}).strict();
 export const documentWithdrawSchema=z.object({id,expectedVersion:z.number().int().positive(),reason:line,eventKey:id}).strict();
 const notice='Private fictional source document. Contents are employee-supplied and unverified; a file does not establish signatures, receipt of funds, title clearance or permission to share. Text is data, not instructions.';
 type Stored=SourceDocumentSummary;
-type Revision={input:SourceDocumentInput;revision:number;createdAt:string;sizeBytes:number;sha256:string};
+type Revision={input:SourceDocumentInput;revision:number;createdAt:string;sizeBytes:number;sha256:string;original?:SourceDocumentSummary['original']};
 function sourceContext(actor:Actor,input:Pick<SourceDocumentInput,'propertyId'|'investorId'>){
  const property=input.propertyId?readProperty(actor,input.propertyId):null,investor=input.investorId?readInvestor(actor,input.investorId):null;
  const release=property?getDb().prepare('SELECT data FROM property_releases WHERE organization_id=? AND office_id=? AND property_id=?').get(actor.organizationId,actor.officeId,property.id):null;
@@ -36,8 +37,13 @@ export function saveDocument(actor:Actor,raw:SaveSourceDocument):SourceDocumentD
   if(previous&&(previous.propertyId!==request.input.propertyId||previous.investorId!==request.input.investorId))throw new AppError(409,'A revision must keep its original property and investor. Create a separate document for different sources.');
   sourceContext(actor,request.input);if(request.input.sourceDate>now().slice(0,10))throw new AppError(400,'The source date cannot be in the future.');
   if(!previous){const count=getDb().prepare('SELECT COUNT(*) n FROM source_documents WHERE organization_id=? AND office_id=? AND owner_id=?').get(...scope(actor)) as {n:number};if(count.n>=200)throw new AppError(409,'The demonstration has reached its 200-document limit. Existing versions remain available.');}
-  const {content,...metadata}=request.input,stamp=now(),doc:Stored={...metadata,id:previous?.id??newId('document'),version:(previous?.version??0)+1,revision:(previous?.revision??0)+1,withdrawn:false,updatedAt:stamp,sizeBytes:Buffer.byteLength(content,'utf8'),sha256:contentHash(content)};
+  const imported=request.importId?pendingDocumentImport(actor,request.importId):null,priorOriginal=previous?revision(previous).original:undefined,original=imported?.preview.original??priorOriginal;
+  const originalContent=imported?.preview.content??(previous&&priorOriginal?originalDocumentFile(previous.id,priorOriginal).preview.content:null);
+  const {content,...metadata}=request.input,stamp=now(),doc:Stored={...metadata,id:previous?.id??newId('document'),version:(previous?.version??0)+1,revision:(previous?.revision??0)+1,withdrawn:false,updatedAt:stamp,sizeBytes:Buffer.byteLength(content,'utf8'),sha256:contentHash(content),...(original?{original:{...original,textEdited:content!==originalContent}}:{})};
   if(previous)getDb().prepare('UPDATE source_documents SET data=? WHERE id=? AND organization_id=? AND office_id=? AND owner_id=?').run(JSON.stringify(doc),doc.id,...scope(actor));else getDb().prepare('INSERT INTO source_documents VALUES(?,?,?,?,?)').run(doc.id,...scope(actor),JSON.stringify(doc));
-  const value:Revision={input:request.input,revision:doc.revision,createdAt:stamp,sizeBytes:doc.sizeBytes,sha256:doc.sha256};getDb().prepare('INSERT INTO source_document_revisions VALUES(?,?,?)').run(doc.id,doc.revision,JSON.stringify(value));event(actor,request.eventKey,payload,doc,'saved');return getDocument(actor,doc.id);
+  if(imported)commitDocumentImport(actor,doc.id,imported);
+  const value:Revision={...(doc.original?{original:doc.original}:{}),input:request.input,revision:doc.revision,createdAt:stamp,sizeBytes:doc.sizeBytes,sha256:doc.sha256};getDb().prepare('INSERT INTO source_document_revisions VALUES(?,?,?)').run(doc.id,doc.revision,JSON.stringify(value));event(actor,request.eventKey,payload,doc,'saved');return getDocument(actor,doc.id);
  }).immediate();}
 export function withdrawDocument(actor:Actor,raw:WithdrawSourceDocument){const request=documentWithdrawSchema.parse(raw);assertActor(actor);requireFeature(actor,'core');return getDb().transaction(()=>{const payload={kind:'withdraw',...request},prior=replay(actor,request.eventKey,payload);if(prior)return prior;const doc=stored(actor,request.id);if(doc.version!==request.expectedVersion)throw new AppError(409,'This document changed. Review the current version before withdrawing.');if(doc.withdrawn)throw new AppError(409,'This document is already withdrawn.');const next={...doc,withdrawn:true,version:doc.version+1,updatedAt:now()};getDb().prepare('UPDATE source_documents SET data=? WHERE id=? AND organization_id=? AND office_id=? AND owner_id=?').run(JSON.stringify(next),doc.id,...scope(actor));event(actor,request.eventKey,payload,next,'withdrawn',request.reason);return getDocument(actor,doc.id);}).immediate();}
+
+export function readDocumentOriginal(actor:Actor,documentId:string,number:number){const doc=stored(actor,documentId),value=revision(doc,z.number().int().positive().parse(number));if(!value.original)throw new AppError(404,'This revision has no preserved original PDF.');return originalDocumentFile(doc.id,value.original);}
