@@ -22,3 +22,6 @@ test('reported outcomes require an evidence reference and an explicit reviewed v
  assert.deepEqual(handoffFormMutation(item,form,'same'),{action:'report',kind:'resolved',note:form.note,evidence:form.evidence,eventKey:'same',expectedReleaseVersion:2,expectedVersion:3});
  assert.throws(()=>handoffFormMutation(item,{...form,evidence:''},'same'));
 });
+
+import {isRolePreparationArtifact} from '../../src/lib/role-preparation-contracts';
+test('prepared actions open their decision surface instead of the underlying record editor',()=>{for(const type of ['opportunity','handoff'] as const){assert.equal(isRolePreparationArtifact({type,id:'source',title:'Review',data:{preparationId:'prepared'}}),true);assert.equal(isRolePreparationArtifact({type,id:'source',title:'Record'}),false);}assert.equal(isRolePreparationArtifact({type:'inbox',title:'Mail',data:{preparationId:'prepared'}}),false);});

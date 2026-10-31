@@ -1,5 +1,6 @@
 'use client';
 
+import {RolePreparationsPanel} from './RolePreparationsPanel';
 import {includedLocalWorkNotice} from '@/lib/work-contracts';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowRight, ArrowUpRight, Check, CirclePause, Clock, FileText, Info, Play, Plus, RefreshCw, ShieldCheck, Sparkles, X } from 'lucide-react';
@@ -212,6 +213,7 @@ export function WorkRunsPanel({ data, initialRunId, initialAnalysisId, onChange,
 
   return <section className="work-runs" aria-label="Saved Copilot jobs">
     <AssignmentReviewsPanel/>
+    <RolePreparationsPanel/>
     <HandoffsPanel/>
     <AnalysisPanel key={initialAnalysisId??"board"} initialId={initialAnalysisId}/>
     {data.actor.role!=='dispositions'&&<><OpportunitiesPanel onOpenAnalysis={onArtifact?id=>onArtifact({type:"analysis",id,title:"Review acquisition scenario"}):undefined}/><AcquisitionIntakePanel data={data} onChange={onChange}/></>}

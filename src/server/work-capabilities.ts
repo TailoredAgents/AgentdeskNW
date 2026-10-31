@@ -1,3 +1,6 @@
+import {rolePreparationReferenceCurrent,prepareOpportunityIntake,prepareHandoffAction,handoffPreparationSchema} from './role-preparations';
+import {opportunityPreviewSchema} from './opportunities';
+import {preparePropertyOutreachResult} from './package-correspondence';
 import {reviewOpportunityScreening,opportunityScreeningMessage} from './opportunity-screening';
 import {buyerShortlistMessage,buyerShortlistReferenceCurrent} from './buyer-shortlist';
 import {reviewSourceDocument,documentContextReferenceCurrent} from './document-context';
@@ -31,9 +34,12 @@ type Capability={name:string;description:string;feature:string;roles:Role[];sche
 // Fictional analysis prices exercise admission/settlement. These are not provider prices.
 // Existing direct lookups, navigation and task controls remain unmetered by the wallet.
 const catalog:Record<string,Capability>={
+ prepare_opportunity_intake:{name:'Prepare acquisition intake review',description:'Prepare a private review of supplied wholesaler facts, unknowns and duplicates. Employee must apply it in Work; never publishes inventory.',feature:'acquisition-lead',roles:['acquisitions','manager'],schema:opportunityPreviewSchema,estimatedCents:0,maximumCents:0,effect:'private_draft',output:'preparation, opportunityAccessReference'},
+ prepare_handoff_action:{name:'Prepare shared handoff review',description:'Prepare a source-bound assignment, acknowledgment, evidenced report or manager resolution. No shared change until the employee applies the review in Work.',feature:'core',roles:all,schema:handoffPreparationSchema,estimatedCents:0,maximumCents:0,effect:'private_draft',output:'preparation, handoffAccessReference'},
  review_source_document:{name:'Review private source document',description:'Retrieve up to four cited working-text sections and a provisional purpose checklist. Literal query matching only; no verified facts, semantic completeness, original PDF interpretation or actions.',feature:'core',roles:all,schema:z.object({documentId:valueId,documentAccessReference:z.union([z.string().min(1).max(240),reference]),query:z.union([z.string().max(200),reference])}).strict(),estimatedCents:0,maximumCents:0,effect:'read',output:'documentId, documentAccessReference, sections, totalSections, reviewQuestions, cautions'},
  review_team_transaction:{name:'Review shared transaction work',description:'Read the current explicitly shared summary and follow-ups; never private investor/mailbox/files, changed sources or verified outcomes. No mutation.',feature:'transaction-coordinator',roles:all,schema:z.object({teamId:valueId}).strict(),estimatedCents:0,maximumCents:0,effect:'read',output:'teamId, transactionTeamAccessReference, coordination'},
  review_transaction:{name:'Review private transaction',description:'Read current employee reports, missing facts, issues and unsent title preparation. No file text, shared mailbox access or verified outcome.',feature:'transaction-coordinator',roles:all,schema:z.object({transactionId:valueId}).strict(),estimatedCents:0,maximumCents:0,effect:'read',output:'transactionId, transactionAccessReference, reports, preparation'},
+ prepare_property_outreach:{name:'Prepare property Inbox draft',description:'Save an existing eligible property package into the owned company email or selected matching account. Preserves employee edits. Never sends or approves.',feature:'deal-marketing',roles:['dispositions','manager'],schema:z.object({packageId:valueId,accountId:z.union([valueId,z.null()])}).strict(),estimatedCents:0,maximumCents:0,effect:'private_draft',output:'packageId, threadId, hasDraft, liveDelivery false'},
  prepare_title_email:{name:'Prepare title Inbox draft',description:'Save current private title preparation only when explicitly requested. Exact current sources and account required; never send or change milestones. Reuses existing drafts and preserves edits.',feature:'transaction-coordinator',roles:all,schema:z.object({transactionId:valueId,accountId:valueId,transactionAccessReference:z.union([z.string().min(1).max(240),reference])}).strict(),estimatedCents:0,maximumCents:0,effect:'private_draft',output:'transactionId, transactionAccessReference, threadId, hasDraft, liveDelivery false'},
  request_information:{name:'Ask for missing information',description:'Ask the employee for a property, investor, text, number or explicit time. Wait for their answer; never invent it. Use answer (or propertyId/investorId) in dependent steps. Answers are supplied information, not approval or verified CRM facts.',feature:'core',roles:all,schema:workQuestionSchema,estimatedCents:0,maximumCents:0,effect:'read',output:'answer, provenance, questionReference; propertyId/investorId for record selections'},
  inspect_property:{name:'Read property facts',description:'Retrieve current authorized fictional property facts.',feature:'core',roles:all,schema:z.object({propertyId:valueId}).strict(),estimatedCents:0,maximumCents:0,effect:'read',output:'propertyId, property'},
@@ -86,7 +92,7 @@ export function validateWorkSteps(actor:Actor,steps:WorkStepInput[]):WorkStepInp
  return steps;
 }
 // Explicit audited local-only scope. A future paid capability must not inherit included pricing.
-const includedLocalCapabilities=new Set(['review_source_document','review_team_transaction','review_transaction','prepare_title_email','request_information','inspect_property','match_existing_buyers','relationship_next_step','review_investment_analysis','review_diligence_analysis','review_opportunity','review_handoff','office_priorities','create_followup','start_synthetic_research','await_synthetic_research']);
+const includedLocalCapabilities=new Set(['prepare_opportunity_intake','prepare_handoff_action','prepare_property_outreach','review_source_document','review_team_transaction','review_transaction','prepare_title_email','request_information','inspect_property','match_existing_buyers','relationship_next_step','review_investment_analysis','review_diligence_analysis','review_opportunity','review_handoff','office_priorities','create_followup','start_synthetic_research','await_synthetic_research']);
 export function estimateWorkStep(actor:Actor,step:WorkStepInput,includedLocal=false){
  const item=definition(step.capabilityId);requireRole(actor,item.roles);requireFeature(actor,item.feature);
  if(includedLocal){if(!includedLocalCapabilities.has(step.capabilityId))throw new AppError(409,'This capability needs a separately admitted paid allocation before it can join the assignment.');return {estimatedCents:0,maximumCents:0,rateVersion:'included-local-v1'};}
@@ -115,11 +121,13 @@ export function validateStoredWorkOutput(actor:Actor,step:WorkStepInput,output:T
     if(key==='transactionId')getTransaction(actor,item);
     if(key==='analysisAccessReference'&&!analysisReferenceCurrent(actor,item))throw new AppError(409,'The analysis source changed. Prepare a fresh review.');
     if(key==='analysisId'||key==='id'&&/^analysis_/.test(item)){const detail=getAnalysis(actor,item);if(key==='analysisId'&&step.capabilityId.startsWith('review_')&&step.capabilityId.endsWith('_analysis')&&detail.record.input.lens!==(step.capabilityId==='review_investment_analysis'?'investment':'diligence'))throw new AppError(409,'This scenario belongs to a different specialist.');}
-    if(key==='opportunityAccessReference'&&!opportunityReferenceCurrent(actor,item))throw new AppError(409,'The opportunity source changed. Prepare a fresh review.');
+    if(key==='rolePreparationReference'&&typeof item==='string'&&!rolePreparationReferenceCurrent(actor,item))throw new AppError(409,'This prepared action changed. Review its current status.');
+   if(key==='opportunityAccessReference'&&!opportunityReferenceCurrent(actor,item))throw new AppError(409,'The opportunity source changed. Prepare a fresh review.');
     if(key==='opportunityId'||key==='id'&&/^opportunity_/.test(item))getOpportunity(actor,item);
     if(key==='investorId'||key==='matchedInvestorId'||key==='id'&&/^investor[-_]/.test(item))readInvestor(actor,item);
     if(key==='propertyId'||key==='id'&&/^property[-_]/.test(item))readProperty(actor,item);
-    if(key==='releaseId'||key==='id'&&/^release_/.test(item))getRelease(actor,item);
+    if(key==='releaseId'&&/^opportunity_/.test(item))getOpportunity(actor,item);
+    else if(key==='releaseId'||key==='id'&&/^release_/.test(item))getRelease(actor,item);
     if(key==='jobId'||key==='id'&&/^research_/.test(item)){const job=getResearchJob(actor,item);if(job.ownerId!==actor.id&&actor.role!=='manager')throw new AppError(404,'Research is no longer accessible.');}
     if(key==='taskId'||key==='id'&&/^task[-_]/.test(item)){
      const row=getDb().prepare('SELECT owner_id,investor_id FROM tasks WHERE id=? AND organization_id=? AND office_id=?').get(item,actor.organizationId,actor.officeId) as {owner_id:string;investor_id:string|null}|undefined;
@@ -133,7 +141,8 @@ export function validateStoredWorkOutput(actor:Actor,step:WorkStepInput,output:T
 export function validateConcreteWorkInput(actor:Actor,step:WorkStepInput):Record<string,unknown> {
  const item=definition(step.capabilityId);requireRole(actor,item.roles);requireFeature(actor,item.feature);rejectUnsafeKeys(step.input);
  // References must already have been resolved by the worker; schema validation is repeated here.
- if(Object.values(step.input).some(value=>value&&typeof value==='object'))throw new AppError(400,'Resolve the required prior result before executing this step.');
+ const unresolved=(value:unknown):boolean=>!!value&&typeof value==='object'&&('$step' in value||Object.values(value).some(unresolved));
+ if(unresolved(step.input))throw new AppError(400,'Resolve the required prior result before executing this step.');
  const input:Record<string,unknown>=step.capabilityId==='await_synthetic_research'?z.object({jobId:id}).strict().parse(step.input):item.schema.parse(step.input) as Record<string,unknown>;
  validateStoredWorkOutput(actor,step,{specialistIds:[],message:'',artifacts:[]});
  return input;
@@ -145,6 +154,9 @@ export function executeWorkCapability(actor:Actor,step:WorkStepInput,_priorOutpu
   case 'review_source_document':return reviewSourceDocument(actor,input);
   case 'review_team_transaction':return teamTransactionReviewResult(actor,String(input.teamId));
   case 'review_transaction':return transactionReviewResult(actor,input.transactionId as string);
+  case 'prepare_opportunity_intake':return prepareOpportunityIntake(actor,input);
+  case 'prepare_handoff_action':return prepareHandoffAction(actor,input);
+  case 'prepare_property_outreach':return preparePropertyOutreachResult(actor,input as {packageId:string;accountId:string|null});
   case 'prepare_title_email':return prepareTitleResult(actor,input as {transactionId:string;accountId:string;transactionAccessReference:string},`title-work:${createHash('sha256').update(JSON.stringify([actor.organizationId,actor.officeId,actor.id,input])).digest('hex')}`);
   case 'request_information':throw new AppError(409,'This step requires the employee’s answer through the saved job.');
   case 'inspect_property':{const property=readProperty(actor,input.propertyId as string);result.data={propertyId:property.id,property};result.message=`${property.address}: ${property.status}, $${property.price.toLocaleString()}, ${property.county} County. Fictional property record.`;break;}

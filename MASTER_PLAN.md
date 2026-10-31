@@ -1,10 +1,12 @@
 # AgentDesk NW — product direction
 
-Updated October 30, 2026. This is the stable product brief, **not a second development schedule**. Use [the roadmap](docs/IMPLEMENTATION_ROADMAP.md) for current status, next work, dependencies and completion gates; [the documentation map](docs/README.md) for specifications; [PROGRESS](docs/PROGRESS.md) for evidence.
+Updated October 31, 2026. This is the stable product brief, **not a second development schedule**. Use [the roadmap](docs/IMPLEMENTATION_ROADMAP.md) for current status, next work, dependencies and completion gates; [the documentation map](docs/README.md) for specifications; [PROGRESS](docs/PROGRESS.md) for evidence.
 
 ## What we are building
 
 AgentDesk NW is a company-wide AI workforce for New Western's dispositions, acquisitions and management employees. Each employee has one persistent master Copilot that understands their work, retrieves the right business context, coordinates permitted specialists, carries out useful tasks and follows through. Employees can describe an outcome instead of manually operating every feature.
+
+Employee workflows are outcomes to prove, not fixed scripts that constrain the Agent. The master Agent should gather current context, choose a useful plan, use specialists/capabilities as needed, and change remaining work when facts or employee instructions change. The owner approved a six-phase execution sequence in the canonical roadmap, beginning with complete adaptive outcomes for all three roles. The demonstration performs real work on fictional records and simulates external business effects. Shared capability connectors, rather than separate integrations per specialist, should support selective transition to approved live sources later.
 
 All three roles are primary audiences. Dispositions has more investor-facing work and should receive the corresponding specialist depth. Acquisitions works with wholesalers to assess opportunities and prepare handoffs. Management needs scoped visibility, coordination and resolution. Alex is a dispositions contributor; his examples do not define official company policy or replace discovery with the other roles.
 

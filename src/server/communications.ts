@@ -1,5 +1,7 @@
+import {packageThreadContext,visiblePackageDraft} from './package-draft-context';
+import {getPackage} from './workflows';
 import {transactionThreadContext,visibleTransactionDraft} from './transaction-draft-context';
-import type {TransactionDraftSource} from '../lib/communications-contracts';
+import type {PackageDraftSource,TransactionDraftSource} from '../lib/communications-contracts';
 import {createHash} from 'node:crypto';
 import {z} from 'zod';
 import type {Actor,Investor} from '../lib/contracts';
@@ -65,7 +67,7 @@ function association(actor:Actor,thread:StoredThread):InvestorAssociation {
 }
 function activeDraft(actor:Actor,threadId:string){return rows<CommunicationDraft>(actor,'communication_drafts',"AND thread_id=? AND status='draft'",[threadId])[0]??null;}
 function visibleThread(actor:Actor,value:StoredThread):InboxThread {
- transactionThreadContext(actor,value);
+ transactionThreadContext(actor,value);packageThreadContext(actor,value);
  const {investorId:_investorId,matchMethod:_matchMethod,manualUnlink:_manualUnlink,...thread}=value;
  void _investorId;void _matchMethod;void _manualUnlink;
  const account=getCommunicationAccount(actor,thread.accountId);
@@ -110,7 +112,7 @@ export function getInboxState(actor:Actor,input:unknown={}):InboxState {
   if(query.accountId&&thread.accountId!==query.accountId)return false;if(!query.q)return true;
   const account=accounts.find(item=>item.id===thread.accountId)!;
   if(account.access==='revoked')return false;
-  const draft=account.capabilities.readBody?visibleTransactionDraft(actor,activeDraft(actor,thread.id)):null;
+  const draft=account.capabilities.readBody?visiblePackageDraft(actor,visibleTransactionDraft(actor,activeDraft(actor,thread.id))):null;
   const bodies=account.capabilities.readBody?rows<CommunicationMessage>(actor,'communication_messages','AND thread_id=?',[thread.id]).map(message=>message.body):[];
   return [thread.subject,thread.correspondent.name,thread.correspondent.address,...bodies,draft?.body??'',draft?.subject??''].join('\n').toLowerCase().includes(query.q.toLowerCase());
  });
@@ -118,9 +120,9 @@ export function getInboxState(actor:Actor,input:unknown={}):InboxState {
  return {documentOptions:access.allowed?communicationDocumentOptions(actor):[],accounts,preferredAccountId:accounts.find(account=>account.primary)?.id??null,threads:selected.filter(thread=>matches(thread,query.filter)),counts:Object.fromEntries((['all','email','sms','needs_reply','drafts'] as const).map(filter=>[filter,selected.filter(thread=>matches(thread,filter)).length])) as InboxState['counts'],unreadCount:selected.filter(thread=>thread.unread).length,filter:query.filter,accountId:query.accountId??null,query:query.q,scenarios:[...companyInboxScenarios,...inboxScenarios].map(scenario=>({...scenario,available:isCommunicationDemoPersona(actor)&&access.allowed&&companyScenarioAvailable(scenario.id,accounts)})),canEdit:access.allowed,accessReason:access.reason,mode:'demonstration',liveDelivery:false,notice};
 }
 export function getInboxThread(actor:Actor,id:string):InboxThreadDetail {
- ensureDemoInbox(actor);const raw=scoped<StoredThread>(actor,'communication_threads',id),thread=visibleThread(actor,raw),account=getCommunicationAccount(actor,thread.accountId),access=featureAccess(actor,'core'),draft=account.capabilities.readBody?visibleDocumentDraft(actor,visibleTransactionDraft(actor,activeDraft(actor,id))):null;
+ ensureDemoInbox(actor);const raw=scoped<StoredThread>(actor,'communication_threads',id),thread=visibleThread(actor,raw),account=getCommunicationAccount(actor,thread.accountId),access=featureAccess(actor,'core'),draft=account.capabilities.readBody?visibleDocumentDraft(actor,visiblePackageDraft(actor,visibleTransactionDraft(actor,activeDraft(actor,id)))):null;
  const messages=rows<CommunicationMessage>(actor,'communication_messages','AND thread_id=? ORDER BY rowid',[id]).map(message=>visibleCommunicationMessage(actor,account,message));
- const draftHistory=account.capabilities.readBody?rows<CommunicationDraft>(actor,'communication_draft_revisions','AND thread_id=? ORDER BY rowid DESC LIMIT 25',[id]).filter(value=>!(draft?.id===value.id&&draft.version===value.version)).map(value=>visibleDocumentDraft(actor,visibleTransactionDraft(actor,value))!):[];
+ const draftHistory=account.capabilities.readBody?rows<CommunicationDraft>(actor,'communication_draft_revisions','AND thread_id=? ORDER BY rowid DESC LIMIT 25',[id]).filter(value=>!(draft?.id===value.id&&draft.version===value.version)).map(value=>visibleDocumentDraft(actor,visiblePackageDraft(actor,visibleTransactionDraft(actor,value)))!):[];
  let investorContext:InboxThreadDetail['investorContext']=null;
  if(thread.association.investor&&access.allowed&&account.capabilities.readBody)investorContext=getInvestorJourney(actor,thread.association.investor.id);
  return {documentOptions:access.allowed&&account.capabilities.localTextAttachments?communicationDocumentOptions(actor):[],bodyAccess:account.access==='revoked'?'revoked':account.capabilities.readBody?'full':'headers_only',capabilityNotice:account.capabilityNotice,thread,account,messages,draft,draftHistory,investorContext,contextNotice:account.access==='revoked'||!account.capabilities.readBody?account.capabilityNotice:investorContext?'Existing authorized relationship history. Inbox messages are separate source material and have not updated CRM facts automatically. Only explicitly reviewed notes and follow-ups are added to relationship work.':!access.allowed?'Mailbox history remains available. An active workforce subscription is required for relationship context and changes.':thread.association.notice,availableInvestors:account.access==='revoked'?[]:readInvestors(actor).map(value=>investorMatch(value,'Permitted CRM relationship; linking requires your review.')),canEdit:access.allowed&&account.access==='available',accessReason:account.access==='revoked'?account.capabilityNotice:access.reason,liveDelivery:false};
@@ -135,7 +137,7 @@ function mutateThread(actor:Actor,id:string,kind:string,input:InboxMutation,chan
  ensureDemoInbox(actor);requireFeature(actor,'core');
  return getDb().transaction(()=>{
   const thread=scoped<StoredThread>(actor,'communication_threads',id),account=getCommunicationAccount(actor,thread.accountId);
-  transactionThreadContext(actor,thread);
+  transactionThreadContext(actor,thread);packageThreadContext(actor,thread);
   if(account.access==='revoked')throw new AppError(403,account.capabilityNotice);
   if(kind.startsWith('draft.'))requireCommunicationCapability(account,'localDraft');
   const payload={kind,threadId:id,input};
@@ -153,7 +155,7 @@ function saveDraftRecord(actor:Actor,value:CommunicationDraft){
  getDb().prepare('INSERT INTO communication_draft_revisions VALUES(?,?,?,?,?,?,?,?)').run(newId('draft_revision'),...scope(actor),value.threadId,value.id,value.version,JSON.stringify(value));
 }
 /** A new private draft is not incoming correspondence or permission to deliver it. */
-export function composeCommunication(actor:Actor,input:ComposeCommunication,transactionSource?:TransactionDraftSource):InboxThreadDetail {
+export function composeCommunication(actor:Actor,input:ComposeCommunication,transactionSource?:TransactionDraftSource,packageSource?:PackageDraftSource):InboxThreadDetail {
  const parsed=composeCommunicationSchema.parse(input);ensureDemoInbox(actor);requireFeature(actor,'core');
  return getDb().transaction(()=>{
   const account=getCommunicationAccount(actor,parsed.accountId);requireCommunicationCapability(account,'localDraft');
@@ -162,20 +164,39 @@ export function composeCommunication(actor:Actor,input:ComposeCommunication,tran
   if(account.channel==='email'&&!parsed.subject)throw new AppError(400,'Add a subject for this email.');
   if(account.channel==='sms'&&(parsed.subject!==undefined||parsed.cc?.length||parsed.body.length>1600))throw new AppError(400,'Texts are one-to-one, have no subject or CC, and are limited to 1,600 characters.');
   if(parsed.cc?.some(p=>[address,account.address.toLowerCase()].includes(p.address)))throw new AppError(400,'CC must not duplicate the sender or primary recipient.');
-  const payload={kind:'conversation.composed',input:parsed,...(transactionSource?{transactionSource}:{})},prior=replay(actor,parsed.eventKey,payload);
+  const payload={kind:'conversation.composed',input:parsed,...(transactionSource?{transactionSource}:{}),...(packageSource?{packageSource}:{})},prior=replay(actor,parsed.eventKey,payload);
   if(prior)return getInboxThread(actor,prior);
+  if(packageSource&&packageThreadContext(actor,{packageId:packageSource.packageId})!==packageSource.reference)throw new AppError(409,'Property preparation changed.');
   if(transactionSource&&transactionThreadContext(actor,{transactionId:transactionSource.transactionId})!==transactionSource.reference)throw new AppError(409,'Transaction preparation changed. Prepare the current version.');
   if(parsed.documents?.length){requireCommunicationCapability(account,'localTextAttachments');reviewCommunicationDocuments(actor,parsed.documents);}
   const count=getDb().prepare('SELECT COUNT(*) n FROM communication_threads WHERE organization_id=? AND office_id=? AND owner_id=?').get(...scope(actor)) as {n:number};
   if(count.n>=500)throw new AppError(409,'This demonstration inbox has reached its 500-conversation limit. Existing drafts remain available.');
   const timestamp=now(),correspondent={name:parsed.to.name||address,address},matching=candidates(actor,{correspondent,channel:account.channel});
   const linked=matching.exact&&matching.values.length===1?matching.values[0].id:null;
-  const thread:StoredThread={...(transactionSource?{transactionId:transactionSource.transactionId}:{}),id:newId('inbox_thread'),accountId:account.id,channel:account.channel,subject:parsed.subject??'New text conversation',correspondent,status:'done',unread:false,version:1,updatedAt:timestamp,lastMessageAt:timestamp,preview:'New conversation · draft only; nothing sent',messageCount:0,investorId:linked,matchMethod:linked?'exact_contact':null,manualUnlink:false,synthetic:true};
+  const thread:StoredThread={...(packageSource?{packageId:packageSource.packageId,packageReference:packageSource.reference}:{}),...(transactionSource?{transactionId:transactionSource.transactionId}:{}),id:newId('inbox_thread'),accountId:account.id,channel:account.channel,subject:parsed.subject??'New text conversation',correspondent,status:'done',unread:false,version:1,updatedAt:timestamp,lastMessageAt:timestamp,preview:'New conversation · draft only; nothing sent',messageCount:0,investorId:linked,matchMethod:linked?'exact_contact':null,manualUnlink:false,synthetic:true};
   getDb().prepare('INSERT INTO communication_threads VALUES(?,?,?,?,?,?,?)').run(thread.id,...scope(actor),account.id,`composed:${thread.id}`,JSON.stringify(thread));
-  saveDraftRecord(actor,{...(transactionSource?{transactionSource}:{}),documents:parsed.documents??[],id:newId('inbox_draft'),threadId:thread.id,accountId:account.id,from:{name:actor.name,address:account.address},to:correspondent,cc:parsed.cc??[],authorship:'employee',subject:thread.subject,body:parsed.body,status:'draft',createdAt:timestamp,updatedAt:timestamp,version:1,deliveryStatus:'not_sent',synthetic:true});
+  saveDraftRecord(actor,{...(packageSource?{packageSource}:{}),...(transactionSource?{transactionSource}:{}),documents:parsed.documents??[],id:newId('inbox_draft'),threadId:thread.id,accountId:account.id,from:{name:actor.name,address:account.address},to:correspondent,cc:parsed.cc??[],authorship:packageSource?'copilot':'employee',subject:thread.subject,body:parsed.body,status:'draft',createdAt:timestamp,updatedAt:timestamp,version:1,deliveryStatus:'not_sent',synthetic:true});
   recordEvent(actor,parsed.eventKey,payload,thread.id,'conversation.composed');return getInboxThread(actor,thread.id);
  }).immediate();
 }
+export const preparePackageDraftSchema=z.object({accountId:idSchema,reference:z.string().length(64),eventKey:idSchema}).strict();
+/** Reuse the same preparation, including employee edits or a consumed draft. Never deliver here. */
+export function preparePackageDraft(actor:Actor,packageId:string,input:z.infer<typeof preparePackageDraftSchema>):InboxThreadDetail {
+ const parsed=preparePackageDraftSchema.parse(input);ensureDemoInbox(actor);requireFeature(actor,'deal-marketing');
+ return getDb().transaction(()=>{
+  const value=getPackage(actor,packageId),payload={kind:'package.prepared',packageId,input:parsed},prior=replay(actor,parsed.eventKey,payload);
+  if(prior)return getInboxThread(actor,prior);
+  if(value.status==='blocked'||packageThreadContext(actor,{packageId})!==parsed.reference)throw new AppError(409,'Property package changed or is blocked. Prepare the current eligible package.');
+  const account=getCommunicationAccount(actor,parsed.accountId);requireCommunicationCapability(account,'localDraft');
+  if(value.channel!==account.channel)throw new AppError(422,'Choose an account matching the package channel. Prepare an email or SMS package first.');
+  const existing=rows<StoredThread>(actor,'communication_threads').find(thread=>thread.packageId===packageId&&thread.packageReference===parsed.reference&&thread.accountId===parsed.accountId);
+  const investor=readInvestor(actor,value.investorId),address=account.channel==='email'?investor.email:investor.phone;
+  if(!address)throw new AppError(422,'This investor has no recorded contact for the selected channel.');
+  const detail=existing?getInboxThread(actor,existing.id):composeCommunication(actor,{accountId:parsed.accountId,to:{name:investor.name,address},body:value.body,...(account.channel==='email'?{subject:value.subject}:{}),eventKey:newId('package_compose')},undefined,{packageId,reference:parsed.reference});
+  recordEvent(actor,parsed.eventKey,payload,detail.thread.id,'package.prepared');return detail;
+ }).immediate();
+}
+
 export function saveInboxDraft(actor:Actor,id:string,input:SaveCommunicationDraft,authorship:'employee'|'copilot'='employee'){
  const parsed=saveDraftSchema.parse(input);
  return mutateThread(actor,id,'draft.saved',{...parsed,authorship} as typeof parsed,thread=>{
@@ -186,11 +207,13 @@ export function saveInboxDraft(actor:Actor,id:string,input:SaveCommunicationDraf
   if(thread.channel==='sms'&&parsed.body.length>1600)throw new AppError(400,'Keep this text-message draft to 1,600 characters or fewer.');
   const account=getCommunicationAccount(actor,thread.accountId),existing=activeDraft(actor,id),timestamp=now();
   if(existing?.transactionSource&&visibleTransactionDraft(actor,existing)?.transactionSource?.current===false)throw new AppError(409,'Transaction preparation changed. Discard this draft and prepare the current version in Transactions.');
+  if(existing?.packageSource&&visiblePackageDraft(actor,existing)?.packageSource?.current===false)throw new AppError(409,'Property package changed. Discard this draft and prepare the current package.');
+  if(existing?.packageSource&&parsed.cc?.length)throw new AppError(400,'Property packages are prepared for one eligible investor. Prepare a separate package for another recipient.');
   const cc=authorship==='copilot'?[]:parsed.cc??existing?.cc??[];
   const documents=authorship==='copilot'?[]:parsed.documents??existing?.documents??[];
   if(documents.length){requireCommunicationCapability(account,'localTextAttachments');reviewCommunicationDocuments(actor,documents);}
   if(cc.some(p=>[account.address.toLowerCase(),thread.correspondent.address.toLowerCase()].includes(p.address)))throw new AppError(400,'CC must not duplicate the sender or primary recipient.');
-  const draft:CommunicationDraft={...(existing?.transactionSource?{transactionSource:existing.transactionSource}:{}),documents,cc,authorship,id:existing?.id??newId('inbox_draft'),threadId:id,accountId:account.id,from:{name:actor.name,address:account.address},to:thread.correspondent,subject:thread.channel==='sms'?thread.subject:parsed.subject??existing?.subject??`Re: ${thread.subject}`,body:parsed.body,status:'draft',createdAt:existing?.createdAt??timestamp,updatedAt:timestamp,version:(existing?.version??0)+1,deliveryStatus:'not_sent',synthetic:true};
+  const draft:CommunicationDraft={...(existing?.packageSource?{packageSource:existing.packageSource}:{}),...(existing?.transactionSource?{transactionSource:existing.transactionSource}:{}),documents,cc,authorship,id:existing?.id??newId('inbox_draft'),threadId:id,accountId:account.id,from:{name:actor.name,address:account.address},to:thread.correspondent,subject:thread.channel==='sms'?thread.subject:parsed.subject??existing?.subject??`Re: ${thread.subject}`,body:parsed.body,status:'draft',createdAt:existing?.createdAt??timestamp,updatedAt:timestamp,version:(existing?.version??0)+1,deliveryStatus:'not_sent',synthetic:true};
   saveDraftRecord(actor,draft);return thread;
  });
 }
@@ -211,6 +234,25 @@ export function receiveDemoCommunication(actor:Actor,input:ReceiveDemoCommunicat
   saveThread(actor,{...thread,status:'needs_reply',unread:true,version:thread.version+1,updatedAt:timestamp,lastMessageAt:timestamp,preview:fixture.body.slice(0,180),messageCount:thread.messageCount+1});
   recordEvent(actor,parsed.eventKey,payload,thread.id,'demo.received');return getInboxThread(actor,thread.id);
  }).immediate();
+}
+
+export const receiveThreadDemoSchema=z.object({...mutation,scenario:z.enum(['repair','timing','interested','pass'])}).strict();
+/** Employee-operated demonstration only. Never exposed as an AI tool or actual delivery receipt. */
+export function receiveThreadDemoReply(actor:Actor,threadId:string,input:z.infer<typeof receiveThreadDemoSchema>):InboxThreadDetail {
+ const parsed=receiveThreadDemoSchema.parse(input);assertCommunicationsDemo(actor);
+ if(!isCommunicationDemoPersona(actor))throw new AppError(403,'Reply fixtures are available only for demonstration employees.');
+ return mutateThread(actor,threadId,'demo.thread_reply',parsed,thread=>{
+  const account=getCommunicationAccount(actor,thread.accountId);requireCommunicationCapability(account,'readBody');
+  const messages=rows<CommunicationMessage>(actor,'communication_messages','AND thread_id=? ORDER BY rowid',[threadId]);
+  const outbound=messages.filter(message=>message.direction==='outbound'&&message.deliveryStatus==='simulated_sent').at(-1);
+  if(!outbound)throw new AppError(409,'Review and simulate an outgoing message in this conversation before adding a fictional reply.');
+  const ref=`demo-reply:${threadId}:${outbound.id}`;
+  if(messages.some(message=>message.sourceRef===ref))throw new AppError(409,'This outgoing message already has a fictional reply. Continue the conversation before adding another.');
+  const bodies={repair:'Before I decide, can you provide a repair breakdown and explain which estimates are supported? Repair costs were unclear on the last opportunities.',timing:'I am pausing purchases for now. Please check with me next month before sending more properties.',interested:'I am interested in learning more. What information is still missing, and can we discuss a walkthrough? I have not committed to purchasing.',pass:'I am passing on this opportunity. The price and repair scope do not work for me. Please confirm my current criteria before another suggestion.'};
+  const timestamp=now(),body=`FICTIONAL REPLY — selected by the employee for this demonstration.\n\n${bodies[parsed.scenario]}`;
+  insertMessage(actor,thread,account,{key:ref,provider:account.provider,subject:thread.subject,correspondent:thread.correspondent,body,attachments:[]},ref,timestamp);
+  return {...thread,status:'needs_reply',unread:true,lastMessageAt:timestamp,preview:body.slice(0,180),messageCount:thread.messageCount+1};
+ });
 }
 
 function companyScenarioAvailable(scenarioId:ReceiveDemoCommunication['scenarioId'],accounts:CommunicationAccount[]){

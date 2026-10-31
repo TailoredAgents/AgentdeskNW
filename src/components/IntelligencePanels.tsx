@@ -1,5 +1,6 @@
 'use client';
 
+import {PackageInboxPreparation} from './PackageInboxPreparation';
 import { useEffect, useRef, useState } from 'react';
 import {
   ArrowRight,
@@ -1630,7 +1631,8 @@ export function PackagesPanel({
   onChange,
   onError,
   selection,
-}: IntelligenceCommon & { selection?: PackageSelection }) {
+  onInbox,
+}: IntelligenceCommon & { selection?: PackageSelection; onInbox:(id:string)=>void }) {
   const [investorId, setInvestorId] = useState(selection?.investorId || '');
   const [releaseId, setReleaseId] = useState(selection?.releaseId || '');
   const [channel, setChannel] = useState<DealPackage['channel']>('email');
@@ -1723,8 +1725,8 @@ export function PackagesPanel({
       <PageHeading
         eyebrow="THE RIGHT DETAILS, READY FOR REVIEW"
         title="Make the follow-through easier."
-        description="Assemble a personal property message, check disclosure eligibility, then review and copy it for your own handoff."
-        action={<Badge tone="amber">Manual handoff · Never auto-sent</Badge>}
+        description="Prepare a property message, check eligibility, and continue in Inbox or copy it for manual handoff."
+        action={<Badge tone="amber">Reviewed outreach · Never auto-sent</Badge>}
       />
       <div className="package-layout">
         <div className="intelligence-stack">
@@ -1770,7 +1772,7 @@ export function PackagesPanel({
                   <option value="email">Email draft</option>
                   <option value="personal_text">Personal text · copy</option>
                   <option value="imessage">iMessage · copy</option>
-                  <option value="sms">SMS format · copy only</option>
+                  <option value="sms">SMS draft</option>
                   <option value="slack">Slack format · copy only</option>
                 </select>
               </label>
@@ -1926,6 +1928,7 @@ export function PackagesPanel({
                       </button>
                     )}
                   </div>
+                  {!dirty&&['email','sms'].includes(selected.channel)&&<PackageInboxPreparation key={`${selected.id}:${selected.updatedAt}`} packageId={selected.id} onInbox={onInbox}/>}
                   <div className="handoff-status">
                     <ShieldCheck size={16} />
                     <p>

@@ -8,7 +8,7 @@ import {getDb,closeDb} from '../src/server/db';
 describe('concurrent disk database initialization',()=>{
  it('can reopen the original path after a replacement connection fails',()=>{
   const directory=mkdtempSync(join(tmpdir(),'agentdesk-startup-failure-'));
-  try{vi.stubEnv('AGENTDESK_DB_PATH',':memory:');getDb();vi.stubEnv('AGENTDESK_DB_PATH',directory);expect(()=>getDb()).toThrow();vi.stubEnv('AGENTDESK_DB_PATH',':memory:');expect(getDb().prepare('SELECT COUNT(*) n FROM schema_migrations').get()).toEqual({n:45});}
+  try{vi.stubEnv('AGENTDESK_DB_PATH',':memory:');getDb();vi.stubEnv('AGENTDESK_DB_PATH',directory);expect(()=>getDb()).toThrow();vi.stubEnv('AGENTDESK_DB_PATH',':memory:');expect(getDb().prepare('SELECT COUNT(*) n FROM schema_migrations').get()).toEqual({n:47});}
   finally{closeDb();vi.unstubAllEnvs();rmSync(directory,{recursive:true,force:true});}
  });
  it('serializes fresh migrations and seeding across app and worker processes',async()=>{
@@ -24,7 +24,7 @@ describe('concurrent disk database initialization',()=>{
      const child=spawn(process.execPath,['--import','tsx','--input-type=module','-e',script],{env:{...process.env,AGENTDESK_DB_PATH:join(directory,`${round}.sqlite`),OPENAI_API_KEY:''}});
      let stdout='',stderr='';child.stdout.on('data',v=>stdout+=v);child.stderr.on('data',v=>stderr+=v);child.on('error',reject);child.on('exit',code=>resolve({code,stdout,stderr}));
     })));
-    for(const result of results){expect(result.code,result.stderr).toBe(0);expect(JSON.parse(result.stdout)).toEqual({migrations:45,organizations:2,privateFixture:1,integrity:[{integrity_check:'ok'}],foreignKeys:[]});}
+    for(const result of results){expect(result.code,result.stderr).toBe(0);expect(JSON.parse(result.stdout)).toEqual({migrations:47,organizations:2,privateFixture:1,integrity:[{integrity_check:'ok'}],foreignKeys:[]});}
    }
   }finally{rmSync(directory,{recursive:true,force:true});}
  },30000);

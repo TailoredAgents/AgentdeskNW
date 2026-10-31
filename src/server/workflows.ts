@@ -172,3 +172,8 @@ export function handoffPackage(actor:Actor,packageId:string):{package:DealPackag
  return {package:result,text:result.body,subject:result.subject};
  }).immediate();
 }
+
+/** Current owned package; source access is checked before exposing saved copy. */
+export function getPackage(actor:Actor,id:string):DealPackage {
+ assertActor(actor);const value=packageRow(actor,id).value;getInvestor(actor,value.investorId);getRelease(actor,value.releaseId);return recheckPackage(actor,value);
+}

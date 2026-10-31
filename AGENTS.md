@@ -19,6 +19,9 @@ Read `docs/IMPLEMENTATION_ROADMAP.md`, `MASTER_PLAN.md`, and the latest `docs/PR
 - Run `npm run typecheck`, `npm run lint`, `npm test`, `npm run build`, and the smoke suite after major changes. Write tests for tenant/permission boundaries, approval enforcement, durable jobs and core workflows.
 - Update `docs/PROGRESS.md` and affected specifications with actual behavior, verification and remaining setup. Do not publish, contact investors or mutate third-party accounts without authorization.
 
+- Phase 1 business preparations follow WORK_EXECUTION and the domain contracts. Model tools save private proposals; only authenticated employee decisions apply intake/handoff changes. Preserve exact scoped references, immutable decision snapshots, atomic effects, retries and obsolete-result invalidation. Prepared work is not an executed business outcome. Package Inbox drafts retain source/recipient eligibility through edits and simulated delivery; controlled incoming fixtures remain employee-operated and explicitly fictional.
+- Pre-inventory handoffs use opportunity-backed storage and labels, never fabricated inventory/releases. The legacy source ID/version field names may contain opportunity IDs: validate their actual opportunity scope in history and work. Assignment grants no access; only the acquisition owner is eligible for these source-specific assignments, with separate manager review and resolution. Changed sources or discontinued pursuit retire pending actions.
+
 ## Durable work rules
 
 - Follow `docs/WORK_EXECUTION.md`. UI, model tools and workers use the same capability, scope and whole-job budget services. Never accept caller prices or split one assignment into smaller jobs to avoid approval above $1.

@@ -35,7 +35,8 @@
     "test:metered": "node --import tsx scripts/metered-smoke.ts",
     "test:text-restart": "node --import tsx scripts/text-execution-smoke.ts",
     "test:text-spending": "node --import tsx scripts/text-spending-smoke.ts",
-    "test:local-delegation": "node --import tsx scripts/local-delegation-smoke.ts"
+    "test:local-delegation": "node --import tsx scripts/local-delegation-smoke.ts",
+    "test:phase-one": "node scripts/smoke-runner.mjs phase-one"
   },
   "dependencies": {
     "@slack/socket-mode": "3.1.0",

@@ -1,3 +1,4 @@
+import {getPackage} from './workflows';
 import {relationshipGuidance,relationshipMethodFingerprint} from './relationship-methods';
 import {createHash} from 'node:crypto';
 import {z} from 'zod';
@@ -88,9 +89,15 @@ function contextHash(actor:Actor,detail:InboxThreadDetail){
 }
 function eligibleDraft(actor:Actor,detail:InboxThreadDetail){
  const draft=detail.draft;if(!draft)throw new AppError(409,'Prepare and save a reply before reviewing a simulated send.');
+ if(draft.packageSource?.current===false)throw new AppError(409,'Property package changed. Prepare the current package before reviewing a send.');
+ if(draft.packageSource){
+  const value=getPackage(actor,draft.packageSource.packageId);
+  if(value.status==='blocked'||draft.cc?.length)throw new AppError(409,'Property eligibility changed or recipients differ from the prepared package.');
+  if(draft.authorship!=='employee'&&(draft.body!==value.body||detail.thread.channel==='email'&&draft.subject!==value.subject))throw new AppError(409,'Prepare the current property draft before reviewing it.');
+ }
  if(draft.transactionSource?.current===false)throw new AppError(409,'Transaction preparation changed. Prepare the current version in Transactions.');
  if(draft.documents?.length){requireCommunicationCapability(detail.account,'localTextAttachments');reviewCommunicationDocuments(actor,draft.documents);}
- if(draft.authorship!=='employee'){
+ if(draft.authorship!=='employee'&&!draft.packageSource){
   const generated=getInboxAssistance(actor,detail.thread.id).suggestedReply;
   if(!generated.eligible)throw new AppError(409,generated.reasons.join(' '));
   if(draft.body!==generated.body||draft.subject!==generated.subject||(draft.cc?.length??0)>0||(draft.documents?.length??0)>0)throw new AppError(409,'This generated reply is no longer current. Prepare it again, or save your own edited reply before reviewing it.');
@@ -105,7 +112,7 @@ export function reviewInboxSend(actor:Actor,threadId:string,input:InboxMutation)
   const prior=getDb().prepare('SELECT payload_hash,context_hash,data FROM communication_send_reviews WHERE organization_id=? AND office_id=? AND owner_id=? AND event_key=?').get(...scope(actor),parsed.eventKey) as {payload_hash:string;context_hash:string;data:string}|undefined;
   if(prior){if(prior.payload_hash!==payloadHash)throw new AppError(409,'This review request key was used for different content.');const value=JSON.parse(prior.data) as InboxSendReview;if(prior.context_hash!==contextHash(actor,detail)||value.expiresAt<=now())throw new AppError(409,'This review is stale. Review the current reply again.');return value;}
   expected(detail,parsed.expectedVersion);const draft=eligibleDraft(actor,detail),timestamp=now();
-  const review:InboxSendReview={id:newId('send_review'),threadId,threadVersion:detail.thread.version,draftId:draft.id,draftVersion:draft.version,accountId:detail.account.id,accountContext:{source:detail.account.source,transport:detail.account.transport,capabilities:detail.account.capabilities,accessVersion:detail.account.accessVersion},channel:detail.thread.channel,from:draft.from,to:draft.to,cc:draft.cc??[],authorship:draft.authorship??'copilot',subject:draft.subject,body:draft.body,documents:draft.documents??[],attachments:reviewCommunicationDocuments(actor,draft.documents),createdAt:timestamp,expiresAt:new Date(Date.now()+10*60_000).toISOString(),scope:draft.authorship==='employee'?'employee_correspondence':'relationship_only',notice:simulationNotice,liveDelivery:false};
+  const review:InboxSendReview={id:newId('send_review'),threadId,threadVersion:detail.thread.version,draftId:draft.id,draftVersion:draft.version,accountId:detail.account.id,accountContext:{source:detail.account.source,transport:detail.account.transport,capabilities:detail.account.capabilities,accessVersion:detail.account.accessVersion},channel:detail.thread.channel,from:draft.from,to:draft.to,cc:draft.cc??[],authorship:draft.authorship??'copilot',subject:draft.subject,body:draft.body,documents:draft.documents??[],attachments:reviewCommunicationDocuments(actor,draft.documents),createdAt:timestamp,expiresAt:new Date(Date.now()+10*60_000).toISOString(),scope:draft.packageSource?'property_package':draft.authorship==='employee'?'employee_correspondence':'relationship_only',notice:simulationNotice,liveDelivery:false};
   getDb().prepare('INSERT INTO communication_send_reviews VALUES(?,?,?,?,?,?,?,?,?)').run(review.id,...scope(actor),threadId,parsed.eventKey,payloadHash,contextHash(actor,detail),JSON.stringify(review));audit(actor,'communications.send.reviewed',review.id);return review;
  }).immediate();
 }

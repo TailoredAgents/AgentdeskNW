@@ -30,7 +30,7 @@ describe('manager and tools',()=>{
  });
  it('requires exact package context and never offers a model handoff or approval tool',async()=>{
    const actor=services.demoActor();const response=await chat(actor,'Send property details and photos to Mike');expect(response.result.message).toContain('exact property release');
-   await expect(dispatchTool(actor,'handoff_package',{id:'fake'})).rejects.toThrow('Unknown');expect(toolDefinitions().some(tool=>tool.name!=='handoff_overview'&&/handoff|approve|send_/.test(tool.name))).toBe(false);
+   await expect(dispatchTool(actor,'handoff_package',{id:'fake'})).rejects.toThrow('Unknown');expect(toolDefinitions().some(tool=>!['handoff_overview','prepare_handoff_action'].includes(tool.name)&&/handoff|approve|send_/.test(tool.name))).toBe(false);
  });
  it('dispatches real services, persists a conversation, and retrieves actual work',async()=>{
    const actor=services.demoActor();const first=await chat(actor,'What should I focus on today?');expect(first.conversation.messages).toHaveLength(2);expect(first.result.specialistIds).toContain('daily-coordinator');expect(first.result.message).toContain('Confirm Mike’s purchase timeline');expect(first.result.artifacts[0].type).toBe('task');

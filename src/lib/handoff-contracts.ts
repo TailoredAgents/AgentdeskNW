@@ -7,8 +7,9 @@ export interface HandoffRecord {
  resolution:{note:string;reviewedBy:string;reviewedAt:string}|null;createdAt:string;updatedAt:string;
 }
 export interface HandoffItem {
+ sourceKind?:'release'|'opportunity';
  releaseId:string;releaseVersion:number;address:string;source:string;releasedAt:string|null;closingAt:string|null;
- stage:string;releaseStatus:'draft'|'released'|'withdrawn';owner:{id:string;name:string};
+ stage:string;releaseStatus:'draft'|'released'|'withdrawn'|'reviewing'|'not_pursuing';owner:{id:string;name:string};
  record:HandoffRecord|null;assigneeName:string|null;sourceChanged:boolean;
  attention:'source_changed'|'blocked'|'overdue'|'review'|'closing_soon'|'untracked'|'waiting'|'resolved';
  evidence:string[];nextStep:string;eligibleAssignees:{id:string;name:string;role:Role}[];
@@ -24,7 +25,7 @@ export type HandoffMutation={eventKey:string;expectedVersion:number;expectedRele
  {action:'resolve';note:string}
 );
 export const handoffLabels:Record<HandoffItem['attention'],string>={source_changed:'Source changed',blocked:'Blocked',overdue:'Follow-up overdue',review:'Outcome needs review',closing_soon:'Closing target approaching',untracked:'No tracked handoff',waiting:'In progress',resolved:'Follow-up resolved'};
-export function handoffReviewCurrent(item:HandoffItem|null,input:HandoffMutation){return !!item&&item.releaseStatus==='released'&&item.releaseVersion===input.expectedReleaseVersion&&(item.record?.version??0)===input.expectedVersion&&item.actions.includes(input.action);}
+export function handoffReviewCurrent(item:HandoffItem|null,input:HandoffMutation){return !!item&&['released','reviewing'].includes(item.releaseStatus)&&item.releaseVersion===input.expectedReleaseVersion&&(item.record?.version??0)===input.expectedVersion&&item.actions.includes(input.action);}
 
 export type HandoffForm={action:HandoffMutation['action'];assignedTo:string;nextAction:string;date:string;time:string;kind:'blocked'|'resolved';note:string;evidence:string};
 export const handoffActionLabels={assign:'Assign next step',acknowledge:'Acknowledge assignment',report:'Record outcome',resolve:'Resolve reviewed follow-up'};
@@ -47,6 +48,6 @@ export function handoffFormMutation(item:HandoffItem,form:HandoffForm,eventKey:s
  return {...base,action:'report',kind:form.kind,note:form.note.trim(),evidence:form.evidence.trim()};
 }
 export function handoffDecisionText(item:HandoffItem,input:HandoffMutation):string {
- const detail=input.action==='assign'?`Responsible employee: ${item.eligibleAssignees.find(p=>p.id===input.assignedTo)?.name??'Unavailable'}\nNext step: ${input.nextAction}\nDue: ${new Date(input.dueAt).toLocaleString()}\nThis starts a fresh assignment; any previous acknowledgment/outcome stays in history.`:input.action==='report'?`Employee-reported ${input.kind==='resolved'?'next step completed':'blocker'}\n${input.note}\nSource reference: ${input.evidence}\nThis report still needs management review before resolution.`:input.action==='resolve'?`Employee report: ${item.record?.outcome?.note??"Unavailable"}\nEvidence reference: ${item.record?.outcome?.evidence??"Unavailable"}\nManagement review: ${input.note}\nResolve this follow-up based on the displayed employee report and evidence.`:'Acknowledge that you have received this specific assignment. This does not confirm deal completion.';
- return `${item.address} · Release v${input.expectedReleaseVersion} · Follow-up v${input.expectedVersion}\n${detail}\nShared operational record only. No message is sent and no transaction or personal task is marked complete.`;
+ const detail=input.action==='assign'?`Responsible employee: ${item.eligibleAssignees.find(p=>p.id===input.assignedTo)?.name??'Unavailable'}\nNext step: ${input.nextAction}\nDue: ${new Date(input.dueAt).toLocaleString('en-US',{timeZone:'America/New_York',timeZoneName:'short'})}\nThis starts a fresh assignment; any previous acknowledgment/outcome stays in history.`:input.action==='report'?`Employee-reported ${input.kind==='resolved'?'next step completed':'blocker'}\n${input.note}\nSource reference: ${input.evidence}\nThis report still needs management review before resolution.`:input.action==='resolve'?`Employee report: ${item.record?.outcome?.note??"Unavailable"}\nEvidence reference: ${item.record?.outcome?.evidence??"Unavailable"}\nManagement review: ${input.note}\nResolve this follow-up based on the displayed employee report and evidence.`:'Acknowledge that you have received this specific assignment. This does not confirm deal completion.';
+ return `${item.address} · ${item.sourceKind==='opportunity'?'Opportunity':'Release'} v${input.expectedReleaseVersion} · Follow-up v${input.expectedVersion}\n${detail}\nShared operational record only. No message is sent and no transaction or personal task is marked complete.`;
 }

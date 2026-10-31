@@ -1,3 +1,5 @@
+import {packageDraftPreparation} from './package-correspondence';
+import {preparePackageDraft,preparePackageDraftSchema} from './communications';
 import { hasFeature } from './billing';
 import { NextRequest,NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -58,6 +60,8 @@ export async function phaseTwoRoute(request:NextRequest,actor:Actor,path:string[
     if(method==='POST'&&!recordId)return json(workflows.saveRelease(actor,workflows.releaseInputSchema.parse(await readBody())),201);
   }
   if(resource==='packages'){
+    if(recordId&&operation==='inbox-preparation'&&method==='GET')return json(packageDraftPreparation(actor,recordId));
+    if(recordId&&operation==='inbox-preparation'&&method==='POST')return json(preparePackageDraft(actor,recordId,preparePackageDraftSchema.parse(await readBody())));
     if(method==='GET'&&!recordId)return json(workflows.listPackages(actor));
     if(method==='POST'&&!recordId){const input=z.object({investorId:id,releaseId:id,channel}).strict().parse(await readBody());return json(workflows.composePackage(actor,input),201);}
     if(recordId&&method==='PATCH'){const input=z.object({body:text.optional(),subject:z.string().max(500).optional()}).strict().parse(await readBody());return json(workflows.updatePackage(actor,recordId,input));}

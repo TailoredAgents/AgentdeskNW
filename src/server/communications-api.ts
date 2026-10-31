@@ -1,3 +1,4 @@
+import {receiveThreadDemoReply,receiveThreadDemoSchema} from './communications';
 import {NextRequest,NextResponse} from 'next/server';
 import type {Actor} from '../lib/contracts';
 import {AppError} from './db';
@@ -17,6 +18,7 @@ export async function communicationsRoute(request:NextRequest,actor:Actor,path:s
  if(path.length===2&&method==='PATCH')return json(updateInboxThread(actor,id,threadUpdateSchema.parse(await readBody())));
  if(path.length===3&&action==='assist'&&method==='GET')return json(getInboxAssistance(actor,id));
  if(path.length===3&&method==='POST'){
+  if(action==='receive-demo-reply')return json(receiveThreadDemoReply(actor,id,receiveThreadDemoSchema.parse(await readBody())));
   if(action==='draft')return json(saveInboxDraft(actor,id,saveDraftSchema.parse(await readBody())));
   if(action==='discard-draft')return json(discardInboxDraft(actor,id,discardDraftSchema.parse(await readBody())));
   if(action==='link')return json(linkInboxInvestor(actor,id,linkInvestorSchema.parse(await readBody())));

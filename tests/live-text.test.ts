@@ -1,3 +1,6 @@
+import {emptyOpportunity} from '../src/lib/opportunity-contracts';
+import {listRolePreparations} from '../src/server/role-preparations';
+import {getOpportunityBoard} from '../src/server/opportunities';
 import {getKnowledgeState,withdrawKnowledge} from '../src/server/knowledge';
 import { afterEach,beforeEach,describe,expect,it,vi } from 'vitest';
 import { mkdtempSync,rmSync } from 'node:fs';
@@ -29,6 +32,12 @@ beforeEach(()=>{
 afterEach(()=>{closeDb();vi.unstubAllEnvs();vi.unstubAllGlobals();vi.restoreAllMocks();});
 
 describe('live text protocol with mocked Responses',()=>{
+ it('continues the master conversation after saving an acquisition preparation without applying it',async()=>{
+  const actor=demoActor('acquisitions'),input={id:null,expectedVersion:0,input:{...structuredClone(emptyOpportunity),address:'416 Fictional Road',city:'Marietta',state:'GA',submission:{...emptyOpportunity.submission,wholesaler:'Fictional Wholesale LLC',sourceReference:'Employee supplied demo email 414'}}};
+  const mock=vi.fn().mockResolvedValueOnce(answer([call('prepare_opportunity_intake',input,'intake-call')])).mockResolvedValueOnce(answer([message('Your intake review is saved in Work. Repair figures remain unknown. Review and apply it when ready; no business record or listing was created.')]));vi.stubGlobal('fetch',mock);
+  const result=await chat(actor,'Prepare an intake review for the fictional wholesaler opportunity at 416 Fictional Road in Marietta, GA. Source: demo email 414 from Fictional Wholesale LLC; repair figures are unknown.',undefined,'phase-one-intake');
+  expect(mock).toHaveBeenCalledTimes(2);expect(listRolePreparations(actor)).toHaveLength(1);expect(getOpportunityBoard(actor).items).toEqual([]);expect(result.result.artifacts.some(a=>a.type==='opportunity')).toBe(true);expect(JSON.stringify(results(mock,1))).toContain('preparation');expect(result.conversation.messages.at(-1)?.content).toContain('Repair figures remain unknown');
+ });
  it.each([
   {usage:undefined},{id:undefined},{status:undefined},{status:'in_progress'},
   {model:'unexpected-model'},{service_tier:'priority'},{service_tier:undefined},

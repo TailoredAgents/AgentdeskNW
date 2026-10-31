@@ -1,3 +1,4 @@
+import {decideRolePreparation,listRolePreparations} from '@/server/role-preparations';
 import {reviewOpportunityScreening} from '@/server/opportunity-screening';
 import {transactionsRoute} from '@/server/transactions-api';
 import {documentsRoute} from '@/server/documents-api';
@@ -79,6 +80,8 @@ async function route(request:NextRequest,{params}:{params:Promise<{path:string[]
     const mobileResponse=await mobileRoute(request,actor,path,()=>body(request),mobile?.session);if(mobileResponse)return mobileResponse;
     const messaging=await messagingRoute(request,actor,path,()=>body(request));if(messaging)return messaging;
     const billing=await billingRoute(request,actor,path,()=>body(request));if(billing)return billing;
+    if(resource==='role-preparations'&&path.length===1&&method==='GET')return json(listRolePreparations(actor));
+    if(resource==='role-preparations'&&path.length===3&&operation==='decision'&&method==='POST')return json(decideRolePreparation(actor,id,await body(request)));
     const inbox=await communicationsRoute(request,actor,path,()=>body(request));if(inbox)return inbox;
     const transactions=await transactionsRoute(request,actor,path,()=>body(request));if(transactions)return transactions;
     const documents=await documentsRoute(request,actor,path,()=>body(request));if(documents)return documents;
