@@ -57,3 +57,20 @@ Do not delete the persistent disk to “refresh” the demonstration. Restarting
 ## Optional employee messaging
 
 The Blueprint leaves Slack/SMS ingress and delivery disabled. After account setup, add the provider values and enable both channel flags described in [MESSAGING_SETUP.md](MESSAGING_SETUP.md). Socket Mode can run in the existing worker. Twilio uses the public Render origin for signed callbacks. No second worker or separate database is needed. Do not activate both a local and deployed worker for the same Slack app.
+
+
+## Verified backup and offline restore tools
+
+The current release includes `scripts/storage-recovery.ts`. It never loads `.env.local`, seeds/migrates a source, selects a service database or overwrites an existing destination. Paths below are examples to replace deliberately; do not run them against an unapproved data source.
+
+```sh
+node --import tsx scripts/storage-recovery.ts backup /var/data/agentdesk.sqlite /var/data/backups/new-snapshot
+node --import tsx scripts/storage-recovery.ts verify /var/data/backups/new-snapshot
+node --import tsx scripts/storage-recovery.ts restore /var/data/backups/new-snapshot /var/data/recovery/new-offline-copy
+```
+
+Backup uses SQLite's online backup API to include committed WAL changes; do not copy the active database file alone. A new private directory contains a 0600 database, checksum manifest, migration list and table counts. Verification checks the hash, SQLite integrity, foreign keys and manifest counts. Restore verifies first and writes a new offline directory with a review-required marker. Existing paths and modified snapshots are rejected. A checksum detects changed contents; it is not an independent authenticated off-host backup or encryption mechanism.
+
+Before switching a service to a restored copy, stop the original writers, keep AI/research/channel/push/payment dispatch disabled, reconcile previously uncertain external outcomes against immutable operation IDs, verify the intended source revision and inspect scoped fictional records. A historical backup may predate an external receipt: never blindly restart old sends or payments. Then perform an explicitly authorized service cutover and rehearsal. The script performs none of that cutover automatically. Off-host encrypted retention, scheduled backups, production restore objectives and a hosted restore drill remain deployment work.
+
+Settings → Preparing company connections → Background work status shows recent worker lanes. `/api/health` remains lightweight process liveness and contains no workspace data. The authenticated `/api/workspace-readiness` shows preparation and worker state without source credentials or identity subjects. A healthy worker does not prove provider success. Automatic Render deployment remains off; publication and deployment must be verified separately.

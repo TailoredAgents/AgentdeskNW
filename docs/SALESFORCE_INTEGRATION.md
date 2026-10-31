@@ -121,3 +121,12 @@ Customer discovery must choose whether multiple boxes belong in related custom r
 AgentDesk ownership is configurable for the demo, but cannot replace Salesforce sharing or field security. Production duplicate checks must be authorized to return only permitted details; protected same-organization collisions currently return an opaque possible-duplicate flag with no ID. Production assignment/transfer must follow approved remote rules and delegated user permissions.
 
 Property releases currently use explicit local acquisition/manager entry with versioned event keys. Their source system, Marketplace permissions, media access, disclosure document/version, signing provider and approved transaction-stage vocabulary remain unknown. Neither a release nor a signed synthetic disclosure fixture establishes access to a New Western system.
+
+
+## Shared preparation contract — October 31, 2026
+
+Migration 051 adds employee/office/organization-bound connection preparations. One provider/source identity owns separate CRM read/write, email activity/body/draft/send and SMS read/send capabilities. Preparing a live source never enables execution; the runtime rejects it until a real approved adapter exists. No credentials are accepted by this contract, and there is no employee/model activation endpoint. These preparations do not switch the existing demo CRM or Inbox to another provider.
+
+`stageConnectionBatch` is a tested **fictional normalized staging seam**, not a Salesforce downloader. It checks original connection revision, exact previous/next cursor, immutable batch identity, unique external IDs and monotonic record revisions. A conflicting row rolls back the whole batch and cursor. Withdrawal removes readable current fields. Disconnect invalidates reads and even old exact batch replay. Staged fields remain private, synthetic and unreviewed; they never overwrite local CRM facts or establish message delivery. Real OAuth exchange/storage/refresh, incremental provider fetch, verified company mapping, conflict review and application source selection remain implementation work.
+
+Settings → Preparing company connections reports this distinction, along with the remaining identity, storage and company approvals. The authenticated readiness endpoint is read-only and also available to the paired native client. No interface can turn these preparations into a live connection.

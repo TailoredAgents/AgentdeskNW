@@ -1,3 +1,4 @@
+import {workspaceReadiness} from '@/server/workspace-readiness';
 import {getChatRequest} from '@/server/chat-requests';
 import {getRecordBoard,getRecordDetail} from '@/server/records';
 import {decideRolePreparation,listRolePreparations} from '@/server/role-preparations';
@@ -82,6 +83,7 @@ async function route(request:NextRequest,{params}:{params:Promise<{path:string[]
       if(path.length===3&&(id==='investor'||id==='property'))return json(getRecordDetail(actor,{kind:id,id:idSchema.parse(operation)}));
       throw new service.AppError(404,'This record link is not available.');
     }
+    if(resource==='workspace-readiness'&&path.length===1&&method==='GET')return json(workspaceReadiness(actor));
     if(resource==='providers'&&method==='GET')return json(providerStatus(actor));
     if(resource==='voice'&&id==='status'&&method==='GET')return json(getVoiceStatus(actor,idSchema.parse(request.nextUrl.searchParams.get('voiceSessionId'))));
     const mobileResponse=await mobileRoute(request,actor,path,()=>body(request),mobile?.session);if(mobileResponse)return mobileResponse;

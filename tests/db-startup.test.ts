@@ -6,23 +6,23 @@ import {describe,expect,it,vi} from 'vitest';
 import {getDb,closeDb} from '../src/server/db';
 
 describe('concurrent disk database initialization',()=>{
- it('adds research and routine permissions to a version 48 database without changing existing records',()=>{
-  const directory=mkdtempSync(join(tmpdir(),'agentdesk-v50-upgrade-'));
+ it('adds connection preparation to a version 50 database without changing existing records',()=>{
+  const directory=mkdtempSync(join(tmpdir(),'agentdesk-v51-upgrade-'));
   try{
    vi.stubEnv('AGENTDESK_DB_PATH',join(directory,'upgrade.sqlite'));const db=getDb();
    // Recreate the previous schema boundary only in this disposable fixture database.
-   db.exec('DROP TABLE standing_permission_receipts; DROP TABLE standing_permission_commands; DROP TABLE standing_permissions; DROP TABLE local_assignment_research; DELETE FROM schema_migrations WHERE version IN (49,50)');
+   db.exec('DROP TABLE connection_sync_batches; DROP TABLE connection_sync_records; DROP TABLE capability_connections; DROP TABLE company_identity_bindings; DROP TABLE worker_health; DELETE FROM schema_migrations WHERE version=51');
    const tables=(db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name!='schema_migrations' ORDER BY name").all() as {name:string}[]).map(row=>row.name);
    const before=Object.fromEntries(tables.map(name=>[name,JSON.stringify(db.prepare(`SELECT * FROM "${name}" ORDER BY rowid`).all())]));
    closeDb();const upgraded=getDb();
    for(const name of tables)expect(JSON.stringify(upgraded.prepare(`SELECT * FROM "${name}" ORDER BY rowid`).all()),name).toBe(before[name]);
-   expect(upgraded.prepare('SELECT COUNT(*) n FROM schema_migrations').get()).toEqual({n:50});
+   expect(upgraded.prepare('SELECT COUNT(*) n FROM schema_migrations').get()).toEqual({n:51});
    expect(upgraded.pragma('integrity_check')).toEqual([{integrity_check:'ok'}]);expect(upgraded.pragma('foreign_key_check')).toEqual([]);
   }finally{closeDb();vi.unstubAllEnvs();rmSync(directory,{recursive:true,force:true});}
  });
  it('can reopen the original path after a replacement connection fails',()=>{
   const directory=mkdtempSync(join(tmpdir(),'agentdesk-startup-failure-'));
-  try{vi.stubEnv('AGENTDESK_DB_PATH',':memory:');getDb();vi.stubEnv('AGENTDESK_DB_PATH',directory);expect(()=>getDb()).toThrow();vi.stubEnv('AGENTDESK_DB_PATH',':memory:');expect(getDb().prepare('SELECT COUNT(*) n FROM schema_migrations').get()).toEqual({n:50});}
+  try{vi.stubEnv('AGENTDESK_DB_PATH',':memory:');getDb();vi.stubEnv('AGENTDESK_DB_PATH',directory);expect(()=>getDb()).toThrow();vi.stubEnv('AGENTDESK_DB_PATH',':memory:');expect(getDb().prepare('SELECT COUNT(*) n FROM schema_migrations').get()).toEqual({n:51});}
   finally{closeDb();vi.unstubAllEnvs();rmSync(directory,{recursive:true,force:true});}
  });
  it('serializes fresh migrations and seeding across app and worker processes',async()=>{
@@ -38,7 +38,7 @@ describe('concurrent disk database initialization',()=>{
      const child=spawn(process.execPath,['--import','tsx','--input-type=module','-e',script],{env:{...process.env,AGENTDESK_DB_PATH:join(directory,`${round}.sqlite`),OPENAI_API_KEY:''}});
      let stdout='',stderr='';child.stdout.on('data',v=>stdout+=v);child.stderr.on('data',v=>stderr+=v);child.on('error',reject);child.on('exit',code=>resolve({code,stdout,stderr}));
     })));
-    for(const result of results){expect(result.code,result.stderr).toBe(0);expect(JSON.parse(result.stdout)).toEqual({migrations:50,organizations:2,privateFixture:1,integrity:[{integrity_check:'ok'}],foreignKeys:[]});}
+    for(const result of results){expect(result.code,result.stderr).toBe(0);expect(JSON.parse(result.stdout)).toEqual({migrations:51,organizations:2,privateFixture:1,integrity:[{integrity_check:'ok'}],foreignKeys:[]});}
    }
   }finally{rmSync(directory,{recursive:true,force:true});}
  },30000);

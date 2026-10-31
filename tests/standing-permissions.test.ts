@@ -45,3 +45,7 @@ describe('employee-scoped standing permission for routine personal work',()=>{
   grant();incoming();const before=listTasks(actor()).length;getDb().exec("CREATE TRIGGER fixture_receipt_failure BEFORE INSERT ON standing_permission_receipts BEGIN SELECT RAISE(ABORT,'fixture failure'); END;");expect(()=>processStandingPermissions(actor())).toThrow('fixture failure');expect(listTasks(actor())).toHaveLength(before);getDb().exec('DROP TRIGGER fixture_receipt_failure');expect(processStandingPermissions(actor())).toBe(1);expect(listTasks(actor())).toHaveLength(before+1);expect(processStandingPermissions(actor())).toBe(0);
  });
 });
+
+it('normalizes offset expiry before the worker compares UTC timestamps',()=>{
+ const permission=grant(false,{expiresAt:'2026-10-31T12:00:00-04:00'});expect(permission.expiresAt).toBe('2026-10-31T16:00:00.000Z');incoming();expect(processStandingPermissions(actor())).toBe(1);
+});

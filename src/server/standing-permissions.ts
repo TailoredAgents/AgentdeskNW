@@ -49,7 +49,7 @@ export function grantStandingPermission(actor:Actor,threadId:string,raw:z.input<
   if(Date.parse(input.expiresAt)<=Date.now()||Date.parse(input.expiresAt)>Date.now()+31*86400000)throw new AppError(400,'Choose a permission expiry within the next 31 days.');
   const active=standingPermissionState(actor,threadId).permissions.find(p=>p.state==='active');if(active)throw new AppError(409,'Revoke the active permission before replacing its scope.');
   const cursor=(getDb().prepare('SELECT COALESCE(MAX(rowid),0) n FROM communication_messages WHERE organization_id=? AND office_id=? AND owner_id=? AND thread_id=?').get(...owner(actor),threadId) as {n:number}).n;
-  const permissionId=newId('standing'),data:Data={...input,role:actor.role,usedActions:0,cursor,lastActionAt:null,createdAt:now()};
+  const permissionId=newId('standing'),data:Data={...input,expiresAt:new Date(input.expiresAt).toISOString(),role:actor.role,usedActions:0,cursor,lastActionAt:null,createdAt:now()};
   getDb().prepare("INSERT INTO standing_permissions VALUES(?,?,?,?,?,1,'active',?)").run(permissionId,...owner(actor),threadId,JSON.stringify(data));
   getDb().prepare('INSERT INTO standing_permission_commands VALUES(?,?,?,?,?,?)').run(...owner(actor),input.eventKey,hash,permissionId);
   audit(actor,'standing.granted',permissionId,{action:'personal_followup_on_reply',budgetCents:0,maxActions:input.maxActions,expiresAt:input.expiresAt});return view(actor,read(actor,permissionId));

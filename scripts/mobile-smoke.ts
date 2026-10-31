@@ -1,3 +1,4 @@
+import type {WorkspaceReadiness} from '../src/lib/connection-contracts';
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import {spawn} from 'node:child_process';
@@ -67,6 +68,9 @@ try{
  await request('mobile/notifications','POST',{enabled:true,expoPushToken:'ExpoPushToken[fictionalSmoke000001]',platform:'android'},409);
  await request('mobile/logout','POST',{});await request('mobile/session','GET',undefined,401);await request('bootstrap','GET',undefined,401);
  token=alexToken;cookie=alexCookie;
+ const readiness=await request<WorkspaceReadiness>('workspace-readiness');check(!readiness.companyDataReady&&readiness.mode==='fictional-demonstration','Phone sees truthful connection preparation without company activation');
+ await request('workspace-readiness','POST',{live:true},404);
+
  const devices=await request<MobileDevices>('mobile/devices','GET',undefined,200,'web');check(devices.devices.some(item=>item.id===connected.sessionId)&&!devices.devices.some(item=>item.id===jordan.sessionId),'Web device management is employee-private');
  let unattended=await request<WorkRun>('work','POST',{requestId:randomUUID(),presetId:'dispositions',propertyId:'property-maple',investorId:'investor-mike'},201);
  const worker=spawn(process.execPath,['--import','tsx','scripts/worker.ts'],{stdio:['ignore','ignore','inherit'],env:process.env});

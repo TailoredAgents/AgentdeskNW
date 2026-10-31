@@ -171,3 +171,8 @@ Writes require an expected report count and a hash of current investor/buy-box/c
 ## Shared deal scenarios (027)
 
 `deal_analyses` stores organization/office/owner-scoped current scenario JSON, containing input sources, linked property/opportunity fingerprint, method/date and computed cases. `deal_analysis_events` preserves complete reviewed revisions and scoped idempotency keys/payload hashes. Read authority remains private to the employee, including against manager access; source changes hide obsolete results. See [DEAL_ANALYSIS](DEAL_ANALYSIS.md) for preview/save and history contracts.
+
+
+## Integration preparation storage (051)
+
+`capability_connections` binds an immutable provider/remote tenant/remote user/mode to one organization, office and employee, with independent capabilities and disconnect revision. `connection_sync_batches` retains immutable private batch hashes/cursor identity evidence; `connection_sync_records` holds only current staged fictional canonical fields and withdrawal state. They do not replace CRM records. `company_identity_bindings` maps a verified-adapter issuer/subject to a preprovisioned membership; no production login is implied. `worker_health` holds content-free per-instance/per-lane signals with bounded retention. Existing records remain unchanged on migration.

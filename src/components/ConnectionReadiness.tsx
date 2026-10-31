@@ -1,0 +1,9 @@
+'use client';
+import {useEffect,useState} from 'react';
+import type {WorkspaceReadiness} from '@/lib/connection-contracts';
+import {api,Panel,SectionHead} from './ui';
+export function ConnectionReadiness(){
+ const [state,setState]=useState<WorkspaceReadiness|null>(null),[error,setError]=useState('');
+ useEffect(()=>{let current=true,busy=false;const refresh=async()=>{if(busy)return;busy=true;try{const value=await api<WorkspaceReadiness>('/workspace-readiness');if(current){setState(value);setError('');}}catch{if(current){setState(null);setError('Connection readiness is temporarily unavailable.');}} finally{busy=false;}};void refresh();const timer=setInterval(()=>void refresh(),15000);return()=>{current=false;clearInterval(timer);};},[]);
+ return <Panel><SectionHead title="Preparing company connections"/><p className="panel-description">This workspace uses fictional records. Company data and delivery are not enabled.</p>{error&&<p role="alert">{error}</p>}{state&&<><details><summary>Connection and rollout checklist</summary>{state.gates.map(gate=><div className="setting-row" key={gate.id}><div><strong>{gate.title}</strong><p>{gate.detail}</p></div><span>{gate.status==='prepared'?'Prepared':'Still required'}</span></div>)}{state.connections.map(connection=><p key={connection.id}>{connection.provider} · {connection.mode} preparation · {connection.state} · {connection.stagedRecords} staged records</p>)}</details><details><summary>Background work status</summary><p>Recent worker signals describe processing availability, not proof that a particular job or message succeeded.</p>{state.workers.map(worker=><p key={worker.lane}>{({business:'Business work',messaging:'Employee messaging',mobile:'Notifications',text:'Copilot continuation'})[worker.lane as 'business']} · {worker.state.replaceAll('_',' ')}{worker.lastSuccessAt?` · last check ${new Date(worker.lastSuccessAt).toLocaleString()}`:''}</p>)}</details></>}</Panel>;
+}
