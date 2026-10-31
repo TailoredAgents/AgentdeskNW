@@ -13,6 +13,8 @@ import {getInvestorJourney,recordJourneyObservation} from './journey';
 import {createTask} from './services';
 import {getPersonalTask} from './task-actions';
 
+import {reviewCommunicationDocuments} from './communication-documents';
+
 const id=z.string().trim().min(1).max(150);
 const mutation={expectedVersion:z.number().int().positive(),eventKey:id};
 export const inboxWorkflowMutationSchema=z.object(mutation).strict();
@@ -63,7 +65,7 @@ export function getInboxAssistance(actor:Actor,threadId:string):InboxAssistance 
  }
  const observation=latestTopic==='repair'?'Employee reviewed correspondence raising a need to clarify repair scope and cost assumptions before another opportunity.':latestTopic==='operating'?'Employee reviewed correspondence requesting more clarity about rental or operating-cost assumptions.':latestTopic==='timing'?'Employee reviewed correspondence suggesting purchase timing should be confirmed.':null;
  const title=paused?'Confirm a suitable check-in while buying plans are paused':conflict?'Clarify the differing '+conflict.label.toLowerCase():topic==='repair'?'Verify repair-scope information and contractor-review availability':topic==='operating'?'Check supporting information for operating-cost questions':topic==='timing'?'Confirm current buying timeline and criteria':'Review the latest investor question and next step';
- const unknowns=[...(!detail.account.capabilities.threadHistory?[detail.capabilityNotice]:[]),...(journey?.unknowns??[]),'Incoming correspondence is fictional, unverified source material; it does not approve CRM or memory changes.','Property details and attachments require the separate eligible Deal packages workflow.'];
+ const unknowns=[...(!detail.account.capabilities.threadHistory?[detail.capabilityNotice]:[]),...(journey?.unknowns??[]),'Incoming correspondence is fictional, unverified source material; it does not approve CRM or memory changes.','Verified property packages use the separate eligible Deal packages workflow. Employee-selected local text files require their own exact correspondence review.'];
  if(topic==='repair')unknowns.push('A sourced repair breakdown, contractor availability and estimate accuracy have not been established.');
  if(!journey)unknowns.push('Review the investor association before using relationship history or recording an observation.');
  if(messages.some(item=>item.attachments.length))unknowns.push('Attachment metadata is available, but file contents have not been read or forwarded.');
@@ -86,10 +88,11 @@ function contextHash(actor:Actor,detail:InboxThreadDetail){
 }
 function eligibleDraft(actor:Actor,detail:InboxThreadDetail){
  const draft=detail.draft;if(!draft)throw new AppError(409,'Prepare and save a reply before reviewing a simulated send.');
+ if(draft.documents?.length){requireCommunicationCapability(detail.account,'localTextAttachments');reviewCommunicationDocuments(actor,draft.documents);}
  if(draft.authorship!=='employee'){
   const generated=getInboxAssistance(actor,detail.thread.id).suggestedReply;
   if(!generated.eligible)throw new AppError(409,generated.reasons.join(' '));
-  if(draft.body!==generated.body||draft.subject!==generated.subject||(draft.cc?.length??0)>0)throw new AppError(409,'This generated reply is no longer current. Prepare it again, or save your own edited reply before reviewing it.');
+  if(draft.body!==generated.body||draft.subject!==generated.subject||(draft.cc?.length??0)>0||(draft.documents?.length??0)>0)throw new AppError(409,'This generated reply is no longer current. Prepare it again, or save your own edited reply before reviewing it.');
  }
  if(detail.thread.association.status==='unavailable')throw new AppError(403,'The relationship context is no longer available. Review the association before preparing a new reply.');
  return draft;
@@ -101,7 +104,7 @@ export function reviewInboxSend(actor:Actor,threadId:string,input:InboxMutation)
   const prior=getDb().prepare('SELECT payload_hash,context_hash,data FROM communication_send_reviews WHERE organization_id=? AND office_id=? AND owner_id=? AND event_key=?').get(...scope(actor),parsed.eventKey) as {payload_hash:string;context_hash:string;data:string}|undefined;
   if(prior){if(prior.payload_hash!==payloadHash)throw new AppError(409,'This review request key was used for different content.');const value=JSON.parse(prior.data) as InboxSendReview;if(prior.context_hash!==contextHash(actor,detail)||value.expiresAt<=now())throw new AppError(409,'This review is stale. Review the current reply again.');return value;}
   expected(detail,parsed.expectedVersion);const draft=eligibleDraft(actor,detail),timestamp=now();
-  const review:InboxSendReview={id:newId('send_review'),threadId,threadVersion:detail.thread.version,draftId:draft.id,draftVersion:draft.version,accountId:detail.account.id,accountContext:{source:detail.account.source,transport:detail.account.transport,capabilities:detail.account.capabilities,accessVersion:detail.account.accessVersion},channel:detail.thread.channel,from:draft.from,to:draft.to,cc:draft.cc??[],authorship:draft.authorship??'copilot',subject:draft.subject,body:draft.body,attachments:[],createdAt:timestamp,expiresAt:new Date(Date.now()+10*60_000).toISOString(),scope:draft.authorship==='employee'?'employee_correspondence':'relationship_only',notice:simulationNotice,liveDelivery:false};
+  const review:InboxSendReview={id:newId('send_review'),threadId,threadVersion:detail.thread.version,draftId:draft.id,draftVersion:draft.version,accountId:detail.account.id,accountContext:{source:detail.account.source,transport:detail.account.transport,capabilities:detail.account.capabilities,accessVersion:detail.account.accessVersion},channel:detail.thread.channel,from:draft.from,to:draft.to,cc:draft.cc??[],authorship:draft.authorship??'copilot',subject:draft.subject,body:draft.body,documents:draft.documents??[],attachments:reviewCommunicationDocuments(actor,draft.documents),createdAt:timestamp,expiresAt:new Date(Date.now()+10*60_000).toISOString(),scope:draft.authorship==='employee'?'employee_correspondence':'relationship_only',notice:simulationNotice,liveDelivery:false};
   getDb().prepare('INSERT INTO communication_send_reviews VALUES(?,?,?,?,?,?,?,?,?)').run(review.id,...scope(actor),threadId,parsed.eventKey,payloadHash,contextHash(actor,detail),JSON.stringify(review));audit(actor,'communications.send.reviewed',review.id);return review;
  }).immediate();
 }
@@ -122,9 +125,9 @@ export function simulateInboxSend(actor:Actor,threadId:string,input:SimulateInbo
   if(review.expiresAt<=now()||row.context_hash!==contextHash(actor,detail))throw new AppError(409,'The reply, conversation, preferences or relationship context changed. Review the current reply again.');
   const draft=eligibleDraft(actor,detail);if(detail.messages.length>=200)throw new AppError(409,'This conversation has reached its demonstration message limit.');
   const timestamp=now(),receiptId=newId('send_receipt');
-  const message:CommunicationMessage={id:newId('inbox_message'),threadId,accountId:review.accountId,direction:'outbound',from:review.from,to:[review.to],cc:review.cc??[],subject:review.subject,body:review.body,receivedAt:timestamp,sourceRef:`demo:simulated:${review.id}`,sourceLabel:'Employee-reviewed simulated reply · no external delivery',deliveryStatus:'simulated_sent',attachments:[],synthetic:true};
+  const message:CommunicationMessage={id:newId('inbox_message'),threadId,accountId:review.accountId,direction:'outbound',from:review.from,to:[review.to],cc:review.cc??[],subject:review.subject,body:review.body,receivedAt:timestamp,sourceRef:`demo:simulated:${review.id}`,sourceLabel:'Employee-reviewed simulated reply · no external delivery',deliveryStatus:'simulated_sent',documents:review.documents??[],attachments:[],synthetic:true};
   getDb().prepare('INSERT INTO communication_messages VALUES(?,?,?,?,?,?,?,?)').run(message.id,...scope(actor),review.accountId,threadId,message.sourceRef,JSON.stringify(message));
-  const archived:CommunicationDraft={...draft,status:'discarded',deliveryStatus:'simulated_sent',version:draft.version+1,updatedAt:timestamp};
+  const archived:CommunicationDraft={...draft,documentFiles:undefined,status:'discarded',deliveryStatus:'simulated_sent',version:draft.version+1,updatedAt:timestamp};
   getDb().prepare("UPDATE communication_drafts SET status='discarded',data=? WHERE id=? AND organization_id=? AND office_id=? AND owner_id=?").run(JSON.stringify(archived),draft.id,...scope(actor));
   getDb().prepare('INSERT INTO communication_draft_revisions VALUES(?,?,?,?,?,?,?,?)').run(newId('draft_revision'),...scope(actor),threadId,draft.id,archived.version,JSON.stringify(archived));
   updateThread(actor,threadId,{status:'waiting',unread:false,lastMessageAt:timestamp,preview:message.body.slice(0,180),messageCount:detail.messages.length+1});

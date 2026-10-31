@@ -24,3 +24,10 @@ test('discard is explicit and a late response cannot navigate a closed workspace
  c.change(fields);assert.equal(c.close(),false);assert.equal(c.discardReview,true);c.stay();assert.equal(c.discardReview,false);assert.equal(c.close(),false);assert.equal(c.close(),true);
  const action=c.save();c.deactivate();resolve(saved);await action;assert.equal(results,0);
 });
+
+test('attached file identity survives uncertain retries and must be removed before switching to SMS',async()=>{
+ const file={documentId:'document-one',revision:1,reference:'document-one@one'},requests:ComposeCommunication[]=[];
+ const c=new CommunicationComposer(accounts,'company',async p=>{requests.push(p);if(requests.length===1)throw new Error('Connection lost');return saved;},()=> 'file-key',()=>{},()=>{});
+ c.change({...fields,documents:[file]});await c.save();c.change({documents:[]});assert.deepEqual(c.fields.documents,[file]);await c.save();assert.equal(requests[0],requests[1]);assert.deepEqual(requests[1].documents,[file]);
+ let sent=0;const sms=new CommunicationComposer(accounts,'sms',async()=>{sent++;return saved;},()=> 'sms-key',()=>{},()=>{});sms.change({address:'+14045550111',body:'Hello',documents:[file]});await sms.save();assert.equal(sent,0);assert.match(sms.error,/files/);sms.change({documents:[]});await sms.save();assert.equal(sent,1);
+});

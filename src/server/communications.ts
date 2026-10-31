@@ -11,6 +11,8 @@ import {companyInboxScenarios,companyThreadFixtures,demoFollowup,demoThreadFixtu
 
 import {getCommunicationAccount,normalizeCommunicationAccount,requireCommunicationCapability,visibleCommunicationMessage,type StoredCommunicationAccount} from './communications-capabilities';
 
+import {communicationDocumentsSchema,communicationDocumentOptions,reviewCommunicationDocuments,visibleDocumentDraft} from './communication-documents';
+
 interface StoredThread extends Omit<InboxThread,'association'|'hasDraft'> {investorId:string|null;matchMethod:'exact_contact'|'employee_review'|null;manualUnlink:boolean}
 type ScopedTable='communication_accounts'|'communication_threads'|'communication_messages'|'communication_drafts'|'communication_draft_revisions';
 const idSchema=z.string().min(1).max(150);
@@ -18,7 +20,7 @@ const mutation={expectedVersion:z.number().int().positive(),eventKey:z.string().
 export const inboxQuerySchema=z.object({filter:z.enum(['all','email','sms','needs_reply','drafts']).default('all'),accountId:idSchema.optional(),q:z.string().trim().max(200).default('')}).strict();
 export const threadUpdateSchema=z.object({...mutation,status:z.enum(['needs_reply','waiting','done']).optional(),unread:z.boolean().optional()}).strict().refine(value=>value.status!==undefined||value.unread!==undefined,'Choose a status or read-state change.');
 const ccPartySchema=z.object({name:z.string().trim().max(150).refine(v=>!/[\r\n]/.test(v),'Names must be on one line.'),address:z.email().max(254).transform(v=>v.toLowerCase())}).strict();
-export const saveDraftSchema=z.object({...mutation,body:z.string().trim().min(1).max(12000),subject:z.string().trim().min(1).max(240).refine(v=>!/[\r\n]/.test(v),'Subject must be on one line.').optional(),cc:z.array(ccPartySchema).max(10).refine(v=>new Set(v.map(p=>p.address)).size===v.length,'Duplicate CC recipients are not allowed.').optional()}).strict();
+export const saveDraftSchema=z.object({...mutation,documents:communicationDocumentsSchema.optional(),body:z.string().trim().min(1).max(12000),subject:z.string().trim().min(1).max(240).refine(v=>!/[\r\n]/.test(v),'Subject must be on one line.').optional(),cc:z.array(ccPartySchema).max(10).refine(v=>new Set(v.map(p=>p.address)).size===v.length,'Duplicate CC recipients are not allowed.').optional()}).strict();
 export const composeCommunicationSchema=saveDraftSchema.omit({expectedVersion:true}).extend({accountId:idSchema,to:z.object({name:ccPartySchema.shape.name,address:z.string().trim().min(1).max(254)}).strict()});
 export const discardDraftSchema=z.object(mutation).strict();
 export const linkInvestorSchema=z.object({...mutation,investorId:idSchema.nullable()}).strict();
@@ -110,15 +112,15 @@ export function getInboxState(actor:Actor,input:unknown={}):InboxState {
   return [thread.subject,thread.correspondent.name,thread.correspondent.address,...bodies,draft?.body??'',draft?.subject??''].join('\n').toLowerCase().includes(query.q.toLowerCase());
  });
  const matches=(thread:InboxThread,filter:InboxFilter)=>filter==='all'||filter==='email'&&thread.channel==='email'||filter==='sms'&&thread.channel==='sms'||filter==='needs_reply'&&thread.status==='needs_reply'||filter==='drafts'&&thread.hasDraft;
- return {accounts,preferredAccountId:accounts.find(account=>account.primary)?.id??null,threads:selected.filter(thread=>matches(thread,query.filter)),counts:Object.fromEntries((['all','email','sms','needs_reply','drafts'] as const).map(filter=>[filter,selected.filter(thread=>matches(thread,filter)).length])) as InboxState['counts'],unreadCount:selected.filter(thread=>thread.unread).length,filter:query.filter,accountId:query.accountId??null,query:query.q,scenarios:[...companyInboxScenarios,...inboxScenarios].map(scenario=>({...scenario,available:isCommunicationDemoPersona(actor)&&access.allowed&&companyScenarioAvailable(scenario.id,accounts)})),canEdit:access.allowed,accessReason:access.reason,mode:'demonstration',liveDelivery:false,notice};
+ return {documentOptions:access.allowed?communicationDocumentOptions(actor):[],accounts,preferredAccountId:accounts.find(account=>account.primary)?.id??null,threads:selected.filter(thread=>matches(thread,query.filter)),counts:Object.fromEntries((['all','email','sms','needs_reply','drafts'] as const).map(filter=>[filter,selected.filter(thread=>matches(thread,filter)).length])) as InboxState['counts'],unreadCount:selected.filter(thread=>thread.unread).length,filter:query.filter,accountId:query.accountId??null,query:query.q,scenarios:[...companyInboxScenarios,...inboxScenarios].map(scenario=>({...scenario,available:isCommunicationDemoPersona(actor)&&access.allowed&&companyScenarioAvailable(scenario.id,accounts)})),canEdit:access.allowed,accessReason:access.reason,mode:'demonstration',liveDelivery:false,notice};
 }
 export function getInboxThread(actor:Actor,id:string):InboxThreadDetail {
- ensureDemoInbox(actor);const raw=scoped<StoredThread>(actor,'communication_threads',id),thread=visibleThread(actor,raw),account=getCommunicationAccount(actor,thread.accountId),access=featureAccess(actor,'core'),draft=account.capabilities.readBody?activeDraft(actor,id):null;
+ ensureDemoInbox(actor);const raw=scoped<StoredThread>(actor,'communication_threads',id),thread=visibleThread(actor,raw),account=getCommunicationAccount(actor,thread.accountId),access=featureAccess(actor,'core'),draft=account.capabilities.readBody?visibleDocumentDraft(actor,activeDraft(actor,id)):null;
  const messages=rows<CommunicationMessage>(actor,'communication_messages','AND thread_id=? ORDER BY rowid',[id]).map(message=>visibleCommunicationMessage(actor,account,message));
- const draftHistory=account.capabilities.readBody?rows<CommunicationDraft>(actor,'communication_draft_revisions','AND thread_id=? ORDER BY rowid DESC LIMIT 25',[id]).filter(value=>!(draft?.id===value.id&&draft.version===value.version)):[];
+ const draftHistory=account.capabilities.readBody?rows<CommunicationDraft>(actor,'communication_draft_revisions','AND thread_id=? ORDER BY rowid DESC LIMIT 25',[id]).filter(value=>!(draft?.id===value.id&&draft.version===value.version)).map(value=>visibleDocumentDraft(actor,value)!):[];
  let investorContext:InboxThreadDetail['investorContext']=null;
  if(thread.association.investor&&access.allowed&&account.capabilities.readBody)investorContext=getInvestorJourney(actor,thread.association.investor.id);
- return {bodyAccess:account.access==='revoked'?'revoked':account.capabilities.readBody?'full':'headers_only',capabilityNotice:account.capabilityNotice,thread,account,messages,draft,draftHistory,investorContext,contextNotice:account.access==='revoked'||!account.capabilities.readBody?account.capabilityNotice:investorContext?'Existing authorized relationship history. Inbox messages are separate source material and have not updated CRM facts automatically. Only explicitly reviewed notes and follow-ups are added to relationship work.':!access.allowed?'Mailbox history remains available. An active workforce subscription is required for relationship context and changes.':thread.association.notice,availableInvestors:account.access==='revoked'?[]:readInvestors(actor).map(value=>investorMatch(value,'Permitted CRM relationship; linking requires your review.')),canEdit:access.allowed&&account.access==='available',accessReason:account.access==='revoked'?account.capabilityNotice:access.reason,liveDelivery:false};
+ return {documentOptions:access.allowed&&account.capabilities.localTextAttachments?communicationDocumentOptions(actor):[],bodyAccess:account.access==='revoked'?'revoked':account.capabilities.readBody?'full':'headers_only',capabilityNotice:account.capabilityNotice,thread,account,messages,draft,draftHistory,investorContext,contextNotice:account.access==='revoked'||!account.capabilities.readBody?account.capabilityNotice:investorContext?'Existing authorized relationship history. Inbox messages are separate source material and have not updated CRM facts automatically. Only explicitly reviewed notes and follow-ups are added to relationship work.':!access.allowed?'Mailbox history remains available. An active workforce subscription is required for relationship context and changes.':thread.association.notice,availableInvestors:account.access==='revoked'?[]:readInvestors(actor).map(value=>investorMatch(value,'Permitted CRM relationship; linking requires your review.')),canEdit:access.allowed&&account.access==='available',accessReason:account.access==='revoked'?account.capabilityNotice:access.reason,liveDelivery:false};
 }
 function replay(actor:Actor,key:string,payload:unknown,legacyPayload?:unknown){
  const row=getDb().prepare('SELECT payload_hash,thread_id FROM communication_events WHERE organization_id=? AND office_id=? AND owner_id=? AND event_key=?').get(...scope(actor),key) as {payload_hash:string;thread_id:string}|undefined;
@@ -158,13 +160,14 @@ export function composeCommunication(actor:Actor,input:ComposeCommunication):Inb
   if(parsed.cc?.some(p=>[address,account.address.toLowerCase()].includes(p.address)))throw new AppError(400,'CC must not duplicate the sender or primary recipient.');
   const payload={kind:'conversation.composed',input:parsed},prior=replay(actor,parsed.eventKey,payload);
   if(prior)return getInboxThread(actor,prior);
+  if(parsed.documents?.length){requireCommunicationCapability(account,'localTextAttachments');reviewCommunicationDocuments(actor,parsed.documents);}
   const count=getDb().prepare('SELECT COUNT(*) n FROM communication_threads WHERE organization_id=? AND office_id=? AND owner_id=?').get(...scope(actor)) as {n:number};
   if(count.n>=500)throw new AppError(409,'This demonstration inbox has reached its 500-conversation limit. Existing drafts remain available.');
   const timestamp=now(),correspondent={name:parsed.to.name||address,address},matching=candidates(actor,{correspondent,channel:account.channel});
   const linked=matching.exact&&matching.values.length===1?matching.values[0].id:null;
   const thread:StoredThread={id:newId('inbox_thread'),accountId:account.id,channel:account.channel,subject:parsed.subject??'New text conversation',correspondent,status:'done',unread:false,version:1,updatedAt:timestamp,lastMessageAt:timestamp,preview:'New conversation · draft only; nothing sent',messageCount:0,investorId:linked,matchMethod:linked?'exact_contact':null,manualUnlink:false,synthetic:true};
   getDb().prepare('INSERT INTO communication_threads VALUES(?,?,?,?,?,?,?)').run(thread.id,...scope(actor),account.id,`composed:${thread.id}`,JSON.stringify(thread));
-  saveDraftRecord(actor,{id:newId('inbox_draft'),threadId:thread.id,accountId:account.id,from:{name:actor.name,address:account.address},to:correspondent,cc:parsed.cc??[],authorship:'employee',subject:thread.subject,body:parsed.body,status:'draft',createdAt:timestamp,updatedAt:timestamp,version:1,deliveryStatus:'not_sent',synthetic:true});
+  saveDraftRecord(actor,{documents:parsed.documents??[],id:newId('inbox_draft'),threadId:thread.id,accountId:account.id,from:{name:actor.name,address:account.address},to:correspondent,cc:parsed.cc??[],authorship:'employee',subject:thread.subject,body:parsed.body,status:'draft',createdAt:timestamp,updatedAt:timestamp,version:1,deliveryStatus:'not_sent',synthetic:true});
   recordEvent(actor,parsed.eventKey,payload,thread.id,'conversation.composed');return getInboxThread(actor,thread.id);
  }).immediate();
 }
@@ -172,13 +175,16 @@ export function saveInboxDraft(actor:Actor,id:string,input:SaveCommunicationDraf
  const parsed=saveDraftSchema.parse(input);
  return mutateThread(actor,id,'draft.saved',{...parsed,authorship} as typeof parsed,thread=>{
   if(thread.channel==='sms'&&parsed.cc?.length)throw new AppError(400,'Text-message replies are one-to-one and cannot have CC recipients.');
+  if(authorship==='copilot'&&parsed.documents?.length)throw new AppError(400,'Generated relationship replies cannot attach documents.');
   if(authorship==='copilot'&&parsed.cc?.length)throw new AppError(400,'The relationship reply cannot add recipients.');
   if(thread.channel==='sms'&&parsed.subject!==undefined)throw new AppError(400,'Text-message drafts do not have an editable subject.');
   if(thread.channel==='sms'&&parsed.body.length>1600)throw new AppError(400,'Keep this text-message draft to 1,600 characters or fewer.');
   const account=getCommunicationAccount(actor,thread.accountId),existing=activeDraft(actor,id),timestamp=now();
   const cc=authorship==='copilot'?[]:parsed.cc??existing?.cc??[];
+  const documents=authorship==='copilot'?[]:parsed.documents??existing?.documents??[];
+  if(documents.length){requireCommunicationCapability(account,'localTextAttachments');reviewCommunicationDocuments(actor,documents);}
   if(cc.some(p=>[account.address.toLowerCase(),thread.correspondent.address.toLowerCase()].includes(p.address)))throw new AppError(400,'CC must not duplicate the sender or primary recipient.');
-  const draft:CommunicationDraft={cc,authorship,id:existing?.id??newId('inbox_draft'),threadId:id,accountId:account.id,from:{name:actor.name,address:account.address},to:thread.correspondent,subject:thread.channel==='sms'?thread.subject:parsed.subject??existing?.subject??`Re: ${thread.subject}`,body:parsed.body,status:'draft',createdAt:existing?.createdAt??timestamp,updatedAt:timestamp,version:(existing?.version??0)+1,deliveryStatus:'not_sent',synthetic:true};
+  const draft:CommunicationDraft={documents,cc,authorship,id:existing?.id??newId('inbox_draft'),threadId:id,accountId:account.id,from:{name:actor.name,address:account.address},to:thread.correspondent,subject:thread.channel==='sms'?thread.subject:parsed.subject??existing?.subject??`Re: ${thread.subject}`,body:parsed.body,status:'draft',createdAt:existing?.createdAt??timestamp,updatedAt:timestamp,version:(existing?.version??0)+1,deliveryStatus:'not_sent',synthetic:true};
   saveDraftRecord(actor,draft);return thread;
  });
 }

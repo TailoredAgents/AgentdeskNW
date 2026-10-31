@@ -1,5 +1,18 @@
 # AgentDesk progress log
 
+## October 31, 2026 — Reviewed local text attachments accepted locally
+
+**Scope:** extends `5785b6f`; no schema/dependency changes. Opening/reply email drafts can select up to three owned current text-document references. Exact review resolves immutable filename, size, digest and contents with all recipients. A confirmed simulation creates one local outgoing record, never a provider operation. Manual correspondence remains unverified employee text, separate from verified Deal packages. SMS rejects files; generated relationship replies clear files/CC. Existing model inbox tools withhold local-document metadata until proper document tools exist.
+
+**Access and recovery:** every save/review/send rechecks document ownership, linked source, current revision and entitlement. Corrections/withdrawals invalidate old reviews; uncertain saves retain exact payload identity. Historical correspondence uses original immutable references with fresh access projection, not copied file contents. Source loss redacts protected metadata; website downloads authenticate the original revision, while native Work → Documents reads its history. Ended subscriptions retain permitted private history but cannot initiate new use.
+
+**Verification:** 886 root tests across 48 files, 51 mobile tests, root/mobile typechecks, lint/build and iOS/Android/production-web/development-web exports passed. All 1,499 HTTP/workflow checks passed, plus twelve metered restart/adapter checks. Thirteen backend cases, three client cases and thirty document HTTP cases add exact file content, private scope, stale sources, read-after-subscription, unknown retries, file-only conflicts, generated/SMS limits and unchanged model authority. The async model-exclusion test was corrected to await the actual result, then all thirteen affected backend cases passed. No provider, payment, model call or live data was used. Previous schema-033 preservation evidence applies; active DB untouched.
+
+**Interface:** desktop saved a selected file and displayed exact content; native browser loaded the same draft. A desktop correction automatically removed the obsolete phone review; the phone required explicit selection of revision 2, guarded file-only edits on navigation, and recorded one newly reviewed simulated result visible on desktop with the original-revision download. Evidence: ignored `artifacts/mobile/attachments-desktop.png`, `attachments-phone-review.png`, `attachments-phone-content.png`. The rehearsal identified ambiguous “attachments unavailable” copy; it now distinguishes mailbox retrieval from saved local files. Final root checks passed after that copy correction. Browser evidence is not physical-device acceptance.
+
+**Remaining:** transaction parties, evidence/milestones and title coordination; binary/PDF ingestion; source-aware document tools and actual provider transfer. C6 live-host/root/quote integration remains open before broader paid autonomy. All three roles and sixteen specialist scopes retain their roadmap depth requirements. No deployment or real-world acceptance claimed.
+
+
 ## October 30, 2026 — Versioned customer tariffs accepted in the simulated ledger
 
 **Scope:** extends `45835a0`; no migration, dependency, UI or provider change. Optional server/operator tariff configuration binds an exact model, default processing tier, policy source and effective interval to a content-derived immutable identity. Customer prices use integer nanodollars per token; provider invoice cost stays separate/unknown. Empty configuration provides no implicit live-model tariff. Invalid/overlapping configuration fails closed without echoing its contents.

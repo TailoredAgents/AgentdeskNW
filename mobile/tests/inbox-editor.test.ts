@@ -34,3 +34,17 @@ test('CC-only edits stay dirty and survive comparison without adopting a newer v
 test('CC identity and authorship remain part of exact send review',()=>{
  const first=detail();first.draft={...first.draft!,authorship:'employee',cc:[{name:'',address:'attorney@example.com'}]};const editor=editorFor(first),review={threadId:'thread-one',threadVersion:1,accountId:'account-one',accountContext:{accessVersion:1},draftId:'draft-one',draftVersion:1,body:'Saved text',subject:'Following up',cc:first.draft.cc,authorship:'employee',expiresAt:'2026-10-30T12:10:00Z'} as InboxSendReview,at=Date.parse('2026-10-30T12:00:00Z');assert.equal(reviewMatches(review,first,editor,at),true);assert.equal(reviewMatches({...review,cc:[]},first,editor,at),false);assert.equal(reviewMatches({...review,authorship:'copilot'},first,editor,at),false);assert.equal(reviewMatches(review,first,{...editor,cc:'changed@example.com'},at),false);assert.equal(reconcileEditor(editor,detail({bodyAccess:'revoked',draft:null})).cc,'');
 });
+
+test('file-only changes stay dirty through incoming edits and exact comparison',()=>{
+ const first=detail(),file={documentId:'document-one',revision:1,reference:'document-one@one'},local={...editorFor(first),documents:[file]};
+ assert.equal(editorDirty(local),true);const updated=detail({thread:{...first.thread,version:2}}),pending=reconcileEditor(local,updated);
+ assert.equal(pending.baseVersion,1);assert.deepEqual(pending.documents,[file]);const compared=keepReviewedEdits(pending,updated);assert.equal(compared.baseVersion,2);assert.deepEqual(compared.documents,[file]);assert.equal(editorDirty(compared),true);
+});
+test('file correction, withdrawal or selection changes invalidate the phone send review',()=>{
+ const first=detail(),file={documentId:'document-one',revision:1,reference:'document-one@one'};
+ first.draft={...first.draft!,documents:[file],documentFiles:[{id:'file-one',name:'fictional.txt',mimeType:'text/plain',sizeBytes:10,availability:'local_text',current:true,document:file}]};
+ const editor=editorFor(first),review={threadId:'thread-one',threadVersion:1,accountId:'account-one',accountContext:{accessVersion:1},draftId:'draft-one',draftVersion:1,body:'Saved text',subject:'Following up',documents:[file],expiresAt:'2026-10-30T12:10:00Z'} as InboxSendReview,at=Date.parse('2026-10-30T12:00:00Z');
+ assert.equal(reviewMatches(review,first,editor,at),true);assert.equal(reviewMatches({...review,documents:[]},first,editor,at),false);assert.equal(reviewMatches(review,first,{...editor,documents:[]},at),false);
+ const stale={...first,draft:{...first.draft,documentFiles:[{...first.draft.documentFiles![0],current:false}]}};
+ assert.equal(reviewMatches(review,stale,editor,at),false);assert.deepEqual(reconcileEditor(editor,detail({bodyAccess:'revoked',draft:null})).documents,[]);
+});

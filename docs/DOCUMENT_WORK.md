@@ -1,6 +1,6 @@
 # Source documents and transaction work
 
-This is the domain contract for the C3/C4 document extension. [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) remains the only scheduling/status authority. **Private text-document foundation accepted locally, October 30, 2026.** Real provider retrieval, actual delivery and company-approved title/payment procedures remain deferred.
+This is the domain contract for the C3/C4 document extension. [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) remains the only scheduling/status authority. **Private text-document foundation and reviewed local-text correspondence accepted locally, October 31, 2026.** Real provider retrieval, actual delivery and company-approved title/payment procedures remain deferred.
 
 ## Usable document foundation
 
@@ -14,7 +14,7 @@ UI edits preserve their original base version. An unknown save outcome may only 
 
 ## Correspondence and transaction extension
 
-After the document foundation passes, connect exact document references to reviewed correspondence and transaction records. A title-coordination package needs known parties, financing type, closing date, a sourced agreement and a sourced deposit record. A missing item remains missing. Alex's stated reservation/stop-marketing sequence is provisional discovery, not verified company policy. Document presence alone never proves signatures, receipt of money, lien clearance or closing.
+Exact document references now support reviewed email simulation, as specified in [COMMUNICATIONS_WORKFLOW](COMMUNICATIONS_WORKFLOW.md). Employees explicitly select current revisions and inspect exact contents; source changes invalidate review, and history retains the original permitted revision. Transaction records remain the next independent extension. A title-coordination package needs known parties, financing type, closing date, a sourced agreement and a sourced deposit record. A missing item remains missing. Alex's stated reservation/stop-marketing sequence is provisional discovery, not verified company policy. Document presence alone never proves signatures, receipt of money, lien clearance or closing.
 
 Track employee-reported milestones separately from external confirmation; retain who reported each fact, when and its supporting revision. Changes to parties, dates, evidence or release eligibility invalidate prepared packages. Draft preparation may identify gaps and assemble a reviewable package; it cannot invent attorney/lender contacts, wire instructions, signed agreements or payment outcomes. All local sends and transaction outcomes remain clearly simulated until separately authorized connections exist.
 
@@ -27,7 +27,7 @@ Track employee-reported milestones separately from external confirmation; retain
 - Desktop/mobile content continuity, readable source labels, guarded navigation and explicit missing-file behavior.
 - Full regression, isolated HTTP checks, migration-copy preservation and updated roadmap evidence before claiming acceptance.
 
-Binary/PDF ingestion, extraction provenance, mailbox attachment retrieval, document sharing/transfer, natural-language document tools and transaction packages are separate unfinished requirements. This text-content foundation must not be presented as all document handling completed.
+Binary/PDF ingestion, extraction provenance, mailbox attachment retrieval, real document sharing/transfer, natural-language document tools and transaction packages are separate unfinished requirements. This text-content foundation must not be presented as all document handling completed.
 
 
 ## Verified foundation and boundaries
