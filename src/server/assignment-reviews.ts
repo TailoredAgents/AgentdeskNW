@@ -1,7 +1,7 @@
 import {assignmentActivity} from './assignment-activity';
 import {textPauseState} from './text-pause';
 import {z} from 'zod';
-import {localAssignmentHasPendingWork} from './local-assignment-work';
+import {localAssignmentHasPendingWork,cancelIncludedResearch} from './local-assignment-work';
 import type {Actor,Artifact} from '../lib/contracts';
 import type {AssignmentReview,AssignmentReviewDecision,AssignmentCancellation} from '../lib/assignment-review-contracts';
 import {AppError,assertActor,getDb,newId,now} from './db';
@@ -147,7 +147,7 @@ export function cancelAssignmentReview(actor:Actor,reviewId:string,raw:Assignmen
   if(prior){if(prior.payload_hash!==digest)throw new AppError(409,'This command already represents a different cancellation.');return projection(actor,row);}
   if(input.quoteId!==row.quote_id||input.revision!==row.revision||assignment.revision!==row.revision||assignment.budget.quoteId!==row.quote_id)throw new AppError(409,'This assignment scope changed. Select its current review before canceling.');
   finishMeteredAssignment(actor,row.assignment_id,'canceled');
-  cancelIncludedAssignmentWork(actor,row.assignment_id);
+  cancelIncludedAssignmentWork(actor,row.assignment_id);cancelIncludedResearch(actor,row.assignment_id);
   getDb().prepare('INSERT INTO assignment_cancellations VALUES(?,?,?,?,?,?,?)').run(...owner(actor),input.eventKey,row.id,digest,now());
   return projection(actor,row);
  }).immediate();

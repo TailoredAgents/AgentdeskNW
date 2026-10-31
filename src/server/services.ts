@@ -1,3 +1,5 @@
+import {textProviderConfig} from './provider-config';
+import {researchAssignmentParent,bindIncludedResearch,includedResearchAdmission,assertIncludedResearchRetry,finishIncludedResearch} from './local-assignment-work';
 import {buildBuyerShortlist} from './buyer-shortlist';
 import {bindAssignment,withAssignment} from './assignment-roots';
 import {proactiveOwnsTopic} from './proactive-policy';
@@ -142,10 +144,12 @@ export function createResearchJob(actor:Actor,input:ResearchInput):ResearchJob {
  const active=listJobs(actor).filter(job=>job.ownerId===actor.id&&(job.status==='queued'||job.status==='running'));
  if(active.length>=5)throw new AppError(429,'Finish or cancel an active research job before starting another.');
  const provider=parsed.provider??syntheticResearchProvider.id;
+ const assignmentParent=researchAssignmentParent(actor);
+ if((assignmentParent||textProviderConfig().spendingMode==='admitted_demo')&&provider!==syntheticResearchProvider.id)throw new AppError(409,'Paid external research needs a shared approved allocation. This assignment currently supports fictional local research only.');
  const external=provider===externalResearchProviderId?prepareExternalResearch(parsed):undefined;
  const missing=!parsed.county||!parsed.price||!parsed.strategy;
  const job:ResearchJob={id:newId('research'),input:parsed,status:missing?'awaiting_input':'queued',progress:0,stage:missing?'Add county, price and investment strategy to continue.':external?'Waiting for bounded external research':'Waiting for the local research worker',provider,prospects:[],error:null,createdAt:now(),updatedAt:now(),ownerId:actor.id,attempt:0,...(external?{external}:{})};
- return getDb().transaction(()=>{if(!missing)reserveUsage(actor,{category:'research_credits',operationId:job.id,quantity:researchCredits(actor,parsed.limit),source:external?'External research target reservation':'Synthetic research target reservation'});insertRecord(actor,'research_jobs',job);bindAssignment(actor,{kind:'research',id:job.id}); audit(actor,'research.queued',job.id,{provider:job.provider,target:parsed.limit,maxEstimatedCostCents:external?.maxCostCents??null});return job;}).immediate();
+ return getDb().transaction(()=>{if(!missing)reserveUsage(actor,{category:'research_credits',operationId:job.id,quantity:researchCredits(actor,parsed.limit),source:external?'External research target reservation':'Synthetic research target reservation'});insertRecord(actor,'research_jobs',job);bindAssignment(actor,{kind:'research',id:job.id});if(assignmentParent)bindIncludedResearch(actor,job,assignmentParent); audit(actor,'research.queued',job.id,{provider:job.provider,target:parsed.limit,maxEstimatedCostCents:external?.maxCostCents??null});return job;}).immediate();
 }
 export function getResearchJob(actor:Actor,id:string) { return refreshDuplicateStatus(actor,scopedGet<ResearchJob>(actor,'research_jobs',idSchema.parse(id))); }
 export function cancelJob(actor:Actor,id:string):ResearchJob {
@@ -155,13 +159,14 @@ export function cancelJob(actor:Actor,id:string):ResearchJob {
  return getDb().transaction(()=>{
   const value=updateRecord(actor,'research_jobs',{...job,status:'canceled' as const,stage:job.external?'Canceled by employee; in-flight provider usage will still be reconciled':'Canceled by employee',updatedAt:now()});
   getDb().prepare('UPDATE research_jobs SET worker_token=NULL,lease_until=NULL WHERE id=? AND organization_id=? AND office_id=?').run(id,actor.organizationId,actor.officeId);
-  releaseUsage(actorForMember(actor.organizationId,actor.officeId,job.ownerId),'research_credits',id);audit(actor,'research.canceled',id);return value;
+  releaseUsage(actorForMember(actor.organizationId,actor.officeId,job.ownerId),'research_credits',id);audit(actor,'research.canceled',id);finishIncludedResearch(actorForMember(actor.organizationId,actor.officeId,job.ownerId),id);return value;
  }).immediate();
 }
 export function retryJob(actor:Actor,id:string,input?:ResearchInput):ResearchJob {
  requireRole(actor,researchRoles);requireFeature(actor,'investor-hunter'); const job=getResearchJob(actor,id);
  if(!['failed','canceled','awaiting_input'].includes(job.status))throw new AppError(409,'Only failed, canceled or awaiting-input jobs can be retried.');
  const parsed=input?researchInputSchema.parse(input):job.input;
+ assertIncludedResearchRetry(actorForMember(actor.organizationId,actor.officeId,job.ownerId),{...job,input:parsed});
  if(!parsed.county||!parsed.price||!parsed.strategy)throw new AppError(422,'Provide county, price and strategy before resuming research.');
  const external=job.provider===externalResearchProviderId;
  if((parsed.provider??syntheticResearchProvider.id)!==job.provider)throw new AppError(409,'A retry cannot switch research providers. Start a separately scoped job.');
@@ -197,6 +202,9 @@ export function processQueuedJobs(actor?:Actor):number {
    if(!claim.changes)return;
    const job=getResearchJob(owner,row.id);
    try{
+    const admission=includedResearchAdmission(owner,job);
+    if(admission==='wait'||admission==='unresolved'){getDb().prepare('UPDATE research_jobs SET lease_until=NULL,next_attempt_at=? WHERE id=?').run(new Date(Date.now()+1000).toISOString(),job.id);return;}
+    if(admission==='stopped'){cancelJob(owner,job.id);return;}
     requireRole(owner,researchRoles);requireFeature(owner,'investor-hunter');reserveUsage(owner,{category:'research_credits',operationId:job.id,quantity:researchCredits(owner,job.input.limit),source:'Synthetic research target reservation'});
     let next:ResearchJob;
     if(job.status==='queued')next={...job,status:'running',progress:20,stage:'Analyzing supplied property criteria · synthetic dataset',attempt:job.attempt+1,updatedAt:now()};
@@ -207,7 +215,7 @@ export function processQueuedJobs(actor?:Actor):number {
      next={...job,status:'completed',progress:100,stage:`Completed: ${prospects.length} synthetic candidates (${prospects.filter(item=>item.duplicateStatus==='net_new').length} eligible as new after privacy-preserving CRM duplicate checks). Dataset contains 12 candidates.`,prospects,updatedAt:now()};
      settleUsage(owner,'research_credits',job.id);recordMeter(owner,{category:'research_jobs',operationId:job.id,quantity:1,source:'Completed synthetic research; provider cost unknown'});recordUsage(owner,'research_jobs',1);audit(owner,'research.completed',job.id,{count:prospects.length,synthetic:true});
     }
-    updateRecord(owner,'research_jobs',next);
+    updateRecord(owner,'research_jobs',next);finishIncludedResearch(owner,job.id);
     getDb().prepare('UPDATE research_jobs SET lease_until=NULL,next_attempt_at=? WHERE id=?').run(new Date(Date.now()+1000).toISOString(),job.id);
     processed++;
    }catch(error){

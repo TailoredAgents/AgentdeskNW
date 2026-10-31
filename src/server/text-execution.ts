@@ -37,7 +37,7 @@ export function openTextExecution(actor:Actor,input:{requestId:string;conversati
  }).immediate();
 }
 export const readTextExecution=read;
-const transitions:Record<TextPhase,TextPhase[]>={ready:['ready','dispatching','completed','failed'],dispatching:['received','failed','unknown'],received:['received','ready','completed','failed'],completed:[],failed:[],unknown:[]};
+const transitions:Record<TextPhase,TextPhase[]>={ready:['ready','dispatching','completed','failed'],dispatching:['received','failed','unknown'],received:['received','ready','completed','failed'],completed:[],failed:[],unknown:['failed']};
 /** Compare-and-swap inside the same transaction as the corresponding allowance/receipt/tool writes.
  * A dispatch claim has no automatic lease expiry: an uncertain provider call must not be repeated.
  */

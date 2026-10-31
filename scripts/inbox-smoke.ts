@@ -1,3 +1,4 @@
+import type {StandingPermissionState,StandingPermission} from '../src/lib/standing-permission-contracts';
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import type {Bootstrap} from '../src/lib/contracts';
@@ -48,6 +49,17 @@ check(mike.messages.every(message=>message.synthetic&&message.sourceRef&&message
 check(mike.messages.every(message=>message.attachments.every(attachment=>attachment.availability==='metadata_only')),'Attachment metadata never claims that a file was downloaded');
 check(mike.investorContext?.commitments.some(task=>task.investorId==='investor-mike'),'The inbox context preserves an existing investor follow-up');
 assert.equal((await detail(mikeId)).thread.unread,mike.thread.unread);
+
+const routine=await request<StandingPermissionState>(`inbox/${mikeId}/routine-permissions`);
+check(!!routine.preview&&routine.permissions.length===0,'Employee can review the exact bounded routine permission');
+const grant={...routine.preview!,eventKey:eventKey('routine')};
+const permission=await request<StandingPermission>(`inbox/${mikeId}/routine-permissions`,'POST',grant);
+check(permission.state==='active'&&permission.budgetCents===0,'Reviewed routine creates a zero-cost scoped permission');
+assert.equal((await request<StandingPermission>(`inbox/${mikeId}/routine-permissions`,'POST',grant)).id,permission.id);
+await request(`inbox/${mikeId}/routine-permissions`,'POST',{...grant,eventKey:eventKey('authority'),sendAutomatically:true},400);
+await request(`inbox/${davidThread.id}/revoke-permission`,'POST',{permissionId:permission.id,expectedVersion:permission.version,eventKey:eventKey('wrong-thread')},404);
+const revoked=await request<StandingPermission>(`inbox/${mikeId}/revoke-permission`,'POST',{permissionId:permission.id,expectedVersion:permission.version,eventKey:eventKey('revoke')});
+check(revoked.state==='revoked','The employee can revoke future routine work from the same Inbox');
 
 const emailOnly=await inbox('?filter=email');
 check(emailOnly.threads.length>0&&emailOnly.threads.every(thread=>thread.channel==='email'),'Email filter excludes investor texts');

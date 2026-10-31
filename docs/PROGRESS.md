@@ -1,5 +1,17 @@
 # AgentDesk progress log
 
+## October 31, 2026 — Phase 4 application simulation, recurring follow-ups and receipt recovery
+
+**Implemented:** direct/nested synthetic research now keeps its admitted parent assignment open, waits for saved reasoning and parent controls, retains its original input, and stops with the assignment. It remains an included local computation with no extra AI charge. Scoped recurring Inbox permissions let the employee authorize future replies to create personal tasks under a fixed title, due delay, frequency/count limit, expiry and zero AI budget. Desktop and native share grant/revoke services; worker receipts and tasks are atomic, scoped and duplicate-safe. Source/entitlement changes retire permission rather than restoring old authority later.
+
+**Recovery:** a trusted offline tool previews or applies verified late usage against the original stopped text request and cap. It preserves request/response identity, immutable settlement and unknown holds, cancels included children and never resumes model output or tools. Continuous Realtime voice and external paid research fail before dispatch in admitted mode; dictation continues through the shared typed conversation. This is a completed implementation pass for supported simulation, not all paid-host integration. C6 retains bounded paid research/delegated providers/live voice as unfinished engineering, not merely account setup.
+
+**Verification:** 1,412 backend tests across 75 files; 84 mobile tests; 22 isolated application smoke suites, including new HTTP permission grant/retry/scope/revoke checks. Dedicated admitted-text 45 and local-delegation 59 checks passed. Root/mobile type checks, lint, production build, iOS/Android exports and development-web export passed. A disposable version-48 database upgraded through 50 with all previous rows unchanged and clean integrity/foreign-key checks. Reconciliation includes a real-process preview-rollback/apply test. No active database or live provider was used.
+
+**Interface:** granted a fictional permission on desktop, opened that same conversation on the paired native browser preview and revoked it there. The 390×844 layout had no horizontal overflow or application errors. Evidence: ignored `artifacts/mobile/phase4-routine-permission.png`. This is not physical-phone acceptance. A React lint failure in initial retry-state rendering and a generated-column update in the initial cancellation test were fixed before the final checks.
+
+**Publication:** this batch is prepared as a separate Phase 4 commit/push, preceding Phase 5 preparation. No Render deployment, provider activation, real messages, company ingestion or payment occurred.
+
 ## October 31, 2026 — Phase 4 mixed-host simulation and spending visibility checkpoint
 
 **Status:** Phase 4 is in progress. This checkpoint continues `d3f4704` with a durable simulated adapter contract and shared employee accounting detail. It does **not** integrate all normal application research/delegated/voice execution into the metered root. The roadmap explicitly retains that work, scoped standing authority and unresolved-usage host recovery. No live provider, payment, company-data or deployment switch changed; existing standalone sample charges and included-local exemptions remain unchanged.

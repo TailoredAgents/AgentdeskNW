@@ -4,8 +4,8 @@ import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 import {closeDb,demoActor,getDb} from '../src/server/db';
 import {chat} from '../src/server/orchestrator';
-import {getConversation,processQueuedJobs,listTasks} from '../src/server/services';
-import {listAssignmentReviews,decideAssignmentReview} from '../src/server/assignment-reviews';
+import {getConversation,processQueuedJobs,listTasks,listJobs,cancelJob,retryJob} from '../src/server/services';
+import {listAssignmentReviews,decideAssignmentReview,cancelAssignmentReview} from '../src/server/assignment-reviews';
 import {processApprovedTextRequests} from '../src/server/text-worker';
 import {getMeteredAssignment,finishMeteredAssignment} from '../src/server/metered-work';
 import {getAssignmentBinding,withAssignment} from '../src/server/assignment-roots';
@@ -103,5 +103,31 @@ describe('included local jobs retain their admitted parent assignment',()=>{
  });
  it('retains private ownership and rejects reparenting or binding changes',async()=>{
   transport();await start();approve();await processApprovedTextRequests(actor());const job=listWorkRuns(actor())[0];expect(()=>getWorkRun(demoActor('manager'),job.id)).toThrow('not found');expect(isIncludedLocalWork(demoActor('manager'),job.id)).toBe(false);expect(()=>getDb().prepare('UPDATE local_assignment_work SET parent_request_id=? WHERE run_id=?').run('another',job.id)).toThrow('original spending');const other=createWorkRun(actor(),{requestId:key(),title:'Other assignment',instructions:'Read local facts',steps:[steps[0]]});expect(()=>withAssignment(actor(),{kind:'work',id:other.id},()=>createWorkRun(actor(),{requestId:(getDb().prepare('SELECT request_id FROM work_runs WHERE id=?').get(job.id) as {request_id:string}).request_id,title:job.title,instructions:job.instructions,steps}))).toThrow();
+ });
+});
+
+
+describe('direct synthetic research shares admitted assignment lifecycle',()=>{
+ const researchCall=()=>({type:'function_call',name:'research_investors',call_id:'direct-research',status:'completed',arguments:JSON.stringify({address:'123 Example Street',county:'Cobb',price:150000,strategy:'flip',limit:2,propertyType:null,provider:'synthetic-fixtures-v1',maxCostCents:null})});
+ function direct(last:()=>Promise<Response>|Response=final){let round=0;const mock=vi.fn(async(url:unknown)=>String(url).endsWith('/input_tokens')?new Response(JSON.stringify({object:'response.input_tokens',input_tokens:40})):++round===1?output([researchCall()]):last());vi.stubGlobal('fetch',mock);return mock;}
+ function ticks(){for(let i=0;i<5;i++){getDb().prepare('UPDATE research_jobs SET next_attempt_at=NULL').run();processQueuedJobs(actor());}}
+ it('keeps the assignment open until actual fictional research results are saved, without another AI charge',async()=>{
+  const fetcher=direct();await start('Research fictional additional investors for this property.');expect(listJobs(actor())).toHaveLength(0);approve();await processApprovedTextRequests(actor());
+  expect(listJobs(actor())).toHaveLength(1);expect(budget()).toMatchObject({status:'active',budget:{spentCents:6,reservedCents:0}});ticks();
+  expect(listJobs(actor())[0]).toMatchObject({status:'completed',progress:100});expect(listJobs(actor())[0].prospects).toHaveLength(2);expect(budget()).toMatchObject({status:'completed',budget:{spentCents:6}});ticks();expect(fetcher).toHaveBeenCalledTimes(4);
+ });
+ it('does not run research while parent reasoning is still in flight',async()=>{
+  let finish!:(response:Response)=>void;direct(()=>new Promise(resolve=>{finish=resolve;}));await start();approve();const running=processApprovedTextRequests(actor());for(let i=0;i<30&&!finish;i++)await new Promise(resolve=>setTimeout(resolve,1));
+  const job=listJobs(actor())[0];ticks();expect(listJobs(actor())[0]).toMatchObject({id:job.id,status:'queued',attempt:0});finish(final());await running;ticks();expect(listJobs(actor())[0].status).toBe('completed');
+ });
+ it('cancels direct research from the shared root and prevents resurrecting it',async()=>{
+  direct();await start();approve();await processApprovedTextRequests(actor());const job=listJobs(actor())[0],review=listAssignmentReviews(actor())[0];
+  cancelAssignmentReview(actor(),review.id,{quoteId:review.quoteId,revision:review.revision,eventKey:key()});ticks();expect(listJobs(actor())[0].status).toBe('canceled');expect(budget().status).toBe('canceled');expect(()=>retryJob(actor(),job.id)).toThrow('original active assignment');
+ });
+ it('preserves the same root and results across restart and closes after an employee child cancellation',async()=>{
+  directory=mkdtempSync(join(tmpdir(),'agentdesk-direct-research-'));vi.stubEnv('AGENTDESK_DB_PATH',join(directory,'test.sqlite'));direct();await start();approve();await processApprovedTextRequests(actor());const job=listJobs(actor())[0],binding=getAssignmentBinding(actor(),{kind:'research',id:job.id});closeDb();expect(getAssignmentBinding(actor(),{kind:'research',id:job.id})).toEqual(binding);cancelJob(actor(),job.id);expect(budget().status).toBe('canceled');expect(budget().budget.spentCents).toBe(6);
+ });
+ it('rejects rewriting the original research request during a retry',async()=>{
+  direct();await start();approve();await processApprovedTextRequests(actor());const job=listJobs(actor())[0];getDb().prepare("UPDATE research_jobs SET data=json_set(data,'$.status','failed') WHERE id=?").run(job.id);expect(()=>retryJob(actor(),job.id,{...job.input,county:'Different county'})).toThrow('original assignment and input');expect(retryJob(actor(),job.id).status).toBe('queued');ticks();expect(budget().status).toBe('completed');
  });
 });

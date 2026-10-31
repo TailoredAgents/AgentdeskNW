@@ -1,3 +1,4 @@
+import {textProviderConfig} from './provider-config';
 import { createHash } from 'node:crypto';
 import WebSocket from 'ws';
 import { z } from 'zod';
@@ -66,6 +67,7 @@ function modelConfig() {
 }
 
 export async function createVoiceSession(actor:Actor,conversationId?:string) {
+  if(textProviderConfig().spendingMode==='admitted_demo')throw new service.AppError(409,'Use dictation in your shared Agent conversation for cost-reviewed work. Continuous live voice has no admitted whole-assignment bound yet.');
   requireFeature(actor,'core');
   if(!process.env.OPENAI_API_KEY)throw new service.AppError(503,'Live voice needs a server-side OpenAI API key. Configure OPENAI_API_KEY and restart the app.');
   const config=modelConfig();

@@ -1,3 +1,4 @@
+import {processStandingPermissions} from '../src/server/standing-permissions';
 import {processProactiveDelivery} from '../src/server/proactive-delivery';
 import {processApprovedTextRequests} from '../src/server/text-worker';
 import {processProactiveUpdates} from '../src/server/proactive';
@@ -11,7 +12,7 @@ import { processExternalResearchJobs } from '../src/server/external-research-wor
 console.info('AgentDesk worker started; pending work and employee messaging are checked every 2 seconds.');
 const socket=startSlackSocket();
 let busy=false,messagingBusy=false,mobileBusy=false,textBusy=false;
-const tick=async()=>{if(busy)return;busy=true;try{processAutoTopUps();processQueuedJobs();processWorkRuns(undefined,5);processAllNotifications();processProactiveUpdates();await processExternalResearchJobs();}catch(error){console.error('worker_tick_failed',error instanceof Error?error.name:'UnknownError');}finally{busy=false;}};
+const tick=async()=>{if(busy)return;busy=true;try{processAutoTopUps();processStandingPermissions();processQueuedJobs();processWorkRuns(undefined,5);processAllNotifications();processProactiveUpdates();await processExternalResearchJobs();}catch(error){console.error('worker_tick_failed',error instanceof Error?error.name:'UnknownError');}finally{busy=false;}};
 // External research can take minutes. It must not block the employee's next message.
 const messagingTick=async()=>{if(messagingBusy)return;messagingBusy=true;try{await processMessaging();}catch{console.error('messaging_tick_failed');}finally{messagingBusy=false;}};
 const mobileTick=async()=>{if(mobileBusy)return;mobileBusy=true;try{await processMobileNotifications();await processProactiveDelivery();}catch{console.error('mobile_notification_tick_failed');}finally{mobileBusy=false;}};
