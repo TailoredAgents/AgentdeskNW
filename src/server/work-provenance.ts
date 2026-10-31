@@ -4,7 +4,7 @@ import {getDb} from './db';
 import {collectHistoryReferences,historyReferencesVisible,type HistoryReferences,type StoredMessage} from './history';
 import {getConversation,listInvestors,listProperties} from './services';
 
-const keys=['documentAccess','transactionTeamAccess','transactionAccess','investors','properties','releases','packages','debriefs','inboxThreads','inboxAccess','handoffAccess','workQuestions','opportunityAccess','analysisAccess','updatesAccess','knowledgeAccess'] as const;
+const keys=['assignmentReviews','documentAccess','transactionTeamAccess','transactionAccess','investors','properties','releases','packages','debriefs','inboxThreads','inboxAccess','handoffAccess','workQuestions','opportunityAccess','analysisAccess','updatesAccess','knowledgeAccess'] as const;
 /** Bind model-authored prose to the authorized context it could have used. Never trust caller-supplied provenance. */
 export function deriveWorkSourceReferences(actor:Actor,conversationId:string,requestId:string):WorkSourceReferences {
  getConversation(actor,conversationId);const db=getDb(),scope=[actor.organizationId,actor.officeId,actor.id];
@@ -21,7 +21,7 @@ export function deriveWorkSourceReferences(actor:Actor,conversationId:string,req
   if(historyReferencesVisible(actor,collectHistoryReferences(actor,structured)))artifacts.push(...structured);
  }
  const references=collectHistoryReferences(actor,artifacts,inherited,{investors:listInvestors(actor),properties:listProperties(actor)});
- const refs:WorkSourceReferences={documentAccess:[],transactionTeamAccess:[],transactionAccess:[],investors:[],properties:[],releases:[],packages:[],debriefs:[],inboxThreads:[],inboxAccess:[],handoffAccess:[],workQuestions:[],opportunityAccess:[],analysisAccess:[],updatesAccess:[],knowledgeAccess:[]};
+ const refs:WorkSourceReferences={assignmentReviews:[],documentAccess:[],transactionTeamAccess:[],transactionAccess:[],investors:[],properties:[],releases:[],packages:[],debriefs:[],inboxThreads:[],inboxAccess:[],handoffAccess:[],workQuestions:[],opportunityAccess:[],analysisAccess:[],updatesAccess:[],knowledgeAccess:[]};
  const seen=new Set<string>();
  const flatten=(value:HistoryReferences)=>{
   for(const key of keys)(refs[key]??=[]).push(...(value[key]??[]));

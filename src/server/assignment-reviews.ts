@@ -45,6 +45,14 @@ function projection(actor:Actor,row:Row):AssignmentReview {
   expiresAt:data.quote.expiresAt,createdAt:row.created_at,state,contentRestricted,canDecide:state==='waiting'&&budget.status==='awaiting_approval',simulation:true};
 }
 export function getAssignmentReview(actor:Actor,reviewId:string){return projection(actor,read(actor,reviewId));}
+/** Current-use history keeps the exact quote and sources. State changes alone do not erase the reviewed scope. */
+export function assignmentReviewReference(review:AssignmentReview){return `${review.id}@${review.quoteId}@${review.revision}`;}
+export function assignmentReviewReferenceCurrent(actor:Actor,reference:string){
+ const [reviewId,quoteId,revision,...extra]=reference.split('@');
+ if(extra.length||!reviewId||!quoteId||!revision)return false;
+ const row=read(actor,reviewId),view=projection(actor,row),assignment=current(actor,row);
+ return row.quote_id===quoteId&&String(row.revision)===revision&&assignment.revision===row.revision&&assignment.budget.quoteId===row.quote_id&&!view.contentRestricted;
+}
 export function listAssignmentReviews(actor:Actor):AssignmentReview[]{
  assertActor(actor);
  const rows=getDb().prepare('SELECT * FROM assignment_reviews WHERE organization_id=? AND office_id=? AND user_id=? ORDER BY created_at DESC,id DESC LIMIT 50').all(...owner(actor)) as Row[];
@@ -66,6 +74,8 @@ export function presentCurrentAssignmentQuote(actor:Actor,input:z.input<typeof p
    hostSources.push({type:'work_run',id:run.id,title:'Original saved work',data:{workPlanVersion:run.planVersion}});
   }
   const data:ReviewData={...parsed,references:collectHistoryReferences(actor,[...hostSources,...sourceArtifacts],inherited),quote:{title:assignment.title,estimatedCents:budget.estimatedCents,maximumCents:budget.maximumCents,expiresAt:budget.expiresAt,calls:Object.fromEntries(assignment.parts.map(p=>[p.key,p.maximumCalls]))}};
+  // A cost review is not a business source for another quote; prevent recursive review provenance.
+  if(data.references.assignmentReviews?.length)throw new AppError(400,'Use the original business sources for a spending review, not another cost review.');
   if(!historyReferencesVisible(actor,data.references))throw new AppError(409,'The review sources are no longer available.');
   const hash=fingerprint({binding:host.id,scope:assignment.scopeHash,data});
   const prior=getDb().prepare('SELECT * FROM assignment_reviews WHERE assignment_id=? AND quote_id=?').get(assignment.id,budget.quoteId) as Row|undefined;

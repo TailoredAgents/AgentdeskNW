@@ -1,3 +1,4 @@
+import {assignmentConversationReference} from './assignment-conversation';
 import {z} from 'zod';
 import type {Actor,ToolResult} from '../lib/contracts';
 import {AppError,getDb} from './db';
@@ -38,7 +39,7 @@ export function textSpendingWait(actor:Actor,execution:TextExecution):ToolResult
  const assignment=currentMeteredAssignment(actor);
  if(assignment.id!==metering.assignmentId||assignment.revision!==metering.revision||assignment.scopeHash!==metering.scopeHash)throw new AppError(409,'The whole-assignment quote changed. Review the saved scope before continuing.');
  const review=getAssignmentReview(actor,metering.reviewId);
- if(assignment.budget.status==='awaiting_approval')return {message:`This Copilot request needs your spending decision before AI generation. Estimated reasoning credits: $${(review.estimatedCents/100).toFixed(2)}; maximum: $${(review.maximumCents/100).toFixed(2)}. Open Work → Copilot jobs to approve or deny. This is a simulated customer-credit charge; the original request is saved.`,specialistIds:[],artifacts:[{type:'work_run',title:'Review saved assignment spending'}]};
+ if(assignment.budget.status==='awaiting_approval')return {message:`This Copilot request needs your spending decision before AI generation. Estimated reasoning credits: $${(review.estimatedCents/100).toFixed(2)}; maximum: $${(review.maximumCents/100).toFixed(2)}. Say “Review spending ${assignmentConversationReference(review.id)}” or open Work → Copilot jobs to approve or deny. This is a simulated customer-credit charge; the original request is saved.`,specialistIds:[],artifacts:[{type:'work_run',title:'Review saved assignment spending'}]};
  if(!['approved','reserved'].includes(assignment.budget.status)||['obsolete','closed'].includes(review.state))throw new AppError(409,'The current assignment quote is not available for execution. Review its saved decision and expiry.');
  return null;
 }

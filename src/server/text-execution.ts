@@ -1,3 +1,4 @@
+import type {TextReplyTarget} from './text-delivery';
 import type {Actor,Artifact,ToolResult} from '../lib/contracts';
 import {AppError,getDb,now} from './db';
 import {currentAssignment} from './assignment-roots';
@@ -9,7 +10,7 @@ export interface TextState {
  config:ReturnType<typeof textProviderConfig>;prefix:Record<string,unknown>[];items:Record<string,unknown>[];
  round:number;toolCount:number;handled:string[];artifacts:Artifact[];specialistIds:string[];
  response:Record<string,unknown>|null;result:ToolResult|null;
- request?:{message:string;instructions:string;channel:'web'|'mobile'|'sms'|'slack';receivedAt?:string};
+ request?:{message:string;instructions:string;channel:'web'|'mobile'|'sms'|'slack';receivedAt?:string;replyTarget?:TextReplyTarget};
  metering?:{assignmentId:string;revision:number;scopeHash:string;partKey:string;reviewId:string;continuationToken?:string;inputCount?:number};
 }
 export interface TextExecution {requestId:string;conversationId:string;bindingId:string;identityHash:string;version:number;phase:TextPhase;scopeHash:string;data:TextState}

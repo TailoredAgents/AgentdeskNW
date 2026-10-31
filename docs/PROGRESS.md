@@ -1,5 +1,20 @@
 # AgentDesk progress log
 
+## October 31, 2026 — Conversation spending reviews and original-channel completion
+
+**Scope:** extends `977cc54` with migration 041. Authenticated employees can list owned S spending references and review complete allocation labels/call bounds, estimate, maximum, spent/held credits and expiry. An immutable R code binds exact scope, employee and conversation; complete approve/deny commands execute before model reasoning. Vague yes, quoted/hypothetical instructions and wrong employee/conversation never grant authority. Existing W/A sample-job controls remain separate. No model decision tool, provider activation or real payment was added.
+
+**Messaging:** only complete reviews that fit SMS/Slack receive an approval code; larger reviews open the full app scope. A messaging-issued code requires a prior accepted/delivered review receipt, with inbound timing checked. The admitted text execution captures its original authenticated link/account/address. Saved result publication, original-turn reply update and one deduplicated outbox record commit together. STOP/disconnect, lost entitlement, changed destination/owner/thread prevent sending and never reroute the result. Unknown deliveries remain unresolved; completed publication recovery cannot call the model or queue the reply twice. App/desktop can still read the saved result.
+
+**Provenance:** exact review references protect saved conversation, model context and derived work. Quote replacement or source withdrawal invalidates current use. Cost reviews cannot substitute for original business sources in new quote publication; circular validation fails closed. The full regression run caught a new optional reference key missing from saved-work validation. That contract was extended consistently, and a regression proves derived work is withheld after its source quote changes.
+
+**Verification:** 1,097 root tests across 60 files (19 new channel/review cases), 78 mobile tests, root/mobile types, lint and production build passed. All 1,746 existing isolated HTTP/workflow checks passed. The compiled-app harness now passes 30 checks including conversation-based exact approval, restart, original request continuation, one mock charge and replay. Twelve metered restart checks and the separate-process text restart harness also passed. All provider/message transports were mocked; no external messages, real payments or live AI calls occurred. No UI/mobile source or new native export is claimed.
+
+**Preservation:** a disposable schema-040 → 041 copy preserved all 316 rows across 125 prior tables with clean integrity and no foreign-key violations; active development data was untouched. Evidence: ignored `artifacts/mobile/spending-channels-preservation.json`. Concurrent fresh initialization remains covered by the startup test. Documentation links and whitespace checks passed.
+
+**Remaining:** admitted-text mode remains explicit and off by default. Complete root-wide delegated/research/voice charging, scope revisions/renewal, broader pause/cancel/reconciliation controls and remaining C1–C7 work are unfinished. Real-world/device/provider/practitioner testing stays deferred. No deployment or overall completion is claimed.
+
+
 ## October 31, 2026 — Optional admitted-text spending and original-turn continuation
 
 **Scope:** extends `3d2dfc5` without a schema/dependency change. Explicit operator configuration `AGENTDESK_TEXT_SPENDING_MODE=admitted_demo` connects the actual text host to current immutable customer tariffs, a bounded quote/review, input counting, admission and receipt settlement against simulated wallet credits. Above-$1 reasoning waits before generation. The original message, instructions, channel and context are saved; the worker claims an exact approved review and resumes that turn. Default operational mode is unchanged. No environment was enabled and no live provider was called.

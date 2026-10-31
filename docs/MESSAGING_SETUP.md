@@ -95,3 +95,7 @@ Slack's DM round-trip, reminder and reconnect checks remain available when that 
 - [Twilio trial recipient restrictions](https://www.twilio.com/docs/usage/tutorials/how-to-use-your-free-trial-account)
 - [Twilio US A2P 10DLC registration](https://www.twilio.com/docs/messaging/compliance/a2p-10dlc)
 - [OpenAI tools and application-owned function execution](https://developers.openai.com/api/docs/guides/tools)
+
+## Assignment spending through messaging
+
+The optional admitted-text development mode supports “Show my spending”, “Review spending S…” and exact “Approve R…” / “Deny R…” decisions. Complete short reviews can be decided in SMS/Slack after their reply receipt; long reviews open the full app scope without an approval code. These are separate from W/A fictional job reviews. The resumed original request produces one reply to its captured connection and one saved conversation result. Changed destination, STOP/disconnect and lost access prevent that send; uncertain delivery is not retried automatically. This flow is accepted with mocked provider transports only. No live connection is enabled by these commands. See [usage metering](USAGE_METERING.md).

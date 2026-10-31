@@ -23,15 +23,20 @@ try{
  check(result.result.message.includes('needs your spending decision'),'The actual HTTP chat pauses for the quote');
  const review=(await request<{reviews:AssignmentReview[]}>('/assignment-reviews')).reviews[0];check(review.canDecide&&review.maximumCents===205,'The complete bounded text maximum is shown');check(readFileSync(log,'utf8')==='','No provider request precedes the required approval');
  await stop(app);await start();check((await request<AssignmentReview>('/assignment-reviews/'+review.id)).quoteId===review.quoteId,'The same quote survives a server restart');
- const input={quoteId:review.quoteId,revision:review.revision,decision:'approve',eventKey:'http-cost-decision'};
- check((await request<AssignmentReview>('/assignment-reviews/'+review.id+'/decision',input)).state==='ready','HTTP approval records readiness');
+ const reference=result.result.message.match(/Review spending (S[0-9A-F]{16})/)?.[1];check(reference,'The original request supplies its spending reference');
+ const shown=await request<{result:ToolResult}>('/chat',{conversationId:result.conversation.id,message:`Review spending ${reference}`,requestId:'http-show-spending'});
+ const code=shown.result.message.match(/Approve (R[0-9A-F]{16})/)?.[1];check(code&&shown.result.message.includes('maximum $2.05'),'The complete conversation review includes scope, maximum and an exact decision');
+ check(readFileSync(log,'utf8')==='','Review commands do not call a model');
+ const input={conversationId:result.conversation.id,message:`Approve ${code}`,requestId:'http-approve-spending'};
+ check((await request<{result:ToolResult}>('/chat',input)).result.message.includes('Approved the reviewed scope'),'The employee approves through the shared conversation');
+ check((await request<AssignmentReview>('/assignment-reviews/'+review.id)).state==='ready','Conversation approval records readiness');
  worker=spawn(process.execPath,['--import','./scripts/fixtures/text-provider.mjs','--import','tsx','scripts/worker.ts'],{env,stdio:['ignore','ignore','inherit']});
  let conversation:Conversation|undefined;
  for(let i=0;i<80;i++){conversation=await request<Conversation>('/conversations/'+result.conversation.id);if(conversation.messages.some(m=>m.content==='Your fictional reasoning result is saved after approval.'))break;await new Promise(resolve=>setTimeout(resolve,250));}
- check(conversation?.messages.filter(m=>m.role==='user').length===1,'Continuation keeps the original user request');
+ check(conversation?.messages.filter(m=>m.role==='user'&&m.content==='Explain the fictional context and useful next questions.').length===1,'Continuation keeps the original user request');
  check(conversation?.messages.filter(m=>m.content==='Your fictional reasoning result is saved after approval.').length===1,'The worker publishes one final result');
  const completed=await request<AssignmentReview>('/assignment-reviews/'+review.id);check(completed.spentCents===3&&completed.heldCents===0,'Authoritative usage settles three fictional cents and releases the rest');
- await request('/assignment-reviews/'+review.id+'/decision',input);
+ await request('/chat',input);
  check(readFileSync(log,'utf8')==='count\ngeneration\n','Exactly one input count and one generation used mock transport');
  await stop(worker);worker=undefined;await stop(app);app=undefined;await start();
  check((await request<Conversation>('/conversations/'+result.conversation.id)).messages.filter(m=>m.content==='Your fictional reasoning result is saved after approval.').length===1,'The final result survives another process restart');
