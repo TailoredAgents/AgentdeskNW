@@ -16,13 +16,13 @@ The target is a primary iPhone/Android app and a detailed desktop workspace, wit
 
 ## Current state
 
-**Current local checkpoint: saved questions and job continuation**, verified October 30, 2026, extending shared-handoff checkpoint `218ae0e`. Jobs can ask for a missing property, investor or typed input, accept the employee’s answer through Work or the ongoing conversation, and continue from saved progress. Answers refresh the whole-job estimate and never approve spending. Desktop and native Work share the same answer and retry controls.
+**Current local checkpoint: new wholesaler opportunities**, verified October 30, 2026, extending saved-question checkpoint `2555172`. Acquisitions and managers can record an opportunity before inventory, review possible duplicates, preserve submission revisions, and prepare focused follow-up questions. Desktop, phone, Copilot retrieval and saved-job review use the same scoped records. Earlier shared questions and job controls remain available.
 
-Verification: **637 root tests, 21 mobile tests and 1,112 HTTP/workflow checks**, plus typecheck/lint/build, mobile exports and connected interface walkthroughs. No schema or dependency change was needed. Sixteen registered specialists remain two locally ready, ten demo and four planned. Methods are provisional; employee effectiveness and company-approved expertise are not established.
+Verification: **654 root tests, 23 mobile tests and 1,179 HTTP/workflow checks**, plus typecheck/lint/build, mobile exports and connected interface walkthroughs. Additive migration 026 preserved all 316 prior rows across 91 tables in a disposable schema-025 copy. No dependency change. Sixteen specialists now include two locally ready, eleven demo and three planned; Acquisition Lead has bounded fictional intake capability. Methods are provisional; employee effectiveness and company-approved expertise are not established.
 
 **Mobile is prepared locally, not yet installed or released.** The phone-width browser rehearsal passed pairing, shared history, cross-surface cost approval, pause/resume, background worker completion and remote device revocation. Native binary builds, real phone speech/push and store distribution remain pending. [Mobile preparation notes](mobile/README.md) distinguish each acceptance layer. Whole-job costs remain fictional; live model/provider usage is separately metered.
 
-Implementation follows the single roadmap. C1–C4 remain partial. Next: deepen the role workflows and specialists, then continue the remaining local roadmap. The owner has deferred real-world/device/provider acceptance to a later assessment; independent fictional development continues.
+Implementation follows the single roadmap. C1–C4 remain partial. Next: supported deal calculations and diligence, then further role depth and the remaining local roadmap. The owner has deferred real-world/device/provider acceptance to a later assessment; independent fictional development continues.
 
 Repository: [TailoredAgents/AgentdeskNW](https://github.com/TailoredAgents/AgentdeskNW). The owner reported a Render deployment; the latest deployed revision has not been verified. Push and deployment are separate. Real company data, live mailboxes/investor delivery, actual payments, managed identity and broad expert autonomy remain unfinished.
 
@@ -74,6 +74,7 @@ npm run test:mobile
 npm run test:mobile-inbox
 npm run test:mobile-followthrough
 npm run test:handoffs
+npm run test:opportunities
 npm run test:work-questions
 npm run test:relationship-quality -- --all
 ```

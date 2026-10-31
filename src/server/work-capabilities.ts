@@ -1,3 +1,4 @@
+import {getOpportunity,opportunityReferenceCurrent} from './opportunities';
 import {handoffReferenceCurrent} from './handoffs';
 import {workQuestionSchema} from './work-question-schema';
 import {acquisitionMethod,reviewAcquisition} from './acquisitions';
@@ -23,6 +24,7 @@ const catalog:Record<string,Capability>={
  inspect_property:{name:'Read property facts',description:'Retrieve current authorized fictional property facts.',feature:'core',roles:all,schema:z.object({propertyId:valueId}).strict(),estimatedCents:0,maximumCents:0,effect:'read',output:'propertyId, property'},
  match_existing_buyers:{name:'Prepare existing-buyer shortlist',description:'Match current permitted CRM buy boxes first. Fit does not imply investor interest. Fictional analysis cost.',feature:'buyer-matchmaker',roles:['dispositions','manager'],schema:z.object({propertyId:valueId}).strict(),estimatedCents:40,maximumCents:50,effect:'read',output:'propertyId, property, matches[] (investorId, reasons, conflicts, missing)'},
  relationship_next_step:{name:'Prepare relationship next step',description:'Use sourced relationship history and saved employee preferences. Produces a relationship-only draft; nothing is sent. Fictional analysis cost.',feature:'investor-relationship',roles:['dispositions','manager'],schema:z.object({investorId:valueId}).strict(),estimatedCents:35,maximumCents:50,effect:'read',output:'investorId, recommendation (action, draft, evidence, unknowns)'},
+ review_opportunity:{name:'Review wholesaler opportunity',description:'Read a saved pre-inventory wholesaler submission, revisions, possible duplicates and missing-fact follow-up draft. Deterministic local review; no valuation, publication or delivery.',feature:'acquisition-lead',roles:['acquisitions','manager'],schema:z.object({opportunityId:valueId}).strict(),estimatedCents:0,maximumCents:0,effect:'read',output:'opportunityId, opportunityReview'},
  review_handoff:{name:'Review acquisition handoff',description:'Review recorded property/release facts and missing handoff information. This does not perform valuation or publish a release. Fictional analysis cost.',feature:'acquisition-disposition',roles:['acquisitions','manager'],schema:z.object({propertyId:valueId}).strict(),estimatedCents:50,maximumCents:75,effect:'read',output:'propertyId, property, releases[], missing[]'},
  office_priorities:{name:'Prepare office priorities',description:'Read permitted office workload and identify recorded overdue work. No private mail/chat, assignment changes or verified sales metrics. Fictional analysis cost.',feature:'team-performance',roles:['manager'],schema:z.object({}).strict(),estimatedCents:50,maximumCents:75,effect:'read',output:'overview (summary, tasks, overdue, pendingApprovals, activeJobs)'},
  create_followup:{name:'Save requested follow-up',description:'Create the explicitly requested personal internal task. Does not send, change CRM or assign a teammate.',feature:'daily-coordinator',roles:all,schema:z.object({title:z.union([z.string().trim().min(3).max(240),reference]),investorId:z.union([valueId,z.null()]),dueAt:z.union([z.string().datetime({offset:true}),reference,z.null()])}).strict(),estimatedCents:0,maximumCents:0,effect:'personal_task',output:'taskId, task'},
@@ -81,6 +83,8 @@ export function validateStoredWorkOutput(actor:Actor,step:WorkStepInput,output:T
   if('$step' in value)return;
   for(const [key,item] of Object.entries(value)){
    if(typeof item==='string'){
+    if(key==='opportunityAccessReference'&&!opportunityReferenceCurrent(actor,item))throw new AppError(409,'The opportunity source changed. Prepare a fresh review.');
+    if(key==='opportunityId'||key==='id'&&/^opportunity_/.test(item))getOpportunity(actor,item);
     if(key==='investorId'||key==='matchedInvestorId'||key==='id'&&/^investor[-_]/.test(item))readInvestor(actor,item);
     if(key==='propertyId'||key==='id'&&/^property[-_]/.test(item))readProperty(actor,item);
     if(key==='releaseId'||key==='id'&&/^release_/.test(item))getRelease(actor,item);
@@ -112,6 +116,7 @@ export function executeWorkCapability(actor:Actor,step:WorkStepInput,_priorOutpu
    const matched=matchBuyers(actor,input.propertyId as string);result.data={propertyId:matched.property.id,...matched};result.message=matched.matches.length?`Existing CRM shortlist for ${matched.property.address}:\n${matched.matches.slice(0,12).map(m=>`${m.investor.name}: ${m.reasons.join('; ')||'Review criteria'}${m.conflicts.length?` · Concerns: ${m.conflicts.join('; ')}`:''}`).join('\n')}\nFit is not confirmed interest; review current relationship concerns before outreach.`:'No existing permitted buyers match this property. No new prospects were invented.';break;
   }
   case 'relationship_next_step':{const recommendation=recommendInvestorNextStep(actor,input.investorId as string);result.data={investorId:input.investorId,recommendation};result.message=`${recommendation.action.title}\n${recommendation.action.description}${recommendation.draft?`\n\nRelationship-only draft: ${recommendation.draft}`:''}\n${recommendation.unknowns.length?`Missing: ${recommendation.unknowns.join('; ')}\n`:''}Nothing has been sent.`;break;}
+  case 'review_opportunity':{const review=getOpportunity(actor,input.opportunityId as string);result.data={opportunityId:review.opportunity.id,opportunityReview:review};result.message=`${review.summary}\n${review.followupDraft}\n${review.notice}`;result.artifacts=[{type:'opportunity',id:review.opportunity.id,title:'Review wholesaler opportunity',data:{opportunityAccessReference:review.opportunityAccessReference}}];break;}
   case 'review_handoff':{
    const review=reviewAcquisition(actor,input.propertyId as string),releases=listReleases(actor).filter(r=>r.propertyId===review.property.id);
    result.data={propertyId:review.property.id,property:review.property,releases,missing:review.questions.map(item=>item.reason),acquisitionReview:review};result.message=review.handoffDraft;break;

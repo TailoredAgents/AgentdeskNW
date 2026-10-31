@@ -1,8 +1,8 @@
 # Acquisitions intake and missing-fact review
 
-Updated October 30, 2026. This is the C4 domain contract supporting [the canonical roadmap](IMPLEMENTATION_ROADMAP.md), not another delivery schedule. The first bounded workflow is verified locally with fictional data. Acquisitions practitioner acceptance remains pending.
+Updated October 30, 2026. This is the C4 domain contract supporting [the canonical roadmap](IMPLEMENTATION_ROADMAP.md), not another delivery schedule. Both bounded workflows below are verified locally with fictional data. Acquisitions practitioner acceptance remains pending.
 
-## Current outcome
+## Existing-inventory outcome
 
 An acquisitions employee or authorized manager can record a wholesaler submission for an **existing inventory property**, compare revisions, identify missing evidence and prepare an internal handoff. Desktop **Work queue → Copilot jobs → Opportunity intake** and native **Work → Intake** share the same records. The existing acquisitions Copilot job's `review_handoff` step now uses this review. No new inventory/wholesaler record, external research or provider operation is created.
 
@@ -24,8 +24,27 @@ Questions cover absent source/date/price, a price that conflicts with inventory,
 - The saved work review is bound to its property, release version and method version. Changed sources withhold the obsolete work result and protected conversation replay while preserving its receipt. A fresh review/job is required; this slice does not automatically rebuild a completed plan.
 - Native editors retain their original version during polling, guard unsaved navigation and show stale-review conflicts. Pending writes have explicit exact retry, never automatic retry. Unsaved form/pending UI state is memory-only and does not survive backgrounding; this is not offline editing.
 
+## Pre-inventory wholesaler opportunities
+
+A separate **New wholesaler opportunities** panel under desktop Work queue → Copilot jobs and native Work → New opportunities now records submissions before a property exists in inventory. Acquisition Lead is **demo**, within this boundary. The original existing-property intake/release workflow remains separate.
+
+An opportunity records a supplied address/city/state, optional county/ZIP/type, the same structured wholesaler/source/price/repair/occupancy/comparable submission, an unconfirmed closing target, access information and an internal review note. `reviewing` and `not_pursuing` are employee review states, not deal/contract milestones. Not pursuing requires a reason and may be revised later; history is retained. No separate verified wholesaler-contact directory exists yet.
+
+`opportunities.ts` applies provisional method `wholesaler intake v1 / 2026-10-30.1`. Missing facts become focused questions. Sources over 30 days old and past closing targets prompt reconfirmation; the window is AgentDesk guidance, not company policy. Supplying evidence removes only its corresponding question and never verifies the source. Even a complete submission still needs original-evidence review before supported screening. The service prepares an unsent follow-up draft, without choosing recipients or delivering it.
+
+### Duplicate and revision contract
+
+- Normalize case, whitespace, punctuation and common street suffixes; compare address/city/state against authorized opportunities and address/city against authorized inventory (whose state is unavailable). Preserve unit distinctions. These are **possible matches**, not identity verification or fuzzy/geocoded deduplication. No automatic merge. No private record names, identifiers or counts appear. No match does not establish uniqueness.
+- `POST /api/opportunities/preview` validates input, current version and visible possible matches. Its review reference binds actor/scope, exact input, current saved record, method/questions and duplicate evidence. A duplicate that appears after preview invalidates a later save.
+- `POST /api/opportunities` requires that current reference, expected version and employee-scoped event key. One transaction saves the opportunity, immutable revision event and audit entry. Exact retry returns current authorized state; a changed payload under the old key conflicts. An authorized manager can revise an office record while preserving its employee owner.
+- `GET /api/opportunities` and `GET /api/opportunities/:id` enforce current acquisitions/manager membership and company restrictions. Historical intake remains readable after a subscription ends; new reviews/saves/assistant execution require current feature access. Acquisitions employees see their own intake; managers see office intake. Assignment or source text cannot confer access. Migration 026 adds two tables without changing inventory, releases or prior records.
+- Desktop and native editors retain the original edit version during polling. Reviews cannot silently become a different submission. Unknown save outcomes offer exact retry; native navigation guards unsaved edits. Private UI state remains memory-only and is cleared on backgrounding.
+- Read-only `opportunity_review` provides board/detail context to typed Copilot and configured messaging. The zero-charge deterministic `review_opportunity` durable capability composes with supported work steps. No model intake-write tool is exposed. Source/method/permission fingerprints invalidate old history/tool/work/model/voice context; receipts survive. Existing browser voice does not gain unrestricted tool parity.
+
 ## Acceptance evidence and limits
 
-Ten acquisitions tests cover missing facts, corrected evidence, preserved revisions, exact replay, stale/reused operations, invalid inputs, role/office/owner boundaries, legacy saves, withdrawal, publication conflicts and obsolete work results. The 72-check mobile follow-through HTTP/worker suite covers the same review through phone sessions and desktop/Copilot jobs, with source revisions and no provider/CRM mutation. The connected phone-width walkthrough saved version 1, revised evidence on desktop, disabled the stale phone review, preserved both versions and changed the questions from seven to four. These are engineering checks, not independent quality or valuation benchmarks.
+The original existing-property workflow retains its ten root cases and 72-check mobile follow-through coverage. The new pre-inventory increment adds **17 root cases, two mobile form cases and 67 HTTP/worker checks**. Cases include role/office/owner boundaries, exact retries, conflicting revisions, duplicate races, supplied-versus-verified evidence, stale source dates, employee status changes, strict input, untrusted source text, conversation continuity and obsolete worker/history context. Migration 025 → 026 preserved **316 prior rows across 91 tables**, with clean integrity/foreign keys, in a disposable copy.
 
-The Acquisition-to-Disposition Coordinator gains this bounded depth. The **Acquisition Lead Assistant remains planned**. New opportunity creation, wholesaler relationships/deduplication, attachment ingestion, verified comps, supported screening/calculations, richer follow-up, company-approved methods and representative role acceptance remain required. Actual phones, provider connections and the complete C4 role journey are not accepted by this increment.
+The connected walkthrough saved a submission on desktop, opened it via the same employee’s phone Copilot, protected unsaved edits, saved revised evidence and showed three remaining questions instead of six on both screens. It retained both revisions and the unverified source labels. No provider, inventory, release, investor message or payment effect occurred. These are engineering checks, not independent specialist-quality or financial benchmarks.
+
+Supported economics/valuation, verified comps, attachment ingestion, independent wholesaler relationship records, richer follow-through and reviewed promotion into inventory remain open. Company-approved methods, acquisitions practitioner acceptance and actual phone/provider testing remain deferred. Neither intake workflow completes the full C4 acquisitions journey.

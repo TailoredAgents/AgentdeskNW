@@ -10,7 +10,7 @@ This checkpoint adds a bounded persistent work executor around existing services
 
 The worker performs local deterministic services and fictional research only. It does not run additional reasoning-model calls, contact investors, send mail/SMS, change CRM, purchase credits or connect company systems. The existing live text request remains separately metered; the simulated $1 rule does not yet protect real provider spending. Actual usage admission and optional automatic top-up are C6 requirements, not completed by this foundation.
 
-The catalog still contains 2 locally ready, 10 demo and 4 planned specialists. These workflows demonstrate shared execution and cost authority, not completion of the 16-specialist depth plan or proven expert-level reasoning.
+The catalog still contains 2 locally ready, 11 demo and 3 planned specialists. These workflows demonstrate shared execution and cost authority, not completion of the 16-specialist depth plan or proven expert-level reasoning.
 
 ## Useful starting workflows
 
@@ -38,11 +38,13 @@ Real SMS/Slack, installed-device behavior and model-quality acceptance remain de
 
 ## Capability execution
 
-The server-owned catalog in work-capabilities.ts declares input schemas, output fields, role/feature requirements, effect and fictional rate version. Implemented capabilities are property inspection, existing-buyer matching, relationship next step, acquisition handoff review, office priorities, personal follow-up, synthetic research start and synthetic research result collection. The planner composes up to twelve steps with explicit dependencies; it does not rely on only the three UI presets.
+The server-owned catalog in work-capabilities.ts declares input schemas, output fields, role/feature requirements, effect and fictional rate version. The ten implemented capabilities are typed missing-information questions, pre-inventory opportunity review, property inspection, existing-buyer matching, relationship next step, acquisition handoff review, office priorities, personal follow-up, synthetic research start and synthetic research result collection. The planner composes up to twelve steps with explicit dependencies; it does not rely on only the three UI presets.
 
 Input references may select a field inside a completed dependency's structured result. The server validates reference paths and concrete inputs again at dispatch. Models cannot supply tenant/role overrides, arbitrary code, private credentials, arbitrary tools or prices. Cycles, unknown capabilities, malformed inputs and undeclared/prototype-path references fail validation. Research must follow existing-buyer matching for the same property and include a result-collection step. Changed property facts require refreshing the shortlist before starting research.
 
 A work run contains versioned instructions, plans, steps, states, events and actual outputs. Completed steps and their immutable receipts survive plan revisions; revision cannot remove, change or silently repeat them. The service supports versioned revision of remaining work. The committed UI exposes pause/resume/cancel and exact cost decisions; broader editing remains planned. Bounded conversational control and dispositions-starter corrections are locally verified, as described below; broader C1 acceptance remains open.
+
+The zero-charge deterministic `review_opportunity` capability reads one authorized saved wholesaler opportunity and returns its current source/version, possible duplicates, gaps and unsent follow-up draft. It composes with other permitted steps; it does not create or publish a record. The separate `opportunity_review` Copilot tool reads a board or detail. Opportunity fingerprints protect original model context, saved work results and conversation replay after changes or revoked access. The existing acquisitions preset still targets inventory; this capability is available to composed plans.
 
 ## Persistence, recovery and visibility
 

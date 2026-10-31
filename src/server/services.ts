@@ -114,7 +114,7 @@ export function getConversation(actor:Actor,id:string):Conversation {
 export function listConversations(actor:Actor):Conversation[] {
  return scopedRows<Conversation>(actor,'conversations',true).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt)).slice(0,50).map(item=>getConversation(actor,item.id));
 }
-const messageSchema=z.object({role:z.enum(['user','assistant']),content:z.string().trim().min(1).max(50000),specialistIds:z.array(z.string().max(100)).max(16).optional(),artifacts:z.array(z.object({type:z.enum(['handoff','work_run','job','approval','notes','task','investors','guidance','package','debrief','release','calling_queue','briefing','marketplace','inbox']),id:z.string().max(150).optional(),title:z.string().max(300),data:z.unknown().optional()})).max(20).optional()}).strict();
+const messageSchema=z.object({role:z.enum(['user','assistant']),content:z.string().trim().min(1).max(50000),specialistIds:z.array(z.string().max(100)).max(16).optional(),artifacts:z.array(z.object({type:z.enum(['opportunity','handoff','work_run','job','approval','notes','task','investors','guidance','package','debrief','release','calling_queue','briefing','marketplace','inbox']),id:z.string().max(150).optional(),title:z.string().max(300),data:z.unknown().optional()})).max(20).optional()}).strict();
 export function addMessage(actor:Actor,conversationId:string,input:{role:'user'|'assistant';content:string;specialistIds?:string[];artifacts?:Artifact[]},context?:{investors:{id:string}[];properties:{id:string}[]}):Message {
  const parsed=messageSchema.parse(input);
  return getDb().transaction(()=>{

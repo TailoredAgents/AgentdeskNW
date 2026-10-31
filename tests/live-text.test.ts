@@ -115,9 +115,9 @@ describe('live text protocol with mocked Responses',()=>{
   }
   expect(JSON.stringify(listReleases(manager))).toBe(before);
  });
- it('preserves all sixteen specialists with exactly four unavailable planned capabilities',()=>{
-  expect(specialists).toHaveLength(16);expect(specialists.filter(item=>item.status!=='planned')).toHaveLength(12);
-  expect(specialists.filter(item=>item.status==='planned').map(item=>item.id).sort()).toEqual(['acquisition-lead','deal-analyst','onboarding-coaching','valuation-diligence']);
+ it('preserves all sixteen specialists with exactly three unavailable planned capabilities',()=>{
+  expect(specialists).toHaveLength(16);expect(specialists.filter(item=>item.status!=='planned')).toHaveLength(13);
+  expect(specialists.filter(item=>item.status==='planned').map(item=>item.id).sort()).toEqual(['deal-analyst','onboarding-coaching','valuation-diligence']);
   expect(specialists.filter(item=>item.status==='planned').every(item=>item.tools.length===0)).toBe(true);expect(toolDefinitions().some(tool=>tool.name==='acquisition_context')).toBe(true);
  });
  it('only prepares a CRM note and refuses a model-generated approval',async()=>{
