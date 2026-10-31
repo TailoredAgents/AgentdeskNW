@@ -184,3 +184,5 @@ October 31 verification: 78 mobile tests, independent typecheck, iOS/Android Jav
 ## Paused reasoning and changed instructions
 
 Assignment spending cards now show **Pause remaining reasoning**, a waiting/paused status, and **Continue saved work**. The paused card gives the exact Agent reference for changing remaining instructions. The app shares the server’s pause boundary and immutable revised review; it does not hold an independent job. Current approval carries only for unchanged work, while changed instructions show a new cumulative maximum and decision. Prior charges remain visible. Native browser/export acceptance does not establish installed-device lifecycle behavior.
+
+Paused text assignments now offer **Review changed workspace**. The in-memory form shows current source categories and record samples, accepts restated remaining instructions and prepares a fresh cumulative cost review. It preserves historical actions/charges and never approves the cost itself. Finish the save before leaving; installed-device acceptance and direct conversational recovery remain pending.

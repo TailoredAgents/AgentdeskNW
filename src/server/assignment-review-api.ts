@@ -1,3 +1,4 @@
+import {prepareTextRecovery,recoverTextAssignment,textRecoveryPreviewSchema,textRecoveryDecisionSchema} from './text-recovery';
 import {controlTextAssignment,textControlSchema} from './text-controls';
 import {renewTextAssignment,assignmentRenewalSchema} from './text-renewal';
 import {NextRequest,NextResponse} from 'next/server';
@@ -12,6 +13,8 @@ export async function assignmentReviewRoute(request:NextRequest,actor:Actor,path
  if(path.length===3&&path[2]==='decision'&&request.method==='POST')return json(decideAssignmentReview(actor,path[1],assignmentDecisionSchema.parse(await body())));
  if(path.length===3&&path[2]==='cancel'&&request.method==='POST')return json(cancelAssignmentReview(actor,path[1],assignmentCancellationSchema.parse(await body())));
  if(path.length===3&&path[2]==='renew'&&request.method==='POST')return json(renewTextAssignment(actor,path[1],assignmentRenewalSchema.parse(await body())));
+ if(path.length===3&&path[2]==='recovery-preview'&&request.method==='POST')return json(prepareTextRecovery(actor,path[1],textRecoveryPreviewSchema.parse(await body())).preview);
+ if(path.length===3&&path[2]==='recover'&&request.method==='POST')return json(recoverTextAssignment(actor,path[1],textRecoveryDecisionSchema.parse(await body())));
  if(path.length===3&&path[2]==='control'&&request.method==='POST')return json(controlTextAssignment(actor,path[1],textControlSchema.parse(await body())));
  throw new AppError(404,'This assignment review operation is not available.');
 }

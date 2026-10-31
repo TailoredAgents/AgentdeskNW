@@ -5,7 +5,7 @@ import {join} from 'node:path';
 import {randomBytes} from 'node:crypto';
 import {createServer} from 'node:net';
 import {spawn,type ChildProcess} from 'node:child_process';
-import type {AssignmentReview} from '../src/lib/assignment-review-contracts';
+import type {AssignmentReview,TextRecoveryPreview} from '../src/lib/assignment-review-contracts';
 import type {Conversation,ToolResult} from '../src/lib/contracts';
 
 const directory=mkdtempSync(join(tmpdir(),'agentdesk-text-http-')),log=join(directory,'transport.log');writeFileSync(log,'');
@@ -31,6 +31,16 @@ try{
  check(review.canDecide&&review.maximumCents===205&&review.id!==originalReview.id,'Revised instructions require a fresh whole-assignment review');
  check((await request<AssignmentReview>(`/assignment-reviews/${originalReview.id}/control`,revision)).id===review.id,'An exact revision retry retains the same replacement');
  await request(`/assignment-reviews/${originalReview.id}/decision`,{quoteId:originalReview.quoteId,revision:originalReview.revision,eventKey:'old-decision',decision:'approve'},409);
+ const sourceReview=review;
+ await request(`/assignment-reviews/${sourceReview.id}/control`,{quoteId:sourceReview.quoteId,revision:sourceReview.revision,eventKey:'http-source-pause',action:'pause'});
+ await request('/tasks',{title:'Newly learned repair evidence question',dueAt:null,investorId:null},201);
+ const remaining={quoteId:sourceReview.quoteId,revision:sourceReview.revision,instructions:'Use current facts to explain the repair evidence and useful next questions.'};
+ const recovery=await request<TextRecoveryPreview>(`/assignment-reviews/${sourceReview.id}/recovery-preview`,remaining);
+ check(recovery.changedAreas.length&&recovery.currentRecords.join(' ').includes('Newly learned'),'Recovery reviews the current changed workspace');
+ const recoveryDecision={...remaining,token:recovery.token,eventKey:'http-source-recovery'};
+ review=await request<AssignmentReview>(`/assignment-reviews/${sourceReview.id}/recover`,recoveryDecision);
+ check(review.canDecide&&review.maximumCents===205,'Recovery prepares a fresh same-assignment cost decision');
+ check((await request<AssignmentReview>(`/assignment-reviews/${sourceReview.id}/recover`,recoveryDecision)).id===review.id,'Exact recovery replay does not create another assignment');
  const reference=review.conversationReference;check(reference,'The original request supplies its spending reference');
  const shown=await request<{result:ToolResult}>('/chat',{conversationId:result.conversation.id,message:`Review spending ${reference}`,requestId:'http-show-spending'});
  const code=shown.result.message.match(/Approve (R[0-9A-F]{16})/)?.[1];check(code&&shown.result.message.includes('maximum $2.05'),'The complete conversation review includes scope, maximum and an exact decision');
@@ -48,5 +58,5 @@ try{
  check(readFileSync(log,'utf8')==='count\ngeneration\n','Exactly one input count and one generation used mock transport');
  await stop(worker);worker=undefined;await stop(app);app=undefined;await start();
  check((await request<Conversation>('/conversations/'+result.conversation.id)).messages.filter(m=>m.content==='Your fictional reasoning result is saved after approval.').length===1,'The final result survives another process restart');
- console.info(`PASS: ${checks} admitted-text HTTP/worker checks; paused quote, exact approval, restart, original-turn continuation and settled mock usage. No external provider call.`);
+ console.info(`PASS: ${checks} admitted-text HTTP/worker checks; paused quote, changed-source recovery, exact approval, restart, original-turn continuation and settled mock usage. No external provider call.`);
 }finally{await stop(worker);await stop(app);rmSync(directory,{recursive:true,force:true});}

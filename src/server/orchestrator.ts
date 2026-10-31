@@ -503,10 +503,8 @@ export async function chat(actor:Actor,message:string,conversationId?:string,req
     else if(!process.env.OPENAI_API_KEY)result=localWorkReply(actor,message,command)??await localReply(actor,message,conversation,command);
     else{
       const bootstrap=service.getBootstrap(actor);historyContext=bootstrap;
-      const channelState=messagingState(actor);
-      const messaging={sendingEnabled:channelState.sendingEnabled,connections:channelState.links.map(link=>({provider:link.provider,active:link.active,optedOut:link.optedOut,reminders:link.reminders,configured:channelState.providers.find(provider=>provider.id===link.provider)?.configured}))};
       const employeeMemory=getEmployeeMemory(actor);
-      const context={actor,messaging,employeeMemory,conversationFocus:readConversationFocus(actor,conversation.id,options.receivedAt),investors:bootstrap.investors,properties:bootstrap.properties,tasks:listPersonalTasks(actor),jobs:bootstrap.jobs.map(({id,status,input})=>({id,status,input})),guidance:bootstrap.settings.guidance};
+      const context=currentTextContext(actor,conversation.id,options.receivedAt);
       // Any business permission/provenance change invalidates opaque model memory. Display history is freshly redacted by services.
       const currentScope=()=>currentTextScope(actor,conversation.id);
       const scope=currentScope();
@@ -522,6 +520,13 @@ export async function chat(actor:Actor,message:string,conversationId?:string,req
   const current=service.getConversation(actor,conversation.id),answer=current.messages.at(-1)!;
   return {conversation:current,result:{message:answer.content,specialistIds:answer.specialistIds,artifacts:answer.artifacts}};
   });
+}
+
+/** Fresh authorized context for new work and explicitly reviewed source recovery. */
+export function currentTextContext(actor:Actor,conversationId:string,receivedAt?:string){
+ const bootstrap=service.getBootstrap(actor),channelState=messagingState(actor);
+ const messaging={sendingEnabled:channelState.sendingEnabled,connections:channelState.links.map(link=>({provider:link.provider,active:link.active,optedOut:link.optedOut,reminders:link.reminders,configured:channelState.providers.find(provider=>provider.id===link.provider)?.configured}))};
+ return {actor,messaging,employeeMemory:getEmployeeMemory(actor),conversationFocus:readConversationFocus(actor,conversationId,receivedAt),investors:bootstrap.investors,properties:bootstrap.properties,tasks:listPersonalTasks(actor),jobs:bootstrap.jobs.map(({id,status,input})=>({id,status,input})),guidance:bootstrap.settings.guidance};
 }
 
 export function currentTextScope(actor:Actor,conversationId:string){
