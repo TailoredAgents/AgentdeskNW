@@ -1,3 +1,4 @@
+import {documentContextReferenceCurrent} from './document-context';
 import {teamContextReferenceCurrent} from './transaction-team-context';
 import {transactionReferenceCurrent} from './transaction-context';
 import {knowledgeReferenceCurrent} from './knowledge';
@@ -16,14 +17,27 @@ import { readInvestor, readProperty } from './access';
 import { getDisclosure, isDisclosureReady, listBuyBoxes } from './intelligence';
 import { inboxAccessReferenceCurrent } from './communications-context';
 
-export interface HistoryReferences {transactionTeamAccess?:string[];transactionAccess?:string[];investors:string[];properties:string[];releases:string[];packages:string[];debriefs:string[];inboxThreads:string[];inboxAccess:string[];workRuns?:string[];handoffAccess?:string[];workQuestions?:string[];knowledgeAccess?:string[];updatesAccess?:string[];analysisAccess?:string[];opportunityAccess?:string[]}
+export interface HistoryReferences {documentAccess?:string[];transactionTeamAccess?:string[];transactionAccess?:string[];investors:string[];properties:string[];releases:string[];packages:string[];debriefs:string[];inboxThreads:string[];inboxAccess:string[];workRuns?:string[];handoffAccess?:string[];workQuestions?:string[];knowledgeAccess?:string[];updatesAccess?:string[];analysisAccess?:string[];opportunityAccess?:string[]}
 export type StoredMessage=Message & {references?:HistoryReferences};
-const empty=():HistoryReferences=>({transactionTeamAccess:[],transactionAccess:[],investors:[],properties:[],releases:[],packages:[],debriefs:[],inboxThreads:[],inboxAccess:[],workRuns:[],handoffAccess:[],workQuestions:[],knowledgeAccess:[],updatesAccess:[],analysisAccess:[],opportunityAccess:[]});
+const empty=():HistoryReferences=>({documentAccess:[],transactionTeamAccess:[],transactionAccess:[],investors:[],properties:[],releases:[],packages:[],debriefs:[],inboxThreads:[],inboxAccess:[],workRuns:[],handoffAccess:[],workQuestions:[],knowledgeAccess:[],updatesAccess:[],analysisAccess:[],opportunityAccess:[]});
 export const criteriaFingerprint=(actor:Actor,investorId:string)=>createHash('sha256').update(JSON.stringify(listBuyBoxes(actor,investorId))).digest('hex');
+// Repeated inherited references are validated once per synchronous SQLite read snapshot.
+// This cache never survives a read, an awaited provider call or a subsequent mutation.
+let readMemo:Map<string,boolean>|null=null;
+export function withHistoryReadSnapshot<T>(read:()=>T):T {
+ if(readMemo)return read();
+ return getDb().transaction(()=>{readMemo=new Map();try{return read();}finally{readMemo=null;}})();
+}
+function currentReference(actor:Actor,kind:string,reference:string,check:()=>boolean){
+ if(!readMemo)return check();
+ const key=JSON.stringify([actor.organizationId,actor.officeId,actor.id,actor.role,kind,reference]);
+ if(readMemo.has(key))return readMemo.get(key)!;
+ const visible=check();readMemo.set(key,visible);return visible;
+}
 /** References come from structured service outputs, never guessed from names in prose. */
 export function collectHistoryReferences(actor:Actor,artifacts:Artifact[],inherited:HistoryReferences[]=[],context?:{investors:{id:string}[];properties:{id:string}[]}):HistoryReferences {
  // Withheld content is not supplied as context; do not permanently taint future, freshly authorized turns.
- const refs=empty();for(const prior of inherited.filter(value=>historyReferencesVisible(actor,value)))for(const key of Object.keys(refs) as (keyof HistoryReferences)[])refs[key]!.push(...(prior[key]??[]));
+ return withHistoryReadSnapshot(()=>{const refs=empty();for(const prior of inherited.filter(value=>historyReferencesVisible(actor,value)))for(const key of Object.keys(refs) as (keyof HistoryReferences)[])refs[key]!.push(...(prior[key]??[]));
  if(context){refs.investors.push(...context.investors.map(item=>item.id));refs.properties.push(...context.properties.map(item=>item.id));}
  const visit=(value:unknown,depth=0)=>{
   if(depth>15||value===null||typeof value!=='object')return;
@@ -38,6 +52,7 @@ export function collectHistoryReferences(actor:Actor,artifacts:Artifact[],inheri
     if((key==='threadId'||key==='id')&&/^inbox_thread_/.test(item))refs.inboxThreads.push(item);
     if(key==='workRunId')refs.workRuns!.push(Number.isInteger((value as Record<string,unknown>).workPlanVersion)?`${item}@${(value as Record<string,unknown>).workPlanVersion}`:item);
     if(key==='questionReference'&&typeof (value as Record<string,unknown>).workRunId==='string')refs.workQuestions!.push(`${(value as Record<string,unknown>).workRunId}@${item}`);
+    if(key==='documentAccessReference')refs.documentAccess!.push(item);
     if(key==='transactionTeamAccessReference')refs.transactionTeamAccess!.push(item);
     if(key==='transactionAccessReference')refs.transactionAccess!.push(item);
     if(key==='knowledgeAccessReference')refs.knowledgeAccess!.push(item);
@@ -58,7 +73,7 @@ export function collectHistoryReferences(actor:Actor,artifacts:Artifact[],inheri
  }
  for(const key of Object.keys(refs) as (keyof HistoryReferences)[])refs[key]=[...new Set(refs[key]??[])];
  refs.packages=refs.packages.filter(id=>{const row=getDb().prepare('SELECT data FROM deal_packages WHERE id=? AND organization_id=? AND office_id=? AND owner_id=?').get(id,actor.organizationId,actor.officeId,actor.id) as {data:string}|undefined;return !row||(JSON.parse(row.data) as DealPackage).status!=='blocked';});
- return refs;
+ return refs;});
 }
 function releaseRecord(actor:Actor,id:string):PropertyRelease {
  const row=getDb().prepare('SELECT owner_id,data FROM property_releases WHERE id=? AND organization_id=? AND office_id=?').get(id,actor.organizationId,actor.officeId) as {owner_id:string;data:string}|undefined;
@@ -67,15 +82,16 @@ function releaseRecord(actor:Actor,id:string):PropertyRelease {
 }
 export function historyReferencesVisible(actor:Actor,refs:HistoryReferences) {
  try {
-  for(const reference of refs.transactionTeamAccess??[])if(!teamContextReferenceCurrent(actor,reference))return false;
-  for(const reference of refs.transactionAccess??[])if(!transactionReferenceCurrent(actor,reference))return false;
-  for(const reference of refs.knowledgeAccess??[])if(!knowledgeReferenceCurrent(actor,reference))return false;
-  for(const reference of refs.updatesAccess??[])if(!proactiveReferenceCurrent(actor,reference))return false;
-  for(const reference of refs.analysisAccess??[])if(!analysisReferenceCurrent(actor,reference))return false;
-  for(const reference of refs.opportunityAccess??[])if(!opportunityReferenceCurrent(actor,reference))return false;
-  for(const reference of refs.workQuestions??[])if(!workQuestionReferenceCurrent(actor,reference))return false;
-  for(const reference of refs.handoffAccess??[])if(!handoffReferenceCurrent(actor,reference))return false;
-  for(const reference of refs.workRuns??[]){const [runId,version]=reference.split('@');if(version!==undefined&&!/^[1-9][0-9]*$/.test(version))return false;if(!workRunVisible(actor,runId,version===undefined?undefined:Number(version)))return false;}
+  for(const reference of refs.documentAccess??[])if(!currentReference(actor,'documentAccess',reference,()=>documentContextReferenceCurrent(actor,reference)))return false;
+  for(const reference of refs.transactionTeamAccess??[])if(!currentReference(actor,'transactionTeamAccess',reference,()=>teamContextReferenceCurrent(actor,reference)))return false;
+  for(const reference of refs.transactionAccess??[])if(!currentReference(actor,'transactionAccess',reference,()=>transactionReferenceCurrent(actor,reference)))return false;
+  for(const reference of refs.knowledgeAccess??[])if(!currentReference(actor,'knowledgeAccess',reference,()=>knowledgeReferenceCurrent(actor,reference)))return false;
+  for(const reference of refs.updatesAccess??[])if(!currentReference(actor,'updatesAccess',reference,()=>proactiveReferenceCurrent(actor,reference)))return false;
+  for(const reference of refs.analysisAccess??[])if(!currentReference(actor,'analysisAccess',reference,()=>analysisReferenceCurrent(actor,reference)))return false;
+  for(const reference of refs.opportunityAccess??[])if(!currentReference(actor,'opportunityAccess',reference,()=>opportunityReferenceCurrent(actor,reference)))return false;
+  for(const reference of refs.workQuestions??[])if(!currentReference(actor,'workQuestions',reference,()=>workQuestionReferenceCurrent(actor,reference)))return false;
+  for(const reference of refs.handoffAccess??[])if(!currentReference(actor,'handoffAccess',reference,()=>handoffReferenceCurrent(actor,reference)))return false;
+  for(const reference of refs.workRuns??[]){const [runId,version]=reference.split('@');if(version!==undefined&&!/^[1-9][0-9]*$/.test(version))return false;if(!currentReference(actor,'workRuns',reference,()=>workRunVisible(actor,runId,version===undefined?undefined:Number(version))))return false;}
   if(refs.inboxThreads?.length&&!featureAccess(actor,'core').allowed)return false;
   for(const id of refs.inboxThreads??[]){if(!inboxAccessReferenceCurrent(actor,id,refs.inboxAccess??[]))return false;}
   for(const id of refs.investors)readInvestor(actor,id);
@@ -102,5 +118,5 @@ export function readHistoryMessage(actor:Actor,message:StoredMessage):Message {
 
 export function assertInboxToolResultVisible(actor:Actor,artifacts:Artifact[]):void {
  const refs=collectHistoryReferences(actor,artifacts);
- if((refs.transactionTeamAccess?.length||refs.transactionAccess?.length||refs.knowledgeAccess?.length||refs.updatesAccess?.length||refs.inboxThreads.length||refs.workRuns?.length||refs.handoffAccess?.length||refs.workQuestions?.length||refs.opportunityAccess?.length||refs.analysisAccess?.length)&&!historyReferencesVisible(actor,refs))throw new AppError(403,'Access to this result or its source context changed. Retrieve the conversation again.');
+ if((refs.documentAccess?.length||refs.transactionTeamAccess?.length||refs.transactionAccess?.length||refs.knowledgeAccess?.length||refs.updatesAccess?.length||refs.inboxThreads.length||refs.workRuns?.length||refs.handoffAccess?.length||refs.workQuestions?.length||refs.opportunityAccess?.length||refs.analysisAccess?.length)&&!historyReferencesVisible(actor,refs))throw new AppError(403,'Access to this result or its source context changed. Retrieve the conversation again.');
 }

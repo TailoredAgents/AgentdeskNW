@@ -1,3 +1,5 @@
+import {reviewSourceDocument,documentContextReferenceCurrent} from './document-context';
+import {getDocument} from './documents';
 import {teamTransactionReviewResult,teamContextReferenceCurrent} from './transaction-team-context';
 import {getTransactionTeam} from './transaction-team';
 import {transactionReviewResult,transactionReferenceCurrent} from './transaction-context';
@@ -27,6 +29,7 @@ type Capability={name:string;description:string;feature:string;roles:Role[];sche
 // Fictional analysis prices exercise admission/settlement. These are not provider prices.
 // Existing direct lookups, navigation and task controls remain unmetered by the wallet.
 const catalog:Record<string,Capability>={
+ review_source_document:{name:'Review private source document',description:'Retrieve up to four cited working-text sections and a provisional purpose checklist. Literal query matching only; no verified facts, semantic completeness, original PDF interpretation or actions.',feature:'core',roles:all,schema:z.object({documentId:valueId,documentAccessReference:z.union([z.string().min(1).max(240),reference]),query:z.union([z.string().max(200),reference])}).strict(),estimatedCents:0,maximumCents:0,effect:'read',output:'documentId, documentAccessReference, sections, totalSections, reviewQuestions, cautions'},
  review_team_transaction:{name:'Review shared transaction work',description:'Read the current explicitly shared summary and follow-ups; never private investor/mailbox/files, changed sources or verified outcomes. No mutation.',feature:'transaction-coordinator',roles:all,schema:z.object({teamId:valueId}).strict(),estimatedCents:0,maximumCents:0,effect:'read',output:'teamId, transactionTeamAccessReference, coordination'},
  review_transaction:{name:'Review private transaction',description:'Read current employee reports, missing facts, issues and unsent title preparation. No file text, shared mailbox access or verified outcome.',feature:'transaction-coordinator',roles:all,schema:z.object({transactionId:valueId}).strict(),estimatedCents:0,maximumCents:0,effect:'read',output:'transactionId, transactionAccessReference, reports, preparation'},
  prepare_title_email:{name:'Prepare title Inbox draft',description:'Save current private title preparation only when explicitly requested. Exact current sources and account required; never send or change milestones. Reuses existing drafts and preserves edits.',feature:'transaction-coordinator',roles:all,schema:z.object({transactionId:valueId,accountId:valueId,transactionAccessReference:z.union([z.string().min(1).max(240),reference])}).strict(),estimatedCents:0,maximumCents:0,effect:'private_draft',output:'transactionId, transactionAccessReference, threadId, hasDraft, liveDelivery false'},
@@ -95,6 +98,8 @@ export function validateStoredWorkOutput(actor:Actor,step:WorkStepInput,output:T
   if('$step' in value)return;
   for(const [key,item] of Object.entries(value)){
    if(typeof item==='string'){
+    if(key==='documentAccessReference'&&!documentContextReferenceCurrent(actor,item))throw new AppError(409,'The source document changed. Retrieve its current revision.');
+    if(key==='documentId'&&step.capabilityId==='review_source_document')getDocument(actor,item);
     if(key==='transactionTeamAccessReference'&&!teamContextReferenceCurrent(actor,item))throw new AppError(409,'Shared coordination changed. Retrieve current team work.');
     if(key==='teamId')getTransactionTeam(actor,item);
     if(key==='transactionAccessReference'&&!transactionReferenceCurrent(actor,item))throw new AppError(409,'The transaction source changed. Prepare current transaction work.');
@@ -128,6 +133,7 @@ export function executeWorkCapability(actor:Actor,step:WorkStepInput,_priorOutpu
  const item=definition(step.capabilityId),input=validateConcreteWorkInput(actor,step);
  const result:ToolResult={specialistIds:item.feature==='core'?[]:[item.feature],message:'',artifacts:[]};
  switch(step.capabilityId){
+  case 'review_source_document':return reviewSourceDocument(actor,input);
   case 'review_team_transaction':return teamTransactionReviewResult(actor,String(input.teamId));
   case 'review_transaction':return transactionReviewResult(actor,input.transactionId as string);
   case 'prepare_title_email':return prepareTitleResult(actor,input as {transactionId:string;accountId:string;transactionAccessReference:string},`title-work:${createHash('sha256').update(JSON.stringify([actor.organizationId,actor.officeId,actor.id,input])).digest('hex')}`);

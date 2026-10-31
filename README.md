@@ -99,3 +99,6 @@ Existing employee-channel adapters have a separate mocked acceptance suite, `npm
 | `docs` | Specifications and evidence, indexed in the documentation map |
 
 Use the verified [work walkthrough](docs/WORK_EXECUTION.md), [company-email demonstration](docs/COMPANY_EMAIL_DEMO.md) and [relationship quality evidence](docs/RELATIONSHIP_QUALITY.md) within their stated boundaries. Earlier presentation scripts and numbered phase reports are retained as historical references; check the current roadmap and deployed revision before using them.
+
+
+Typed Copilot can now search/read current private source text and save a bounded cited checklist review. Agent and saved-work links open the exact document on desktop and native; corrections invalidate obsolete answers/results. This adds the sixteenth composable work capability without claiming semantic analysis, OCR, verified transaction evidence or provider delivery. See [document work](docs/DOCUMENT_WORK.md) and the [canonical roadmap](docs/IMPLEMENTATION_ROADMAP.md).

@@ -1,3 +1,4 @@
+import {documentContextReference} from './document-context';
 import {transactionTeamContextReference} from './transaction-team-context';
 import {transactionContextReference} from './transaction-context';
 import {knowledgeContextReference} from './knowledge';
@@ -18,6 +19,7 @@ export function voiceContextSnapshot(actor:Actor):Record<string,string> {
   const result:Record<string,string>={};
   const add=(key:string,value:unknown)=>{result[key]=createHash('sha256').update(JSON.stringify(value)).digest('hex');};
   add('scope',{organization:actor.organizationId,office:actor.officeId,user:actor.id,role:actor.role,ownership:getOwnershipPolicy(actor),disclosure:getDisclosurePolicy(actor)});
+  add('documents',documentContextReference(actor));
   add('transactionTeams',transactionTeamContextReference(actor));
   add('transactions',transactionContextReference(actor));
   add('knowledge',knowledgeContextReference(actor));

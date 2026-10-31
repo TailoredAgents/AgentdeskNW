@@ -1,3 +1,6 @@
+import type {Conversation,ToolResult} from '../src/lib/contracts';
+import type {WorkRun} from '../src/lib/work-contracts';
+import {processWorkRuns} from '../src/server/work-runs';
 import {fictionalPdf} from '../tests/fixtures/pdf';
 import type {DocumentImportPreview} from '../src/lib/document-contracts';
 import assert from 'node:assert/strict';
@@ -52,14 +55,35 @@ try{
  const pdfDoc=await request<SourceDocumentDetail>('documents/save','POST',pdfRequest);check(pdfDoc.document.original?.sha256===createHash('sha256').update(bytes).digest('hex'),'Phone saves the reviewed PDF with original-byte provenance');
  check((await request<SourceDocumentDetail>('documents/save','POST',pdfRequest,200,true)).document.id===pdfDoc.document.id,'PDF commit retry works after the staged file was consumed');
  const original=await fetch(`${origin}/api/documents/${pdfDoc.document.id}/original?revision=1`,{headers:{Authorization:`Bearer ${token}`}});check(original.status===200&&original.headers.get('content-type')==='application/pdf'&&original.headers.get('content-disposition')?.startsWith('attachment;'),'Original download is private and attachment-only');check(Buffer.from(await original.arrayBuffer()).equals(bytes),'Original download preserves every PDF byte');
+ // Source-aware Agent reads and saved work share the exact private revision across channels.
+ const {conversationId}=await request<{conversationId:string}>('messaging/conversation','POST',{},200,true);
+ const chatInput={conversationId,requestId:randomUUID(),message:`Read document ${pdfDoc.document.id}`};
+ const answer=await request<{conversation:Conversation;result:ToolResult}>('chat','POST',chatInput,200,true);
+ check(answer.result.artifacts[0]?.type==='document'&&answer.result.artifacts[0]?.id===pdfDoc.document.id,'Desktop Agent links the exact private document');
+ check(answer.result.message.includes('revision 1, section 1')&&answer.result.message.includes('Fictional roof scope requires contractor confirmation.'),'Agent reads real extracted text with revision and section citations');
+ check(answer.result.message.includes('pages 2 had no extractable text'),'Agent preserves missing-page uncertainty');
+ const phoneRead=await request<{conversation:Conversation;result:ToolResult}>('chat','POST',{conversationId,requestId:randomUUID(),message:'Read section 1 of that document'});
+ check(phoneRead.result.artifacts[0]?.id===pdfDoc.document.id&&phoneRead.result.message.includes('revision 1, section 1'),'Phone continues the same identified source');
+ check((await request<Conversation>(`conversations/${conversationId}`,'GET',undefined,200,true)).messages.at(-1)?.id===phoneRead.conversation.messages.at(-1)?.id,'Desktop sees the same phone reading');
+ const jobInput={conversationId,requestId:randomUUID(),message:`Review document ${pdfDoc.document.id} as a saved job`};
+ const job=await request<{result:ToolResult}>('chat','POST',jobInput);const runId=job.result.artifacts[0].id!;processWorkRuns(demoActor(),5);
+ const completed=await request<WorkRun>(`work/${runId}`,'GET',undefined,200,true);
+ check(completed.status==='completed'&&completed.steps[0].maximumCents===0&&completed.steps[0].result?.artifacts[0].id===pdfDoc.document.id,'Saved review returns the exact source with zero fictional charge');
+ check(completed.steps[0].result?.message.includes('a checklist, not findings'),'Saved review does not label provisional questions as findings');
+ check((await request<{result:ToolResult}>('chat','POST',jobInput)).result.artifacts[0].id===runId,'Exact phone retry preserves one saved review');
  const corrected=await request<SourceDocumentDetail>('documents/save','POST',{id:pdfDoc.document.id,expectedVersion:1,eventKey:randomUUID(),input:{...pdfDoc.input,content:'Checked fictional transcription; no receipt verified.'}},200,true);check(corrected.document.original?.textEdited&&corrected.reference!==pdfDoc.reference,'Correction labels edited working text and invalidates prior use');
+ const obsolete=await request<{result:ToolResult}>('chat','POST',chatInput,200,true);
+ check(obsolete.result.message.includes('withheld')&&!obsolete.result.artifacts.length,'An exact chat retry cannot revive corrected source contents');
+ check((await request<WorkRun>(`work/${runId}`)).contentRestricted,'Corrected source withholds obsolete saved review');
+ const freshRead=await request<{result:ToolResult}>('chat','POST',{conversationId,requestId:randomUUID(),message:`Read document ${pdfDoc.document.id}`});
+ check(freshRead.result.message.includes('revision 2, section 1')&&freshRead.result.message.includes('corrected after PDF extraction'),'Fresh retrieval reads corrected working text with original provenance');
  const extractedOptions=await request<CommunicationDocumentOption[]>('inbox/document-options');check(extractedOptions.find(file=>file.documentId===pdfDoc.document.id)?.name.endsWith('.txt'),'Correspondence identifies the text extract, never pretends to attach the PDF');
  await request('documents/import','POST',{fileName:'scan.pdf',base64:fictionalPdf(['']).toString('base64')},422);await request('documents/import','POST',{fileName:'bad.pdf',base64:Buffer.from('Not PDF').toString('base64')},422);
  const pending=await request<DocumentImportPreview>('documents/import','POST',{fileName:'review.pdf',base64:fictionalPdf().toString('base64')});
- await pair('manager');await request(`documents/${pdfDoc.document.id}/original?revision=1`,'GET',undefined,404);await request('documents/save','POST',{...pdfRequest,eventKey:randomUUID(),importId:pending.id},404);
+ await pair('manager');await request(`work/${runId}`,'GET',undefined,404);await request(`conversations/${conversationId}`,'GET',undefined,404);await request(`documents/${pdfDoc.document.id}/original?revision=1`,'GET',undefined,404);await request('documents/save','POST',{...pdfRequest,eventKey:randomUUID(),importId:pending.id},404);
  token=employee.token;cookie=employeeCookie;await request('documents/discard-import','POST',{id:pending.id});await request('documents/save','POST',{...pdfRequest,eventKey:randomUUID(),importId:pending.id},404);
  const investor=board.investors[0];getDb().prepare('UPDATE investors SET owner_id=? WHERE id=?').run(demoActor('manager').id,investor.id);
  check((await request<SourceDocumentBoard>('documents')).documents.length===0,'Lost source access hides the linked document');const revokedMail=await request<InboxThreadDetail>(`inbox/${mailId}`);check(revokedMail.messages[0].attachments[0].availability==='unavailable'&&!JSON.stringify(revokedMail).includes('repair-scope.txt'),'Lost source access withholds sent-file metadata and draft history');await request(`documents/${id}`,'GET',undefined,404);await request(`documents/${id}/revision?revision=1`,'GET',undefined,404);await request(`documents/${id}/download?revision=1`,'GET',undefined,404);await request(`documents/${pdfDoc.document.id}/original?revision=1`,'GET',undefined,404);await request('documents/save','POST',input,404);
  await request(`mobile/devices/${employee.sessionId}/revoke`,'POST',{},200,true);await request('documents','GET',undefined,401);
- console.log(`Documents smoke passed: ${checks} checks; private text, preserved revisions, cross-surface retries, actual download, revocation, exact reviewed local attachments and no external delivery.`);
+ console.log(`Documents smoke passed: ${checks} checks; private text, preserved revisions, cross-surface retries, actual download, revocation, exact reviewed local attachments, source-aware Agent reads and saved work, and no external delivery.`);
 }finally{closeDb();}

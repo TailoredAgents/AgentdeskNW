@@ -155,3 +155,8 @@ Team coordination now supports owner-reviewed reassignment, instruction/date cha
 ### Reviewed PDF sources
 
 Desktop can now import bounded text-based PDFs, preserve originals and save a reviewed text extract. Work → Documents on the phone displays source filename/page count, missing-page warnings and whether the working text was corrected; edits preserve the original and immutable prior revisions. File picking and original PDF download on native remain unfinished. No OCR, signature/payment verification or original-file delivery is implied. Shared controller acceptance includes staged import identity, exact uncertain-save retry, failed extraction, discard and late-response protection. Current verification counts remain in the canonical roadmap and PROGRESS.
+
+
+### Source-aware Agent document reading
+
+Typed Agent and reviewed dictation use the same private document search/read/review tools as desktop. An exact document artifact opens Work → Documents; saved-review results carry the same link. The reader numbers lossless working-text sections to match Agent citations, including corrected PDF extracts. Source correction/withdrawal removes obsolete answer/result content on refresh. Local review is a bounded literal passage selection with a provisional checklist, not semantic analysis. Native file picking/original handling and live-voice document tools remain unfinished. Verification uses browser/export and isolated HTTP flows; physical-device acceptance stays deferred.

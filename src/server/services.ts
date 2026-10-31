@@ -13,7 +13,7 @@ import { externalResearchProviderId, prepareExternalResearch } from './external-
 import { classifyAuthorizedDuplicate, readInvestor, readInvestorRow, readInvestors, readProperty, readProperties, writableInvestor } from './access';
 import { addRelationshipEvent, applyBuyBoxApproval, listBuyBoxes, matchProperty, syncPrimaryBuyBox } from './intelligence';
 import { extractNotes } from './notes';
-import { collectHistoryReferences, readHistoryMessage, type StoredMessage } from './history';
+import { withHistoryReadSnapshot, collectHistoryReferences, readHistoryMessage, type StoredMessage } from './history';
 import { listPersonalTasks, mutateTask, taskReminderKey } from './task-actions';
 
 export { AppError, assertActor, demoActor } from './db';
@@ -108,15 +108,15 @@ export function createConversation(actor:Actor,title='New conversation'):Convers
  insertRecord(actor,'conversations',conversation); audit(actor,'conversation.created',conversation.id); return conversation;
 }
 export function getConversation(actor:Actor,id:string):Conversation {
- const conversation=scopedGet<Conversation>(actor,'conversations',idSchema.parse(id),true);
+ return withHistoryReadSnapshot(()=>{const conversation=scopedGet<Conversation>(actor,'conversations',idSchema.parse(id),true);
  const rows=getDb().prepare('SELECT data FROM messages WHERE conversation_id=? AND organization_id=? AND office_id=? AND owner_id=? ORDER BY sequence ASC').all(conversation.id,actor.organizationId,actor.officeId,actor.id) as {data:string}[];
  const messages=rows.map(row=>readHistoryMessage(actor,JSON.parse(row.data) as StoredMessage));
- return {...conversation,title:messages.some(message=>message.content.startsWith('This historical message is withheld'))?'Conversation with restricted history':conversation.title,messages};
+ return {...conversation,title:messages.some(message=>message.content.startsWith('This historical message is withheld'))?'Conversation with restricted history':conversation.title,messages};});
 }
 export function listConversations(actor:Actor):Conversation[] {
  return scopedRows<Conversation>(actor,'conversations',true).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt)).slice(0,50).map(item=>getConversation(actor,item.id));
 }
-const messageSchema=z.object({role:z.enum(['user','assistant']),content:z.string().trim().min(1).max(50000),specialistIds:z.array(z.string().max(100)).max(16).optional(),artifacts:z.array(z.object({type:z.enum(['transaction_team','transaction','knowledge','updates','analysis','opportunity','handoff','work_run','job','approval','notes','task','investors','guidance','package','debrief','release','calling_queue','briefing','marketplace','inbox']),id:z.string().max(150).optional(),title:z.string().max(300),data:z.unknown().optional()})).max(20).optional()}).strict();
+const messageSchema=z.object({role:z.enum(['user','assistant']),content:z.string().trim().min(1).max(50000),specialistIds:z.array(z.string().max(100)).max(16).optional(),artifacts:z.array(z.object({type:z.enum(['document','transaction_team','transaction','knowledge','updates','analysis','opportunity','handoff','work_run','job','approval','notes','task','investors','guidance','package','debrief','release','calling_queue','briefing','marketplace','inbox']),id:z.string().max(150).optional(),title:z.string().max(300),data:z.unknown().optional()})).max(20).optional()}).strict();
 export function addMessage(actor:Actor,conversationId:string,input:{role:'user'|'assistant';content:string;specialistIds?:string[];artifacts?:Artifact[]},context?:{investors:{id:string}[];properties:{id:string}[]}):Message {
  const parsed=messageSchema.parse(input);
  return getDb().transaction(()=>{

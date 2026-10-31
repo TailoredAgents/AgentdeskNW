@@ -19,7 +19,7 @@ const statusLabels: Record<WorkRunStatus, string> = {
 };
 const statusTone = (status: WorkRunStatus): 'green' | 'amber' | 'cyan' | 'neutral' | 'red' => status === 'completed' ? 'green' : ['waiting_cost_approval', 'waiting_for_input', 'reconciling'].includes(status) ? 'amber' : ['queued', 'running', 'waiting_for_dependency'].includes(status) ? 'cyan' : status === 'failed' ? 'red' : 'neutral';
 const capabilityLabels: Record<string, string> = {
-  review_team_transaction:'Review shared transaction work',review_transaction:'Review private transaction',prepare_title_email:'Prepare title Inbox draft',
+  review_source_document:'Review private source document',review_team_transaction:'Review shared transaction work',review_transaction:'Review private transaction',prepare_title_email:'Prepare title Inbox draft',
   review_investment_analysis:'Review investment scenario',review_diligence_analysis:'Review diligence scenario',review_opportunity: 'Review wholesaler opportunity',
   request_information: 'Ask for missing information',
   inspect_property: 'Read property facts', match_existing_buyers: 'Find existing buyers',
