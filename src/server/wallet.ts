@@ -146,7 +146,7 @@ export type {WalletScenarioId};
 
 
 /** Internal job-budget ledger bridge. No HTTP/model route accepts these server-priced inputs. */
-export function reserveWorkWallet(actor:Actor,input:{runId:string;quoteId:string;maximumCents:number;expiresAt:string}):WalletOperation {
+export function reserveWorkWallet(actor:Actor,input:{runId:string;quoteId:string;maximumCents:number;expiresAt:string;costBasis?:'fictional_sample'|'metered_simulation'}):WalletOperation {
  assertActor(actor);assertBillingDemo();requireFeature(actor,'core');
  const maximum= z.number().int().nonnegative().max(100000).parse(input.maximumCents);
  return getDb().transaction(()=>{
@@ -157,7 +157,7 @@ export function reserveWorkWallet(actor:Actor,input:{runId:string;quoteId:string
   const balance=totals(actor,account.periodStart);
   if(balance.includedCents+balance.purchasedCents<maximum)throw new AppError(402,'Not enough available credits for this job maximum.');
   if(balance.spentThisPeriodCents+balance.reservedThisPeriodCents+maximum>account.monthlySpendLimitCents)throw new AppError(402,'This job maximum exceeds your monthly spending limit.');
-  const quote:WalletQuote={id:input.quoteId,scenarioId:'copilot-work',name:'Copilot job · simulated usage',feature:'core',rateVersion:1,markupMultiplier:5,maximumCents:maximum,successCents:maximum,sampleProviderMaximumCents:maximum/5,sampleProviderSuccessCents:maximum/5,costBasis:'fictional_sample',createdAt:now(),expiresAt:input.expiresAt};
+  const quote:WalletQuote={id:input.quoteId,scenarioId:'copilot-work',name:input.costBasis==='metered_simulation'?'Metered assignment · test receipts':'Copilot job · simulated usage',feature:'core',rateVersion:1,markupMultiplier:input.costBasis==='metered_simulation'?null:5,maximumCents:maximum,successCents:maximum,sampleProviderMaximumCents:input.costBasis==='metered_simulation'?null:maximum/5,sampleProviderSuccessCents:input.costBasis==='metered_simulation'?null:maximum/5,costBasis:input.costBasis??'fictional_sample',createdAt:now(),expiresAt:input.expiresAt};
   db.prepare('INSERT INTO wallet_quotes VALUES(?,?,?,?,?)').run(quote.id,...owner(actor),JSON.stringify(quote));
   const includedReservedCents=Math.min(balance.includedCents,maximum),purchasedReservedCents=maximum-includedReservedCents;
   const operation:WalletOperation={id:newId('wallet_work'),quoteId:quote.id,scenarioId:'copilot-work',name:quote.name,periodStart:account.periodStart,rateVersion:1,workRunId:input.runId,status:'reserved',maximumCents:maximum,chargedCents:0,includedReservedCents,purchasedReservedCents,quote,createdAt:now(),updatedAt:now()};
@@ -176,11 +176,16 @@ function readWorkWalletOperation(actor:Actor,operationId:string,runId:string):Wa
  return operation;
 }
 
-export function consumeWorkWallet(actor:Actor,input:{runId:string;operationId:string;stepKey:string;amountCents:number}):WalletOperation {
- assertActor(actor);assertBillingDemo();requireFeature(actor,'core');
+type WorkSettlement={runId:string;operationId:string;stepKey:string;amountCents:number};
+export function consumeWorkWallet(actor:Actor,input:WorkSettlement):WalletOperation {requireFeature(actor,'core');return settleWorkWallet(actor,input,false);}
+/** Internal receipt-only reconciliation for already reserved metered work, including expired subscriptions. */
+export function settleRecordedWorkWalletUsage(actor:Actor,input:WorkSettlement):WalletOperation {return settleWorkWallet(actor,input,true);}
+function settleWorkWallet(actor:Actor,input:WorkSettlement,receipt:boolean):WalletOperation {
+ assertActor(actor);assertBillingDemo();
  const amount=z.number().int().nonnegative().max(100000).parse(input.amountCents);
  return getDb().transaction(()=>{
   const account=ensureAccount(actor),db=getDb(),operation=readWorkWalletOperation(actor,input.operationId,input.runId);
+  if(receipt&&operation.quote.costBasis!=='metered_simulation')throw new AppError(409,'Receipt settlement requires a metered reservation.');
   const eventKey=`job-consume:${operation.id}:${input.stepKey}`;
   const prior=db.prepare('SELECT data FROM wallet_ledger WHERE organization_id=? AND user_id=? AND event_key=?').get(...walletOwner(actor),eventKey) as {data:string}|undefined;
   if(prior){if((JSON.parse(prior.data) as WalletLedgerEntry).chargedCents!==amount)throw new AppError(409,'This job step already has a different usage receipt.');return operation;}
@@ -189,7 +194,7 @@ export function consumeWorkWallet(actor:Actor,input:{runId:string;operationId:st
   if(amount>remaining)throw new AppError(409,'This step exceeds the reserved job maximum. Review a revised estimate first.');
   const includedUsed=Math.min(amount,operation.includedReservedCents),purchasedUsed=amount-includedUsed;
   const updated:WalletOperation={...operation,includedReservedCents:operation.includedReservedCents-includedUsed,purchasedReservedCents:operation.purchasedReservedCents-purchasedUsed,chargedCents:operation.chargedCents+amount,status:amount===remaining?'settled':'reserved',updatedAt:now()};
-  append(actor,eventKey,{kind:'settlement',description:'Copilot job: completed step settled at its fictional rate.',periodStart:operation.periodStart,reservedIncludedDeltaCents:-includedUsed,reservedPurchasedDeltaCents:-purchasedUsed,chargedCents:amount,operationId:operation.id});
+  append(actor,eventKey,{kind:'settlement',description:receipt?'Metered assignment: test usage receipt settled against its reserved maximum.':'Copilot job: completed step settled at its fictional rate.',periodStart:operation.periodStart,reservedIncludedDeltaCents:-includedUsed,reservedPurchasedDeltaCents:-purchasedUsed,chargedCents:amount,operationId:operation.id});
   writeOperation(actor,updated);account.version++;writeAccount(actor,account);return updated;
  }).immediate();
 }

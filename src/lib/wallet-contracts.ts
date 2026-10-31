@@ -5,9 +5,9 @@ export interface WalletScenario {
  allowed:boolean;reason:string;
 }
 export interface WalletQuote {
- id:string;scenarioId:WalletScenarioId|'copilot-work';name:string;feature:string;rateVersion:number;markupMultiplier:5;
- maximumCents:number;successCents:number;sampleProviderMaximumCents:number;sampleProviderSuccessCents:number;
- costBasis:'fictional_sample';createdAt:string;expiresAt:string;
+ id:string;scenarioId:WalletScenarioId|'copilot-work';name:string;feature:string;rateVersion:number;markupMultiplier:5|null;
+ maximumCents:number;successCents:number;sampleProviderMaximumCents:number|null;sampleProviderSuccessCents:number|null;
+ costBasis:'fictional_sample'|'metered_simulation';createdAt:string;expiresAt:string;
 }
 export interface WalletOperation {
  id:string;quoteId:string;scenarioId:WalletScenarioId|'copilot-work';name:string;periodStart:string;rateVersion:number;workRunId?:string;
@@ -35,6 +35,6 @@ export interface WorkBudget {
  estimatedCents:number;maximumCents:number;spentCents:number;reservedCents:number;
  approvedMaximumCents:number|null;
  status:'awaiting_approval'|'approved'|'reserved'|'denied'|'released'|'settled'|'unknown';
- expiresAt:string;createdAt:string;updatedAt:string;rateVersion:1;costBasis:'fictional_sample';
+ expiresAt:string;createdAt:string;updatedAt:string;rateVersion:1;costBasis:'fictional_sample'|'metered_simulation';
  operationId:string|null;
 }

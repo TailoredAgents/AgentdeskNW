@@ -24,6 +24,12 @@ Desktop and phone share `/api/wallet/auto-topup`, `/auto-topup-preview`, `/auto-
 
 C6 separates provider usage admission/reconciliation from payment collection. Actual usage integration can be tested with fictional data and an authorized bounded provider budget; its shadow credit ledger does not collect customer payments. Verified purchases depend on accepted simulated purchase controls and explicit payer/commercial setup. Company-funded or personal real charges do not begin merely because usage receipts are recorded. The roadmap controls when this work proceeds.
 
+## Metered test-assignment bridge
+
+`metered-work.ts` groups server-derived part quotas and rate snapshots under one stable assignment identity; migration 029 preserves assignments, immutable events and globally unique provider-response claims. The existing budget/hold services now distinguish `fictional_sample` from `metered_simulation`. Neither collects money. Receipt-only internal helpers reconcile previously admitted usage after subscription cancellation; normal dispatch still requires current entitlement. Generic sample resolution cannot manipulate these job-owned holds.
+
+`metered-adapter.ts` is a test-only transport adapter: commit admission, invoke once, normalize trusted usage, reconcile or retain uncertainty. The fixed test tariffs are not provider prices. Provider expense/markup fields remain null when not known. Actual text/voice/research paths are not switched over, and no new model/HTTP approval or receipt endpoint is exposed. See [USAGE_METERING.md](USAGE_METERING.md) for the integration boundary and acceptance cases. A future live host must bind planning and delegated execution to this one authority rather than independently approving smaller requests.
+
 ## Current workforce extension
 
 Migrations 014/015 extend the existing simulator. `billing_enterprise_seats` stores explicit administrator assignments and agreement labels. `billing_subscription_migrations` preserves original and migrated subscription snapshots. `wallet_accounts`, `wallet_quotes`, `wallet_operations`, `wallet_ledger` and `wallet_events` hold scoped balances, reviewed estimates, operations and immutable ledger/idempotency records. One wallet binds organization and employee across their authorized office memberships, consistent with subscription ownership. Ledger actions retain office provenance; each operation validates current membership and owner scope. Corporate base-seat assignment also binds organization and employee.

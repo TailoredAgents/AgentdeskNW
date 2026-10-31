@@ -1,0 +1,40 @@
+import assert from 'node:assert/strict';
+import {mkdtempSync,rmSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import {closeDb,demoActor,getDb} from '../src/server/db';
+import {fingerprint} from '../src/server/provider-runtime';
+import {quoteMeteredAssignment,getMeteredAssignment,admitMeteredAttempt,recordMeteredReceipt,decideMeteredAssignment,finishMeteredAssignment} from '../src/server/metered-work';
+import {executeMeteredTextTest} from '../src/server/metered-adapter';
+import {getWalletState} from '../src/server/wallet';
+const directory=mkdtempSync(join(tmpdir(),'agentdesk-metered-'));
+Object.assign(process.env,{AGENTDESK_DB_PATH:join(directory,'checks.sqlite'),AGENTDESK_DEMO:'true',AGENTDESK_ALLOW_PRODUCTION_DEMO:'true',OPENAI_API_KEY:'',AGENTDESK_CHANNELS_ENABLED:'false',AGENTDESK_CHANNEL_SEND_ENABLED:'false',AGENTDESK_MOBILE_PUSH_SEND_ENABLED:'false'});
+let checks=0;const check=(condition:unknown,message:string)=>{assert.ok(condition,message);checks++;};
+try{
+ const actor=demoActor(),scopeHash=fingerprint({fixture:'approved sources v1'});
+ let assignment=quoteMeteredAssignment(actor,{assignmentKey:'whole-request',title:'Planning and delegated research',scopeHash,revision:1,parts:[{key:'planning',feature:'core',rateId:'test-text-v1',maximumCalls:2,maximumUnits:{output_tokens:200},estimatedUnits:{output_tokens:100}},{key:'research',parentKey:'planning',feature:'investor-hunter',rateId:'test-search-v1',maximumCalls:2,maximumUnits:{search_calls:2},estimatedUnits:{search_calls:1}}]});
+ check(assignment.budget.maximumCents===101&&assignment.budget.status==='awaiting_approval','Planning and delegation share a $1.01 review.');
+ const input={assignmentId:assignment.id,revision:1,scopeHash,attemptId:'planning-1',partKey:'planning',bounds:{output_tokens:200},request:{message:'fictional request'}};
+ let calls=0;try{await executeMeteredTextTest(actor,input,async()=>{calls++;return {status:200,body:{}};});}catch{}
+ check(calls===0&&getWalletState(actor).reservedCents===0,'Approval precedes the adapter and reservation.');
+ assignment=decideMeteredAssignment(actor,{assignmentId:assignment.id,quoteId:assignment.budget.quoteId,revision:1,decision:'approve',eventKey:'approve'});
+ const first=await executeMeteredTextTest(actor,input,async()=>{calls++;return {status:200,body:{id:'fictional-response-1',status:'incomplete',usage:{input_tokens:0,output_tokens:100,output_tokens_details:{reasoning_tokens:100}}}};});
+ check(first.assignment.budget.spentCents===1&&calls===1,'Incomplete reasoning usage settles once.');
+ const research={assignmentId:assignment.id,revision:1,scopeHash,attemptId:'research-1',partKey:'research',requestHash:fingerprint({query:'fictional area'}),bounds:{search_calls:1}};
+ check(admitMeteredAttempt(actor,research).dispatch,'Research claims the original assignment budget.');
+ closeDb();
+ check(!admitMeteredAttempt(actor,research).dispatch,'Restart after dispatch does not send the research twice.');
+ recordMeteredReceipt(actor,{assignmentId:assignment.id,attemptId:'research-1',status:'unknown',responseId:null,usage:null,providerCostMicros:null});
+ check(finishMeteredAssignment(actor,assignment.id,'canceled').status==='reconciling','Cancellation retains unresolved work.');
+ check(getWalletState(actor).reservedCents===100,'Uncertain reservation is not refunded.');
+ closeDb();
+ const receipt={assignmentId:assignment.id,attemptId:'research-1',status:'succeeded' as const,responseId:'fictional-search-response',usage:{search_calls:1},providerCostMicros:null};
+ const done=recordMeteredReceipt(actor,receipt);
+ check(done.status==='canceled'&&done.budget.spentCents===51,'Late receipt settles partial usage and finishes cancellation.');
+ check(done.customerMicros===505000&&done.providerCostMicros===null,'Customer usage and unknown provider invoice remain distinct.');
+ check(getWalletState(actor).availableCents===1449&&getWalletState(actor).reservedCents===0,'Unused funds release without refunding completed work.');
+ recordMeteredReceipt(actor,receipt);closeDb();
+ check(getMeteredAssignment(actor,assignment.id).budget.spentCents===51,'Duplicate late receipt after restart does not charge again.');
+ check(getDb().pragma('integrity_check',{simple:true})==='ok'&&(getDb().pragma('foreign_key_check') as unknown[]).length===0,'Persisted graph and ledger remain valid.');
+ console.info(`PASS: ${checks} metered assignment restart/adapter checks. Fictional rates and test transport only; no provider, messaging or payment operation.`);
+}finally{closeDb();rmSync(directory,{recursive:true,force:true});}

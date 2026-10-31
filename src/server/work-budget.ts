@@ -5,12 +5,12 @@ import type {WorkBudget} from '../lib/wallet-contracts';
 import {AppError,assertActor,audit,getDb,newId,now} from './db';
 import {requireFeature} from './billing';
 import {assertBillingDemo} from './billing-provider';
-import {consumeWorkWallet,markWorkWalletUnknown,releaseWorkWallet,reserveWorkWallet} from './wallet';
+import {settleRecordedWorkWalletUsage,consumeWorkWallet,markWorkWalletUnknown,releaseWorkWallet,reserveWorkWallet} from './wallet';
 
 const id=z.string().trim().min(1).max(150);
 const cents=z.number().int().nonnegative().max(100000);
 const version=z.number().int().positive();
-const quoteSchema=z.object({runId:id,planVersion:version,planHash:z.string().min(1).max(128),estimatedCents:cents,maximumCents:cents}).strict();
+const quoteSchema=z.object({runId:id,planVersion:version,planHash:z.string().min(1).max(128),estimatedCents:cents,maximumCents:cents,costBasis:z.enum(['fictional_sample','metered_simulation']).default('fictional_sample')}).strict();
 const decisionSchema=z.object({runId:id,quoteId:id,planVersion:version,decision:z.enum(['approve','deny']),eventKey:id}).strict();
 const consumeSchema=z.object({runId:id,stepKey:id,amountCents:cents}).strict();
 const scope=(actor:Actor)=>[actor.organizationId,actor.officeId,actor.id];
@@ -46,7 +46,7 @@ export function quoteWorkBudget(actor:Actor,input:z.input<typeof quoteSchema>):W
   if(previous){
    if(parsed.planVersion<previous.planVersion)throw new AppError(409,'The job plan changed. Use its current estimate.');
    if(parsed.planVersion===previous.planVersion){
-    if(parsed.planHash!==previous.planHash||parsed.estimatedCents!==previous.estimatedCents||parsed.maximumCents!==previous.maximumCents)throw new AppError(409,'Changed work requires a new plan version.');
+    if(parsed.costBasis!==previous.costBasis||parsed.planHash!==previous.planHash||parsed.estimatedCents!==previous.estimatedCents||parsed.maximumCents!==previous.maximumCents)throw new AppError(409,'Changed work requires a new plan version.');
     if(previous.status==='unknown')throw new AppError(409,'The job outcome is unresolved; reconcile it before revising work.');
     if(previous.status==='denied')return previous;
     if(previous.status==='reserved'||(Date.parse(previous.expiresAt)>Date.now()&&['awaiting_approval','approved'].includes(previous.status)))return previous;
@@ -55,7 +55,7 @@ export function quoteWorkBudget(actor:Actor,input:z.input<typeof quoteSchema>):W
    if(parsed.maximumCents<previous.spentCents||parsed.estimatedCents<previous.spentCents)throw new AppError(409,'The revised total cannot erase work already performed.');
    if(previous.operationId)releaseWorkWallet(actor,{runId:previous.runId,operationId:previous.operationId});
   }
-  const budget:WorkBudget={...parsed,quoteId:newId('work_quote'),spentCents:previous?.spentCents??0,reservedCents:0,approvedMaximumCents:parsed.maximumCents<=approvalThresholdCents?parsed.maximumCents:null,status:parsed.maximumCents<=approvalThresholdCents?'approved':'awaiting_approval',expiresAt:new Date(Date.now()+15*60_000).toISOString(),createdAt:previous?.createdAt??now(),updatedAt:now(),rateVersion:1,costBasis:'fictional_sample',operationId:null};
+  const budget:WorkBudget={...parsed,quoteId:newId('work_quote'),spentCents:previous?.spentCents??0,reservedCents:0,approvedMaximumCents:parsed.maximumCents<=approvalThresholdCents?parsed.maximumCents:null,status:parsed.maximumCents<=approvalThresholdCents?'approved':'awaiting_approval',expiresAt:new Date(Date.now()+15*60_000).toISOString(),createdAt:previous?.createdAt??now(),updatedAt:now(),rateVersion:1,costBasis:parsed.costBasis,operationId:null};
   if(previous)write(actor,budget);else db.prepare('INSERT INTO work_budgets VALUES(?,?,?,?,?)').run(budget.runId,...scope(actor),JSON.stringify(budget));
   event(actor,budget,`quote:${budget.quoteId}`,{kind:'quote',...budget});
   audit(actor,'work.budget_quoted',budget.runId,{planVersion:budget.planVersion,maximumCents:budget.maximumCents,simulated:true});
@@ -88,23 +88,27 @@ export function reserveWorkBudget(actor:Actor,runId:string):WorkBudget {
   if(budget.status==='unknown')throw new AppError(409,'The prior job outcome is unresolved; do not repeat its work.');
   if(budget.status!=='approved'||budget.approvedMaximumCents===null||budget.maximumCents>budget.approvedMaximumCents)throw new AppError(409,'Review and approve the current job maximum before starting.');
   validQuote(budget);const remaining=budget.maximumCents-budget.spentCents;
-  const operation=remaining?reserveWorkWallet(actor,{runId:budget.runId,quoteId:budget.quoteId,maximumCents:remaining,expiresAt:budget.expiresAt}):null;
+  const operation=remaining?reserveWorkWallet(actor,{runId:budget.runId,quoteId:budget.quoteId,maximumCents:remaining,expiresAt:budget.expiresAt,costBasis:budget.costBasis}):null;
   const updated:WorkBudget={...budget,status:'reserved',reservedCents:remaining,operationId:operation?.id??null,updatedAt:now()};
   write(actor,updated);event(actor,updated,`reserve:${budget.quoteId}`,{kind:'reserve',quoteId:budget.quoteId,remainingCents:remaining});return updated;
  }).immediate();
 }
 
 /** Settle only after the corresponding local step and its receipt succeed in the SAME outer transaction. */
-export function consumeWorkBudget(actor:Actor,input:z.input<typeof consumeSchema>):WorkBudget {
- assertActor(actor);assertBillingDemo();requireFeature(actor,'core');const parsed=consumeSchema.parse(input);
+export function consumeWorkBudget(actor:Actor,input:z.input<typeof consumeSchema>):WorkBudget {requireFeature(actor,'core');return consumeBudget(actor,input,false);}
+/** Internal receipt reconciliation only. Never exposes execution or approval authority. */
+export function settleRecordedWorkBudgetUsage(actor:Actor,input:z.input<typeof consumeSchema>):WorkBudget {return consumeBudget(actor,input,true);}
+function consumeBudget(actor:Actor,input:z.input<typeof consumeSchema>,receipt:boolean):WorkBudget {
+ assertActor(actor);assertBillingDemo();const parsed=consumeSchema.parse(input);
  return getDb().transaction(()=>{
   const budget=read(actor,parsed.runId);
+  if(receipt&&budget.costBasis!=='metered_simulation')throw new AppError(409,'Receipt settlement requires a metered assignment.');
   if(!event(actor,budget,`step:${parsed.stepKey}`,{kind:'step',stepKey:parsed.stepKey,amountCents:parsed.amountCents}))return budget;
   if(budget.status!=='reserved')throw new AppError(409,'Reserve the approved job maximum before performing a step.');
   if(budget.approvedMaximumCents===null||budget.spentCents+parsed.amountCents>budget.approvedMaximumCents||parsed.amountCents>budget.reservedCents)throw new AppError(409,'This step would exceed the approved job maximum. Request a revised estimate.');
   if(parsed.amountCents){
    if(!budget.operationId)throw new AppError(409,'This job has no outstanding credit reservation.');
-   consumeWorkWallet(actor,{runId:budget.runId,operationId:budget.operationId,stepKey:parsed.stepKey,amountCents:parsed.amountCents});
+   (receipt?settleRecordedWorkWalletUsage:consumeWorkWallet)(actor,{runId:budget.runId,operationId:budget.operationId,stepKey:parsed.stepKey,amountCents:parsed.amountCents});
   }
   const updated:WorkBudget={...budget,spentCents:budget.spentCents+parsed.amountCents,reservedCents:budget.reservedCents-parsed.amountCents,updatedAt:now()};
   write(actor,updated);return updated;

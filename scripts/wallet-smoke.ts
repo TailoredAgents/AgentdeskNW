@@ -51,7 +51,7 @@ await request('wallet/settings','POST',{monthlySpendLimitCents:3000,expectedVers
 
 const briefing=await estimate('relationship-briefing');
 assert.equal(briefing.costBasis,'fictional_sample');assert.equal(briefing.markupMultiplier,5);
-check(briefing.maximumCents===briefing.sampleProviderMaximumCents*5,'Sample estimate snapshots the five-times multiplier');
+check(briefing.sampleProviderMaximumCents!==null&&briefing.maximumCents===briefing.sampleProviderMaximumCents*5,'Sample estimate snapshots the five-times multiplier');
 const beforeReservation=state.availableCents;
 const reserve={quoteId:briefing.id,outcome:'reserve',expectedVersion:state.version,eventKey:eventKey('reserve')};
 state=await request<WalletState>('wallet/simulate','POST',reserve);

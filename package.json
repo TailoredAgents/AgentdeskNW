@@ -31,7 +31,8 @@
     "test:opportunities": "node scripts/smoke-runner.mjs opportunities",
     "test:work-questions": "node scripts/smoke-runner.mjs work-questions",
     "test:handoffs": "node scripts/smoke-runner.mjs handoffs",
-    "test:mobile-followthrough": "node scripts/smoke-runner.mjs mobile-followthrough"
+    "test:mobile-followthrough": "node scripts/smoke-runner.mjs mobile-followthrough",
+    "test:metered": "node --import tsx scripts/metered-smoke.ts"
   },
   "dependencies": {
     "@slack/socket-mode": "3.1.0",

@@ -2,6 +2,10 @@
 
 [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) is the sole authority for completion status and development order. This document records schema contracts and historical preservation evidence, not permission to apply migrations to the active database.
 
+## Metered assignment contract — migration 029
+
+`metered_assignments` binds one stable assignment key to organization/office/employee, versioned parts/rates, attempt claims, receipts and cancellation intent. `metered_assignment_events` preserves immutable dispatch/quote/receipt/finish evidence. `metered_response_claims` prevents the same provider response being applied to two calls. The assignment's budget and wallet hold reuse existing tables; no new spendable balance exists. Raw prompts/responses are not stored in these billing records. The adapter is test-only and no public receipt endpoint exists. Migration 029 preserved all 316 previous rows across 98 tables on a disposable schema-028 copy, with clean integrity/foreign keys. See [USAGE_METERING.md](USAGE_METERING.md).
+
 ## Optional automatic top-up — migration 028
 
 `auto_topup_settings` stores one organization/employee wallet configuration across offices, including version, trigger, amount, monthly cap and armed cycle. `auto_topup_purchases` stores scoped simulated requests and versioned pending/unknown/succeeded/failed outcomes. A partial unique index permits only one unresolved request per wallet. `auto_topup_events` preserves scoped replay hashes and immutable settings/recovery/outcome evidence. Successful requests credit the existing purchased wallet bucket exactly once; no second balance is introduced. Migration 028 preserved all 316 prior rows across 95 tables on a disposable schema-027 copy with clean integrity/foreign keys; active data was not used. See [USAGE_METERING.md](USAGE_METERING.md).
