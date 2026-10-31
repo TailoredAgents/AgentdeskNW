@@ -1,3 +1,4 @@
+import {textPauseState} from './text-pause';
 import {z} from 'zod';
 import {localAssignmentHasPendingWork} from './local-assignment-work';
 import type {Actor,Artifact} from '../lib/contracts';
@@ -42,13 +43,18 @@ function projection(actor:Actor,row:Row):AssignmentReview {
  const employeeStopped=!!getDb().prepare('SELECT 1 FROM assignment_cancellations WHERE review_id=? LIMIT 1').get(row.id);
  const pendingLocal=localAssignmentHasPendingWork(actor,assignment.id);
  const renewableHost=getDb().prepare("SELECT 1 FROM text_executions WHERE binding_id=? AND phase='ready' AND json_extract(data,'$.metering.reviewId')=?").get(row.binding_id,row.id);
- const canRenew=same&&!contentRestricted&&!assignment.stopRequested&&['quoted','active'].includes(assignment.status)&&['waiting','ready'].includes(row.state)&&!!renewableHost&&assignment.attempts.length===0&&assignment.parts.length===1;
+ const pauseState=textPauseState(row.id);
+ const paused=pauseState==='requested'||pauseState==='paused';
+ const execution=getDb().prepare("SELECT e.phase,e.conversation_id FROM text_executions e WHERE e.binding_id=? AND json_extract(e.data,'$.metering.reviewId')=?").get(row.binding_id,row.id) as {phase:string;conversation_id:string}|undefined;
+ const canPause=same&&!paused&&!assignment.stopRequested&&['quoted','active'].includes(assignment.status)&&!!execution&&['ready','received','dispatching'].includes(execution.phase)&&row.state!=='denied';
+ const canContinue=same&&!contentRestricted&&pauseState==='paused'&&!assignment.stopRequested&&!!execution&&['ready','received'].includes(execution.phase)&&['ready','waiting','continued'].includes(row.state)&&!getDb().prepare("SELECT 1 FROM assistant_turns WHERE conversation_id=? AND status='running'").get(execution.conversation_id);
+ const canRenew=!paused&&same&&!contentRestricted&&!assignment.stopRequested&&['quoted','active'].includes(assignment.status)&&['waiting','ready'].includes(row.state)&&!!renewableHost&&assignment.attempts.length===0&&assignment.parts.length===1;
  const expired=Date.parse(budget.expiresAt)<=Date.now()&&['approved','awaiting_approval'].includes(budget.status);
  const state:AssignmentReview['state']=!same||contentRestricted||expired?'obsolete':closed?'closed':row.state;
- return {id:row.id,title:contentRestricted?'Assignment context changed':data.quote.title,summary:contentRestricted?'The original sources changed or are no longer available. Ask the Agent to prepare a current review.':data.summary,revision:row.revision,quoteId:row.quote_id,
+ return {id:row.id,conversationReference:`S${fingerprint(row.id).slice(0,16).toUpperCase()}`,title:contentRestricted?'Assignment context changed':data.quote.title,summary:contentRestricted?'The original sources changed or are no longer available. Ask the Agent to prepare a current review.':data.summary,revision:row.revision,quoteId:row.quote_id,
   parts:contentRestricted?[]:data.parts.map(p=>({...p,maximumCalls:data.quote.calls[p.key]})),
   estimatedCents:data.quote.estimatedCents,maximumCents:data.quote.maximumCents,spentCents:budget.spentCents,heldCents:budget.reservedCents,
-  expiresAt:data.quote.expiresAt,createdAt:row.created_at,state,contentRestricted,canRenew,replacedByRenewal:!!getDb().prepare('SELECT 1 FROM assignment_renewals WHERE original_review_id=? LIMIT 1').get(row.id),canCancel:same&&!employeeStopped&&assignment.status!=='completed'&&(assignment.status!=='canceled'||pendingLocal),executionState:assignment.stopRequested==='canceled'?(assignment.status==='canceled'?'canceled':'stopping'):assignment.status==='completed'?'completed':['reconciling','paused'].includes(assignment.status)?'needs_attention':'open',canDecide:state==='waiting'&&budget.status==='awaiting_approval',simulation:true};
+  expiresAt:data.quote.expiresAt,createdAt:row.created_at,state,contentRestricted,canPause,canContinue,canRenew,replacedByRenewal:!!getDb().prepare('SELECT 1 FROM assignment_renewals WHERE original_review_id=? LIMIT 1').get(row.id)||!!getDb().prepare('SELECT 1 FROM assignment_text_control_events WHERE review_id=? AND replacement_review_id IS NOT NULL LIMIT 1').get(row.id),canCancel:same&&!employeeStopped&&assignment.status!=='completed'&&(assignment.status!=='canceled'||pendingLocal),executionState:assignment.stopRequested==='canceled'?(assignment.status==='canceled'?'canceled':'stopping'):['reconciling','paused'].includes(assignment.status)?'needs_attention':paused?(pauseState==='requested'?'pausing':'paused'):assignment.status==='completed'?'completed':['reconciling','paused'].includes(assignment.status)?'needs_attention':'open',canDecide:!paused&&state==='waiting'&&budget.status==='awaiting_approval',simulation:true};
 }
 export function getAssignmentReview(actor:Actor,reviewId:string){return projection(actor,read(actor,reviewId));}
 /** Current-use history keeps the exact quote and sources. State changes alone do not erase the reviewed scope. */
@@ -110,6 +116,7 @@ export function decideAssignmentReview(actor:Actor,reviewId:string,raw:Assignmen
 export function claimAssignmentContinuation(actor:Actor,reviewId:string,currentScope:()=>string):{claimed:boolean;token:string|null;review:AssignmentReview} {
  return getDb().transaction(()=>{
   requireFeature(actor,'core');const row=read(actor,reviewId),active=currentAssignment(actor),view=projection(actor,row);
+  if(['requested','paused'].includes(textPauseState(row.id)??''))throw new AppError(409,'The assignment is paused. Use its explicit continue control.');
   if(active.id!==row.binding_id)throw new AppError(409,'Continue from the original assignment host.');
   if(currentScope()!==row.scope_hash||view.contentRestricted||['obsolete','closed','waiting','denied'].includes(view.state))throw new AppError(409,'This assignment is not approved for its current context.');
   if(row.state!=='ready')return {claimed:false,token:null,review:view};

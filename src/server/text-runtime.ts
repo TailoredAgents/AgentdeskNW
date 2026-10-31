@@ -1,3 +1,4 @@
+import {checkTextPause,TextPauseBoundary} from './text-pause';
 import { z } from 'zod';
 import type { Actor,Artifact,ToolResult } from '../lib/contracts';
 import { AppError,getDb,now,scopedGet } from './db';
@@ -52,11 +53,13 @@ async function executeLiveText(input:{actor:Actor;conversationId:string;requestI
  if(execution.phase==='completed')return execution.data.result!;
  if(['dispatching','unknown'].includes(execution.phase))throw new AppError(409,'A provider call has an unresolved outcome. Its saved request will not be sent again automatically.');
  if(execution.phase==='failed')throw new AppError(409,'This AI execution stopped after a confirmed failure. Completed work and usage remain saved.');
+ checkTextPause(actor,execution);
  execution=prepareTextSpending(actor,execution);
  const wait=textSpendingWait(actor,execution);if(wait)return wait;
  const finish=(message:string)=>{
   const result:ToolResult={message,specialistIds:[...specialists],artifacts:artifacts.slice(0,20)};
   execution=db.transaction(()=>{
+   checkTextPause(actor,execution);
    assertTextAssignmentRunning(actor,execution);
    const state={...execution.data,result,artifacts:[...artifacts],specialistIds:[...specialists],response:null};
    if(Buffer.byteLength(JSON.stringify(state.items))<=config.maxContextBytes)db.prepare('INSERT INTO assistant_context VALUES(?,?,?,?) ON CONFLICT(conversation_id) DO UPDATE SET scope_hash=excluded.scope_hash,items=excluded.items,updated_at=excluded.updated_at').run(conversationId,execution.scopeHash,JSON.stringify(state.items),now());
@@ -65,7 +68,8 @@ async function executeLiveText(input:{actor:Actor;conversationId:string;requestI
    return completed;
   }).immediate();return result;
  };
- while(execution.data.round<config.maxRounds){
+ while(execution.data.round<(execution.data.roundLimit??config.maxRounds)){
+  checkTextPause(actor,execution);
   requireFeature(actor,'core');restore();
   const state=execution.data,round=state.round,requestScope=execution.scopeHash;
   if(execution.phase==='ready'){
@@ -74,9 +78,11 @@ async function executeLiveText(input:{actor:Actor;conversationId:string;requestI
    if(size>config.maxContextBytes)throw new AppError(413,'This conversation is too large for the configured AI request budget. Start a new conversation with the relevant details.');
    const operationId=`text:${requestId}:${round}`;
    const inputCount=execution.data.metering?await countTextInput(actor,execution,payload,()=>fingerprint(input.currentScope())):null;
+   checkTextPause(actor,execution);
    // The allowance, provider identity and durable dispatch claim commit before the request leaves.
    execution=db.transaction(()=>{
     if(fingerprint(input.currentScope())!==execution.scopeHash)throw new AppError(409,'Protected context changed before AI dispatch.');
+    checkTextPause(actor,execution);
     admitTextSpending(actor,execution,payload,inputCount);
     reserveUsage(actor,{category:'text_tokens',operationId,quantity:size+config.maxOutputTokens,source:'Conservative Responses request token reservation, including tool schemas'});
     beginProviderOperation(actor,{operationId,provider:'openai',feature:'core',kind:'text_response',model:config.model,requestHash:fingerprint(payload)});
@@ -103,6 +109,7 @@ async function executeLiveText(input:{actor:Actor;conversationId:string;requestI
     throw error;
    }
   }
+  checkTextPause(actor,execution);
   assertTextAssignmentRunning(actor,execution);
   restore();
   const raw=execution.data.response!;
@@ -121,11 +128,12 @@ async function executeLiveText(input:{actor:Actor;conversationId:string;requestI
    execution.data={...execution.data,items:nextItems};return finish(text);
   }
   execution=db.transaction(()=>{
+   checkTextPause(actor,execution);
    assertTextAssignmentRunning(actor,execution);
    if(fingerprint(input.currentScope())!==requestScope)throw new AppError(409,'Workspace permissions changed before tool execution. Retrieve current context.');
    let count=execution.data.toolCount;const handled=new Set(execution.data.handled),nextArtifacts=[...execution.data.artifacts],nextSpecialists=new Set(execution.data.specialistIds);
    for(const call of calls){
-    if(++count>config.maxToolCalls){nextItems.push({type:'function_call_output',call_id:call.call_id,output:JSON.stringify({error:'Tool budget exhausted.',completed:false})});continue;}
+    if(++count>(execution.data.toolLimit??config.maxToolCalls)){nextItems.push({type:'function_call_output',call_id:call.call_id,output:JSON.stringify({error:'Tool budget exhausted.',completed:false})});continue;}
     try{
      const result=executeRecordedTool(actor,conversationId,call.call_id,call.name,JSON.parse(call.arguments),()=>input.dispatch(call.name,JSON.parse(call.arguments)),requestId);
      if(!handled.has(call.call_id)){result.specialistIds.forEach(id=>nextSpecialists.add(id));nextArtifacts.push(...result.artifacts);handled.add(call.call_id);}
@@ -135,13 +143,14 @@ async function executeLiveText(input:{actor:Actor;conversationId:string;requestI
    // Local effects, tool receipts, changed scope and next-round position commit together.
    return advanceTextExecution(actor,execution,'ready',{...execution.data,items:nextItems,round:round+1,toolCount:count,handled:[...handled],artifacts:nextArtifacts,specialistIds:[...nextSpecialists],response:null},fingerprint(input.currentScope()));
   }).immediate();
-  restore();if(execution.data.toolCount>=config.maxToolCalls)break;
+  restore();if(execution.data.toolCount>=(execution.data.toolLimit??config.maxToolCalls))break;
  }
  return finish('The assistant reached its step limit. Review completed items below before requesting further work.');
 }
 
 export async function runLiveText(input:Parameters<typeof executeLiveText>[0]):Promise<ToolResult>{
  try{return await executeLiveText(input);}catch(error){
+  if(error instanceof TextPauseBoundary){const saved=readTextExecution(input.actor,input.requestId);if(saved)try{checkTextPause(input.actor,saved);}catch(pause){if(!(pause instanceof TextPauseBoundary))throw pause;}return {message:error.message,specialistIds:[],artifacts:[]};}
   // Known preflight/scope failures release unused funds. Uncertain transport and interrupted
   // atomic checkpoints retain their saved state and require reconciliation instead of retry.
   if(error instanceof AppError)try{const saved=readTextExecution(input.actor,input.requestId);if(saved?.data.metering&&['ready','received'].includes(saved.phase))getDb().transaction(()=>{finishTextSpending(input.actor,saved,'canceled');advanceTextExecution(input.actor,saved,'failed',saved.data);}).immediate();}catch{/* Preserve the original failure; never fabricate a reconciled outcome. */}

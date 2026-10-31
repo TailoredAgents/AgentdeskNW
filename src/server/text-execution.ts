@@ -8,7 +8,7 @@ import {textProviderConfig} from './provider-config';
 export type TextPhase='ready'|'dispatching'|'received'|'completed'|'failed'|'unknown';
 export interface TextState {
  config:ReturnType<typeof textProviderConfig>;prefix:Record<string,unknown>[];items:Record<string,unknown>[];
- round:number;toolCount:number;handled:string[];artifacts:Artifact[];specialistIds:string[];
+ round:number;roundLimit?:number;toolLimit?:number;retiredMeteredParts?:string[];revisedInstructions?:string;toolCount:number;handled:string[];artifacts:Artifact[];specialistIds:string[];
  response:Record<string,unknown>|null;result:ToolResult|null;
  request?:{message:string;instructions:string;channel:'web'|'mobile'|'sms'|'slack';receivedAt?:string;replyTarget?:TextReplyTarget};
  metering?:{assignmentId:string;revision:number;scopeHash:string;partKey:string;reviewId:string;continuationToken?:string;inputCount?:number};
@@ -36,7 +36,7 @@ export function openTextExecution(actor:Actor,input:{requestId:string;conversati
  }).immediate();
 }
 export const readTextExecution=read;
-const transitions:Record<TextPhase,TextPhase[]>={ready:['ready','dispatching','completed','failed'],dispatching:['received','failed','unknown'],received:['ready','completed','failed'],completed:[],failed:[],unknown:[]};
+const transitions:Record<TextPhase,TextPhase[]>={ready:['ready','dispatching','completed','failed'],dispatching:['received','failed','unknown'],received:['received','ready','completed','failed'],completed:[],failed:[],unknown:[]};
 /** Compare-and-swap inside the same transaction as the corresponding allowance/receipt/tool writes.
  * A dispatch claim has no automatic lease expiry: an uncertain provider call must not be repeated.
  */

@@ -102,3 +102,10 @@ Focused tests cover request intent, ambiguity, numbered choices, replay, task ve
 ## Wholesaler opportunity context
 
 Acquisitions/management can ask “Show my wholesaler opportunities” through the shared conversation. Read-only `opportunity_review` retrieves the authorized board or one detail; Agent links open native New opportunities or desktop Work. The same evidence is available to composed jobs through `review_opportunity`. Employee-reviewed creation/revisions stay in Work; no source statement, model argument or follow-up draft authorizes an inventory change or delivery. Current opportunity fingerprints protect saved conversation/tool/work context. See [acquisitions intake](ACQUISITIONS_INTAKE.md#pre-inventory-wholesaler-opportunities).
+
+
+## Original reasoning controls
+
+The shared employee conversation accepts exact **Pause S…**, **Continue S…**/**Resume S…** and **Revise S…: updated remaining instructions** commands. They select an existing owned spending review and do not invoke another model turn. Pause is accepted while the original response is running, then acknowledges a saved boundary before tools or further generation. Continue/revise wait until the original host has returned. Vague/quoted commands do not identify a spending decision.
+
+A revision retains the original request, prior actions and incurred charges, replaces unused reasoning scope, and returns a new S review. Above-$1 revised work needs the exact R approval or full app review. Continuing unchanged work retains a still-valid prior approval. The same API and command services serve web, native text/dictation, configured SMS and Slack. Text controls are not live voice parity. Unknown outcomes and changed protected business context require separate recovery; existing delegated job plans are revised through their own supported controls.

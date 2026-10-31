@@ -459,7 +459,7 @@ async function localReply(actor:Actor,message:string,conversation:Conversation,c
 }
 
 export async function chat(actor:Actor,message:string,conversationId?:string,requestId=newId('turn'),channel:'web'|'slack'|'sms'|'mobile'='web',options:{receivedAt?:string}={}):Promise<{conversation:Conversation;result:ToolResult}>{
-  if(assignmentConversationIntent(message)?.action!=='cancel')requireFeature(actor,'core');
+  if(!['cancel','pause'].includes(assignmentConversationIntent(message)?.action??''))requireFeature(actor,'core');
   z.string().min(1).max(150).parse(requestId);
   z.string().trim().min(1).max(12000).parse(message);
   if(options.receivedAt)z.string().datetime({offset:true}).parse(options.receivedAt);
@@ -476,7 +476,7 @@ export async function chat(actor:Actor,message:string,conversationId?:string,req
     }
     const conversation=conversationId?service.getConversation(actor,conversationId):service.createConversation(actor,message.slice(0,70));
     db.prepare("UPDATE assistant_turns SET status='interrupted' WHERE conversation_id=? AND status='running' AND started_at<?").run(conversation.id,new Date(Date.now()-20*60*1000).toISOString());
-    const assignmentIntent=assignmentConversationIntent(message),cancellationCommand=assignmentIntent?.action==='cancel',synchronousControl=cancellationCommand||assignmentIntent?.action==='renew';
+    const assignmentIntent=assignmentConversationIntent(message),cancellationCommand=['cancel','pause'].includes(assignmentIntent?.action??''),synchronousControl=cancellationCommand||['renew','continue','revise'].includes(assignmentIntent?.action??'');
     if(db.prepare("SELECT 1 FROM assistant_turns WHERE conversation_id=? AND status='running'").get(conversation.id)&&!cancellationCommand)throw new service.AppError(409,'This conversation is already responding. Please wait.');
     db.prepare('INSERT INTO assistant_turns VALUES(?,?,?,?,?,?,?,?,?)').run(actor.organizationId,actor.officeId,actor.id,requestId,conversation.id,requestHash,synchronousControl?'control':'running',now(),null);
     service.addMessage(actor,conversation.id,{role:'user',content:message});
@@ -526,6 +526,9 @@ export async function chat(actor:Actor,message:string,conversationId?:string,req
 
 export function currentTextScope(actor:Actor,conversationId:string){
  const db=getDb();
+ // Materialize existing authorized CRM criteria before hashing, just as the workspace
+ // does on first read. Opening that view must not look like an employee edit.
+ intelligence.listInvestorIntelligence(actor);
         const knowledge=knowledgeContextReference(actor),updates=currentProactiveItems(actor);
         const current=service.getBootstrap(actor);
         const visibleInvestorIds=new Set(current.investors.map(investor=>investor.id));
@@ -555,7 +558,7 @@ export async function resumeApprovedTextRequest(actor:Actor,requestId:string,rev
   const db=getDb(),saved=readTextExecution(actor,requestId);
   if(!saved?.data.request||saved.data.metering?.reviewId!==reviewId)return false;
   if(saved.phase==='completed'&&saved.data.result&&saved.data.metering.continuationToken)return publishTextContinuation(actor,requestId,reviewId,saved.data.metering.continuationToken,saved.data.result);
-  if(saved.phase!=='ready')return false;
+  if(!['ready','received'].includes(saved.phase))return false;
   const currentScope=()=>currentTextScope(actor,saved.conversationId);
   // A different active turn must finish first. Claim and allowance reservation roll back together.
   const claimed=db.transaction(()=>{
@@ -563,12 +566,12 @@ export async function resumeApprovedTextRequest(actor:Actor,requestId:string,rev
    const claim=claimAssignmentContinuation(actor,reviewId,()=>fingerprint(currentScope()));
    if(!claim.claimed)return null;
    reserveWorkBudget(actor,saved.data.metering!.assignmentId);
-   const execution=advanceTextExecution(actor,saved,'ready',{...saved.data,metering:{...saved.data.metering!,continuationToken:claim.token!}});
+   const execution=advanceTextExecution(actor,saved,saved.phase,{...saved.data,metering:{...saved.data.metering!,continuationToken:claim.token!}});
    db.prepare("UPDATE assistant_turns SET status='running',started_at=? WHERE organization_id=? AND office_id=? AND user_id=? AND request_id=?").run(now(),actor.organizationId,actor.officeId,actor.id,requestId);
    return {execution,token:claim.token!};
   }).immediate();
   if(!claimed)return false;
-  const original=claimed.execution.data.request!,command:TurnCommandContext={conversationId:saved.conversationId,requestId,message:original.message,receivedAt:original.receivedAt};
+  const original=claimed.execution.data.request!,command:TurnCommandContext={conversationId:saved.conversationId,requestId,message:claimed.execution.data.revisedInstructions??original.message,receivedAt:original.receivedAt};
   let result:ToolResult;const artifacts:Artifact[]=[],specialists=new Set<string>();
   try{
    const scope=currentScope();

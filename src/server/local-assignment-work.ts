@@ -52,8 +52,8 @@ export function localAssignmentOutcome(actor:Actor,assignmentId:string):'complet
 export function textAllocationsFinished(actor:Actor,assignmentId:string){
  const assignment=getMeteredAssignment(actor,assignmentId);
  const rows=getDb().prepare("SELECT phase,data FROM text_executions WHERE organization_id=? AND office_id=? AND user_id=? AND json_extract(data,'$.metering.assignmentId')=?").all(...owner(actor),assignmentId) as {phase:TextPhase;data:string}[];
- const hosts=rows.map(row=>({phase:row.phase,metering:(JSON.parse(row.data) as TextState).metering!}));
- return hosts.some(host=>host.metering.revision===assignment.revision)&&assignment.parts.every(part=>hosts.some(host=>host.phase==='completed'&&host.metering.partKey===part.key));
+ const hosts=rows.map(row=>({phase:row.phase,metering:(JSON.parse(row.data) as TextState).metering!,retired:(JSON.parse(row.data) as TextState).retiredMeteredParts??[]}));
+ return hosts.some(host=>host.metering.revision===assignment.revision)&&assignment.parts.every(part=>hosts.some(host=>host.phase==='completed'&&(host.metering.partKey===part.key||host.retired.includes(part.key))));
 }
 /** Called only after local results/cancellation are durably written in the same transaction. */
 export function finishLocalAssignment(actor:Actor,runId:string){

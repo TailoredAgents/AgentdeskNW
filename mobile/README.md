@@ -179,3 +179,8 @@ Work spending reviews now offer **Refresh original quote** for an eligible unsta
 Work → New opportunities shows the same employee’s linked diligence scenarios, intake/model discrepancies, dated metrics and modeled downside. Expand a scenario and use **Open scenario and sources** to open that exact saved analysis. Saved-job analysis/opportunity artifacts also open their matching detail. Scenario access remains private and source changes withhold obsolete calculations. Navigation retains existing unsaved-edit guards.
 
 October 31 verification: 78 mobile tests, independent typecheck, iOS/Android JavaScript exports and production/development web exports passed. A paired 390×844 native-browser walkthrough displayed the shared opportunity and opened its adverse scenario; backend/API checks verify source invalidation and private ownership. This does not establish installed-phone, offline or practitioner acceptance. See [PROGRESS](../docs/PROGRESS.md) for the checkpoint evidence.
+
+
+## Paused reasoning and changed instructions
+
+Assignment spending cards now show **Pause remaining reasoning**, a waiting/paused status, and **Continue saved work**. The paused card gives the exact Agent reference for changing remaining instructions. The app shares the server’s pause boundary and immutable revised review; it does not hold an independent job. Current approval carries only for unchanged work, while changed instructions show a new cumulative maximum and decision. Prior charges remain visible. Native browser/export acceptance does not establish installed-device lifecycle behavior.
