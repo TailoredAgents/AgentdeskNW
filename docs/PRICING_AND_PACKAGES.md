@@ -36,7 +36,7 @@ Examples with no other sponsorship:
 
 One dollar of AgentDesk Credits represents one dollar of retail usage value, not one dollar of provider cost. The wallet separates included and purchased funds, holds, settled sample spending, spend limits and history. Included credit resets each subscription period; purchased credit rolls over. Standalone wallet samples require an estimate review; durable fictional jobs follow the whole-job threshold below. The default monthly sample-spending cap is $25 and can be adjusted deliberately.
 
-The demonstration uses server-owned fictional cost scenarios with a versioned 5× multiplier. These are examples for testing the experience, not measured provider costs or proven margins. It does not debit real AI, research, voice or SMS activity yet. Existing operational allowances/receipts remain separate until real usage settlement passes checkpoint C6. Ordinary navigation and deterministic task controls do not debit the wallet.
+The demonstration uses server-owned fictional cost scenarios with a versioned 5× multiplier. These are examples for testing the experience, not measured provider costs or proven margins. The default path does not debit real AI, research, voice or SMS activity. An explicit admitted-text development mode can settle bounded text receipts against simulated credits; it is not real billing or a provider-wide cap. Existing operational allowances/receipts remain separate until real usage settlement passes checkpoint C6. Ordinary navigation and deterministic task controls do not debit the wallet.
 
 ## Implemented fictional spending and remaining controls
 

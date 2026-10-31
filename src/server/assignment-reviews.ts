@@ -81,7 +81,7 @@ export function decideAssignmentReview(actor:Actor,reviewId:string,raw:Assignmen
  const input=assignmentDecisionSchema.parse(raw);
  return getDb().transaction(()=>{
   const row=read(actor,reviewId),view=projection(actor,row);
-  if(input.quoteId!==row.quote_id||input.revision!==row.revision||view.contentRestricted||['obsolete','closed'].includes(view.state))throw new AppError(409,'This review changed or expired. Review the current assignment before deciding.');
+  if(input.quoteId!==row.quote_id||input.revision!==row.revision||view.contentRestricted||view.state==='obsolete')throw new AppError(409,'This review changed or expired. Review the current assignment before deciding.');
   decideMeteredAssignment(actor,{assignmentId:row.assignment_id,...input});
   // An exact retry after continuation must not reset the claim or create another dispatch.
   if(row.state==='waiting')getDb().prepare('UPDATE assignment_reviews SET state=?,updated_at=? WHERE id=?').run(input.decision==='approve'?'ready':'denied',now(),row.id);

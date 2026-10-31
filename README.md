@@ -22,7 +22,7 @@ Verification: **903 root tests, 57 mobile tests, 1,553 HTTP/workflow checks and 
 
 **Mobile is prepared locally, not yet installed or released.** The phone-width browser rehearsal passed pairing, shared history, cross-surface cost approval, pause/resume, background worker completion and remote device revocation. Native binary builds, real phone speech/push and store distribution remain pending. [Mobile preparation notes](mobile/README.md) distinguish each acceptance layer. Whole-job costs remain fictional; live model/provider usage is separately metered.
 
-Implementation follows the single roadmap. C1–C7 remain partial. Recent local checkpoints include private/shared transaction coordination, exact title-email simulation, shared Agent/saved-work retrieval, chosen updates and versioned follow-up continuation. Desktop can now import text-based PDFs, preserve their originals and share reviewed working-text revisions with the native client. Next: usable document retrieval/reasoning and remaining role depth; complete stable assignment roots, spending review/continuation and paid-host admission before broader live autonomy. OCR, phone file picking, real connections, device testing and practitioner acceptance remain open. The owner has deferred real-world acceptance to a later assessment; independent fictional development continues.
+Implementation follows the single roadmap; C1–C7 remain partial. Current foundations include private/shared transaction work, reviewed title-email simulation, sourced guidance and document retrieval, PDF originals, shared conversations and saved work, chosen updates, assignment roots and employee spending reviews. Text execution now persists model/tool progress. An explicit `admitted_demo` development mode connects bounded text quotes, employee approval, background continuation and simulated settlement using counted input and validated receipts. It is off by default and does not yet combine other paid hosts or existing sample-job charges into a complete assignment cap. Follow the roadmap for current sequencing; semantic document reasoning, broader role depth, phone file picking, provider connections, device/practitioner acceptance and the other listed completion gates remain open. Real-world acceptance is deferred; fictional development continues.
 
 Repository: [TailoredAgents/AgentdeskNW](https://github.com/TailoredAgents/AgentdeskNW). The owner reported a Render deployment; the latest deployed revision has not been verified. Push and deployment are separate. Real company data, live mailboxes/investor delivery, actual payments, managed identity and broad expert autonomy remain unfinished.
 
@@ -65,6 +65,8 @@ npm run test:intelligence
 npm run test:conversation
 npm run test:wallet
 npm run test:metered
+npm run test:text-restart
+npm run test:text-spending
 node scripts/smoke-runner.mjs proactive
 node scripts/smoke-runner.mjs transactions
 npm run test:hosted

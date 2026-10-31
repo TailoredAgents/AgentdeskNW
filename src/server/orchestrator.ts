@@ -1,4 +1,8 @@
 import {bindAssignment,withAssignment} from './assignment-roots';
+import {readTextExecution,advanceTextExecution} from './text-execution';
+import {claimAssignmentContinuation,completeAssignmentContinuation} from './assignment-reviews';
+import {reserveWorkBudget} from './work-budget';
+import {textProviderConfig} from './provider-config';
 import {documentToolSchemas,documentToolDescriptions,dispatchDocumentTool,localDocumentReply} from './document-tooling';
 import {documentContextReference} from './document-context';
 import {teamTransactionToolSchema,dispatchTeamTransactionTool,localTeamTransactionReply,transactionTeamContextReference} from './transaction-team-context';
@@ -487,16 +491,9 @@ export async function chat(actor:Actor,message:string,conversationId?:string,req
       const employeeMemory=getEmployeeMemory(actor);
       const context={actor,messaging,employeeMemory,conversationFocus:readConversationFocus(actor,conversation.id,options.receivedAt),investors:bootstrap.investors,properties:bootstrap.properties,tasks:listPersonalTasks(actor),jobs:bootstrap.jobs.map(({id,status,input})=>({id,status,input})),guidance:bootstrap.settings.guidance};
       // Any business permission/provenance change invalidates opaque model memory. Display history is freshly redacted by services.
-      const currentScope=()=>{
-        const knowledge=knowledgeContextReference(actor),updates=currentProactiveItems(actor);
-        const current=service.getBootstrap(actor);
-        const visibleInvestorIds=new Set(current.investors.map(investor=>investor.id));
-        const relationshipReports=(db.prepare('SELECT investor_id,data FROM relationship_reports WHERE organization_id=? ORDER BY rowid').all(actor.organizationId) as {investor_id:string;data:string}[]).filter(report=>visibleInvestorIds.has(report.investor_id));
-        const protectedState=['investor_intelligence','buy_boxes','property_releases','deal_packages','channel_templates','journey_observations','debriefs','tasks'].map(table=>db.prepare(`SELECT data FROM ${table} WHERE organization_id=? AND office_id=? ORDER BY rowid`).all(actor.organizationId,actor.officeId));
-        return {actor,knowledge,updates,documents:documentContextReference(actor),transactionTeams:transactionTeamContextReference(actor),transactions:transactionContextReference(actor),analyses:analysisContextReference(actor),opportunities:opportunityContextReference(actor),handoffs:getHandoffBoard(actor).handoffAccessReference,workingMethods:relationshipMethodFingerprint(),workAccess:workContextSnapshot(actor),employeeMemory:getEmployeeMemory(actor),investors:current.investors,properties:current.properties,protectedState,relationshipReports,inbox:inboxContextFingerprint(actor),access:service.specialists.map(s=>featureAccess(actor,s.id)),withheld:service.getConversation(actor,conversation.id).messages.filter(m=>m.content.startsWith('This historical message is withheld')).map(m=>m.id)};
-      };
+      const currentScope=()=>currentTextScope(actor,conversation.id);
       const scope=currentScope();
-      result=await runLiveText({actor,conversationId:conversation.id,requestId,message,instructions:assistantInstructions(actor)+(channel==='sms'?' This reply goes to the employee by SMS. Prefer a concise plain-text answer under 500 characters. Preserve essential caveats; the application adds a link to the full saved conversation.':channel==='slack'?' This reply goes to the employee in a private Slack DM. Be concise and use plain text.':''),context,scope,currentScope,history:currentPreferenceHistory(conversation,employeeMemory,24).map(m=>({role:m.role,content:m.content})),tools:toolDefinitions(),dispatch:(name,args)=>dispatchToolSync(actor,name,args,command),artifacts,specialists});
+      result=await runLiveText({actor,conversationId:conversation.id,requestId,message,channel,receivedAt:options.receivedAt,instructions:assistantInstructions(actor)+(channel==='sms'?' This reply goes to the employee by SMS. Prefer a concise plain-text answer under 500 characters. Preserve essential caveats; the application adds a link to the full saved conversation.':channel==='slack'?' This reply goes to the employee in a private Slack DM. Be concise and use plain text.':''),context,scope,currentScope,history:currentPreferenceHistory(conversation,employeeMemory,24).map(m=>({role:m.role,content:m.content})),tools:toolDefinitions(),dispatch:(name,args)=>dispatchToolSync(actor,name,args,command),artifacts,specialists});
     }
   }catch(error){
     if(!(error instanceof EntitlementError))console.error(JSON.stringify({event:'assistant_failed',actorId:actor.id,errorType:error instanceof Error?error.name:'unknown'}));
@@ -508,4 +505,57 @@ export async function chat(actor:Actor,message:string,conversationId?:string,req
   const current=service.getConversation(actor,conversation.id),answer=current.messages.at(-1)!;
   return {conversation:current,result:{message:answer.content,specialistIds:answer.specialistIds,artifacts:answer.artifacts}};
   });
+}
+
+export function currentTextScope(actor:Actor,conversationId:string){
+ const db=getDb();
+        const knowledge=knowledgeContextReference(actor),updates=currentProactiveItems(actor);
+        const current=service.getBootstrap(actor);
+        const visibleInvestorIds=new Set(current.investors.map(investor=>investor.id));
+        const relationshipReports=(db.prepare('SELECT investor_id,data FROM relationship_reports WHERE organization_id=? ORDER BY rowid').all(actor.organizationId) as {investor_id:string;data:string}[]).filter(report=>visibleInvestorIds.has(report.investor_id));
+        const protectedState=['investor_intelligence','buy_boxes','property_releases','deal_packages','channel_templates','journey_observations','debriefs','tasks'].map(table=>db.prepare(`SELECT data FROM ${table} WHERE organization_id=? AND office_id=? ORDER BY rowid`).all(actor.organizationId,actor.officeId));
+        return {actor,knowledge,updates,documents:documentContextReference(actor),transactionTeams:transactionTeamContextReference(actor),transactions:transactionContextReference(actor),analyses:analysisContextReference(actor),opportunities:opportunityContextReference(actor),handoffs:getHandoffBoard(actor).handoffAccessReference,workingMethods:relationshipMethodFingerprint(),workAccess:workContextSnapshot(actor),employeeMemory:getEmployeeMemory(actor),investors:current.investors,properties:current.properties,protectedState,relationshipReports,inbox:inboxContextFingerprint(actor),access:service.specialists.map(s=>featureAccess(actor,s.id)),withheld:service.getConversation(actor,conversationId).messages.filter(m=>m.content.startsWith('This historical message is withheld')).map(m=>m.id)};
+
+}
+
+function publishTextContinuation(actor:Actor,requestId:string,reviewId:string,token:string,result:ToolResult):boolean{
+ const db=getDb(),saved=readTextExecution(actor,requestId);if(!saved)return false;
+ return db.transaction(()=>{
+  const review=db.prepare('SELECT state FROM assignment_reviews WHERE id=? AND organization_id=? AND office_id=? AND user_id=?').get(reviewId,actor.organizationId,actor.officeId,actor.id) as {state:string}|undefined;
+  if(review?.state!=='claimed')return false;
+  const visible=fingerprint(currentTextScope(actor,saved.conversationId))===saved.scopeHash;
+  const message=service.addMessage(actor,saved.conversationId,{role:'assistant',content:visible?result.message.slice(0,50000):'The saved result is withheld because its protected context changed. Ask the Agent for a current review.',specialistIds:visible?result.specialistIds:[],artifacts:visible?result.artifacts:[]});
+  db.prepare("UPDATE assistant_turns SET status='completed',result=? WHERE organization_id=? AND office_id=? AND user_id=? AND request_id=?").run(JSON.stringify({messageId:message.id}),actor.organizationId,actor.officeId,actor.id,requestId);
+  completeAssignmentContinuation(actor,reviewId,token);return true;
+ }).immediate();
+}
+
+/** Worker-only continuation of an authenticated employee's exact saved cost decision. */
+export async function resumeApprovedTextRequest(actor:Actor,requestId:string,reviewId:string):Promise<boolean>{
+ if(!process.env.OPENAI_API_KEY||textProviderConfig().spendingMode!=='admitted_demo')return false;
+ return withAssignment(actor,{kind:'turn',id:requestId},async()=>{
+  const db=getDb(),saved=readTextExecution(actor,requestId);
+  if(!saved?.data.request||saved.data.metering?.reviewId!==reviewId)return false;
+  if(saved.phase==='completed'&&saved.data.result&&saved.data.metering.continuationToken)return publishTextContinuation(actor,requestId,reviewId,saved.data.metering.continuationToken,saved.data.result);
+  if(saved.phase!=='ready')return false;
+  const currentScope=()=>currentTextScope(actor,saved.conversationId);
+  // A different active turn must finish first. Claim and allowance reservation roll back together.
+  const claimed=db.transaction(()=>{
+   if(db.prepare("SELECT 1 FROM assistant_turns WHERE conversation_id=? AND status='running'").get(saved.conversationId))return null;
+   const claim=claimAssignmentContinuation(actor,reviewId,()=>fingerprint(currentScope()));
+   if(!claim.claimed)return null;
+   reserveWorkBudget(actor,saved.data.metering!.assignmentId);
+   const execution=advanceTextExecution(actor,saved,'ready',{...saved.data,metering:{...saved.data.metering!,continuationToken:claim.token!}});
+   db.prepare("UPDATE assistant_turns SET status='running',started_at=? WHERE organization_id=? AND office_id=? AND user_id=? AND request_id=?").run(now(),actor.organizationId,actor.officeId,actor.id,requestId);
+   return {execution,token:claim.token!};
+  }).immediate();
+  if(!claimed)return false;
+  const original=claimed.execution.data.request!,command:TurnCommandContext={conversationId:saved.conversationId,requestId,message:original.message,receivedAt:original.receivedAt};
+  let result:ToolResult;const artifacts:Artifact[]=[],specialists=new Set<string>();
+  try{
+   const scope=currentScope();
+   result=await runLiveText({actor,requestId,conversationId:saved.conversationId,message:original.message,instructions:original.instructions,channel:original.channel,receivedAt:original.receivedAt,context:{},scope,currentScope,history:[],tools:toolDefinitions(),dispatch:(name,args)=>dispatchToolSync(actor,name,args,command),artifacts,specialists});
+  }catch(error){result={message:error instanceof service.AppError?error.message:'The saved AI request stopped. Its completed work and any unresolved usage remain saved; no automatic retry was performed.',specialistIds:[...specialists],artifacts:artifacts.slice(0,20)};}
+  return publishTextContinuation(actor,requestId,reviewId,claimed.token,result);
+ });
 }

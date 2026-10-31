@@ -1,5 +1,18 @@
 # AgentDesk progress log
 
+## October 31, 2026 — Optional admitted-text spending and original-turn continuation
+
+**Scope:** extends `3d2dfc5` without a schema/dependency change. Explicit operator configuration `AGENTDESK_TEXT_SPENDING_MODE=admitted_demo` connects the actual text host to current immutable customer tariffs, a bounded quote/review, input counting, admission and receipt settlement against simulated wallet credits. Above-$1 reasoning waits before generation. The original message, instructions, channel and context are saved; the worker claims an exact approved review and resumes that turn. Default operational mode is unchanged. No environment was enabled and no live provider was called.
+
+**Reliability:** counted input and output limits bound each admitted round; dispatch identity, operational allowance and root admission commit together. Receipts and saved response commit together before tools. Unknown outcomes retain holds and never auto-retry; known rejection releases unused credit. Overrun receipts preserve evidence and cap customer debit before stopping tool execution. Current sources and tariffs are rechecked after counting. Completed-result publication can recover once without another model call. Legacy operational checkpoints retain their original identity; they cannot be silently enrolled or repriced. Prior unpriced calls and unfinished other paid allocations prevent the text host from closing an incomplete root.
+
+**Verification:** all 1,078 root tests across 59 files, types, lint and production build passed. Fifteen admitted-text cases plus a legacy compatibility case cover actual chat/worker paths, threshold/rejection/unknown/overrun, source/rate change, concurrent claims, two-round tool work and publication recovery. All 1,746 existing isolated HTTP/workflow checks passed, plus twelve metered restart checks and the separate-process text restart harness. The new `test:text-spending` harness passed 24 compiled-app HTTP/worker checks: quote survives restart, exact approval resumes the original request, one result and one 3¢ mock charge persist, and no provider call repeats. Its explicit preload mocks provider requests in disposable child processes; it is never part of normal startup.
+
+**Preservation:** a disposable schema-040 copy retained all 316 prior rows across 125 prior tables with clean integrity and foreign keys. Active development data was untouched. Evidence: ignored `artifacts/mobile/text-spending-preservation.json`. No UI/mobile source changed; no new native export or physical-device acceptance is claimed.
+
+**Remaining:** this is bounded text-loop development acceptance, not a complete root-wide cap or live billing. Sample-job charges, delegated paid research and voice still need one combined lifecycle. Root-review conversational/SMS decisions and delivering resumed replies through those channels remain unfinished. Broader autonomous paid work stays dependent on that integration. All C1–C7 checkpoints remain partial; real-world acceptance is deferred, no deployment or overall completion is claimed.
+
+
 ## October 31, 2026 — Durable running-text execution checkpoints
 
 **Scope:** extends `da09c26` with migration 040. The actual `runLiveText` path now stores its original turn/root binding, instruction/tool/configuration fingerprint, protected scope, retained reasoning/messages, round position, tool count, handled calls, artifacts, specialist IDs and validated pending response. Its phases distinguish ready, dispatched, received, completed, confirmed failure and unresolved outcome. No API/model caller can supply this state. Identity fields cannot be changed in the database.
