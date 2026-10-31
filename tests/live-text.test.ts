@@ -16,7 +16,7 @@ import { runLiveText } from '../src/server/text-runtime';
 let responseSequence=0;
 const message=(text:string,phase:'commentary'|'final_answer'='final_answer')=>({id:`msg-${++responseSequence}`,type:'message',role:'assistant',status:'completed',phase,content:[{type:'output_text',text,annotations:[]}]});
 const call=(name:string,args:unknown,callId='call-test')=>({id:`fc-${++responseSequence}`,type:'function_call',status:'completed',name,arguments:JSON.stringify(args),call_id:callId});
-const answer=(output:unknown[],extra:Record<string,unknown>={})=>new Response(JSON.stringify({id:`resp-${++responseSequence}`,model:'gpt-6-astra',status:'completed',output,usage:{input_tokens:100,output_tokens:40,input_tokens_details:{cached_tokens:20},output_tokens_details:{reasoning_tokens:15}},...extra}),{headers:{'content-type':'application/json','x-request-id':`req-mock-${responseSequence}`}});
+const answer=(output:unknown[],extra:Record<string,unknown>={})=>new Response(JSON.stringify({id:`resp-${++responseSequence}`,model:'gpt-6-astra',service_tier:'default',status:'completed',output,usage:{input_tokens:100,output_tokens:40,input_tokens_details:{cached_tokens:20},output_tokens_details:{reasoning_tokens:15}},...extra}),{headers:{'content-type':'application/json','x-request-id':`req-mock-${responseSequence}`}});
 const requestBody=(mock:ReturnType<typeof vi.fn>,index:number)=>JSON.parse(mock.mock.calls[index][1].body as string) as {input:Array<Record<string,unknown>>;store:boolean;model:string;reasoning:{effort:string};tools:unknown[]};
 const results=(mock:ReturnType<typeof vi.fn>,index:number)=>requestBody(mock,index).input.filter(item=>item.type==='function_call_output');
 const taskInput={title:'Review this fictional call',dueAt:null,investorId:null};
@@ -29,6 +29,19 @@ beforeEach(()=>{
 afterEach(()=>{closeDb();vi.unstubAllEnvs();vi.unstubAllGlobals();vi.restoreAllMocks();});
 
 describe('live text protocol with mocked Responses',()=>{
+ it.each([
+  {usage:undefined},{id:undefined},{status:undefined},{status:'in_progress'},
+  {model:'unexpected-model'},{service_tier:'priority'},{service_tier:undefined},
+  {usage:{input_tokens:10,output_tokens:5,input_tokens_details:{cached_tokens:11}}},
+  {usage:{input_tokens:10,output_tokens:5,output_tokens_details:{reasoning_tokens:6}}},
+ ])('withholds tools and keeps the allowance hold for an unconfirmed receipt: %j',async extra=>{
+  const mock=vi.fn().mockResolvedValue(answer([call('create_task',taskInput)],extra));vi.stubGlobal('fetch',mock);vi.spyOn(console,'error').mockImplementation(()=>{});
+  const actor=demoActor();await chat(actor,'Prepare a new reminder',undefined,'unconfirmed-receipt');
+  expect(mock).toHaveBeenCalledTimes(1);expect(services.listTasks(actor).some(task=>task.title===taskInput.title)).toBe(false);
+  expect(providerOperations(actor)[0].status).toBe('unknown');
+  expect(usageBalances(actor).find(item=>item.category==='text_tokens')).toMatchObject({consumed:0});
+  expect(usageBalances(actor).find(item=>item.category==='text_tokens')!.reserved).toBeGreaterThan(0);
+ });
  it('preserves reasoning, assistant phases and scoped tool outputs throughout a follow-up',async()=>{
   const reasoning={type:'reasoning',id:'rs-context',summary:[],encrypted_content:'opaque-test-context'};
   const mock=vi.fn().mockResolvedValueOnce(answer([reasoning,message('I will review your priorities.','commentary'),call('daily_priorities',{})])).mockResolvedValueOnce(answer([message('Your saved priorities are ready.')])).mockResolvedValueOnce(answer([message('Those priorities remain in your work queue.')]));vi.stubGlobal('fetch',mock);
@@ -154,7 +167,7 @@ describe('live text protocol with mocked Responses',()=>{
  });
  it('keeps missing provider usage unknown and reserved instead of recording zero consumption',async()=>{
   const mock=vi.fn().mockResolvedValue(answer([message('Your question is answered.')],{usage:undefined}));vi.stubGlobal('fetch',mock);
-  const actor=demoActor();const response=await chat(actor,'A simple question',undefined,'unknown-usage');expect(response.result.message).toBe('Your question is answered.');expect(providerOperations(actor)[0]).toMatchObject({status:'unknown',usage:{},actualCostCents:null});expect(usageBalances(actor).find(item=>item.category==='text_tokens')?.reserved).toBeGreaterThan(0);
+  const actor=demoActor();const response=await chat(actor,'A simple question',undefined,'unknown-usage');expect(response.result.message).toContain('receipt could not be confirmed');expect(response.result.message).not.toContain('Your question is answered.');expect(providerOperations(actor)[0]).toMatchObject({status:'unknown',usage:{},actualCostCents:null});expect(usageBalances(actor).find(item=>item.category==='text_tokens')?.reserved).toBeGreaterThan(0);
  });
  it('rejects malformed output while preserving invalid token usage as unresolved',async()=>{
   const mock=vi.fn().mockResolvedValueOnce(answer('invalid-output' as unknown as unknown[])).mockResolvedValueOnce(answer([message('The answer has an unresolved usage receipt.')],{usage:{input_tokens:-1,output_tokens:10}}));vi.stubGlobal('fetch',mock);vi.spyOn(console,'error').mockImplementation(()=>{});

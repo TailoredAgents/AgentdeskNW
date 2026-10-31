@@ -8,9 +8,9 @@ The October 30 shared-controls/mobile foundation has local integrated acceptance
 
 This checkpoint adds a bounded persistent work executor around existing services. An employee can create a role-specific sample job in **Work queue → Copilot jobs**, inspect its exact steps and simulated estimate, approve or deny an expensive job, pause/resume/cancel, and return to its saved results. A configured text Copilot can discover available capabilities and compose its own supported plan. The local fallback offers narrower explicitly described starter jobs; it is not equivalent to model reasoning.
 
-The worker performs local deterministic services and fictional research only. It does not run additional reasoning-model calls, contact investors, send mail/SMS, change CRM, purchase credits or connect company systems. The existing live text request remains separately metered; the simulated $1 rule does not yet protect real provider spending. Actual usage admission and optional automatic top-up are C6 requirements, not completed by this foundation.
+The worker performs local deterministic services and fictional research only. It does not run additional reasoning-model calls, contact investors, send mail/SMS, change CRM, purchase credits or connect company systems. The existing live text request remains separately metered; the simulated $1 rule does not yet protect real provider spending. Actual usage admission remains C6 work; optional automatic top-up now has separate local simulated acceptance.
 
-The catalog still contains 2 locally ready, 13 demo and 1 planned specialists. These workflows demonstrate shared execution and cost authority, not completion of the 16-specialist depth plan or proven expert-level reasoning.
+The catalog contains 2 locally ready and 14 demo specialists. These workflows demonstrate shared execution and cost authority, not completion of the 16-specialist depth plan or proven expert-level reasoning.
 
 ## Useful starting workflows
 

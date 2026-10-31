@@ -8,7 +8,7 @@ import {dispatchWorkTool} from '../src/server/work-tooling';
 
 let seq=0;
 const call=(name:string,args:unknown,callId=`call-${++seq}`)=>({id:`fc-${++seq}`,type:'function_call',status:'completed',name,arguments:JSON.stringify(args),call_id:callId});
-const response=(output:unknown[])=>new Response(JSON.stringify({id:`resp-${++seq}`,model:'gpt-6-astra',status:'completed',output,usage:{input_tokens:100,output_tokens:40}}),{headers:{'content-type':'application/json'}});
+const response=(output:unknown[])=>new Response(JSON.stringify({id:`resp-${++seq}`,model:'gpt-6-astra',service_tier:'default',status:'completed',output,usage:{input_tokens:100,output_tokens:40}}),{headers:{'content-type':'application/json'}});
 const message=(text:string)=>({id:`msg-${++seq}`,type:'message',role:'assistant',status:'completed',phase:'final_answer',content:[{type:'output_text',text,annotations:[]}]});
 const plan={title:'Review Mike and the property',steps:[{key:'property',capabilityId:'inspect_property',inputJson:JSON.stringify({propertyId:'property-maple'}),dependsOn:[]},{key:'relationship',capabilityId:'relationship_next_step',inputJson:JSON.stringify({investorId:'investor-mike'}),dependsOn:['property']}]};
 beforeEach(()=>{closeDb();vi.stubEnv('AGENTDESK_DB_PATH',':memory:');vi.stubEnv('AGENTDESK_DEMO','true');vi.stubEnv('AGENTDESK_ALLOW_PRODUCTION_DEMO','true');vi.stubEnv('OPENAI_API_KEY','mock-work-key');vi.stubEnv('OPENAI_MODEL','gpt-6-astra');seq=0;});

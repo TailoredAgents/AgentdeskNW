@@ -1,5 +1,15 @@
 # AgentDesk progress log
 
+## October 30, 2026 — Responses admission adapter and strict receipts accepted locally
+
+**Scope:** extends `fc559da`; no schema, dependency or UI change. Added a text-only Responses admission host using an injected offline transport and the existing fictional rate/whole-assignment service. It checks approval before counting, derives request bounds from the same token-bearing fields, commits one dispatch, settles trusted usage and stops on incomplete/uncertain outcomes. Source changes and in-flight cancellation withhold output while preserving receipts. Exact/concurrent retries cannot redispatch. Conservative cache allocations never count cached tokens twice in settlement; a combined-input overrun also stops the assignment. This is offline contract acceptance, not live wallet admission.
+
+**Live-runtime correction:** existing text requests now explicitly select the default processing tier and require a matching model/tier, response identity, terminal status and valid usage before any output/tool is used. Missing usage previously left an allowance hold but still allowed tools; it now stops. Invalid cached/reasoning subsets remain unresolved. Existing live AI remains outside the whole-assignment wallet until host/review integration is complete.
+
+**Verification:** all **853 root tests across 46 files** passed, including 31 new adapter cases and nine live receipt boundary cases. Root typecheck/lint/build passed; 109 isolated workflow HTTP checks and twelve metered restart checks passed with no provider calls. Initial full regression found nine old provider mocks missing required envelope fields; those fixtures now match the stricter contract and the complete regression passed. No schema/data rewrite; active DB unused. Mobile source is unchanged, so its earlier 48-test/export/device-acceptance distinction remains applicable rather than claiming a new phone test.
+
+**Next:** C6 host integration still needs employee review/continuation, stable planning/delegation roots and approved rates; voice/research/SMS costs remain separate. Continue the canonical local backlog without enabling broader live paid autonomy. No deployment, real-world test, message or payment was performed.
+
 ## October 30, 2026 — Private source-text documents accepted locally
 
 **Scope:** extends `2ad2c3b`, adding migration 033 without dependencies. Desktop Documents and native Work → Documents store actual fictional text with title/file name/purpose, source/date and optional fixed permitted property/investor bindings. Immutable content revisions preserve byte digest and original text; correction creates a new revision. Withdrawal stops current use, restoration creates another revision and old references remain invalid. Private history survives while source access remains valid. A file is explicitly unverified employee-supplied evidence, never proof of signatures, money or title clearance.

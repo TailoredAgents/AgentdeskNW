@@ -164,7 +164,7 @@ describe('reviewed investor understanding',()=>{
   expect(getRelationshipRecord(reader,'investor-mike').canEdit).toBe(false);
   vi.stubEnv('OPENAI_API_KEY','mock-key');
   const message=(text:string)=>({type:'message',content:[{type:'output_text',text}]});
-  const answer=(output:unknown[])=>new Response(JSON.stringify({status:'completed',output,usage:{input_tokens:50,output_tokens:20}}));
+  const answer=(output:unknown[])=>new Response(JSON.stringify({id:`relationship-response-${++sequence}`,model:'gpt-6-astra',service_tier:'default',status:'completed',output,usage:{input_tokens:50,output_tokens:20}}));
   const mock=vi.fn().mockResolvedValueOnce(answer([{type:'reasoning',id:'report-reasoning',summary:[],encrypted_content:'old-report-opaque'},message('Current investor context.')])).mockResolvedValueOnce(answer([message('The updated report needs review.')]));vi.stubGlobal('fetch',mock);
   const first=await chat(reader,'Show Mike investor journey',undefined,'shared-report-one');
   recordRelationshipReport(actor,input());
@@ -178,7 +178,7 @@ describe('reviewed investor understanding',()=>{
   vi.stubGlobal('fetch',vi.fn().mockImplementation(()=>new Promise<Response>(resolve=>{finish=resolve;})));
   const pending=chat(actor,'Show Mike investor journey',undefined,'report-inflight');
   recordRelationshipReport(actor,input());
-  finish(new Response(JSON.stringify({status:'completed',output:[{type:'message',content:[{type:'output_text',text:'Obsolete budget conclusion.'}]}],usage:{input_tokens:50,output_tokens:20}})));
+  finish(new Response(JSON.stringify({id:`relationship-response-${++sequence}`,model:'gpt-6-astra',service_tier:'default',status:'completed',output:[{type:'message',content:[{type:'output_text',text:'Obsolete budget conclusion.'}]}],usage:{input_tokens:50,output_tokens:20}})));
   const response=await pending;
   expect(response.result.message).toContain('changed');expect(JSON.stringify(response)).not.toContain('Obsolete budget conclusion.');
  });

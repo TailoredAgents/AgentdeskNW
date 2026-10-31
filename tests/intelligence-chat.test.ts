@@ -10,7 +10,7 @@ import { getConversation,listTasks } from '../src/server/services';
 let sequence=0;
 const outputMessage=(text:string)=>({id:`memory-message-${++sequence}`,type:'message',role:'assistant',status:'completed',phase:'final_answer',content:[{type:'output_text',text,annotations:[]}]});
 const outputCall=(name:string,args:unknown)=>({id:`memory-call-${++sequence}`,type:'function_call',name,arguments:JSON.stringify(args),status:'completed',call_id:`memory-call-id-${sequence}`});
-const answer=(output:unknown[])=>new Response(JSON.stringify({id:`memory-response-${++sequence}`,status:'completed',output,usage:{input_tokens:100,output_tokens:30}}),{headers:{'content-type':'application/json'}});
+const answer=(output:unknown[])=>new Response(JSON.stringify({id:`memory-response-${++sequence}`,model:'gpt-6-astra',service_tier:'default',status:'completed',output,usage:{input_tokens:100,output_tokens:30}}),{headers:{'content-type':'application/json'}});
 const body=(mock:ReturnType<typeof vi.fn>,index:number)=>JSON.parse(mock.mock.calls[index][1].body as string) as {input:Array<Record<string,unknown>>;tools:Array<{name:string;parameters:unknown}>};
 function context(mock:ReturnType<typeof vi.fn>,index:number){
  const content=body(mock,index).input.find(item=>item.role==='developer'&&typeof item.content==='string'&&item.content.startsWith('Current authorized app context.'))?.content as string;

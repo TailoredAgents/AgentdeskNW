@@ -8,13 +8,13 @@ import {chat,dispatchTool,toolDefinitions} from '../src/server/orchestrator';
 import {getConversation,listTasks} from '../src/server/services';
 import {executeRecordedTool} from '../src/server/text-runtime';
 
-let actor:Actor;
+let actor:Actor;let responseSequence=0;
 const company=(coverage:CommunicationAccount['source']['coverage']='mailbox')=>{
  const state=getInboxState(actor),account=state.accounts.find(item=>item.source.system==='salesforce'&&item.source.coverage===coverage)!;
  return state.threads.find(thread=>thread.accountId===account.id)!;
 };
 const tool=(name:string,args:unknown,id:string)=>({type:'function_call',name,arguments:JSON.stringify(args),call_id:id});
-const answer=(output:unknown[])=>new Response(JSON.stringify({status:'completed',output,usage:{input_tokens:50,output_tokens:20}}));
+const answer=(output:unknown[])=>new Response(JSON.stringify({id:`fixture-response-${++responseSequence}`,model:'gpt-6-astra',service_tier:'default',status:'completed',output,usage:{input_tokens:50,output_tokens:20}}));
 const message=(text:string)=>({type:'message',content:[{type:'output_text',text}]});
 beforeEach(()=>{closeDb();vi.stubEnv('AGENTDESK_DB_PATH',':memory:');vi.stubEnv('AGENTDESK_DEMO','true');vi.stubEnv('AGENTDESK_ALLOW_PRODUCTION_DEMO','true');vi.stubEnv('AGENTDESK_HOSTED_DEMO','false');vi.stubEnv('OPENAI_API_KEY','');actor=demoActor();});
 afterEach(()=>{closeDb();vi.unstubAllEnvs();vi.unstubAllGlobals();vi.restoreAllMocks();});

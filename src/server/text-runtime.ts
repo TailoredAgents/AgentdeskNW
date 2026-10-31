@@ -6,9 +6,9 @@ import { reserveUsage,releaseUsage,reconcileTextUsage } from './metering';
 import { beginProviderOperation,fingerprint,recordProviderUsage } from './provider-runtime';
 import { assertInboxToolResultVisible } from './history';
 import { textProviderConfig } from './provider-config';
+import {responsesReceipt} from './responses-receipt';
 
 type Item=Record<string,unknown>;
-const usageSchema=z.object({input_tokens:z.number().int().nonnegative(),output_tokens:z.number().int().nonnegative(),input_tokens_details:z.object({cached_tokens:z.number().int().nonnegative().optional()}).optional(),output_tokens_details:z.object({reasoning_tokens:z.number().int().nonnegative().optional()}).optional()});
 const callSchema=z.object({type:z.literal('function_call'),name:z.string().min(1).max(100),arguments:z.string().max(100000),call_id:z.string().min(1).max(200),id:z.string().optional(),status:z.string().optional()});
 const messageSchema=z.object({type:z.literal('message'),id:z.string().optional(),role:z.literal('assistant').optional(),status:z.string().optional(),phase:z.enum(['commentary','final_answer']).optional(),content:z.array(z.union([z.object({type:z.literal('output_text'),text:z.string(),annotations:z.array(z.unknown()).optional(),logprobs:z.array(z.unknown()).optional()}),z.object({type:z.literal('refusal'),refusal:z.string()})]))});
 const reasoningSchema=z.object({type:z.literal('reasoning'),id:z.string().optional(),summary:z.array(z.unknown()).optional(),content:z.array(z.unknown()).optional(),encrypted_content:z.string().nullable().optional(),status:z.string().optional()});
@@ -39,12 +39,13 @@ export async function runLiveText(input:{actor:Actor;conversationId:string;reque
   requireFeature(actor,'core');
   const requestScope=fingerprint(input.currentScope());
   if(requestScope!==expectedScope)throw new AppError(409,'Workspace permissions or protected records changed. Start a new request with current context.');
-  const payload={model:config.model,reasoning:{effort:config.reasoning},input:[...prefix,...items],tools:input.tools,max_output_tokens:config.maxOutputTokens,store:false,include:['reasoning.encrypted_content'],parallel_tool_calls:false};
+  const payload={model:config.model,reasoning:{effort:config.reasoning},input:[...prefix,...items],tools:input.tools,max_output_tokens:config.maxOutputTokens,service_tier:'default',store:false,include:['reasoning.encrypted_content'],parallel_tool_calls:false};
   const size=Buffer.byteLength(JSON.stringify(payload));if(size>config.maxContextBytes)throw new AppError(413,'This conversation is too large for the configured AI request budget. Start a new conversation with the relevant details.');
   const operationId=`text:${requestId}:${round}`;
   reserveUsage(actor,{category:'text_tokens',operationId,quantity:size+config.maxOutputTokens,source:'Conservative Responses request token reservation, including tool schemas'});
   beginProviderOperation(actor,{operationId,provider:'openai',feature:'core',kind:'text_response',model:config.model,requestHash:fingerprint(payload)});
   let received=false;
+  let responseId:string|undefined;
   let raw:Record<string,unknown>;
   try{
    const response=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:`Bearer ${process.env.OPENAI_API_KEY}`,'Content-Type':'application/json','X-Client-Request-Id':fingerprint({actor:actor.id,requestId,round})},body:JSON.stringify(payload),signal:AbortSignal.timeout(config.requestTimeoutMs)});
@@ -56,14 +57,16 @@ export async function runLiveText(input:{actor:Actor;conversationId:string;reque
    }
    const text=await response.text();if(text.length>2000000)throw new Error('oversized_provider_response');
    raw=z.record(z.string(),z.unknown()).parse(JSON.parse(text));
-   if(raw.id!==undefined)z.string().min(1).max(240).parse(raw.id);
-   const usage=usageSchema.safeParse(raw.usage),receipt:Record<string,number>={};
-   if(usage.success){receipt.input_tokens=usage.data.input_tokens;receipt.output_tokens=usage.data.output_tokens;if(usage.data.input_tokens_details?.cached_tokens!==undefined)receipt.cached_input_tokens=usage.data.input_tokens_details.cached_tokens;if(usage.data.output_tokens_details?.reasoning_tokens!==undefined)receipt.reasoning_tokens=usage.data.output_tokens_details.reasoning_tokens;}
-   const status=raw.status===undefined?'completed':z.enum(['completed','incomplete','failed','canceled','queued','in_progress']).parse(raw.status);
-   recordProviderUsage(actor,{operationId,providerResponseId:typeof raw.id==='string'?raw.id:undefined,status:!usage.success?'unknown':status==='completed'?'succeeded':'failed',usage:receipt,errorCode:!usage.success?'usage_missing_or_invalid':status!=='completed'?`response_${status}`:undefined});received=true;
-   if(usage.success)reconcileTextUsage(actor,operationId);
+   if(typeof raw.id==='string'&&raw.id.length>0&&raw.id.length<=150)responseId=raw.id;
+   const validated=responsesReceipt(raw,{model:config.model,serviceTier:'default'});
+   const normalized=validated.units,status=validated.status;
+   const receipt:Record<string,number>={input_tokens:normalized.input_tokens+normalized.cached_input_tokens,output_tokens:normalized.output_tokens,cached_input_tokens:normalized.cached_input_tokens};
+   const details=(raw.usage as {output_tokens_details?:{reasoning_tokens?:number}}).output_tokens_details;
+   if(details?.reasoning_tokens!==undefined)receipt.reasoning_tokens=details.reasoning_tokens;
+   recordProviderUsage(actor,{operationId,providerResponseId:validated.id,status:status==='completed'?'succeeded':'failed',usage:receipt,errorCode:status!=='completed'?`response_${status}`:undefined});received=true;
+   reconcileTextUsage(actor,operationId);
    if(status!=='completed')throw new AppError(502,`The model response was ${status}. No partial tool calls were executed. Completed work from earlier steps remains saved.`);
-  }catch(error){if(!received)recordProviderUsage(actor,{operationId,status:'unknown',usage:{},errorCode:'connection_or_receipt_unresolved'});throw error;}
+  }catch(error){if(!received)recordProviderUsage(actor,{operationId,providerResponseId:responseId,status:'unknown',usage:{},errorCode:'connection_or_receipt_unresolved'});throw error;}
   if(requestScope!==fingerprint(input.currentScope()))throw new AppError(409,'Workspace permissions or protected records changed while the assistant was responding. No tool from this response was executed. Start a new request with current context.');
   const output=outputSchema.parse(raw.output);
   if(output.some(item=>(item.type==='function_call'||item.type==='message')&&item.status!==undefined&&item.status!=='completed'))throw new AppError(502,'The model returned an unfinished output item. No tool from this response was executed.');
