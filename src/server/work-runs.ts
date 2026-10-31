@@ -1,4 +1,5 @@
 import {bindAssignment,getAssignmentBinding,withAssignment} from './assignment-roots';
+import {localWorkParent,bindLocalWork,isIncludedLocalWork,localWorkAdmission,finishLocalAssignment} from './local-assignment-work';
 import {createHash} from 'node:crypto';
 import type {AnswerWorkInput} from '../lib/work-contracts';
 import {getWorkQuestion,nextReadyStep,parseWorkAnswer} from './work-questions';
@@ -54,7 +55,8 @@ function concreteStep(step:WorkStep):WorkStepInput {return {...inputOf(step),inp
 function display(actor:Actor,row:RunRow):WorkRun {
  const run=JSON.parse(row.data) as StoredRun;
  const events=(getDb().prepare('SELECT data FROM work_run_events WHERE run_id=? ORDER BY rowid DESC LIMIT 100').all(run.id) as {data:string}[]).reverse().map(item=>JSON.parse(item.data) as WorkRunEvent);
- const {sourceReferences,sourceRole,...visibleRun}=run;
+ const {sourceReferences,sourceRole,...savedRun}=run;
+ const visibleRun={...savedRun,...(isIncludedLocalWork(actor,run.id)?{costScope:'included_local' as const}:{})};
  let restricted=false;
  try{validateWorkSourceReferences(actor,sourceReferences,sourceRole);}catch(error){if(error instanceof AppError&&[403,404,409].includes(error.status))restricted=true;else throw error;}
  for(const step of run.steps){try{validateStoredWorkOutput(actor,concreteStep(step),step.result??emptyResult);}catch(error){if(error instanceof AppError&&[403,404,409].includes(error.status)){restricted=true;break;}throw error;}}
@@ -88,11 +90,11 @@ function validatePlan(actor:Actor,steps:WorkStepInput[]):WorkStepInput[] {
  for(const key of keys)visit(key);
  return validateWorkSteps(actor,parsed);
 }
-function makeSteps(actor:Actor,inputs:WorkStepInput[],planVersion:number,old:WorkStep[]=[]):WorkStep[] {
+function makeSteps(actor:Actor,inputs:WorkStepInput[],planVersion:number,old:WorkStep[]=[],includedLocal=false):WorkStep[] {
  return inputs.map(input=>{
   const completed=old.find(step=>step.key===input.key&&step.status==='completed');
   if(completed){if(hash(inputOf(completed))!==hash(input))throw new AppError(409,'Completed steps cannot be changed or repeated. Add a new step key for new work.');return completed;}
-  const estimate=estimateWorkStep(actor,input);
+  const estimate=estimateWorkStep(actor,input,includedLocal);
   if(!Number.isSafeInteger(estimate.estimatedCents)||!Number.isSafeInteger(estimate.maximumCents)||estimate.estimatedCents<0||estimate.maximumCents<estimate.estimatedCents)throw new AppError(500,'A capability returned an invalid cost estimate.');
   return {...input,...estimate,planVersion,status:'pending',resolvedInput:null,result:null,error:null,attempts:0,startedAt:null,completedAt:null};
  });
@@ -116,11 +118,11 @@ export function createWorkRun(actor:Actor,input:CreateWorkRunInput):WorkRun {
  const runId=getDb().transaction(()=>{
   const prior=getDb().prepare('SELECT id,request_hash FROM work_runs WHERE organization_id=? AND office_id=? AND owner_id=? AND request_id=?').get(...scope(actor),parsed.requestId) as {id:string;request_hash:string}|undefined;
   if(prior){if(prior.request_hash!==digest)throw new AppError(409,'This request already represents different work.');if(!getAssignmentBinding(actor,{kind:'work',id:prior.id}))withAssignment(actor,{kind:'work',id:prior.id},()=>null);bindAssignment(actor,{kind:'work',id:prior.id});return prior.id;}
-  requireFeature(actor,'core');validateWorkSourceReferences(actor,parsed.sourceReferences);const inputs=validatePlan(actor,parsed.steps);
+  requireFeature(actor,'core');validateWorkSourceReferences(actor,parsed.sourceReferences);const inputs=validatePlan(actor,parsed.steps),parent=localWorkParent(actor);
   if(parsed.conversationId&&!getDb().prepare('SELECT 1 FROM conversations WHERE id=? AND organization_id=? AND office_id=? AND owner_id=?').get(parsed.conversationId,...scope(actor)))throw new AppError(404,'Conversation not found in your workspace.');
-  const stamp=now(),run:StoredRun={id:newId('work'),ownerId:actor.id,title:parsed.title,instructions:parsed.instructions,conversationId:parsed.conversationId??null,version:1,planVersion:1,status:'queued',steps:makeSteps(actor,inputs,1),createdAt:stamp,updatedAt:stamp,lastError:null,simulation:true,...(parsed.sourceReferences?{sourceReferences:parsed.sourceReferences,sourceRole:actor.role}:{})};
+  const stamp=now(),run:StoredRun={id:newId('work'),ownerId:actor.id,title:parsed.title,instructions:parsed.instructions,conversationId:parsed.conversationId??null,version:1,planVersion:1,status:'queued',steps:makeSteps(actor,inputs,1,[],!!parent),createdAt:stamp,updatedAt:stamp,lastError:null,simulation:true,...(parsed.sourceReferences?{sourceReferences:parsed.sourceReferences,sourceRole:actor.role}:{})};
   getDb().prepare('INSERT INTO work_runs(id,organization_id,office_id,owner_id,request_id,request_hash,status,version,plan_version,data,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)').run(run.id,...scope(actor),parsed.requestId,digest,run.status,run.version,run.planVersion,JSON.stringify(run),stamp,stamp);
-  bindAssignment(actor,{kind:'work',id:run.id});savePlan(actor,run);getDb().prepare('UPDATE work_runs SET status=?,data=? WHERE id=?').run(run.status,JSON.stringify(run),run.id);
+  bindAssignment(actor,{kind:'work',id:run.id});if(parent)bindLocalWork(actor,run.id,parent);savePlan(actor,run);getDb().prepare('UPDATE work_runs SET status=?,data=? WHERE id=?').run(run.status,JSON.stringify(run),run.id);
   appendEvent(run,'created',run.status==='waiting_for_input'?'Work saved. Answer the pending question to continue.':run.status==='waiting_cost_approval'?'Work saved. Review the complete simulated estimate before it starts.':'Work saved and queued with a bounded simulated estimate.');
   audit(actor,'work.created',run.id,{planVersion:1,stepCount:run.steps.length,simulated:true});return run.id;
  }).immediate();return getWorkRun(actor,runId);
@@ -132,7 +134,7 @@ function changeRun(actor:Actor,runId:string,input:{expectedVersion:number;eventK
   const old=getDb().prepare('SELECT run_id,payload_hash FROM work_run_commands WHERE organization_id=? AND office_id=? AND owner_id=? AND event_key=?').get(...scope(actor),input.eventKey) as {run_id:string;payload_hash:string}|undefined;
   if(old){if(old.run_id!==runId||old.payload_hash!==digest)throw new AppError(409,'This event already represents different work.');return;}
   if(run.version!==input.expectedVersion)throw new AppError(409,'This work changed. Reload its current state before continuing.');
-  change(run);write(run,true);
+  change(run);write(run,true);finishLocalAssignment(actor,run.id);
   getDb().prepare('INSERT INTO work_run_commands VALUES(?,?,?,?,?,?,?)').run(...scope(actor),input.eventKey,runId,digest,now());
   audit(actor,`work.${kind}`,runId,{planVersion:run.planVersion,simulated:true});
  }).immediate();return getWorkRun(actor,runId);
@@ -142,7 +144,7 @@ export function reviseWorkRun(actor:Actor,runId:string,input:ReviseWorkRunInput)
   requireFeature(actor,'core');validateWorkSourceReferences(actor,run.sourceReferences,run.sourceRole);if(terminal.has(run.status)||run.status==='reconciling')throw new AppError(409,'This work cannot be revised in its current state.');
   const inputs=validatePlan(actor,parsed.steps);
   for(const step of run.steps.filter(step=>step.status==='completed'))if(!inputs.some(item=>item.key===step.key&&hash(item)===hash(inputOf(step))))throw new AppError(409,'Retain completed steps unchanged; revise only the work still to do.');
-  run.planVersion++;run.title=parsed.title??run.title;run.instructions=parsed.instructions;run.steps=makeSteps(actor,inputs,run.planVersion,run.steps);savePlan(actor,run);
+  run.planVersion++;run.title=parsed.title??run.title;run.instructions=parsed.instructions;run.steps=makeSteps(actor,inputs,run.planVersion,run.steps,isIncludedLocalWork(actor,run.id));savePlan(actor,run);
   appendEvent(run,'revised','Instructions and remaining work revised. Earlier completed results remain in history.');
  });
 }
@@ -167,7 +169,7 @@ export function answerWorkQuestion(actor:Actor,runId:string,input:AnswerWorkInpu
   }
   getDb().prepare('INSERT INTO work_step_receipts VALUES(?,?,?,?,?,?)').run(run.id,step.key,run.planVersion,hash(inputOf(step)),JSON.stringify({step:inputOf(step),resolvedInput:step.input,result,chargedCents:0}),now());
   appendEvent(run,'answer_received','Employee information saved; prior results are retained and the remaining job estimate will be refreshed.',step.key);
-  run.planVersion++;run.steps=makeSteps(actor,run.steps.map(inputOf),run.planVersion,run.steps);savePlan(actor,run);
+  run.planVersion++;run.steps=makeSteps(actor,run.steps.map(inputOf),run.planVersion,run.steps,isIncludedLocalWork(actor,run.id));savePlan(actor,run);
  });
 }
 export function controlWorkRun(actor:Actor,runId:string,input:ControlWorkRunInput):WorkRun {
@@ -231,16 +233,22 @@ export function claimNextWorkStep(actor?:Actor):WorkStepClaim|null {
   for(const row of rows){
    const run=JSON.parse(row.data) as StoredRun;
    try{
-    const owner=actorFor(row);requireFeature(owner,'core');validateWorkSourceReferences(owner,run.sourceReferences,run.sourceRole);resetLeasedStep(run);
+    const owner=actorFor(row);requireFeature(owner,'core');
+    const admission=localWorkAdmission(owner,run.id);
+    if(admission==='wait')continue;
+    if(admission==='unresolved'){run.status='reconciling';run.lastError='The original AI request has unresolved usage. No local work will run until it is reconciled.';write(run,true);continue;}
+    if(admission==='stopped'){cancelWorkChildren(owner,run.steps);releaseWorkBudget(owner,run.id);for(const step of run.steps)if(step.status!=='completed')step.status='canceled';run.status='canceled';run.lastError='The original assignment stopped before this local work could continue.';appendEvent(run,'canceled',run.lastError);write(run,true);continue;}
+    validateWorkSourceReferences(owner,run.sourceReferences,run.sourceRole);resetLeasedStep(run);
     validatePlan(owner,run.steps.map(inputOf));
     for(const completed of run.steps.filter(step=>step.status==='completed'))validateStoredWorkOutput(owner,concreteStep(completed),completed.result??emptyResult);
     const step=run.steps.find(item=>item.status==='pending'&&item.dependsOn.every(key=>run.steps.some(dependency=>dependency.key===key&&dependency.status==='completed')));
     if(!step){
-     if(run.steps.every(item=>item.status==='completed')){releaseWorkBudget(owner,run.id);run.status='completed';run.lastError=null;appendEvent(run,'completed','Every planned step completed. Unused simulated credits were released.');write(run,true);}
+     if(run.steps.every(item=>item.status==='completed')){releaseWorkBudget(owner,run.id);run.status='completed';run.lastError=null;appendEvent(run,'completed','Every planned step completed. Unused simulated credits were released.');write(run,true);finishLocalAssignment(owner,run.id);}
      else{run.status='waiting_for_input';run.lastError='No remaining step can proceed. Review its dependencies.';write(run,true);}continue;
     }
     if(step.capabilityId==='request_information'){run.status='waiting_for_input';run.lastError='Answer the pending question to continue this saved job.';appendEvent(run,'question_requested','A required answer is needed before the next step.',step.key);write(run,true);continue;}
-    const budget=getWorkBudget(owner,run.id);
+    let budget=getWorkBudget(owner,run.id);
+    if(isIncludedLocalWork(owner,run.id)&&budget.status==='approved'&&Date.parse(budget.expiresAt)<=Date.now())budget=refreshBudget(owner,run);
     if(budget.status==='awaiting_approval'){run.status='waiting_cost_approval';write(run,true);continue;}
     if(budget.status==='unknown'){run.status='reconciling';run.lastError='A prior outcome is unresolved. No additional work will execute.';write(run,true);continue;}
     if(budget.status!=='reserved'&&Date.parse(budget.expiresAt)<=Date.now()){run.status='waiting_cost_approval';run.lastError='The estimate expired. Refresh it before continuing.';write(run,true);continue;}
@@ -264,11 +272,13 @@ export function executeClaimedWorkStep(claim:WorkStepClaim):boolean {
   const row=claimRow(claim);if(!row)return false;
   if(!row.lease_expires_at||Date.parse(row.lease_expires_at)<=Date.now())return false;
   const actor=actorFor(row),run=JSON.parse(row.data) as StoredRun;
-  if(run.status!=='running')return false;requireFeature(actor,'core');validateWorkSourceReferences(actor,run.sourceReferences,run.sourceRole);validatePlan(actor,run.steps.map(inputOf));
+  if(run.status!=='running')return false;requireFeature(actor,'core');
+  if(!['ordinary','ready'].includes(localWorkAdmission(actor,run.id)))throw new AppError(409,'The original assignment is not ready for this local step.');
+  validateWorkSourceReferences(actor,run.sourceReferences,run.sourceRole);validatePlan(actor,run.steps.map(inputOf));
   const step=run.steps.find(item=>item.key===claim.stepKey);if(!step||step.status!=='running')return false;
   for(const completed of run.steps.filter(item=>item.status==='completed'))validateStoredWorkOutput(actor,concreteStep(completed),completed.result??emptyResult);
   const resolvedInput=resolveWorkInput(step,run.steps),concrete={...inputOf(step),input:resolvedInput};
-  const estimate=estimateWorkStep(actor,concrete);
+  const estimate=estimateWorkStep(actor,concrete,isIncludedLocalWork(actor,run.id));
   if(estimate.maximumCents>step.maximumCents||estimate.estimatedCents>step.estimatedCents||estimate.rateVersion!==step.rateVersion)throw new AppError(409,'The step estimate changed. Revise and review the remaining work before continuing.');
   reserveWorkBudget(actor,run.id);
   const result=withAssignment(actor,{kind:'work',id:run.id},()=>executeWorkCapability(actor,concrete,Object.fromEntries(run.steps.filter(item=>item.status==='completed'&&item.result).map(item=>[item.key,item.result!]))));
@@ -281,7 +291,7 @@ export function executeClaimedWorkStep(claim:WorkStepClaim):boolean {
   appendEvent(run,'step_completed','A work step completed and its result was saved.',step.key);
   if(run.steps.every(item=>item.status==='completed')){releaseWorkBudget(actor,run.id);run.status='completed';appendEvent(run,'completed','Every planned step completed. Unused simulated credits were released.');}
   else run.status='queued';
-  run.lastError=null;write(run,true);audit(actor,'work.step_completed',run.id,{stepKey:step.key,planVersion:run.planVersion,simulated:true});return true;
+  run.lastError=null;write(run,true);finishLocalAssignment(actor,run.id);audit(actor,'work.step_completed',run.id,{stepKey:step.key,planVersion:run.planVersion,simulated:true});return true;
  }).immediate();}
  catch(error){
   getDb().transaction(()=>{

@@ -14,7 +14,9 @@ globalThis.fetch=async(input,init)=>{
  if(url.pathname==='/v1/responses'){
   appendFileSync(process.env.AGENTDESK_TEXT_MOCK_LOG,'generation\n');
   const id=createHash('sha256').update(JSON.stringify(request)).digest('hex').slice(0,32);
-  return new Response(JSON.stringify({id:`mock-${id}`,model:request.model,service_tier:'default',status:'completed',output:[{type:'message',role:'assistant',status:'completed',content:[{type:'output_text',text:'Your fictional reasoning result is saved after approval.'}]}],usage:{input_tokens:20,output_tokens:10}}));
+  const delegate=process.env.AGENTDESK_TEXT_MOCK_DELEGATE==='true'&&!request.input.some(item=>item.type==='function_call_output'&&item.call_id==='mock-local-work');
+  const output=delegate?[{type:'function_call',name:'start_work',call_id:'mock-local-work',status:'completed',arguments:JSON.stringify({title:'Prepare local buyer shortlist',steps:[{key:'property',capabilityId:'inspect_property',inputJson:JSON.stringify({propertyId:'property-maple'}),dependsOn:[]},{key:'buyers',capabilityId:'match_existing_buyers',inputJson:JSON.stringify({propertyId:'property-maple'}),dependsOn:['property']}]})}]:[{type:'message',role:'assistant',status:'completed',content:[{type:'output_text',text:'Your fictional reasoning result is saved after approval.'}]}];
+  return new Response(JSON.stringify({id:`mock-${id}`,model:request.model,service_tier:'default',status:'completed',output,usage:{input_tokens:20,output_tokens:10}}));
  }
  throw new Error('Unsupported OpenAI endpoint in the isolated text fixture; no network call was made.');
 };

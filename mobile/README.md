@@ -1,6 +1,6 @@
 # AgentDesk NW mobile — local development checkpoint
 
-**Shared transaction lifecycle and continuation verified locally October 31, 2026; actual-phone acceptance remains pending.** This slice extends shared Agent/update checkpoint `f68f2cd`. [The implementation roadmap](../docs/IMPLEMENTATION_ROADMAP.md) is the sole authority for status, build order and next work. [Mobile requirements](../docs/MOBILE_DELIVERY_PLAN.md) define acceptance scope. This README records reproducible setup and the boundary between local/browser evidence and native acceptance.
+**Included local delegation cost display verified locally October 31, 2026; actual-phone acceptance remains pending.** [The implementation roadmap](../docs/IMPLEMENTATION_ROADMAP.md) is the sole authority for status, build order and next work. [Mobile requirements](../docs/MOBILE_DELIVERY_PLAN.md) define acceptance scope. This README records reproducible setup and the boundary between local/browser evidence and native acceptance.
 
 ## Architecture and current source
 
@@ -160,3 +160,7 @@ Desktop can now import bounded text-based PDFs, preserve originals and save a re
 ### Source-aware Agent document reading
 
 Typed Agent and reviewed dictation use the same private document search/read/review tools as desktop. An exact document artifact opens Work → Documents; saved-review results carry the same link. The reader numbers lossless working-text sections to match Agent citations, including corrected PDF extracts. Source correction/withdrawal removes obsolete answer/result content on refresh. Local review is a bounded literal passage selection with a provisional checklist, not semantic analysis. Native file picking/original handling and live-voice document tools remain unfinished. Verification uses browser/export and isolated HTTP flows; physical-device acceptance stays deferred.
+
+## Included local delegation display
+
+Native Work now identifies included local jobs and explains that their zero AI charge excludes the original reasoning recorded in the assignment review. The compiled server and native browser at 390×844 show the same completed two-step buyer shortlist and $0.00 local spend, while the parent review retains its 6¢ mock reasoning receipt. Independent typecheck, 78 mobile tests, iOS/Android JavaScript exports and production/development web exports passed. Evidence: ignored `artifacts/mobile/local-delegation-phone.png`. This is browser/export evidence, not installed-device or real billing acceptance.

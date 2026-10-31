@@ -67,3 +67,5 @@ export function currentAssignment(actor:Actor):AssignmentBinding {
  if(!current||current.id!==value.binding.id)throw new AppError(409,'The original assignment is unavailable.');
  return current;
 }
+/** Optional trusted context lookup. Existing but invalid/cross-employee context still fails. */
+export function activeAssignment(actor:Actor):AssignmentBinding|null {return context.getStore()?currentAssignment(actor):null;}

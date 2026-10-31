@@ -83,7 +83,13 @@ export function validateWorkSteps(actor:Actor,steps:WorkStepInput[]):WorkStepInp
  const visit=(key:string)=>{if(stack.has(key))throw new AppError(400,'Job dependencies cannot contain a cycle.');if(visited.has(key))return;stack.add(key);steps.find(s=>s.key===key)!.dependsOn.forEach(visit);stack.delete(key);visited.add(key);};steps.forEach(s=>visit(s.key));
  return steps;
 }
-export function estimateWorkStep(actor:Actor,step:WorkStepInput){const item=definition(step.capabilityId);requireRole(actor,item.roles);requireFeature(actor,item.feature);return {estimatedCents:item.estimatedCents,maximumCents:item.maximumCents,rateVersion:'fictional-work-v1'};}
+// Explicit audited local-only scope. A future paid capability must not inherit included pricing.
+const includedLocalCapabilities=new Set(['review_source_document','review_team_transaction','review_transaction','prepare_title_email','request_information','inspect_property','match_existing_buyers','relationship_next_step','review_investment_analysis','review_diligence_analysis','review_opportunity','review_handoff','office_priorities','create_followup','start_synthetic_research','await_synthetic_research']);
+export function estimateWorkStep(actor:Actor,step:WorkStepInput,includedLocal=false){
+ const item=definition(step.capabilityId);requireRole(actor,item.roles);requireFeature(actor,item.feature);
+ if(includedLocal){if(!includedLocalCapabilities.has(step.capabilityId))throw new AppError(409,'This capability needs a separately admitted paid allocation before it can join the assignment.');return {estimatedCents:0,maximumCents:0,rateVersion:'included-local-v1'};}
+ return {estimatedCents:item.estimatedCents,maximumCents:item.maximumCents,rateVersion:'fictional-work-v1'};
+}
 
 /** Historical results retain their receipt, but never retain access to another person's records. */
 export function validateStoredWorkOutput(actor:Actor,step:WorkStepInput,output:ToolResult):void {

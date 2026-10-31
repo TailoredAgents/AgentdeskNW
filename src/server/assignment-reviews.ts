@@ -37,7 +37,7 @@ function projection(actor:Actor,row:Row):AssignmentReview {
  const contentRestricted=!historyReferencesVisible(actor,data.references);
  const same=assignment.revision===row.revision&&budget.quoteId===row.quote_id&&assignment.scopeHash===row.scope_hash;
  const closed=!!assignment.stopRequested||['completed','canceled','paused','reconciling'].includes(assignment.status);
- const expired=Date.parse(budget.expiresAt)<=Date.now()&&budget.status!=='reserved';
+ const expired=Date.parse(budget.expiresAt)<=Date.now()&&['approved','awaiting_approval'].includes(budget.status);
  const state:AssignmentReview['state']=!same||contentRestricted||expired?'obsolete':closed?'closed':row.state;
  return {id:row.id,title:contentRestricted?'Assignment context changed':data.quote.title,summary:contentRestricted?'The original sources changed or are no longer available. Ask the Agent to prepare a current review.':data.summary,revision:row.revision,quoteId:row.quote_id,
   parts:contentRestricted?[]:data.parts.map(p=>({...p,maximumCalls:data.quote.calls[p.key]})),

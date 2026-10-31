@@ -1,5 +1,6 @@
 import type { ToolResult } from './contracts';
 import type { WorkBudget } from './wallet-contracts';
+export const includedLocalWorkNotice='These local steps add no AI credit charge. Copilot reasoning is tracked in the original assignment spending review.';
 
 /** A reference reads only a completed declared dependency's ToolResult.data. */
 export interface WorkInputReference { $step:string; path:string }
@@ -21,6 +22,7 @@ export interface WorkRun {
  budget:WorkBudget; events:WorkRunEvent[]; createdAt:string; updatedAt:string;
  lastError:string|null; contentRestricted:boolean; simulation:true;
  question?:WorkQuestion|null;
+ costScope?:'included_local';
 }
 /** Server-derived model provenance. Never accept these references from an HTTP/model caller. */
 export interface WorkSourceReferences {assignmentReviews?:string[];documentAccess?:string[];transactionTeamAccess?:string[];transactionAccess?:string[]; investors:string[];properties:string[];releases:string[];packages:string[];debriefs:string[];inboxThreads:string[];inboxAccess:string[];handoffAccess?:string[];workQuestions?:string[];knowledgeAccess?:string[];updatesAccess?:string[];analysisAccess?:string[];opportunityAccess?:string[] }

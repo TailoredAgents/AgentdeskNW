@@ -1,5 +1,17 @@
 # AgentDesk progress log
 
+## October 31, 2026 — Included local delegation within admitted text
+
+**Scope:** extends `e83c197` with migration 042. New saved work created by a received admitted-text response retains an immutable private parent binding and uses an explicit allowlist of currently local/synthetic capabilities at zero additional AI credit cost. It waits for the parent answer before executing. The original reasoning remains charged from its mock receipts. Standalone jobs and historical sample pricing are unchanged; default operational mode is unchanged and no environment was enabled.
+
+**Lifecycle:** included work preserves its binding and zero local pricing through restart, questions and remaining-plan revisions. Current parent/root/source/entitlement checks precede effects. Unknown usage stops further work; failed/stopped parents prevent dispatch. Unused paid credit releases after the text allocations finish, including while a free job awaits employee input. The root remains open until local work finishes/cancels. Older children cannot close newer/unknown paid allocations. Local effects, result receipts and final assignment completion are atomic; an induced completion failure rolls back the effect and explicit resume produces it once.
+
+**Verification:** 18 new focused cases; all 1,115 root tests across 61 files and 78 mobile tests passed. Root/mobile types, lint, production build, iOS/Android JavaScript exports and production/development web exports passed. All 1,746 existing HTTP/workflow checks passed, alongside 42 compiled local-delegation checks, 30 admitted-text HTTP/worker checks, twelve metered restart checks and the separate-process text restart harness. All provider/message transports were mocked. No external messages, real payments or live AI calls occurred.
+
+**Preservation and interface:** a disposable schema-041 → 042 copy preserved 316 prior rows across 126 prior tables, with clean integrity and no foreign-key violations; active development data was untouched. Evidence: ignored `artifacts/mobile/local-delegation-preservation.json`. Desktop and 390×844 native-browser review displayed one completed buyer shortlist, zero local spend and the original 6¢ mock reasoning charge in its assignment review. Screenshots: ignored `artifacts/mobile/local-delegation-desktop.png` and `local-delegation-phone.png`. Browser/export acceptance is not physical-device acceptance.
+
+**Remaining:** this closes the local-worker accounting distinction, not the full paid delegation contract. Paid research/voice/specialist hosts, revised paid scopes, broader employee controls, unresolved-usage reconciliation and remaining C1–C7 requirements remain unfinished. Real-world/provider/device/practitioner acceptance stays deferred. No deployment or overall completion is claimed.
+
 ## October 31, 2026 — Conversation spending reviews and original-channel completion
 
 **Scope:** extends `977cc54` with migration 041. Authenticated employees can list owned S spending references and review complete allocation labels/call bounds, estimate, maximum, spent/held credits and expiry. An immutable R code binds exact scope, employee and conversation; complete approve/deny commands execute before model reasoning. Vague yes, quoted/hypothetical instructions and wrong employee/conversation never grant authority. Existing W/A sample-job controls remain separate. No model decision tool, provider activation or real payment was added.

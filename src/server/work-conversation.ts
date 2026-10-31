@@ -1,3 +1,4 @@
+import {includedLocalWorkNotice} from '../lib/work-contracts';
 import {createHash,randomBytes} from 'node:crypto';
 import {workQuestionText} from './work-questions';
 import {z} from 'zod';
@@ -71,7 +72,7 @@ function choose(actor:Actor,lead='Which saved job do you mean?'):ToolResult {
 }
 function statusResult(run:WorkRun,prefix=''):ToolResult {
  const code=workConversationReference(run.id),completed=run.steps.filter(step=>step.status==='completed').length;
- return {...reply(`${prefix?`${prefix}\n`:''}${code} — ${run.title}: ${run.status.replaceAll('_',' ')}. ${completed}/${run.steps.length} steps complete.\nSimulated credits: ${money(run.budget.spentCents)} spent; ${money(run.budget.reservedCents)} held; ${money(run.budget.maximumCents)} maximum.${run.question?`\n${workQuestionText(run.question)}`:run.lastError?`\n${run.lastError}`:''}${run.status==='waiting_cost_approval'?`\nSay “Review job ${code}” for the exact scope and cost decision.`:''}`, [run]),data:{run}};
+ return {...reply(`${prefix?`${prefix}\n`:''}${code} — ${run.title}: ${run.status.replaceAll('_',' ')}. ${completed}/${run.steps.length} steps complete.\nSimulated credits: ${money(run.budget.spentCents)} spent; ${money(run.budget.reservedCents)} held; ${money(run.budget.maximumCents)} maximum.${run.costScope==='included_local'?`\n${includedLocalWorkNotice}`:''}${run.question?`\n${workQuestionText(run.question)}`:run.lastError?`\n${run.lastError}`:''}${run.status==='waiting_cost_approval'?`\nSay “Review job ${code}” for the exact scope and cost decision.`:''}`, [run]),data:{run}};
 }
 function resultValue(run:WorkRun,value:unknown,seen=new Set<string>()):unknown {
  if(!value||typeof value!=='object'||!('$step' in value)||!('path' in value))return value;

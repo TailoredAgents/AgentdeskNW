@@ -59,8 +59,9 @@ async function executeLiveText(input:{actor:Actor;conversationId:string;requestI
   execution=db.transaction(()=>{
    const state={...execution.data,result,artifacts:[...artifacts],specialistIds:[...specialists],response:null};
    if(Buffer.byteLength(JSON.stringify(state.items))<=config.maxContextBytes)db.prepare('INSERT INTO assistant_context VALUES(?,?,?,?) ON CONFLICT(conversation_id) DO UPDATE SET scope_hash=excluded.scope_hash,items=excluded.items,updated_at=excluded.updated_at').run(conversationId,execution.scopeHash,JSON.stringify(state.items),now());
-   finishTextSpending(actor,execution,'completed');
-   return advanceTextExecution(actor,execution,'completed',state);
+   const completed=advanceTextExecution(actor,execution,'completed',state);
+   finishTextSpending(actor,completed,'completed');
+   return completed;
   }).immediate();return result;
  };
  while(execution.data.round<config.maxRounds){
