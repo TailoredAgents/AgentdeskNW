@@ -1,4 +1,8 @@
-import {getAssignmentBinding} from '../src/server/assignment-roots';
+import {quoteCurrentAssignment} from '../src/server/assignment-metering';
+import {presentCurrentAssignmentQuote,claimAssignmentContinuation,completeAssignmentContinuation} from '../src/server/assignment-reviews';
+import {fingerprint} from '../src/server/provider-runtime';
+import type {AssignmentReview} from '../src/lib/assignment-review-contracts';
+import {withAssignment,getAssignmentBinding} from '../src/server/assignment-roots';
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import {spawn} from 'node:child_process';
@@ -167,6 +171,21 @@ try{
  assert.throws(()=>getDb().prepare('UPDATE work_step_receipts SET data=data WHERE run_id=?').run(first.id),/immutable/);checks++;
  assert.throws(()=>getDb().prepare('UPDATE work_budget_events SET data=data WHERE run_id=?').run(first.id),/immutable/);checks++;
  assert.throws(()=>getDb().prepare('UPDATE work_runs SET version=0 WHERE id=?').run(first.id),/CHECK/);checks++;
+ // A trusted fictional host publishes; HTTP employees can only read and decide the exact quote.
+ const scope=fingerprint({fixture:'whole-assignment-review'}),host={kind:'work' as const,id:unattended.id};
+ const review=withAssignment(actor,host,()=>{quoteCurrentAssignment(actor,{title:'Fictional reasoning review',scopeHash:scope,revision:1,parts:[{key:'planning',feature:'core',rateId:'test-text-v1',maximumCalls:2,maximumUnits:{output_tokens:20200},estimatedUnits:{output_tokens:10000}}]});return presentCurrentAssignmentQuote(actor,{summary:'Review the fictional property and explain supported facts.',parts:[{key:'planning',label:'Read and explain the property'}]});});
+ check((await request<{reviews:AssignmentReview[]}>('assignment-reviews')).reviews.some(r=>r.id===review.id&&r.maximumCents===101),'The employee sees one whole-assignment maximum');
+ await request('assignment-reviews/'+review.id+'/claim','POST',{},404);
+ await request('assignment-reviews/'+review.id+'/decision','POST',{quoteId:review.quoteId,revision:1,decision:'approve',eventKey:randomUUID(),maximumCents:1},400);
+ const approvedRequest={quoteId:review.quoteId,revision:1,decision:'approve',eventKey:randomUUID()};
+ check((await request<AssignmentReview>('assignment-reviews/'+review.id+'/decision','POST',approvedRequest)).state==='ready','HTTP approval records readiness without inventing execution');
+ check((await request<AssignmentReview>('assignment-reviews/'+review.id+'/decision','POST',approvedRequest)).state==='ready','Exact HTTP retries preserve the original decision');
+ withAssignment(actor,host,()=>{const claim=claimAssignmentContinuation(actor,review.id,()=>scope);check(claim.claimed,'The original host claims continuation');check(!claimAssignmentContinuation(actor,review.id,()=>scope).claimed,'Continuation never claims twice');completeAssignmentContinuation(actor,review.id,claim.token!);});
+ check((await request<AssignmentReview>('assignment-reviews/'+review.id)).state==='continued','The saved continuation is visible in the employee interface');
+ await request('session','POST',{role:'manager'});
+ check((await request<{reviews:AssignmentReview[]}>('assignment-reviews')).reviews.length===0,'Managers do not inherit private spending reviews');
+ await request('assignment-reviews/'+review.id,'GET',undefined,404);cookie=employeeCookie;
+ assert.throws(()=>getDb().prepare('UPDATE assignment_reviews SET data=? WHERE id=?').run('{}',review.id),/immutable/);checks++;
  check((getDb().pragma('foreign_key_check') as unknown[]).length===0,'New and existing records satisfy foreign keys');
  check(getDb().pragma('integrity_check',{simple:true})==='ok','Disposable workspace remains structurally sound');
  console.info('PASS: '+checks+' durable-work HTTP/worker checks. Role starters, complete-job cost approval, saved progress, recovery, revised scope, child research, partial cancellation and preserved inbox/CRM; no real provider, messaging or payment operation.');

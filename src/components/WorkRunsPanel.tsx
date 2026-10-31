@@ -5,6 +5,7 @@ import { ArrowRight, ArrowUpRight, Check, CirclePause, Clock, FileText, Info, Pl
 import type { Artifact, Bootstrap } from '@/lib/contracts';
 import type { WorkRun, WorkRunStatus, WorkStep } from '@/lib/work-contracts';
 import {WorkQuestionPanel} from './WorkQuestionPanel';
+import {AssignmentReviewsPanel} from './AssignmentReviewsPanel';
 import {HandoffsPanel} from './HandoffsPanel';
 import {AnalysisPanel} from './AnalysisPanel';
 import {OpportunitiesPanel} from './OpportunitiesPanel';
@@ -209,6 +210,7 @@ export function WorkRunsPanel({ data, initialRunId, initialAnalysisId, onChange,
   const canCancel = !!detail && !['completed', 'canceled', 'reconciling'].includes(detail.status);
 
   return <section className="work-runs" aria-label="Saved Copilot jobs">
+    <AssignmentReviewsPanel/>
     <HandoffsPanel/>
     <AnalysisPanel key={initialAnalysisId??"board"} initialId={initialAnalysisId}/>
     {data.actor.role!=='dispositions'&&<><OpportunitiesPanel/><AcquisitionIntakePanel data={data} onChange={onChange}/></>}

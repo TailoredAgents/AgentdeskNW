@@ -899,3 +899,7 @@ dialog::backdrop{background:#122b2466;backdrop-filter:blur(7px)}
 @media(max-width:800px){.commerce-layout{display:flex;flex-direction:column}.subscription-config{position:static;order:-1;width:100%}.commerce-layout>div{width:100%}.commerce-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.commerce-summary{grid-template-columns:1fr}.commerce-core>strong{margin-left:auto}.commerce-core{padding:20px}.commerce-core .commerce-icon{display:none}.commerce-core h2{font-size:22px}.commerce-filter{gap:3px}.commerce-filter button{font-size:11px;padding:7px}.commerce-form{align-items:stretch}.commerce-form .button{flex:1 1 150px}}
 @media(max-width:520px){.commerce-grid,.policy-grid{grid-template-columns:1fr}.employee-card{padding:20px}.commerce-core>strong{font-size:24px}.commerce-notice{font-size:11px}.commerce-summary .panel{padding:20px}.subscription-config{padding:20px}.commerce-core{display:block}.commerce-core>strong{display:block;margin-top:18px}.commerce-core>strong small{display:inline;margin-left:5px}}
 @media(min-width:801px){.subscription-config{max-height:calc(100vh - 110px);overflow-y:auto}}
+
+.assignment-reviews { display: grid; gap: 16px; margin-bottom: 22px; }
+.assignment-review { display: grid; gap: 14px; }
+.assignment-review ul { margin: 0; padding-left: 20px; display: grid; gap: 8px; }

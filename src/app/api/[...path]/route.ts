@@ -10,6 +10,7 @@ import {acquisitionInputSchema,recordAcquisitionSubmission,reviewAcquisition} fr
 import {assertMobileRequest,getMobileAuthentication,pairMobileDevice} from '@/server/mobile-auth';
 import {mobileRoute} from '@/server/mobile-api';
 import { workRoute } from '@/server/work-api';
+import {assignmentReviewRoute} from '@/server/assignment-review-api';
 import { getPersonalTaskDetail } from '@/server/task-context';
 import { messagingRoute } from '@/server/messaging-api';
 import { getPersonalTask, listPersonalTasks, mutateTask, taskMutationSchema } from '@/server/task-actions';
@@ -83,6 +84,7 @@ async function route(request:NextRequest,{params}:{params:Promise<{path:string[]
     const knowledge=await knowledgeRoute(request,actor,path,()=>body(request));if(knowledge)return knowledge;
     const updates=await proactiveRoute(request,actor,path,()=>body(request));if(updates)return updates;
     const wallet=await walletRoute(request,actor,path,()=>body(request));if(wallet)return wallet;
+    const assignmentReview=await assignmentReviewRoute(request,actor,path,()=>body(request));if(assignmentReview)return assignmentReview;
     const work=await workRoute(request,actor,path,()=>body(request));if(work)return work;
     const memoryJourney=await memoryJourneyRoute(request,actor,path,()=>body(request));if(memoryJourney)return memoryJourney;
     const phaseTwo=await phaseTwoRoute(request,actor,path,()=>body(request));if(phaseTwo)return phaseTwo;

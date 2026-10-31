@@ -1,0 +1,113 @@
+import {z} from 'zod';
+import type {Actor,Artifact} from '../lib/contracts';
+import type {AssignmentReview,AssignmentReviewDecision} from '../lib/assignment-review-contracts';
+import {AppError,assertActor,getDb,newId,now} from './db';
+import {requireFeature} from './billing';
+import {currentAssignment,getAssignmentBinding,type AssignmentHost} from './assignment-roots';
+import {currentMeteredAssignment} from './assignment-metering';
+import {getMeteredAssignment,decideMeteredAssignment} from './metered-work';
+import {collectHistoryReferences,historyReferencesVisible,type HistoryReferences} from './history';
+import {fingerprint} from './provider-runtime';
+import {getWorkRun} from './work-runs';
+
+const id=z.string().trim().min(1).max(150);
+export const assignmentDecisionSchema=z.object({quoteId:id,revision:z.number().int().positive(),decision:z.enum(['approve','deny']),eventKey:id}).strict();
+const presentation=z.object({summary:z.string().trim().min(3).max(4000),parts:z.array(z.object({key:id,label:z.string().trim().min(3).max(200)}).strict()).min(1).max(40)}).strict();
+type ReviewData=z.infer<typeof presentation>&{references:HistoryReferences;quote:{title:string;estimatedCents:number;maximumCents:number;expiresAt:string;calls:Record<string,number>}};
+type Row={id:string;assignment_id:string;binding_id:string;quote_id:string;revision:number;scope_hash:string;presentation_hash:string;data:string;state:'waiting'|'ready'|'claimed'|'continued'|'denied';claim_token:string|null;created_at:string;updated_at:string};
+const owner=(actor:Actor)=>[actor.organizationId,actor.officeId,actor.id];
+function read(actor:Actor,reviewId:string):Row {
+ assertActor(actor);
+ const row=getDb().prepare('SELECT * FROM assignment_reviews WHERE id=? AND organization_id=? AND office_id=? AND user_id=?').get(id.parse(reviewId),...owner(actor)) as Row|undefined;
+ if(!row)throw new AppError(404,'Assignment review not found in your private workspace.');return row;
+}
+function binding(actor:Actor,row:Row){
+ const host=getDb().prepare('SELECT host_kind kind,host_id id FROM assignment_bindings WHERE id=? AND organization_id=? AND office_id=? AND user_id=?').get(row.binding_id,...owner(actor)) as AssignmentHost|undefined;
+ if(!host)throw new AppError(409,'The original assignment is unavailable.');
+ const value=getAssignmentBinding(actor,host);
+ if(!value||value.legacy||value.id!==row.binding_id)throw new AppError(409,'The original assignment is unavailable.');return value;
+}
+function current(actor:Actor,row:Row){
+ const source=binding(actor,row),assignment=getMeteredAssignment(actor,row.assignment_id);
+ if(assignment.assignmentKey!==`root:${source.rootId}`)throw new AppError(409,'The review no longer matches its original assignment.');
+ return assignment;
+}
+function projection(actor:Actor,row:Row):AssignmentReview {
+ const assignment=current(actor,row),data=JSON.parse(row.data) as ReviewData,budget=assignment.budget;
+ const contentRestricted=!historyReferencesVisible(actor,data.references);
+ const same=assignment.revision===row.revision&&budget.quoteId===row.quote_id&&assignment.scopeHash===row.scope_hash;
+ const closed=!!assignment.stopRequested||['completed','canceled','paused','reconciling'].includes(assignment.status);
+ const expired=Date.parse(budget.expiresAt)<=Date.now()&&budget.status!=='reserved';
+ const state:AssignmentReview['state']=!same||contentRestricted||expired?'obsolete':closed?'closed':row.state;
+ return {id:row.id,title:contentRestricted?'Assignment context changed':data.quote.title,summary:contentRestricted?'The original sources changed or are no longer available. Ask the Agent to prepare a current review.':data.summary,revision:row.revision,quoteId:row.quote_id,
+  parts:contentRestricted?[]:data.parts.map(p=>({...p,maximumCalls:data.quote.calls[p.key]})),
+  estimatedCents:data.quote.estimatedCents,maximumCents:data.quote.maximumCents,spentCents:budget.spentCents,heldCents:budget.reservedCents,
+  expiresAt:data.quote.expiresAt,createdAt:row.created_at,state,contentRestricted,canDecide:state==='waiting'&&budget.status==='awaiting_approval',simulation:true};
+}
+export function getAssignmentReview(actor:Actor,reviewId:string){return projection(actor,read(actor,reviewId));}
+export function listAssignmentReviews(actor:Actor):AssignmentReview[]{
+ assertActor(actor);
+ const rows=getDb().prepare('SELECT * FROM assignment_reviews WHERE organization_id=? AND office_id=? AND user_id=? ORDER BY created_at DESC,id DESC LIMIT 50').all(...owner(actor)) as Row[];
+ // Invalid host identities are never republished as fresh work or leaked in a list.
+ return rows.flatMap(row=>{try{return [projection(actor,row)];}catch(error){if(error instanceof AppError&&[403,404,409].includes(error.status))return [];throw error;}});
+}
+/** Trusted host publishes a review of an already priced root. There is no client/model creation route. */
+export function presentCurrentAssignmentQuote(actor:Actor,input:z.input<typeof presentation>,sourceArtifacts:Artifact[]=[],inherited:HistoryReferences[]=[]):AssignmentReview {
+ requireFeature(actor,'core');const parsed=presentation.parse(input);
+ return getDb().transaction(()=>{
+  const host=currentAssignment(actor),assignment=currentMeteredAssignment(actor),budget=assignment.budget;
+  if(assignment.stopRequested||!['quoted','active'].includes(assignment.status)||!['awaiting_approval','approved','reserved'].includes(budget.status))throw new AppError(409,'This assignment is not available for a cost review.');
+  if(parsed.parts.length!==assignment.parts.length||new Set(parsed.parts.map(p=>p.key)).size!==parsed.parts.length||parsed.parts.some(p=>!assignment.parts.some(part=>part.key===p.key)))throw new AppError(400,'The review must describe every quoted assignment part exactly once.');
+  if(inherited.some(ref=>!historyReferencesVisible(actor,ref)))throw new AppError(409,'The review sources changed. Prepare current context first.');
+  const hostSources:Artifact[]=[];
+  if(host.host.kind==='work'){
+   const run=getWorkRun(actor,host.host.id);
+   if(run.contentRestricted)throw new AppError(409,'The original job context is no longer available.');
+   hostSources.push({type:'work_run',id:run.id,title:'Original saved work',data:{workPlanVersion:run.planVersion}});
+  }
+  const data:ReviewData={...parsed,references:collectHistoryReferences(actor,[...hostSources,...sourceArtifacts],inherited),quote:{title:assignment.title,estimatedCents:budget.estimatedCents,maximumCents:budget.maximumCents,expiresAt:budget.expiresAt,calls:Object.fromEntries(assignment.parts.map(p=>[p.key,p.maximumCalls]))}};
+  if(!historyReferencesVisible(actor,data.references))throw new AppError(409,'The review sources are no longer available.');
+  const hash=fingerprint({binding:host.id,scope:assignment.scopeHash,data});
+  const prior=getDb().prepare('SELECT * FROM assignment_reviews WHERE assignment_id=? AND quote_id=?').get(assignment.id,budget.quoteId) as Row|undefined;
+  if(prior){if(prior.presentation_hash!==hash)throw new AppError(409,'This quote already has a different review. Prepare a new assignment revision.');return projection(actor,prior);}
+  if(getDb().prepare("SELECT 1 FROM assignment_reviews WHERE assignment_id=? AND state='claimed'").get(assignment.id))throw new AppError(409,'Reconcile the original continuation before publishing another review.');
+  const stamp=now(),reviewId=newId('assignment_review');
+  getDb().prepare('INSERT INTO assignment_reviews VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)').run(reviewId,assignment.id,host.id,...owner(actor),budget.quoteId,assignment.revision,assignment.scopeHash,hash,JSON.stringify(data),budget.status==='awaiting_approval'?'waiting':'ready',null,stamp,stamp);
+  return getAssignmentReview(actor,reviewId);
+ }).immediate();
+}
+/** Authenticated employee only. Approval records readiness; it never fabricates execution or a new job. */
+export function decideAssignmentReview(actor:Actor,reviewId:string,raw:AssignmentReviewDecision):AssignmentReview {
+ const input=assignmentDecisionSchema.parse(raw);
+ return getDb().transaction(()=>{
+  const row=read(actor,reviewId),view=projection(actor,row);
+  if(input.quoteId!==row.quote_id||input.revision!==row.revision||view.contentRestricted||['obsolete','closed'].includes(view.state))throw new AppError(409,'This review changed or expired. Review the current assignment before deciding.');
+  decideMeteredAssignment(actor,{assignmentId:row.assignment_id,...input});
+  // An exact retry after continuation must not reset the claim or create another dispatch.
+  if(row.state==='waiting')getDb().prepare('UPDATE assignment_reviews SET state=?,updated_at=? WHERE id=?').run(input.decision==='approve'?'ready':'denied',now(),row.id);
+  return getAssignmentReview(actor,reviewId);
+ }).immediate();
+}
+/** Trusted original host only. A claim is durable and never automatically re-leased after a crash.
+ * Each paid attempt still requires root admission. The host reconciles a saved claim instead of repeating work.
+ */
+export function claimAssignmentContinuation(actor:Actor,reviewId:string,currentScope:()=>string):{claimed:boolean;token:string|null;review:AssignmentReview} {
+ return getDb().transaction(()=>{
+  requireFeature(actor,'core');const row=read(actor,reviewId),active=currentAssignment(actor),view=projection(actor,row);
+  if(active.id!==row.binding_id)throw new AppError(409,'Continue from the original assignment host.');
+  if(currentScope()!==row.scope_hash||view.contentRestricted||['obsolete','closed','waiting','denied'].includes(view.state))throw new AppError(409,'This assignment is not approved for its current context.');
+  if(row.state!=='ready')return {claimed:false,token:null,review:view};
+  const token=newId('continuation');
+  getDb().prepare("UPDATE assignment_reviews SET state='claimed',claim_token=?,updated_at=? WHERE id=? AND state='ready'").run(token,now(),row.id);
+  return {claimed:true,token,review:getAssignmentReview(actor,reviewId)};
+ }).immediate();
+}
+/** A host acknowledges only its own durable return to the saved execution, not completion of the assignment. */
+export function completeAssignmentContinuation(actor:Actor,reviewId:string,token:string):AssignmentReview {
+ return getDb().transaction(()=>{
+  const row=read(actor,reviewId),active=currentAssignment(actor);current(actor,row);
+  if(active.id!==row.binding_id||row.claim_token!==id.parse(token)||!['claimed','continued'].includes(row.state))throw new AppError(409,'This continuation does not belong to the original execution.');
+  getDb().prepare("UPDATE assignment_reviews SET state='continued',updated_at=? WHERE id=?").run(now(),row.id);
+  return getAssignmentReview(actor,reviewId);
+ }).immediate();
+}
