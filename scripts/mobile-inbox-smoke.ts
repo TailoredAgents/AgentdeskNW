@@ -73,6 +73,17 @@ try{
  const withheld=await detail(company.id);check(withheld.bodyAccess==='revoked'&&withheld.draft===null&&withheld.investorContext===null,'Revoked source clears phone correspondence context and draft');
  await request(`inbox/${company.id}/simulate-send`,'POST',{reviewId:review.id,eventKey:randomUUID()},403);
  await request('inbox/receive-demo','POST',{scenarioId:'company-restore-access',eventKey:randomUUID()},200,true);await request(`inbox/${company.id}/simulate-send`,'POST',{reviewId:review.id,eventKey:randomUUID()},409);
+ const opening={accountId:company.accountId,to:{name:'Fictional coordinator',address:'coordinator@example.com'},cc:[{name:'Fictional colleague',address:'colleague@example.com'}],subject:'Opening title coordination draft',body:'Please confirm the closing contact and required documents. No signed agreement or deposit receipt is attached.',eventKey:randomUUID()};
+ const composed=await request<InboxThreadDetail>('inbox/compose','POST',opening);
+ check(composed.messages.length===0&&composed.thread.messageCount===0&&composed.draft?.authorship==='employee','New composition saves an opening draft without inventing incoming evidence');
+ check((await request<InboxThreadDetail>('inbox/compose','POST',opening,200,true)).thread.id===composed.thread.id,'Desktop retry returns the same phone composition');
+ check((await request<InboxThreadDetail>(`inbox/${composed.thread.id}`,'GET',undefined,200,true)).draft?.body===opening.body,'Desktop and phone share the opening draft');
+ const openingHelp=await request<InboxAssistance>(`inbox/${composed.thread.id}/assist`);check(!openingHelp.suggestedReply.eligible&&openingHelp.suggestedFollowUp===null,'No fabricated response or follow-up from an absent incoming message');
+ await request('inbox/compose','POST',{...opening,body:'Changed request'},409);
+ const openingReview=await request<InboxSendReview>(`inbox/${composed.thread.id}/review-send`,'POST',mutation(composed),200,true);
+ const openingSend={reviewId:openingReview.id,eventKey:randomUUID()},openingResult=await request<InboxSendResult>(`inbox/${composed.thread.id}/simulate-send`,'POST',openingSend);
+ check(openingResult.detail.messages.length===1&&openingResult.detail.messages[0].cc?.[0].address==='colleague@example.com','Opening draft sends only through exact separate review with all recipients preserved');
+ check((await request<InboxSendResult>(`inbox/${composed.thread.id}/simulate-send`,'POST',openingSend,200,true)).receipt.id===openingResult.receipt.id,'Cross-surface opening simulation retry produces one receipt');
  await request(`mobile/devices/${alex.sessionId}/revoke`,'POST',{},200,true);await request(`inbox/${company.id}`,'GET',undefined,401);
  check(count('provider_operations')===untouched.providers&&count('wallet_operations')===untouched.wallet,'Phone Inbox performs no provider call or wallet debit');
  check(count('messages')===untouched.messages,'Investor correspondence never enters the employee Copilot conversation');

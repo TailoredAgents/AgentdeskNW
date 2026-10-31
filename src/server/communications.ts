@@ -1,7 +1,7 @@
 import {createHash} from 'node:crypto';
 import {z} from 'zod';
 import type {Actor,Investor} from '../lib/contracts';
-import type {CommunicationAccount,CommunicationDraft,CommunicationMessage,InboxFilter,InboxMutation,InboxState,InboxThread,InboxThreadDetail,InvestorAssociation,InvestorMatch,LinkCommunicationInvestor,ReceiveDemoCommunication,SaveCommunicationDraft,UpdateCommunicationThread} from '../lib/communications-contracts';
+import type {CommunicationAccount,CommunicationDraft,CommunicationMessage,ComposeCommunication,InboxFilter,InboxMutation,InboxState,InboxThread,InboxThreadDetail,InvestorAssociation,InvestorMatch,LinkCommunicationInvestor,ReceiveDemoCommunication,SaveCommunicationDraft,UpdateCommunicationThread} from '../lib/communications-contracts';
 import {AppError,assertActor,audit,getDb,newId,now} from './db';
 import {readInvestor,readInvestors} from './access';
 import {featureAccess,requireFeature} from './billing';
@@ -19,6 +19,7 @@ export const inboxQuerySchema=z.object({filter:z.enum(['all','email','sms','need
 export const threadUpdateSchema=z.object({...mutation,status:z.enum(['needs_reply','waiting','done']).optional(),unread:z.boolean().optional()}).strict().refine(value=>value.status!==undefined||value.unread!==undefined,'Choose a status or read-state change.');
 const ccPartySchema=z.object({name:z.string().trim().max(150).refine(v=>!/[\r\n]/.test(v),'Names must be on one line.'),address:z.email().max(254).transform(v=>v.toLowerCase())}).strict();
 export const saveDraftSchema=z.object({...mutation,body:z.string().trim().min(1).max(12000),subject:z.string().trim().min(1).max(240).refine(v=>!/[\r\n]/.test(v),'Subject must be on one line.').optional(),cc:z.array(ccPartySchema).max(10).refine(v=>new Set(v.map(p=>p.address)).size===v.length,'Duplicate CC recipients are not allowed.').optional()}).strict();
+export const composeCommunicationSchema=saveDraftSchema.omit({expectedVersion:true}).extend({accountId:idSchema,to:z.object({name:ccPartySchema.shape.name,address:z.string().trim().min(1).max(254)}).strict()});
 export const discardDraftSchema=z.object(mutation).strict();
 export const linkInvestorSchema=z.object({...mutation,investorId:idSchema.nullable()}).strict();
 export const receiveDemoSchema=z.object({scenarioId:z.enum(['mike-repair-followup','sarah-rental-followup','david-text-followup','unknown-buyer','company-repair-followup','company-duplicate-source','company-revoke-access','company-restore-access']),eventKey:z.string().trim().min(1).max(150)}).strict();
@@ -144,6 +145,28 @@ export function updateInboxThread(actor:Actor,id:string,input:UpdateCommunicatio
 function saveDraftRecord(actor:Actor,value:CommunicationDraft){
  getDb().prepare('INSERT INTO communication_drafts VALUES(?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET status=excluded.status,data=excluded.data').run(value.id,...scope(actor),value.threadId,value.status,JSON.stringify(value));
  getDb().prepare('INSERT INTO communication_draft_revisions VALUES(?,?,?,?,?,?,?,?)').run(newId('draft_revision'),...scope(actor),value.threadId,value.id,value.version,JSON.stringify(value));
+}
+/** A new private draft is not incoming correspondence or permission to deliver it. */
+export function composeCommunication(actor:Actor,input:ComposeCommunication):InboxThreadDetail {
+ const parsed=composeCommunicationSchema.parse(input);ensureDemoInbox(actor);requireFeature(actor,'core');
+ return getDb().transaction(()=>{
+  const account=getCommunicationAccount(actor,parsed.accountId);requireCommunicationCapability(account,'localDraft');
+  const address=account.channel==='email'?z.email().parse(parsed.to.address).toLowerCase():z.string().regex(/^\+[1-9]\d{7,14}$/,'Use an international phone number, such as +14045550123.').parse(parsed.to.address);
+  if(address.toLowerCase()===account.address.toLowerCase())throw new AppError(400,'Choose a recipient different from the sending account.');
+  if(account.channel==='email'&&!parsed.subject)throw new AppError(400,'Add a subject for this email.');
+  if(account.channel==='sms'&&(parsed.subject!==undefined||parsed.cc?.length||parsed.body.length>1600))throw new AppError(400,'Texts are one-to-one, have no subject or CC, and are limited to 1,600 characters.');
+  if(parsed.cc?.some(p=>[address,account.address.toLowerCase()].includes(p.address)))throw new AppError(400,'CC must not duplicate the sender or primary recipient.');
+  const payload={kind:'conversation.composed',input:parsed},prior=replay(actor,parsed.eventKey,payload);
+  if(prior)return getInboxThread(actor,prior);
+  const count=getDb().prepare('SELECT COUNT(*) n FROM communication_threads WHERE organization_id=? AND office_id=? AND owner_id=?').get(...scope(actor)) as {n:number};
+  if(count.n>=500)throw new AppError(409,'This demonstration inbox has reached its 500-conversation limit. Existing drafts remain available.');
+  const timestamp=now(),correspondent={name:parsed.to.name||address,address},matching=candidates(actor,{correspondent,channel:account.channel});
+  const linked=matching.exact&&matching.values.length===1?matching.values[0].id:null;
+  const thread:StoredThread={id:newId('inbox_thread'),accountId:account.id,channel:account.channel,subject:parsed.subject??'New text conversation',correspondent,status:'done',unread:false,version:1,updatedAt:timestamp,lastMessageAt:timestamp,preview:'New conversation · draft only; nothing sent',messageCount:0,investorId:linked,matchMethod:linked?'exact_contact':null,manualUnlink:false,synthetic:true};
+  getDb().prepare('INSERT INTO communication_threads VALUES(?,?,?,?,?,?,?)').run(thread.id,...scope(actor),account.id,`composed:${thread.id}`,JSON.stringify(thread));
+  saveDraftRecord(actor,{id:newId('inbox_draft'),threadId:thread.id,accountId:account.id,from:{name:actor.name,address:account.address},to:correspondent,cc:parsed.cc??[],authorship:'employee',subject:thread.subject,body:parsed.body,status:'draft',createdAt:timestamp,updatedAt:timestamp,version:1,deliveryStatus:'not_sent',synthetic:true});
+  recordEvent(actor,parsed.eventKey,payload,thread.id,'conversation.composed');return getInboxThread(actor,thread.id);
+ }).immediate();
 }
 export function saveInboxDraft(actor:Actor,id:string,input:SaveCommunicationDraft,authorship:'employee'|'copilot'='employee'){
  const parsed=saveDraftSchema.parse(input);

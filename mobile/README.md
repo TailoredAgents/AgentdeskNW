@@ -103,4 +103,9 @@ Work → Guidance uses the shared office library with role/date applicability, s
 
 ## Employee-edited correspondence checkpoint
 
-Native Inbox can save edited body/subject and explicit email CC recipients, retrieve a desktop draft, review the same complete envelope and confirm one simulated outcome. CC-only edits participate in dirty/conflict/source handling and exact-review checks. SMS rejects CC; preparing a generated reply clears CC after the replacement notice. The two added editor cases bring mobile tests to 37; the expanded Inbox HTTP suite passes 90 checks. Native/web exports and a desktop-to-native-browser rehearsal passed. Real transport, new-conversation composition and document transfer remain separate work.
+Native Inbox can save edited body/subject and explicit email CC recipients, retrieve a desktop draft, review the same complete envelope and confirm one simulated outcome. CC-only edits participate in dirty/conflict/source handling and exact-review checks. SMS rejects CC; preparing a generated reply clears CC after the replacement notice. The two added editor cases bring mobile tests to 37; the expanded Inbox HTTP suite passes 90 checks. Native/web exports and a desktop-to-native-browser rehearsal passed. Real transport, new-conversation composition is now accepted locally below; document transfer remains separate work.
+
+
+### New-correspondence checkpoint — October 30, 2026
+
+Inbox → New message starts a private email or business text from a selected account. Explicit primary recipient and email CC, guarded unsaved edits, exact uncertain-save retry and separate simulation review share server behavior with desktop. An opening draft never invents an incoming message. Desktop opening-email save → native-browser exact review → one simulated outcome passed; native-browser creation of a one-to-one text also passed. Independent typecheck, 41 mobile tests and iOS/Android/production-web/development-web exports passed. This is browser/export acceptance, not an installed phone, actual SMS or email result. Screenshots are local ignored artifacts `compose-continuity.png` and `compose-text-review.png`.

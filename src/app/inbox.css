@@ -330,3 +330,5 @@
  .inbox-draft-unavailable strong{font-size:12px;}
  .inbox-source-records>strong,.inbox-source-records>p,.inbox-source-records li{font-size:11px;}
 }
+
+.inbox-heading-actions{display:flex;gap:8px;flex-wrap:wrap}.inbox-compose .field{margin:16px 0}.inbox-compose>p{color:var(--muted);margin:12px 0;line-height:1.6}.inbox-compose>p.error-banner{color:var(--danger)}

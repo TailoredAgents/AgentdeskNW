@@ -26,6 +26,7 @@ export interface InboxState {accounts:CommunicationAccount[];preferredAccountId:
 export interface InboxThreadDetail {bodyAccess:'full'|'headers_only'|'revoked';capabilityNotice:string;thread:InboxThread;account:CommunicationAccount;messages:CommunicationMessage[];draft:CommunicationDraft|null;draftHistory:CommunicationDraft[];investorContext:InvestorJourney|null;contextNotice:string;availableInvestors:InvestorMatch[];canEdit:boolean;accessReason:string;liveDelivery:false}
 export interface InboxMutation {expectedVersion:number;eventKey:string}
 export interface SaveCommunicationDraft extends InboxMutation {body:string;subject?:string;cc?:CommunicationParty[]}
+export interface ComposeCommunication {accountId:string;to:CommunicationParty;subject?:string;body:string;cc?:CommunicationParty[];eventKey:string}
 export interface UpdateCommunicationThread extends InboxMutation {status?:InboxStatus;unread?:boolean}
 export interface LinkCommunicationInvestor extends InboxMutation {investorId:string|null}
 export interface ReceiveDemoCommunication {scenarioId:InboxScenarioId;eventKey:string}

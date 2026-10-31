@@ -1,7 +1,7 @@
 import {NextRequest,NextResponse} from 'next/server';
 import type {Actor} from '../lib/contracts';
 import {AppError} from './db';
-import {discardDraftSchema,discardInboxDraft,getInboxState,getInboxThread,linkInboxInvestor,linkInvestorSchema,receiveDemoCommunication,receiveDemoSchema,saveDraftSchema,saveInboxDraft,threadUpdateSchema,updateInboxThread} from './communications';
+import {composeCommunication,composeCommunicationSchema,discardDraftSchema,discardInboxDraft,getInboxState,getInboxThread,linkInboxInvestor,linkInvestorSchema,receiveDemoCommunication,receiveDemoSchema,saveDraftSchema,saveInboxDraft,threadUpdateSchema,updateInboxThread} from './communications';
 import {createInboxFollowUp,getInboxAssistance,inboxFollowUpSchema,inboxObservationSchema,inboxWorkflowMutationSchema,prepareInboxReply,recordInboxObservation,reviewInboxSend,simulateInboxSend,simulateInboxSendSchema} from './communications-workflow';
 
 /** The main route supplies authentication, origin checks, rate limits and the bounded JSON reader. */
@@ -9,6 +9,7 @@ export async function communicationsRoute(request:NextRequest,actor:Actor,path:s
  if(path[0]!=='inbox')return;
  const [,id,action]=path,method=request.method,json=(value:unknown)=>NextResponse.json(value,{headers:{'Cache-Control':'no-store'}});
  if(path.length===1&&method==='GET')return json(getInboxState(actor,Object.fromEntries(request.nextUrl.searchParams.entries())));
+ if(path.length===2&&id==='compose'&&method==='POST')return json(composeCommunication(actor,composeCommunicationSchema.parse(await readBody())));
  if(path.length===2&&id==='receive-demo'&&method==='POST')return json(receiveDemoCommunication(actor,receiveDemoSchema.parse(await readBody())));
  if(path.length===2&&method==='GET')return json(getInboxThread(actor,id));
  if(path.length===2&&method==='PATCH')return json(updateInboxThread(actor,id,threadUpdateSchema.parse(await readBody())));

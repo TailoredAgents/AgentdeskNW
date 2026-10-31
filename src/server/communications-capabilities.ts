@@ -21,7 +21,7 @@ export function requireCommunicationCapability(account:CommunicationAccount,capa
 }
 export function visibleCommunicationMessage(actor:Actor,account:CommunicationAccount,message:CommunicationMessage):CommunicationMessage {
  const provenance=account.access==='available'?(getDb().prepare('SELECT data FROM communication_source_links WHERE account_id=? AND message_id=? AND organization_id=? AND office_id=? AND owner_id=? ORDER BY rowid').all(account.id,message.id,actor.organizationId,actor.officeId,actor.id) as {data:string}[]).map(row=>JSON.parse(row.data) as CommunicationProvenance):[];
- if(account.access==='revoked')return {...message,from:{name:'Unavailable correspondent',address:''},to:[],subject:'Company email access unavailable',body:'',attachments:[],sourceRef:'',sourceLabel:'Source access revoked',provenance:[],bodyAvailability:'revoked'};
+ if(account.access==='revoked')return {...message,from:{name:'Unavailable correspondent',address:''},to:[],cc:[],subject:'Company email access unavailable',body:'',attachments:[],sourceRef:'',sourceLabel:'Source access revoked',provenance:[],bodyAvailability:'revoked'};
  if(!account.capabilities.readBody)return {...message,subject:'Subject unavailable · headers only',body:'',attachments:[],provenance,bodyAvailability:'headers_only'};
  return {...message,provenance,bodyAvailability:'full'};
 }

@@ -1,5 +1,18 @@
 # AgentDesk progress log
 
+## October 30, 2026 — New private correspondence accepted locally
+
+**Scope:** extends `a799be5`; no migration or new dependency. Desktop/native New message saves an opening email or one-to-one business text from the employee's chosen available account, with validated To and optional email CC. Account/tenant/owner/entitlement checks apply to new saves and exact replay. No inbound source, customer response, CRM fact, provider operation or charge is invented. Activity-only sources can draft but not simulate delivery; headers-only/revoked sources cannot compose. No model compose/approve/send tool was added.
+
+**Recovery and review:** one atomic thread/draft/event save; bounded demonstration conversations; same request returns current state without recreating a consumed draft. Shared web/native controller protects unsaved discard, prevents changed requests during uncertain outcomes, retries the exact payload and suppresses late navigation after unmount. Switching email/text preserves input and requires clearing incompatible fields. Opening drafts use the existing exact separate send review, with one receipt and preserved recipients. Inspection also found outgoing CC could remain in the revoked message projection; it now clears with the rest of that envelope, covered by regression.
+
+**Verification:** 803 root tests across 44 files, 41 mobile tests, root typecheck/lint/build and independent mobile typecheck passed. iOS/Android and production/development web exports passed. All 1,427 HTTP/workflow checks passed (mobile Inbox increased from 90 to 104), plus twelve metered restart/adapter checks. Nine new backend cases and four shared-client cases cover scope, source/entitlement loss, invalid input, exact replay, stale review, uncertain retry, channel switching and no fabricated incoming source. All provider transport remained mocked/disabled. The first focused test compared refreshed journey timestamps; corrected it to assert stable thread/draft identity, then full regression passed.
+
+**Interface:** desktop opening-email form and unsaved-discard protection passed; the same draft/CC loaded in the native browser export and produced one reviewed simulated outcome. A new business-text draft also saved from native browser UI. Screenshots: ignored `artifacts/mobile/compose-desktop.png`, `compose-continuity.png`, `compose-text-review.png`. This is browser/export evidence, not physical-device acceptance. Prior schema-032 preservation evidence applies; active data was not used.
+
+**Next:** source-bound document contents and transaction coordination, followed by remaining role depth, standing authority, broader planning and live-host spending integration. All C1–C7 limits remain in the canonical roadmap. No deployment or real-world acceptance claimed.
+
+
 ## October 30, 2026 — Employee-edited correspondence and CC accepted locally
 
 **Scope:** extends `a586dd2`; no schema or dependency change. Employees now save and explicitly review edited email/text replies. Email CC supports up to ten validated unique addresses; sender/primary correspondent remain bound to the private thread. SMS remains one-to-one. Employee-written text is labeled accordingly, not verified business evidence or a property package. Generated drafts retain current relationship-method eligibility and clear previously entered CC with a replacement notice. Models cannot choose employee authorship, approve or send.

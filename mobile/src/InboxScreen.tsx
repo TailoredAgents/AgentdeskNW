@@ -1,3 +1,4 @@
+import {InboxComposer} from './InboxComposer';
 import {ccText,parseCc} from '../../src/lib/communication-recipients';
 import {useEffect,useRef,useState,type ReactNode} from 'react';
 import {ActivityIndicator,KeyboardAvoidingView,Modal,Platform,Pressable,RefreshControl,ScrollView,Text,TextInput,View} from 'react-native';
@@ -23,6 +24,7 @@ export function InboxScreen({api,initialId,onAuthError,onGuard,onTask}:{api:Retu
  const [filter,setFilter]=useState<InboxFilter>('all'),[account,setAccount]=useState<string|undefined>(undefined),[query,setQuery]=useState(''),[search,setSearch]=useState('');
  const [editor,setEditor]=useState<InboxEditor|null>(null),[assistance,setAssistance]=useState<InboxAssistance|null>(null),[review,setReview]=useState<InboxSendReview|null>(null),[actionReview,setActionReview]=useState<ActionReview|null>(null);
  const [busy,setBusy]=useState(false),[loading,setLoading]=useState(true),[error,setError]=useState(''),[notice,setNotice]=useState(''),[showContext,setShowContext]=useState(false),[compare,setCompare]=useState(false);
+ const [composing,setComposing]=useState(false);
  const [showSources,setShowSources]=useState(false),[savedTask,setSavedTask]=useState<string|null>(null);
  const [dialog,setDialog]=useState<{title:string;text:string;confirmLabel:string;confirm:()=>void}|null>(null),[pending,setPending]=useState<Operation|null>(null),[clock,setClock]=useState(Date.now());
  const alive=useRef(true),generation=useRef(0),mutating=useRef(false),detailRef=useRef<InboxThreadDetail|null>(null);
@@ -39,7 +41,7 @@ export function InboxScreen({api,initialId,onAuthError,onGuard,onTask}:{api:Retu
   if(failure instanceof ApiError&&[401,403,404].includes(failure.status)){detailRef.current=null;setDetail(null);setEditor(null);setList(null);clearReviews();setDialog(null);setCompare(false);setNotice('');}
  }
  async function refresh(){
-  if(mutating.current)return;const epoch=++generation.current;
+  if(mutating.current||composing)return;const epoch=++generation.current;
   try{
    const params=[`filter=${filter}`,`q=${encodeURIComponent(query)}`,...(account?[`accountId=${encodeURIComponent(account)}`]:[])];
    const state=await api<InboxState>(`/inbox?${params.join('&')}`);if(!alive.current||epoch!==generation.current)return;
@@ -50,14 +52,15 @@ export function InboxScreen({api,initialId,onAuthError,onGuard,onTask}:{api:Retu
   finally{if(alive.current&&epoch===generation.current)setLoading(false);}
  }
  useEffect(()=>{alive.current=true;return()=>{alive.current=false;generation.current++;onGuard(null);};},[]);
- useEffect(()=>{setLoading(true);void refresh();const timer=setInterval(()=>void refresh(),12_000);return()=>{generation.current++;clearInterval(timer);};},[api,selected,filter,account,query]);
+ useEffect(()=>{setLoading(true);void refresh();const timer=setInterval(()=>void refresh(),12_000);return()=>{generation.current++;clearInterval(timer);};},[api,selected,filter,account,query,composing]);
  useEffect(()=>{const timer=setInterval(()=>setClock(Date.now()),1000);return()=>clearInterval(timer);},[]);
  function guard(leave:()=>void){
+  if(composing){setError('Save or close the new conversation before leaving.');return;}
   if(locked){setError('Finish or retry the outstanding inbox action before leaving.');return;}
   if(dirty){setDialog({title:'Keep your draft?',text:'Your edits have not been saved. Stay here to save them, or discard only these unsaved edits and continue.',confirmLabel:'Discard unsaved edits & continue',confirm:()=>{setEditor(detail?editorFor(detail):null);setDialog(null);leave();}});return;}
   leave();
  }
- useEffect(()=>{onGuard(guard);return()=>onGuard(null);},[dirty,locked,detail]);
+ useEffect(()=>{onGuard(guard);return()=>onGuard(null);},[dirty,locked,detail,composing]);
  function open(id:string|null){guard(()=>{generation.current++;detailRef.current=null;setSelected(id);setDetail(null);setEditor(null);clearReviews();setShowContext(false);setError('');setNotice('');setSavedTask(null);});}
  async function run(operation:Operation){
   if(mutating.current)return;mutating.current=true;generation.current++;setPending(operation);setBusy(true);setError('');setNotice('');
@@ -98,13 +101,14 @@ export function InboxScreen({api,initialId,onAuthError,onGuard,onTask}:{api:Retu
    {errorView}{Boolean(notice)&&<Text accessibilityLiveRegion="polite" style={s.copy}>{notice}</Text>}
    {savedTask&&<Button secondary label="Open saved follow-up" disabled={locked} onPress={()=>onTask(savedTask)}/>}
    {pending&&!busy&&<View style={s.card}><Text style={s.cardTitle}>Outcome needs checking</Text><Text style={s.copy}>Retry the same action to recover its saved result. It keeps the original request identity.</Text><Button label="Retry the same inbox action" onPress={()=>void run(pending)}/></View>}
+   <Button label="New message" disabled={locked||!list?.canEdit} onPress={()=>guard(()=>setComposing(true))}/>
    {!detail?<>
     {selected&&<Button secondary label="Back to inbox" disabled={locked} onPress={()=>open(null)}/>}
     <View style={s.row}><TextInput accessibilityLabel="Search inbox" placeholder="Search your conversations" value={search} onChangeText={setSearch} style={[s.input,s.grow]} onSubmitEditing={()=>setQuery(search.trim())}/><Button label="Search" onPress={()=>setQuery(search.trim())}/></View>
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.wrap}><Button label="All inboxes" secondary={account!==''} onPress={()=>setAccount('')}/>{list?.accounts.map(item=><Button key={item.id} label={item.label} secondary={account!==item.id} onPress={()=>setAccount(item.id)}/>)}</ScrollView>
     <View style={s.wrap}>{filters.map(item=><Pressable accessibilityRole="button" accessibilityState={{selected:filter===item.id}} key={item.id} onPress={()=>setFilter(item.id)} style={[s.pill,filter===item.id&&{backgroundColor:colors.ink}]}><Text style={[s.pillText,filter===item.id&&s.employeeText]}>{item.label} {list?.counts[item.id]??''}</Text></Pressable>)}</View>
     {loading&&<ActivityIndicator color={colors.green}/>}
-    {list?.threads.map(thread=><Pressable accessibilityRole="button" accessibilityLabel={`Open conversation: ${thread.subject}`} key={thread.id} style={s.card} onPress={()=>open(thread.id)}><View style={s.between}><Text style={[s.status,s.grow]}>{statusLabel[thread.status]}{thread.unread?' · Unread':''}{thread.hasDraft?' · Draft':''}</Text><Text style={s.help}>{thread.channel==='sms'?'Text':'Email'}</Text></View><Text style={s.cardTitle}>{thread.correspondent.name}</Text><Text style={s.copy}>{thread.subject}</Text><Text numberOfLines={3} style={s.help}>{thread.preview}</Text><Text style={s.help}>{list.accounts.find(item=>item.id===thread.accountId)?.label}</Text></Pressable>)}
+    {list?.threads.map(thread=><Pressable accessibilityRole="button" accessibilityLabel={`Open conversation: ${thread.subject}`} key={thread.id} style={s.card} onPress={()=>open(thread.id)}><View style={s.between}><Text style={[s.status,s.grow]}>{thread.messageCount===0&&thread.hasDraft?'Draft only':statusLabel[thread.status]}{thread.unread?' · Unread':''}{thread.hasDraft?' · Draft':''}</Text><Text style={s.help}>{thread.channel==='sms'?'Text':'Email'}</Text></View><Text style={s.cardTitle}>{thread.correspondent.name}</Text><Text style={s.copy}>{thread.subject}</Text><Text numberOfLines={3} style={s.help}>{thread.preview}</Text><Text style={s.help}>{list.accounts.find(item=>item.id===thread.accountId)?.label}</Text></Pressable>)}
     {list&&!loading&&!list.threads.length&&<View style={s.empty}><Text style={s.cardTitle}>Nothing here yet</Text><Text style={s.help}>Try another inbox, filter or search.</Text></View>}
    </>:<>
     <Button label="Back to inbox" secondary disabled={locked} onPress={()=>open(null)}/>
@@ -124,6 +128,7 @@ export function InboxScreen({api,initialId,onAuthError,onGuard,onTask}:{api:Retu
     </>}
    </>}
   </ScrollView>
+  {composing&&list&&<InboxComposer api={api} accounts={list.accounts} preferred={account||list.preferredAccountId||undefined} onClose={()=>setComposing(false)} onSaved={next=>{setComposing(false);generation.current++;accept(next,true);setSelected(next.thread.id);setAccount(next.account.id);setFilter('all');setSearch('');setQuery('');setNotice('Opening draft saved. Review it before a separate simulated send.');}}/>}
   {dialog&&<Sheet title={dialog.title} close={()=>setDialog(null)} footer={<><Button label={dialog.confirmLabel} disabled={locked} onPress={dialog.confirm}/><Button secondary label="Stay here" onPress={()=>setDialog(null)}/></>}><Text style={s.copy}>{dialog.text}</Text></Sheet>}
   {compare&&detail&&editor&&<Sheet title="Compare saved draft" close={()=>setCompare(false)} footer={<><Button label="Keep my edits against this version" disabled={locked||detail.bodyAccess!=='full'} onPress={()=>{setEditor(keepReviewedEdits(editor,detail));setCompare(false);setError('');}}/><Button secondary label="Use latest saved draft" disabled={locked} onPress={()=>{setEditor(editorFor(detail));setCompare(false);setError('');}}/></>}><Text style={s.label}>Latest saved version</Text><Text selectable style={s.copy}>{detail.draft?.subject??detail.thread.subject}</Text><Text selectable style={s.copy}>{detail.draft?.body??'No saved draft.'}{'\n'}CC: {ccText(detail.draft?.cc)||'None'}</Text><Text style={s.label}>Your unsaved edits</Text><Text selectable style={s.copy}>CC: {editor.cc||'None'}{'\n'}{editor.subject}{'\n'}{editor.body}</Text><Text style={s.help}>Keeping your edits does not save them. Review, then tap Save draft.</Text></Sheet>}
   {review&&<Sheet title="Review simulated send" close={()=>{if(!busy)setReview(null);}} footer={<><Button label="Confirm simulated send" disabled={locked||!reviewValid} onPress={()=>mutate('simulate-send',{reviewId:review.id},'send')}/><Button secondary label="Keep as draft" disabled={busy} onPress={()=>setReview(null)}/></>}><View style={s.demo}><Text style={s.demoText}>No email or text will be delivered. No credits are charged.</Text></View><Text style={s.label}>From</Text><Text selectable style={s.copy}>{review.from.name} · {review.from.address}</Text><Text style={s.label}>To</Text><Text selectable style={s.copy}>{review.to.name} · {review.to.address}</Text>{review.channel==='email'&&<><Text style={s.label}>CC</Text><Text selectable style={s.copy}>{ccText(review.cc)||'None'}</Text></>}<Text style={s.label}>Subject</Text><Text selectable style={s.copy}>{review.subject}</Text><Text style={s.help}>{review.authorship==='employee'?'Employee-written reply. Check facts, sharing permissions and every recipient; this is not a verified property package.':'Copilot relationship reply. No property package or attachments.'}</Text><Text style={s.label}>Exact saved reply</Text><Text selectable style={s.copy}>{review.body}</Text><Text style={s.help}>No attachments. Expires {stamp(review.expiresAt)}.</Text>{!reviewValid&&<Text style={s.errorText}>This review changed or expired. Close it and review the current reply again.</Text>}{errorView}</Sheet>}
