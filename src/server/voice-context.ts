@@ -1,3 +1,4 @@
+import {knowledgeContextReference} from './knowledge';
 import {analysisContextReference} from './deal-analysis';
 import {opportunityContextReference} from './opportunities';
 import {getHandoffBoard} from './handoffs';
@@ -15,6 +16,7 @@ export function voiceContextSnapshot(actor:Actor):Record<string,string> {
   const result:Record<string,string>={};
   const add=(key:string,value:unknown)=>{result[key]=createHash('sha256').update(JSON.stringify(value)).digest('hex');};
   add('scope',{organization:actor.organizationId,office:actor.officeId,user:actor.id,role:actor.role,ownership:getOwnershipPolicy(actor),disclosure:getDisclosurePolicy(actor)});
+  add('knowledge',knowledgeContextReference(actor));
   add('analyses',analysisContextReference(actor));
   add('opportunities',opportunityContextReference(actor));
   add('handoffs',getHandoffBoard(actor).handoffAccessReference);

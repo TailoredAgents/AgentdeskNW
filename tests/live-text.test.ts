@@ -1,3 +1,4 @@
+import {getKnowledgeState,withdrawKnowledge} from '../src/server/knowledge';
 import { afterEach,beforeEach,describe,expect,it,vi } from 'vitest';
 import { mkdtempSync,rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -89,6 +90,12 @@ describe('live text protocol with mocked Responses',()=>{
   finish(answer([call('create_task',{...taskInput,title:'private-inflight-task-fact'})]));await pending;
   expect(services.listTasks(actor).some(task=>task.title==='private-inflight-task-fact')).toBe(false);expect(mock).toHaveBeenCalledTimes(1);
  });
+ it('withholds an in-flight answer when its role guidance is withdrawn',async()=>{
+  let finish!:(value:Response)=>void;const mock=vi.fn().mockResolvedValueOnce(answer([call('knowledge_search',{query:'buyer repair concern'})])).mockImplementationOnce(()=>new Promise<Response>(resolve=>{finish=resolve;}));vi.stubGlobal('fetch',mock);
+  const actor=demoActor(),pending=chat(actor,'Use our current guidance to plan the next buyer follow-up',undefined,'guidance-withdrawn-turn');
+  await vi.waitFor(()=>expect(mock).toHaveBeenCalledTimes(2));const doc=getKnowledgeState(demoActor('manager')).documents[0];withdrawKnowledge(demoActor('manager'),{id:doc.id,expectedVersion:doc.version,reason:'The source needs correction.',eventKey:'withdraw-during-model'});
+  finish(answer([message('obsolete-guidance-marker')]));const response=await pending;expect(JSON.stringify(response)).not.toContain('obsolete-guidance-marker');
+ });
  it('does not transmit a stale context when scope changed before provider admission',async()=>{
   const actor=demoActor(),conversation=services.createConversation(actor,'Scope changes before inference');const mock=vi.fn().mockResolvedValue(answer([message('Unreachable answer.')]));vi.stubGlobal('fetch',mock);
   await expect(runLiveText({actor,conversationId:conversation.id,requestId:'stale-initial-context',message:'Review my work',instructions:'Test instructions',context:{sensitive:'do not transmit stale facts'},scope:{permission:'previous'},currentScope:()=>({permission:'revoked'}),history:[],tools:[],dispatch:()=>({message:'Should not execute',specialistIds:[],artifacts:[]}),artifacts:[],specialists:new Set()})).rejects.toThrow(/changed|context|scope|permissions/i);
@@ -115,9 +122,9 @@ describe('live text protocol with mocked Responses',()=>{
   }
   expect(JSON.stringify(listReleases(manager))).toBe(before);
  });
- it('preserves all sixteen specialists with the remaining unavailable planned capability',()=>{
-  expect(specialists).toHaveLength(16);expect(specialists.filter(item=>item.status!=='planned')).toHaveLength(15);
-  expect(specialists.filter(item=>item.status==='planned').map(item=>item.id).sort()).toEqual(['onboarding-coaching']);
+ it('preserves sixteen specialists with honest local implementation status',()=>{
+  expect(specialists).toHaveLength(16);expect(specialists.filter(item=>item.status!=='planned')).toHaveLength(16);
+  expect(specialists.filter(item=>item.status==='planned').map(item=>item.id).sort()).toEqual([]);
   expect(specialists.filter(item=>item.status==='planned').every(item=>item.tools.length===0)).toBe(true);expect(toolDefinitions().some(tool=>tool.name==='acquisition_context')).toBe(true);
  });
  it('only prepares a CRM note and refuses a model-generated approval',async()=>{

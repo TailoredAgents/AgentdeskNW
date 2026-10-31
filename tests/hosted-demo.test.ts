@@ -70,7 +70,7 @@ describe('repeatable fictional presentation setup',()=>{
   const actor=demoActor(),before=getDb().prepare('SELECT data FROM investors WHERE id=?').get('investor-mike');
   expect(featureAccess(actor,'investor-hunter').source).toBe('bundle');
   expect(featureAccess(actor,'team-performance').allowed).toBe(false);
-  expect(featureAccess(actor,'onboarding-coaching').allowed).toBe(false);
+  expect(featureAccess(actor,'onboarding-coaching').allowed).toBe(true);
   expect(listReleases(actor)).toHaveLength(1);expect(listPackages(actor).length).toBeGreaterThan(0);
   expect(listPackages(actor).every(p=>['draft','blocked'].includes(p.status))).toBe(true);
   const approvals=listApprovals(actor);expect(approvals.length).toBeGreaterThan(0);expect(approvals.every(a=>a.status==='pending')).toBe(true);

@@ -9,8 +9,8 @@ Dispositions, acquisitions and management are all primary audiences. The intende
 ## Current registry status
 
 - **Ready, within the stated local capability:** Conversation & Call Notetaker; Daily Coordinator.
-- **Demo:** Investor Hunter; Buyer Matchmaker; Investor Qualification; Investor Relationship; Deal Marketing; Workflow Navigator; Salesforce Assistant; Transaction & Document Coordinator; Acquisition Lead; Acquisition-to-Disposition; Team Performance; Investment Deal Analyst; Valuation & Due Diligence.
-- **Planned:** Onboarding & Coaching.
+- **Demo:** Investor Hunter; Buyer Matchmaker; Investor Qualification; Investor Relationship; Deal Marketing; Workflow Navigator; Salesforce Assistant; Transaction & Document Coordinator; Acquisition Lead; Acquisition-to-Disposition; Team Performance; Investment Deal Analyst; Valuation & Due Diligence; Onboarding & Coaching.
+- **Planned registry entries:** none. All sixteen have a bounded local capability; that does not complete their depth or connected operation.
 
 “Ready” for the notetaker means real local excerpt extraction, not audio recording or a claim of human-level transcript understanding. Daily Coordinator uses local work records, not external calendars.
 
@@ -33,7 +33,7 @@ The contract permits reuse across tenants. Names and tenant terminology must not
 | 5. Deal Marketing Assistant | Verified property facts and audience | Disclosure-gated property packages with current facts, approved template, media link, missing-data flags and copy/compose handoff | Draft/review/handoff states implemented locally; release/disclosure/media eligibility rechecked. Delivery remains not sent; campaigns and provider sending remain planned. |
 | 6. Investment Deal Analyst | Property facts, comps, financing/repair assumptions | Transparent calculations, preliminary scenarios and source references | Reviewed private flip/rental/loan scenarios, formulas, sensitivities and versions accepted locally. Unknowns remain unknown. No verified valuation or binding decision; see [DEAL_ANALYSIS](DEAL_ANALYSIS.md). |
 | 7. Conversation & Call Notetaker | Authorized transcript/notes and selected CRM record | Post-call debrief, source excerpts, criteria, ambiguity/linking, note/field proposals, tasks and requested package | Typed recap preparation is committed; browser voice requires audio acceptance and native dictation source awaits device acceptance. CRM criteria/note writes require review. No ordinary cellular-call recording. |
-| 8. Workflow Navigator | Actor role, permitted investor/task context, procedure version | Known/missing criteria, next action, rationale, subsequent step | Advice/preparation automatic; business changes follow tool policies. Baseline guidance first. |
+| 8. Workflow Navigator | Actor role, permitted investor/task context, procedure version | Known/missing criteria, next action, rationale, subsequent step | Current source/versioned office guidance retrieval and baseline next steps. Business changes retain their tool policies. |
 | 9. Salesforce Assistant | Actor-scoped CRM request, record references, reviewed proposal | Lookup, duplicate check, note/import preparation, confirmed execution result | Consequential writes require server approval. Local adapter only until authorized sandbox. |
 | 10. Daily Coordinator | Own tasks, due dates, jobs, approvals, preferences | Ranked calling queue from released inventory, due commitments, contact history and explicit priority; dismissal, briefings and task artifacts | Own relationships only in default queue; deterministic explained ranking. No external calendar claim without connector. |
 | 11. Transaction & Document Coordinator | Authorized deal stage, documents, milestones and versions | Read configurable upstream/downstream stages, closing structure and timestamp on authorized releases | Limited demo transaction context is implemented. Document verification, milestone automation and contract execution remain planned. |
@@ -41,7 +41,7 @@ The contract permits reuse across tenants. Names and tenant terminology must not
 | 13. Valuation & Due Diligence Assistant | Source property data, comps, explicit repair assumptions | Valuation scenarios, evidence, red flags and checklist | Shared scenario engine and provisional comparable source/exclusion/adjustment screen accepted locally. Candidate sale prices are not subject valuation; no offer or independent verification. |
 | 14. Acquisition-to-Disposition Coordinator | Deal/property/pricing facts, documents and stage | Versioned local releases with source, assigned dispositions access, media/economics and match-triggered notifications | Role-gated local demo release edits implemented, event-idempotent and audited. No Marketplace ingestion or real distribution. |
 | 15. Team Performance Assistant | Manager role and office-scoped tasks/jobs/usage | Operational overview and bottlenecks | Manager-only. Local activity summary is not a verified Salesforce sales-performance report. |
-| 16. Onboarding & Coaching Assistant | Role, question, approved knowledge revision | Contextual explanation, source-backed answer, conversation practice | Integrated into normal work. Approved-knowledge retrieval and deeper coaching planned. |
+| 16. Onboarding & Coaching Assistant | Role, question, current fictional guidance revision | Source-backed guidance, practice situation and private self-review criteria | Demo source lifecycle and contextual self-review implemented. Company-approved material, semantic retrieval and calibrated coaching remain pending. |
 
 ## Capability depth delivery matrix
 
@@ -68,7 +68,7 @@ This is the specialist scope/evidence checklist for [canonical checkpoints C4–
 
 Before each specialist implementation, define supported tasks, essential data/tools and examples of excellent output. Test straightforward, ambiguous, missing/conflicting/stale evidence, changed instructions, denied approvals, restart/retry, wrong-scope and channel-continuation cases. Record the versions and missed cases; reserve unseen variations. Calculation/service correctness and model judgment require different evidence.
 
-The runtime Acquisition Lead description now begins with wholesaler-sourced submissions and its tested pre-inventory intake boundary. Deal Analyst and Valuation now have locally accepted shared calculations and provisional diligence, with source changes invalidating prior results. Only Onboarding & Coaching remains planned; demo status does not complete the full depth matrix. Role-dependent knowledge and acceptance still require acquisitions and management contributors in addition to Alex.
+The runtime Acquisition Lead description now begins with wholesaler-sourced submissions and its tested pre-inventory intake boundary. Deal Analyst and Valuation now have locally accepted shared calculations and provisional diligence, with source changes invalidating prior results. Onboarding & Coaching now has source-backed fictional guidance and private self-review; no registry entry remains planned, but demo status does not complete the full depth matrix. Role-dependent knowledge and acceptance still require acquisitions and management contributors in addition to Alex.
 
 ## Coordination rules
 

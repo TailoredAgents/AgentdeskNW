@@ -4,7 +4,7 @@ Specification and source for the first C4 working-knowledge slice. The [canonica
 
 ## Current methods
 
-Each method has an ID, version, effective date, active/withdrawn state, role scope, source revision, objective, steps, required facts and limits. Runtime definitions are in `src/server/relationship-methods.ts`; their typed projection is shared by desktop, mobile and Copilot. Changes are reviewed source releases; there is no employee-facing knowledge publishing or company-document ingestion system yet.
+Each method has an ID, version, effective date, active/withdrawn state, role scope, source revision, objective, steps, required facts and limits. Runtime definitions are in `src/server/relationship-methods.ts`; their typed projection is shared by desktop, mobile and Copilot. Changes to this catalog remain reviewed source releases. The separate [role-guidance library](KNOWLEDGE_AND_COACHING.md) now supports manager-reviewed fictional publication; it does not automatically replace this catalog or ingest company documents.
 
 | ID / version | Use | Method and useful question |
 | --- | --- | --- |
@@ -21,7 +21,7 @@ The relationship recommendation carries the selected method, a useful question, 
 
 Methods do not extract new facts, resolve an objection, update CRM, schedule work or authorize sending. All such actions retain the existing employee review and service permissions. The exact send-review context and ongoing model-turn context include the method catalog fingerprint; a changed revision requires a fresh send review. Previously stored work remains historical evidence with its original method/version, not proof that old guidance remains current.
 
-Selection first finds the newest effective revision for the method, then checks withdrawal and role. Removing permission or withdrawing version 2 must never resurrect version 1. Future revisions do not apply early. Returned snapshots are independent copies of the catalog. A real company knowledge lifecycle—including authenticated publishers, organization-specific approval, source withdrawal, retrieval and revision audit—is still C4/C7 work.
+Selection first finds the newest effective revision for the method, then checks withdrawal and role. Removing permission or withdrawing version 2 must never resurrect version 1. Future revisions do not apply early. Returned snapshots are independent copies of the catalog. The fictional office library implements withdrawal, retrieval and revision audit. Managed publisher identity, organization-approved procedures and actual source ingestion remain C4/C7 work.
 
 ## Quality evidence and limits
 

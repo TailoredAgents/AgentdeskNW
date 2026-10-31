@@ -17,7 +17,7 @@ Updated October 30, 2026. This index assigns each document a purpose; it is not 
 
 | Area | Documents | Purpose / roadmap home |
 | --- | --- | --- |
-| Workforce | [AI_EMPLOYEES](AI_EMPLOYEES.md), [CAPABLE_WORKFORCE_PLAN](CAPABLE_WORKFORCE_PLAN.md) | Sixteen-specialist scope/evidence matrix and master-agent design; C1/C4/C5/C7 |
+| Workforce | [AI_EMPLOYEES](AI_EMPLOYEES.md), [KNOWLEDGE_AND_COACHING](KNOWLEDGE_AND_COACHING.md), [CAPABLE_WORKFORCE_PLAN](CAPABLE_WORKFORCE_PLAN.md) | Sixteen-specialist scope/evidence matrix and master-agent design; C1/C4/C5/C7 |
 | Shared work | [WORK_EXECUTION](WORK_EXECUTION.md), [CONVERSATION_WORKFLOWS](CONVERSATION_WORKFLOWS.md) | Durable work and conversation contracts; local acceptance versus remaining delivery limits; C1 |
 | Mobile | [MOBILE_DELIVERY_PLAN](MOBILE_DELIVERY_PLAN.md), [mobile README](../mobile/README.md) | Native client contract, local preparation and layered acceptance; C2/C3. Local foundation verified; actual-device acceptance pending |
 | Architecture/data/access | [SYSTEM_ARCHITECTURE](SYSTEM_ARCHITECTURE.md), [DATA_MODEL](DATA_MODEL.md), [SECURITY_AND_PERMISSIONS](SECURITY_AND_PERMISSIONS.md) | Shared server, records and authority; C1/C4/C7 |
