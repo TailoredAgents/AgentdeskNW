@@ -4,6 +4,7 @@ import {AppError} from './db';
 import {fingerprint} from './provider-runtime';
 
 const fixtures:MeteredRate[]=[
+ {id:'test-voice-v1',provider:'test-double',model:'fictional-voice',basis:'test_fixture',customerMicrosPerUnit:{audio_input_units:100,audio_output_units:200},source:'AgentDesk authored audio usage fixture; not a voice provider tariff'},
  {id:'test-text-v1',provider:'test-double',model:'fictional-text',basis:'test_fixture',customerMicrosPerUnit:{input_tokens:10,cached_input_tokens:2,output_tokens:50},source:'AgentDesk authored test fixture; not OpenAI pricing'},
  {id:'test-search-v1',provider:'test-double',model:'fictional-search',basis:'test_fixture',customerMicrosPerUnit:{search_calls:500000},source:'AgentDesk authored test fixture; not a research provider price'},
 ];

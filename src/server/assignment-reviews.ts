@@ -1,3 +1,4 @@
+import {assignmentActivity} from './assignment-activity';
 import {textPauseState} from './text-pause';
 import {z} from 'zod';
 import {localAssignmentHasPendingWork} from './local-assignment-work';
@@ -55,6 +56,7 @@ function projection(actor:Actor,row:Row):AssignmentReview {
  return {id:row.id,conversationReference:`S${fingerprint(row.id).slice(0,16).toUpperCase()}`,title:contentRestricted?'Assignment context changed':data.quote.title,summary:contentRestricted?'The original sources changed or are no longer available. Ask the Agent to prepare a current review.':data.summary,revision:row.revision,quoteId:row.quote_id,
   parts:contentRestricted?[]:data.parts.map(p=>({...p,maximumCalls:data.quote.calls[p.key]})),
   estimatedCents:data.quote.estimatedCents,maximumCents:data.quote.maximumCents,spentCents:budget.spentCents,heldCents:budget.reservedCents,
+  ...(!contentRestricted&&same?{activity:assignmentActivity(assignment,data.parts)}:{}),
   expiresAt:data.quote.expiresAt,createdAt:row.created_at,state,contentRestricted,canPause,canContinue,canRecover,canRenew,replacedByRenewal:!!getDb().prepare('SELECT 1 FROM assignment_renewals WHERE original_review_id=? LIMIT 1').get(row.id)||!!getDb().prepare('SELECT 1 FROM assignment_text_control_events WHERE review_id=? AND replacement_review_id IS NOT NULL LIMIT 1').get(row.id),canCancel:same&&!employeeStopped&&assignment.status!=='completed'&&(assignment.status!=='canceled'||pendingLocal),executionState:assignment.stopRequested==='canceled'?(assignment.status==='canceled'?'canceled':'stopping'):['reconciling','paused'].includes(assignment.status)?'needs_attention':paused?(pauseState==='requested'?'pausing':'paused'):assignment.status==='completed'?'completed':['reconciling','paused'].includes(assignment.status)?'needs_attention':'open',canDecide:!paused&&state==='waiting'&&budget.status==='awaiting_approval',simulation:true};
 }
 export function getAssignmentReview(actor:Actor,reviewId:string){return projection(actor,read(actor,reviewId));}

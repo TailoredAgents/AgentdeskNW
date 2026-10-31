@@ -3,10 +3,18 @@ export interface AssignmentReview {
  id:string; conversationReference?:string; title:string; summary:string; revision:number; quoteId:string;
  parts:{key:string;label:string;maximumCalls:number}[];
  estimatedCents:number; maximumCents:number; spentCents:number; heldCents:number;
+ activity?:AssignmentActivity;
  expiresAt:string; createdAt:string;
  state:'waiting'|'ready'|'claimed'|'continued'|'denied'|'obsolete'|'closed';
  contentRestricted:boolean; canDecide:boolean; canCancel:boolean; canRenew:boolean; canPause?:boolean; canContinue?:boolean; canRecover?:boolean; replacedByRenewal?:boolean; executionState:'open'|'stopping'|'canceled'|'completed'|'needs_attention'|'pausing'|'paused'; simulation:true;
 }
+/** Current private accounting only. Never provider payloads, source records or execution authority. */
+export interface AssignmentActivity {
+ parts:{key:string;label:string;started:number;confirmed:number;failed:number;pending:number;recordedMicros:number}[];
+ pending:number; overrun:boolean;
+}
+export const assignmentActivityNotice='Recorded usage is rounded once for the whole assignment. A confirmed usage receipt is not proof that a business task or message delivery succeeded.';
+export const assignmentActivityLine=(part:AssignmentActivity['parts'][number])=>`${part.started} started · ${part.confirmed} confirmed${part.failed?` · ${part.failed} failed or canceled`:''}${part.pending?` · ${part.pending} awaiting usage`:''} · $${(part.recordedMicros/1_000_000).toFixed(4)} recorded`;
 export interface AssignmentReviewDecision {
  quoteId:string; revision:number; decision:'approve'|'deny'; eventKey:string;
 }

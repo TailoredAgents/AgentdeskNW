@@ -198,3 +198,9 @@ Pre-inventory handoffs (migration 047) use the same coordination rules with sepa
 
 
 Qualification review is included local read-only work with no additional AI charge. Its `qualificationReference` follows the same source-provenance contract as buyer shortlists: collect it from trusted tool outputs, preserve it in derived plans, and withhold obsolete output after corrections, scope/method changes or expired freshness. The worker and model cannot use this reference to update criteria, verify funds or authorize outreach.
+
+## Phase 4 mixed-host receipt contract
+
+`assignment-operations.ts` and migration 048 preserve a simulated operation's original work/research/turn binding, exact request/adapter identity, admitted attempt and saved output. Only trusted fictional adapters can use this runner. No model/client receipt, execution-claim or root-selection route is exposed. A server host must already own its immutable assignment, quote every paid part and recheck current scope before dispatch and output use. Receipt ingestion records usage even if a source changes, but cannot revive canceled or obsolete output. Failed usage, explicit bounded retries and late reconciliation remain on the same cumulative quote; uncertain dispatch never automatically re-leases. Ordinary deterministic jobs keep their existing prices/exemptions.
+
+Current spending review activity is accounting evidence only. A confirmed receipt does not establish a completed task, sent correspondence, signed agreement, deposit, title status or delivery. Old/restricted review content is withheld and provider payloads remain private. The new runner's mixed-host fixture acceptance does not migrate normal text/research/live-voice workers or establish their shared execution parity. Follow the remaining Phase 4 scope in the canonical roadmap before enabling broader paid autonomy.
