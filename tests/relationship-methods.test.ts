@@ -11,15 +11,15 @@ beforeEach(()=>{closeDb();vi.stubEnv('AGENTDESK_DB_PATH',':memory:');vi.stubEnv(
 afterEach(()=>{closeDb();vi.useRealTimers();vi.unstubAllEnvs();vi.restoreAllMocks();});
 describe('provisional relationship working methods',()=>{
  it.each([['confirm_timing','reactivation'],['resolve_objection','objections'],['review_pass','objections'],['fulfill_commitment','follow-through'],['clarify_qualification','qualification'],['clarify_fit','qualification']] as const)('traces %s to a current source/version', (kind,id)=>{
-  const result=selectRelationshipMethod(kind,actor.role);expect(result).toMatchObject({id,version:1,authority:'provisional',status:'active',source:{document:'docs/RELATIONSHIP_METHODS.md',revision:'2026-10-30.1'}});expect(result!.requiredFacts.length).toBeGreaterThan(1);
+  const result=selectRelationshipMethod(kind,actor.role);expect(result).toMatchObject({id,version:2,authority:'provisional',status:'active',source:{document:'docs/RELATIONSHIP_METHODS.md',revision:'2026-10-31.2'}});expect(result!.requiredFacts.length).toBeGreaterThan(1);
  });
  it('does not apply the dispositions method to acquisitions or missing sharing eligibility',()=>{expect(selectRelationshipMethod('resolve_objection','acquisitions')).toBeNull();expect(selectRelationshipMethod('resolve_eligibility','manager')).toBeNull();});
  it('honors effective versions, withdrawal and removed role access without resurrecting old revisions',()=>{
-  const original=relationshipMethods.find(method=>method.id==='objections')!,next={...original,version:2,status:'withdrawn' as const};
+  const original=relationshipMethods.find(method=>method.id==='objections')!,next={...original,version:original.version+1,status:'withdrawn' as const};
   expect(selectRelationshipMethod('resolve_objection','dispositions',[original,next])).toBeNull();
   expect(selectRelationshipMethod('resolve_objection','dispositions',[original,{...next,status:'active',roles:['manager']}])).toBeNull();
-  expect(selectRelationshipMethod('resolve_objection','dispositions',[original,{...next,effectiveAt:'2027-01-01T00:00:00Z'}])?.version).toBe(1);
-  expect(selectRelationshipMethod('resolve_objection','manager',[original,{...next,status:'active',roles:['manager']}])?.version).toBe(2);
+  expect(selectRelationshipMethod('resolve_objection','dispositions',[original,{...next,effectiveAt:'2027-01-01T00:00:00Z'}])?.version).toBe(original.version);
+  expect(selectRelationshipMethod('resolve_objection','manager',[original,{...next,status:'active',roles:['manager']}])?.version).toBe(original.version+1);
  });
  it('new repair evidence changes the method and useful question with a traceable source',()=>{
   const before=recommendInvestorNextStep(actor,'investor-mike');expect(before.workingMethod?.method.id).toBe('follow-through');

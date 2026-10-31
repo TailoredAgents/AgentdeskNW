@@ -1,6 +1,6 @@
 import {analysisGroups,visibleAnalysisFields,type AnalysisInput,type AnalysisSubject,type AnalysisResult,type AnalysisMetric,type AnalysisCase} from '../lib/analysis-contracts';
 
-export const analysisMethod='AgentDesk scenario mathematics and provisional diligence · v1 · 2026-10-30.1';
+export const analysisMethod='AgentDesk scenario mathematics and provisional diligence · v2 · 2026-10-31.2';
 const money=(n:number)=>Math.round((n+Number.EPSILON)*100)/100;
 const metric=(label:string,value:number|null,unit:AnalysisMetric['unit'],formula:string):AnalysisMetric=>({label,value:value===null?null:money(value),unit,formula});
 const ratio=(numerator:number,denominator:number)=>denominator>0?numerator/denominator:null;
@@ -68,6 +68,7 @@ export function calculateAnalysis(input:AnalysisInput,subject:AnalysisSubject,as
   if(normalize(subject.address)===saleKey)exclude('The subject itself is not an independent comparable sale.');
   if(comp.status!=='sold')exclude('An asking or pending price is not a completed sale.');
   if(!comp.sourceReference||!comp.soldOn||!comp.price||!comp.sqft)exclude('Missing source, sale date, positive sold price or area.');
+  if(comp.soldOn&&(!Number.isFinite(Date.parse(comp.soldOn))||comp.soldOn>asOf))exclude('Sale date is invalid or later than this analysis date; no completed sale is established.');
   if(comp.soldOn&&comp.soldOn<new Date(Date.parse(asOf)-180*86400000).toISOString().slice(0,10))exclude('Sale is over 180 days old under this provisional comparable screen. Retained for context.');
   if(!comp.propertyType||!subject.propertyType)exclude('Subject or comparable property type is unknown.');
   else if(comp.propertyType.trim().toLowerCase()!==subject.propertyType.trim().toLowerCase())exclude('Property types differ; equivalent use has not been established.');

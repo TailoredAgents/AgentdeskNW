@@ -1,3 +1,5 @@
+import {specialistMethodFingerprint} from './specialist-methods';
+import {relationshipMethodFingerprint} from './relationship-methods';
 import {reviewQualification} from './qualification-review';
 import {featureAccess} from './billing';
 import {documentContextReference} from './document-context';
@@ -21,6 +23,7 @@ export function voiceContextSnapshot(actor:Actor):Record<string,string> {
   const result:Record<string,string>={};
   const add=(key:string,value:unknown)=>{result[key]=createHash('sha256').update(JSON.stringify(value)).digest('hex');};
   add('scope',{organization:actor.organizationId,office:actor.officeId,user:actor.id,role:actor.role,ownership:getOwnershipPolicy(actor),disclosure:getDisclosurePolicy(actor)});
+  add('methods',{specialists:specialistMethodFingerprint(),relationships:relationshipMethodFingerprint()});
   add('documents',documentContextReference(actor));
   add('transactionTeams',transactionTeamContextReference(actor));
   add('transactions',transactionContextReference(actor));

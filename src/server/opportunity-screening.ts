@@ -11,6 +11,7 @@ const notice='Decision preparation from supplied intake and your private reviewe
 /** Presentation layer only: base opportunity fingerprints never depend on their derived analyses. */
 export function reviewOpportunityScreening(actor:Actor,id:string):OpportunityDetail {
  const detail=getOpportunity(actor,id),item=detail.opportunity;
+ const calculated=new Set<string>();
  const screening:OpportunityScreening={title:'Prepare a supported scenario',nextAction:'Open Deal analysis and select this opportunity. Record explicit purchase, repair, exit/rent and financing assumptions with their sources before screening economics.',notice,scenarios:[]};
  if(featureAccess(actor,'core').allowed&&featureAccess(actor,'valuation-diligence').allowed){
   const board=getAnalysisBoard(actor);
@@ -27,6 +28,7 @@ export function reviewOpportunityScreening(actor:Actor,id:string):OpportunityDet
    const repairs=item.submission.repairEstimate;
    if(repairs!==null&&(input.values.repairLow!==null&&repairs<input.values.repairLow||input.values.repairHigh!==null&&repairs>input.values.repairHigh))
     differences.push(`The supplied repair estimate (${dollars(repairs)}) is outside this scenario's repair range. Reconcile the scope and source before relying on the modeled outcome.`);
+   if(result.cases.some(scenario=>scenario.metrics.some(metric=>metric.label===(input.strategy==='flip'?'Pre-tax project profit':'Annual pre-tax cash flow')&&metric.value!==null)))calculated.add(entry.id);
    for(const scenario of result.cases){
     const outcome=scenario.metrics.find(metric=>metric.label===(input.strategy==='flip'?'Pre-tax project profit':'Annual pre-tax cash flow'));
     if(outcome?.value!==null&&outcome?.value!==undefined&&outcome.value<=0)risks.push(`${scenario.label}: ${outcome.label} ${formatAnalysisMetric(outcome)}. ${scenario.assumptions}`);
@@ -38,7 +40,7 @@ export function reviewOpportunityScreening(actor:Actor,id:string):OpportunityDet
   screening.title='Scenario review is unavailable';screening.nextAction='Intake remains visible. Current access to Valuation & Due Diligence is needed to combine it with your private scenarios.';
  }
  const current=screening.scenarios.filter(s=>s.state==='current'),stale=screening.scenarios.some(s=>s.state==='source_changed');
- const incomplete=current.filter(s=>!s.metrics.some(m=>['Pre-tax project profit','Annual pre-tax cash flow'].includes(m.label)&&m.value!==null));
+ const incomplete=current.filter(s=>!calculated.has(s.analysisId));
  screening.decisionBasis=[
   ...detail.duplicates.map(d=>`Possible duplicate: ${d.reason}`),
   ...screening.scenarios.filter(s=>s.state==='source_changed').map(s=>`${s.label}: source changed; prior calculations are withheld.`),

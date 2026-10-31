@@ -3,8 +3,8 @@ import type {Role} from '../lib/contracts';
 import type {InvestorJourney,InvestorNextStepKind} from '../lib/journey-contracts';
 import type {RelationshipGuidance,RelationshipMethod,RelationshipMethodId} from '../lib/relationship-method-contracts';
 
-const source={title:'AgentDesk relationship working methods',document:'docs/RELATIONSHIP_METHODS.md',revision:'2026-10-30.1',owner:'Tailored Agents demonstration design'};
-const common={version:1,status:'active' as const,effectiveAt:'2026-10-30T00:00:00Z',roles:['dispositions','manager'] as Role[],authority:'provisional' as const,source};
+const source={title:'AgentDesk relationship working methods',document:'docs/RELATIONSHIP_METHODS.md',revision:'2026-10-31.2',owner:'Tailored Agents demonstration design'};
+const common={version:2,status:'active' as const,effectiveAt:'2026-10-30T00:00:00Z',roles:['dispositions','manager'] as Role[],authority:'provisional' as const,source};
 /** Versioned application guidance, not imported company policy or executable instructions. */
 export const relationshipMethods:ReadonlyArray<RelationshipMethod>=[
  {...common,id:'qualification',title:'Clarify the buying criteria',objective:'Resolve the decision-changing gap without silently widening the investor’s criteria.',
@@ -12,7 +12,7 @@ export const relationshipMethods:ReadonlyArray<RelationshipMethod>=[
   requiredFacts:['Which buy box applies','Current source and date for the disputed or missing criterion','Buying timeline and funding status'],
   limits:['A fit score is not investor interest.','A new report cannot automatically replace reviewed CRM criteria.']},
  {...common,id:'objections',title:'Resolve the concern before another pitch',objective:'Find what evidence would resolve the stated concern and verify its availability.',
-  steps:['Quote the relevant concern and retain its source/date; distinguish the current message from older reports.','Identify the evidence that would answer it and the person who can supply that evidence.','Confirm availability before promising a breakdown or walkthrough; record an explicit resolution only after review.'],
+  steps:['Quote the relevant concern and retain its source/date; distinguish the current message from older reports.','Distinguish a current objection from a reported resolution, contact stop or conditional statement; do not repeat a resolved concern as a new objection.','Identify the evidence that would answer it and the person who can supply that evidence.','Confirm availability before promising a breakdown or walkthrough; record an explicit resolution only after review.'],
   requiredFacts:['What remains unresolved','What supporting material is actually available','Who owns the next step and when to check back'],
   limits:['Do not invent repair figures, contractor work or access.','A generic reply or completed task does not resolve an objection.']},
  {...common,id:'reactivation',title:'Respect timing and permission',objective:'Agree a useful check-in while honoring the recorded pause.',

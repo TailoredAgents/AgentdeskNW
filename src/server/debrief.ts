@@ -1,3 +1,4 @@
+import { transcriptStatements } from './notes';
 import { hasFeature,requireFeature } from './billing';
 import { z } from 'zod';
 import type { Actor, Investor, Property, ProposedAction } from '../lib/contracts';
@@ -32,7 +33,9 @@ export function tomorrowEastern(reference=new Date()):string {
 }
 function extractCriteria(recap:string,investor:Investor|null,otherInvestors:Investor[]=[]) {
  const changes:Record<string,unknown>={},excerpts:Record<string,string>={};const ambiguities:string[]=[];
- const statements=recap.split(/\n|(?<=[.!?])\s+/).map(line=>line.trim()).filter(Boolean);
+ const interpreted=transcriptStatements(recap);
+ const statements=interpreted.filter(item=>item.meaning==='statement').map(item=>item.speaker&&!item.excerpt.startsWith(item.speaker+':')?`${item.speaker}: ${item.excerpt}`:item.excerpt);
+ ambiguities.push(...interpreted.filter(item=>['conditional','uncertain'].includes(item.meaning)).slice(0,6).map(item=>`Clarify ${item.meaning} source statement before changing criteria: ${item.excerpt}`));
  const permitted=statements.filter(line=>{
   if(otherInvestors.some(other=>new RegExp(`\\b${esc(other.name.split(' ')[0])}\\b`,'i').test(line)))return false;
   if(otherInvestors.length&&(!investor||!new RegExp(`\\b${esc(investor.name.split(' ')[0])}\\b`,'i').test(line)))return false;
@@ -77,7 +80,7 @@ function buildDebrief(actor:Actor,recap:string,investorId?:string,propertyId?:st
  if(summary.missingInformation.length)summary.suggestedTasks.push(`Confirm missing qualification details: ${summary.missingInformation.join(', ')}.`);
  // Existing transcript excerpts remain source material. Only the conservative attributed fields are proposed facts.
  summary.criteria=Object.fromEntries(Object.entries(extraction.excerpts));summary.proposedNote=`Employee post-call recap; unverified, pending review.\n\n${recap}\n\nProposed criteria:\n${Object.entries(extraction.excerpts).map(([key,value])=>`${key}: ${value}`).join('\n')||'No unambiguous investor criteria extracted.'}`.slice(0,15000);
- const hasFollowUp=recap.split(/\n|(?<=[.!?])\s+/).some(statement=>/\b(follow[ -]?up|call (?:him|her|them|back|me))\b[^.!?\n]*\btomorrow\b/i.test(statement)&&!/\b\w+n['’]t\b|\b(no|not|never|maybe|might|could|suggested|suggest|possibly)\b/i.test(statement)&&!statement.endsWith('?'));
+ const hasFollowUp=transcriptStatements(recap).some(item=>item.meaning==='statement'&&/\b(follow[ -]?up|call (?:him|her|them|back|me))\b[^.!?\n]*\btomorrow\b/i.test(item.text));
  const coaching=['Review the original recap and each proposed field before approval.'];
  if(!extraction.changes.financing)coaching.push('Confirm the investor’s funding method if it was not established.');
  if(!extraction.changes.budgetMax)coaching.push('Confirm a complete purchase-price range.');
@@ -114,7 +117,7 @@ export function proposeDebrief(actor:Actor,debriefId:string,input:{investorId?:s
   }
   const tasks=parsed.createFollowUp&&debrief.suggestedFollowUpAt?[createTask(actor,{title:`Follow up with ${getInvestor(actor,debrief.investorId).name} about the reviewed recap`,investorId:debrief.investorId,dueAt:debrief.suggestedFollowUpAt})]:[];
   let prepared:DebriefProposal['package']=null;
-  if(hasFeature(actor,'deal-marketing')&&debrief.propertyId&&/\b(photo|details|send|link)\b/i.test(debrief.recap)){
+  if(hasFeature(actor,'deal-marketing')&&debrief.propertyId&&transcriptStatements(debrief.recap).some(item=>item.meaning==='statement'&&/\b(photo|details|send|link)\b/i.test(item.text))){
    const release=listReleases(actor).find(item=>item.propertyId===debrief.propertyId&&item.status==='released');
    if(release)prepared=composePackage(actor,{investorId:debrief.investorId,releaseId:release.id,channel:'personal_text'});
   }

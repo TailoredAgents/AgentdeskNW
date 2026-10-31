@@ -129,3 +129,10 @@ Select one authorized Georgia property and produce a human-reviewed evidence sam
 ## Verification
 
 `tests/external-research.test.ts` exercises provider parsing/provenance, unknown purchase data, unverified contact association, setup and per-job scope/budget validation, synthetic/live separation, network outside transactions, actual receipt settlement, partial failures and safe retries, in-flight cancellation, interrupted-request holds and lease recovery, budget/rate/deadline stops, missing usage, entitlement removal before/during requests, and protected CRM duplicates. These are mocked integration tests, not live investor research. The root progress log records the final complete regression/build/smoke results.
+
+
+## Current roadmap Phase 2 — evidence and identity review
+
+`research-evidence-v2` deduplicates source URLs (including tracking variants) and underlying reported address/date transactions. Same-sale conflicting prices are retained as a review issue and excluded from the purchase-pattern average/activity count. Invalid/future source or transaction dates and source observations over a provisional 90-day window do not strengthen the current evidence score. These checks do not independently verify a report; source domains are not proof of independent publishers. Profiles/contact pages cannot establish a purchase pattern. Missing contact association remains missing/unverified, separate from fit and purchase intent.
+
+Both fictional scoring and external-result parsing expose a structured evidence review; public-source ranking retains reduced weights for unverified activity and explains the next evidence/contact question. No research provider is activated by this change. Multiple exact normalized company matches in the permitted CRM produce an ambiguous possible duplicate with no arbitrary selected investor ID. Address/company normalization is bounded and does not establish legal entity identity. Existing scoped import review, exact retries, cost controls and CRM-first planning remain in force.

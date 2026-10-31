@@ -1,3 +1,4 @@
+import {reviewResearchEvidence} from './research-evidence';
 import type { Investor, Prospect, ResearchInput } from '../lib/contracts';
 import { z } from 'zod';
 
@@ -39,10 +40,11 @@ export function classifyDuplicate(prospect:Pick<Prospect,'company'|'name'>,inves
   const company=normalizeEntity(prospect.company);
   const name=normalizeEntity(prospect.name);
   if (!company && !name) return {duplicateStatus:'uncertain',matchedInvestorId:null};
-  const exact=investors.find(record=>company && normalizeEntity(record.company)===company);
-  if(exact) return {duplicateStatus:'existing',matchedInvestorId:exact.id};
-  const possible=investors.find(record=>name && normalizeEntity(record.name)===name || company.length>5 && normalizeEntity(record.company).length>5 && (normalizeEntity(record.company).includes(company)||company.includes(normalizeEntity(record.company))));
-  if(possible) return {duplicateStatus:'possible_duplicate',matchedInvestorId:possible.id};
+  const exact=investors.filter(record=>company && normalizeEntity(record.company)===company);
+  if(exact.length>1)return {duplicateStatus:'possible_duplicate',matchedInvestorId:null};
+  if(exact.length===1) return {duplicateStatus:'existing',matchedInvestorId:exact[0].id};
+  const possible=investors.filter(record=>name && normalizeEntity(record.name)===name || company.length>5 && normalizeEntity(record.company).length>5 && (normalizeEntity(record.company).includes(company)||company.includes(normalizeEntity(record.company))));
+  if(possible.length) return {duplicateStatus:'possible_duplicate',matchedInvestorId:possible.length===1?possible[0].id:null};
   return {duplicateStatus:'net_new',matchedInvestorId:null};
 }
 export function scoreProspect(prospect:Prospect,input:ResearchInput,weights:ScoreWeights=defaultScoreWeights,at=new Date()):Prospect {
@@ -50,13 +52,13 @@ export function scoreProspect(prospect:Prospect,input:ResearchInput,weights:Scor
   if(total<=0||Object.values(weights).some(n=>!Number.isFinite(n)||n<0)) throw new Error('Score weights must be finite and nonnegative with positive total.');
   const ageDays=(at.getTime()-new Date(prospect.lastActivityAt).getTime())/86400000;
   const similarity=input.price>0?Math.max(0,1-Math.abs(prospect.typicalPrice-input.price)/input.price):0;
-  const evidence=prospect.evidence.length?Math.min(1,prospect.evidence.length/2):0;
+  const evidenceReview=reviewResearchEvidence(prospect,at),evidence=Math.min(1,evidenceReview.uniqueSources/2);
   const sameCounty=normalizeCounty(prospect.county)===normalizeCounty(input.county),sameStrategy=strategiesMatch(prospect.strategy,input.strategy);
   const sameType=!!input.propertyType&&!!prospect.propertyType&&normalizePropertyType(input.propertyType)===normalizePropertyType(prospect.propertyType);
   const factors={propertyType:sameType?1:0,geography:sameCounty?1:0.25,strategy:sameStrategy?1:0.25,price:similarity,recency:Number.isFinite(ageDays)&&ageDays>=0?Math.max(0,1-ageDays/365):0,activity:Math.max(0,Math.min(1,prospect.transactionCount/8)),evidence};
   const breakdown=Object.fromEntries(Object.entries(factors).map(([key,value])=>[key,Math.round(value*weights[key as keyof ScoreWeights]/total*1000)/10]));
   const score=Math.min(100,Math.round(Object.values(breakdown).reduce((sum,n)=>sum+n,0)));
-  return {...prospect,score,scoreBreakdown:breakdown,rationale:`${!input.propertyType||!prospect.propertyType?'Property type not confirmed':sameType?'Similar property type':'Different property type'}; ${sameCounty?'Same county':'Different county'}; ${sameStrategy?'matching strategy':'different strategy'}; typical purchase $${prospect.typicalPrice.toLocaleString('en-US')}; ${prospect.transactionCount} ${prospect.synthetic?'fictional':'reported'} purchases. Relevance score only, not purchase intent. ${prospect.synthetic?'All evidence is synthetic.':''}`};
+  return {...prospect,evidenceReview,score,scoreBreakdown:breakdown,rationale:`${!input.propertyType||!prospect.propertyType?'Property type not confirmed':sameType?'Similar property type':'Different property type'}; ${sameCounty?'Same county':'Different county'}; ${sameStrategy?'matching strategy':'different strategy'}; typical purchase $${prospect.typicalPrice.toLocaleString('en-US')}; ${prospect.transactionCount} ${prospect.synthetic?'fictional':'reported'} purchases. Relevance score only, not purchase intent. ${prospect.synthetic?'All evidence is synthetic.':''}`};
 }
 
 const fixtures=[

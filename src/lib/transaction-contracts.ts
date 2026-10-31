@@ -18,7 +18,8 @@ export interface TransactionInput {
 export interface TransactionRecord {id:string;version:number;input:TransactionInput;updatedAt:string;createdAt:string;reportedBy:string}
 export interface TransactionSummary {id:string;version:number;property:string;investor:string;closingDate:string|null;openIssues:number;reportedMilestones:number;updatedAt:string}
 export interface TransactionPreparation {reference:string;ready:boolean;gaps:string[];cautions:string[];to:TransactionParty|null;cc:TransactionParty[];subject:string;body:string;files:CommunicationAttachment[];notice:string}
-export interface TransactionDetail {record:TransactionRecord;property:Property;investor:Investor;history:TransactionRecord[];preparation:TransactionPreparation;canEdit:boolean;notice:string}
+export interface TransactionReview {method:string;asOf:string;reports:{milestone:TransactionMilestone;label:string;date:string;source:string;note:string}[];unreported:string[];inconsistencies:string[];changedSources:string[];openIssues:TransactionIssue[];overdueIssueCount:number;closingOverdue:boolean;nextAction:string;notice:string}
+export interface TransactionDetail {review?:TransactionReview;record:TransactionRecord;property:Property;investor:Investor;history:TransactionRecord[];preparation:TransactionPreparation;canEdit:boolean;notice:string}
 export interface TransactionBoard {items:TransactionSummary[];properties:Property[];investors:Investor[];documents:CommunicationDocumentOption[];canEdit:boolean;notice:string}
 export interface SaveTransaction {id:string|null;expectedVersion:number;input:TransactionInput;eventKey:string}
 export function emptyTransaction():TransactionInput{return {propertyId:'',investorId:'',closingDate:null,financing:'unknown',parties:{buyer:null,attorney:null,acquisition:null,lender:null},milestones:{agreement:null,deposit:null,title_opened:null,title_cleared:null,signed:null,funded:null,closed:null},issues:[]};}

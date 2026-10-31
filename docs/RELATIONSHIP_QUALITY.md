@@ -30,6 +30,11 @@ A disposable copy of the active schema-009 database was upgraded using the prior
 
 Browser acceptance covered desktop 1280×720 and phone 390×844: enter/review/save a dated budget report, compare the two budgets and their source dates, see the clarification recommendation, correct the report on phone, retain the superseded original, and retrieve only the active budget in typed Copilot. No document horizontal overflow or browser warning/error logs were observed. Date entry was verified through the native date control, including its exact review value. Screenshots are local under `artifacts/relationship/`.
 
-## Remaining expertise work
+## Original checkpoint follow-up (historical)
 
 Proceed to stage 3: versioned, source-backed methods for qualification, objections, reactivation and follow-through. Use clearly provisional methods until New Western supplies approved procedures. Then evaluate richer next-action judgment and communication quality using varied cases, equal-context generic-model comparisons and independent employee review. Track factual correctness, useful next actions, edits required, task completion, latency and cost before making effectiveness claims. Live company connections and Slack/Twilio account acceptance remain separate work.
+
+
+## Current Phase 2 continuation
+
+The versioned relationship methods, conditional shortlist/qualification decisions and current-correspondence interpretation are now implemented; current evidence is in PROGRESS and the canonical roadmap. The all-specialist evaluation pack and reporting contract are documented in [AI_EMPLOYEES](AI_EMPLOYEES.md#repeatable-model-quality-evaluation). Its 32 authored cases have **not** been run against live models or independently graded. They do not supersede the historical record benchmark above or establish competitive superiority. Actual repeated equal-context model comparison, correction effort and practitioner acceptance remain deferred.

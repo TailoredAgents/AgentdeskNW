@@ -67,7 +67,8 @@ const imported=await request<ProposedAction>(`approvals/${importAction.id}`,'POS
 await request(`approvals/${importAction.id}`,'POST',{decision:'approve'});
 const after=await request<Bootstrap>('bootstrap');assert.equal(after.investors.length,start.investors.length+1);
 assert.equal((await request<ResearchJob>(`research/${job.id}`)).prospects.find(p=>p.id===candidate.id)!.duplicateStatus,'existing');
-const summary=await request<NoteSummary>('notes','POST',{transcript:'Agent: What counties work for you?\nMike: I have a $300,000 cash budget. I prefer Cobb County flips with light rehab.\nAgent: I will send you the property details tomorrow.'});assert(summary.commitments.length>0);assert.equal(summary.mode,'local_extraction');
+const summary=await request<NoteSummary>('notes','POST',{transcript:'Agent: What counties work for you?\nMike: I have a $300,000 cash budget. I prefer Cobb County flips with light rehab.\nAgent: I will send you the property details tomorrow.'});assert(summary.commitments.length>0);assert.equal(summary.mode,'local_extraction');assert.equal(summary.methodVersion,'transcript-review-v2');assert(summary.statements?.some(item=>item.speaker==='Agent'&&item.commitment));checks+=2;
+await request('notes/propose','POST',{investorId:'investor-mike',summary:{...summary,statements:[{speaker:'Buyer',excerpt:'Untrusted',meaning:'statement',commitment:false,verified:true}]}},400);
 const note=await request<ProposedAction>('notes/propose','POST',{investorId:'investor-mike',summary},201);
 assert.equal((await request<ProposedAction>(`approvals/${note.id}`,'POST',{decision:'approve'})).status,'executed');
 const updated=await request<Bootstrap>('bootstrap');assert(updated.investors.find(i=>i.id==='investor-mike')!.notes.includes('property details tomorrow'));

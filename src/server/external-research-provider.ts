@@ -1,3 +1,4 @@
+import {reviewResearchEvidence} from './research-evidence';
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import type { Evidence, ExternalResearchState, Prospect, ResearchInput } from '../lib/contracts';
@@ -93,20 +94,17 @@ export function parseResearchResponse(value:unknown,input:ResearchInput):Researc
  }
  return result;
 }
-function reportedTransactions(evidence:Evidence[]):Evidence[]{
- const distinct=new Map<string,Evidence>();
- for(const item of evidence)if(item.kind==='reported_transaction'&&item.propertyAddress&&item.transactionDate){const key=`${item.propertyAddress.toLowerCase().replace(/[^a-z0-9]/g,'')}:${item.transactionDate.slice(0,10)}`;if(!distinct.has(key))distinct.set(key,item);}
- return [...distinct.values()];
-}
+function reportedTransactions(evidence:Evidence[]):Evidence[]{return reviewResearchEvidence({evidence,synthetic:false,phone:null,contactStatus:'missing'}).transactions;}
 /** Public source assertions receive limited weight. No transaction claim is promoted to a verified sale. */
 export function scoreExternalProspect(prospect:Prospect,input:ResearchInput):Prospect {
- const transactions=reportedTransactions(prospect.evidence);
+ const evidenceReview=reviewResearchEvidence(prospect),transactions=evidenceReview.transactions;
  const hasTransactions=transactions.length>0;
- const ageDays=(Date.now()-Date.parse(prospect.lastActivityAt))/86400000;
+ const lastActivityAt=transactions.map(item=>item.transactionDate!).sort().at(-1)||'',prices=transactions.flatMap(item=>item.price&&item.price>0?[item.price]:[]),typicalPrice=prices.length?Math.round(prices.reduce((sum,value)=>sum+value,0)/prices.length):0;
+ const ageDays=(Date.now()-Date.parse(lastActivityAt))/86400000;
  const sameType=hasTransactions&&transactions.some(item=>!!item.propertyType&&normalizePropertyType(item.propertyType)===normalizePropertyType(input.propertyType||''));
- const domains=new Set(prospect.evidence.flatMap(item=>item.url?[new URL(item.url).hostname]:[]));
- const breakdown={propertyType:sameType?12.5:0,price:hasTransactions&&prospect.typicalPrice>0?Math.round(12.5*Math.max(0,1-Math.abs(prospect.typicalPrice-input.price)/input.price)*10)/10:0,strategy:prospect.strategy&&strategiesMatch(prospect.strategy,input.strategy)?10:0,geography:prospect.county&&normalizeCounty(prospect.county)===normalizeCounty(input.county)?10:0,recency:hasTransactions&&Number.isFinite(ageDays)&&ageDays>=0?Math.round(5*Math.max(0,1-ageDays/365)*10)/10:0,activity:Math.min(2.5,transactions.length/8*2.5),evidence:Math.min(5,domains.size*2.5)};
- return {...prospect,score:Math.round(Object.values(breakdown).reduce((sum,n)=>sum+n,0)),scoreBreakdown:breakdown,rationale:`Public-source research relevance only. ${transactions.length} reported transaction examples; none independently verified. ${prospect.typicalPrice?`Reported example average $${prospect.typicalPrice.toLocaleString('en-US')}.`:'Purchase price unknown.'} Company identity, strategy and contact association require review. Unverified purchase factors receive half weight; missing facts receive zero. No purchase probability or buyer qualification is claimed.`};
+ const domains=new Set(evidenceReview.sourceDomains);
+ const breakdown={propertyType:sameType?12.5:0,price:hasTransactions&&typicalPrice>0&&input.price>0?Math.round(12.5*Math.max(0,1-Math.abs(typicalPrice-input.price)/input.price)*10)/10:0,strategy:prospect.strategy&&strategiesMatch(prospect.strategy,input.strategy)?10:0,geography:prospect.county&&normalizeCounty(prospect.county)===normalizeCounty(input.county)?10:0,recency:hasTransactions&&Number.isFinite(ageDays)&&ageDays>=0?Math.round(5*Math.max(0,1-ageDays/365)*10)/10:0,activity:Math.min(2.5,transactions.length/8*2.5),evidence:Math.min(5,domains.size*2.5)};
+ return {...prospect,evidenceReview,typicalPrice,lastActivityAt,transactionCount:transactions.length,transactionStatus:transactions.length?'unverified':'not_found',score:Math.round(Object.values(breakdown).reduce((sum,n)=>sum+n,0)),scoreBreakdown:breakdown,rationale:`Public-source research relevance only. ${transactions.length} reported transaction examples; none independently verified. ${typicalPrice?`Reported example average $${typicalPrice.toLocaleString('en-US')}.`:'Purchase price unknown.'} Company identity, strategy and contact association require review. Unverified purchase factors receive half weight; missing facts receive zero. No purchase probability or buyer qualification is claimed. ${evidenceReview.cautions.join(' ')} Next: ${evidenceReview.nextAction}`};
 }
 export async function discoverExternalBatch(input:ResearchInput,options:{sequence:number;excludeCompanies:string[];maxSearchCalls:number;timeoutMs:number}):Promise<ResearchResponse>{
  const config=requireExternalResearchConfiguration();

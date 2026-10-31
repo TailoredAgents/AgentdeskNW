@@ -1,3 +1,4 @@
+import {transcriptStatements} from './notes';
 import {createHash} from 'node:crypto';
 import type {Actor,Investor,Property} from '../lib/contracts';
 import type {BuyerMatch} from '../lib/intelligence-contracts';
@@ -41,6 +42,7 @@ function evaluate(actor:Actor,propertyId:string):Omit<BuyerShortlist,'buyerShort
   const concern=journey.openIssues.find(o=>o.kind==='property_pass'&&o.propertyId===propertyId)
    ??journey.openIssues.find(o=>o.kind==='objection');
   const task=journey.commitments[0];
+  const conditional=facts.filter(f=>['financing','timing','budget'].includes(f.topic)).flatMap(f=>[...(f.recorded?[f.recorded]:[]),...f.reports].map(source=>({fact:f,source}))).find(({source})=>transcriptStatements(source.statement+' '+source.displayValue).some(s=>['conditional','uncertain'].includes(s.meaning)));
   const cautions=[...match.conflicts,...match.missing.map(value=>'Missing: '+value)];
   const evidence:BuyerShortlistEntry['evidence']=[];
   for(const fact of facts)for(const source of [...(fact.recorded?[fact.recorded]:[]),...fact.reports]){
@@ -63,6 +65,9 @@ function evaluate(actor:Actor,propertyId:string):Omit<BuyerShortlist,'buyerShort
    readiness='not_fit';nextAction={title:'Do not pitch this as a criteria match',question:match.conflicts.join(' ')||'Confirm an active, reviewed buy box before selecting this property.',sourceIds:match.buyBoxId?[match.buyBoxId]:[]};
   }else if(conflicts.length){
    const fact=conflicts[0];readiness='clarify';nextAction={title:'Clarify '+fact.label.toLowerCase(),question:fact.question!,sourceIds:[...(fact.recorded?[fact.recorded.id]:[]),...fact.reports.map(s=>s.id)]};
+  }else if(conditional){
+   readiness='clarify';nextAction={title:'Clarify conditional '+conditional.fact.label.toLowerCase(),question:`What condition still applies to this ${conditional.fact.label.toLowerCase()}, and has it actually been satisfied? Source statement: ${conditional.source.statement}`,sourceIds:[conditional.source.id]};
+   cautions.push('Conditional funding, timing or budget testimony does not establish readiness.');
   }else if(concern){
    const repair=/repair|rehab|renovat|contractor/i.test(concern.text);
    readiness='clarify';nextAction={title:concern.kind==='property_pass'?'Review the pass on this property':repair?'Resolve the repair concern first':'Address the recorded concern first',question:repair?'Which repair assumptions remain unresolved? Obtain a sourced scope and cost breakdown before another pitch; walkthrough availability is not established.':'What evidence would resolve the recorded concern before this property would be useful?',sourceIds:[concern.id]};
@@ -78,7 +83,7 @@ function evaluate(actor:Actor,propertyId:string):Omit<BuyerShortlist,'buyerShort
  return {property,releaseId:release?.id??null,releaseVersion:release?.version??null,releaseStatus:release?.status??'unreleased',matches,notice};
 }
 function reference(actor:Actor,value:Omit<BuyerShortlist,'buyerShortlistReference'>){
- return value.property.id+'@'+createHash('sha256').update(JSON.stringify({scope:[actor.organizationId,actor.officeId,actor.id,actor.role],value,method:'buyer-shortlist-v1'})).digest('hex');
+ return value.property.id+'@'+createHash('sha256').update(JSON.stringify({scope:[actor.organizationId,actor.officeId,actor.id,actor.role],value,method:'buyer-shortlist-v2'})).digest('hex');
 }
 export function buildBuyerShortlist(actor:Actor,propertyId:string):BuyerShortlist {
  const value=evaluate(actor,propertyId);return {...value,buyerShortlistReference:reference(actor,value)};

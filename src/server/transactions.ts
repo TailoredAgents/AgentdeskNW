@@ -1,3 +1,4 @@
+import {reviewTransactionReports,transactionReviewMethod} from './transaction-review';
 import {createHash} from 'node:crypto';
 import {z} from 'zod';
 import type {Actor} from '../lib/contracts';
@@ -47,7 +48,7 @@ function preparation(actor:Actor,record:TransactionRecord):TransactionPreparatio
  if(input.milestones.title_opened)gaps.push('Title opening is already reported. Review its acknowledgment and outstanding issues instead of preparing another opening.');
  const allParties=[input.parties.attorney,input.parties.buyer,input.parties.acquisition,...(input.financing==='cash'?[]:[input.parties.lender])].filter(p=>p!==null);
  if(new Set(allParties.map(p=>p.email)).size!==allParties.length)gaps.push('Review duplicate recipient addresses; each transaction contact must be explicit.');
- const reference=`${record.id}@${hash({scope:scope(actor),role:actor.role,record,sources,fingerprints,day:now().slice(0,10)})}`;
+ const reference=`${record.id}@${hash({method:transactionReviewMethod,scope:scope(actor),role:actor.role,record,sources,fingerprints,day:now().slice(0,10)})}`;
  if(!featureAccess(actor,'core').allowed)gaps.push('Current workforce access is required to prepare new title work.');
  const release=sources.release as {data:string}|null;
  if(release&&JSON.parse(release.data).status!=='released')gaps.push('The property release is not active. Review its current status before preparing title opening.');
@@ -60,7 +61,8 @@ export function getTransaction(actor:Actor,transactionId:string):TransactionDeta
  const record=stored(actor,transactionId),sources=context(actor,record.input);
  // Historical source bindings are fixed to the same property/investor; document text is only resolved for current preparation.
  const history=(getDb().prepare('SELECT data FROM transaction_revisions WHERE transaction_id=? ORDER BY version DESC LIMIT 30').all(record.id) as {data:string}[]).map(row=>JSON.parse(row.data) as TransactionRecord);
- return {record,property:sources.property,investor:sources.investor,history,preparation:preparation(actor,record),canEdit:featureAccess(actor,'core').allowed,notice};
+ const prepared=preparation(actor,record);
+ return {record,property:sources.property,investor:sources.investor,history,preparation:prepared,review:reviewTransactionReports(record.input,prepared,now().slice(0,10)),canEdit:featureAccess(actor,'core').allowed,notice};
 }
 export function getTransactions(actor:Actor):TransactionBoard {
  assertActor(actor);const items=(getDb().prepare('SELECT data FROM transaction_coordination WHERE organization_id=? AND office_id=? AND owner_id=? ORDER BY rowid DESC').all(...scope(actor)) as {data:string}[]).flatMap(row=>{const record=JSON.parse(row.data) as TransactionRecord;try{const sources=context(actor,record.input);return [{id:record.id,version:record.version,property:sources.property.address,investor:sources.investor.name,closingDate:record.input.closingDate,openIssues:record.input.issues.filter(issue=>!issue.resolved).length,reportedMilestones:transactionMilestones.filter(key=>record.input.milestones[key]).length,updatedAt:record.updatedAt}];}catch(error){if(error instanceof AppError&&[403,404].includes(error.status))return [];throw error;}});
