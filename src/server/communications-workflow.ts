@@ -88,6 +88,7 @@ function contextHash(actor:Actor,detail:InboxThreadDetail){
 }
 function eligibleDraft(actor:Actor,detail:InboxThreadDetail){
  const draft=detail.draft;if(!draft)throw new AppError(409,'Prepare and save a reply before reviewing a simulated send.');
+ if(draft.transactionSource?.current===false)throw new AppError(409,'Transaction preparation changed. Prepare the current version in Transactions.');
  if(draft.documents?.length){requireCommunicationCapability(detail.account,'localTextAttachments');reviewCommunicationDocuments(actor,draft.documents);}
  if(draft.authorship!=='employee'){
   const generated=getInboxAssistance(actor,detail.thread.id).suggestedReply;

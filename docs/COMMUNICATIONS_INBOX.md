@@ -66,3 +66,8 @@ Unsaved edits trigger a choice before switching threads or leaving Inbox. A vers
 ## Phase 3 extension
 
 The implemented Phase 3 extension adds bounded Copilot tools to retrieve permitted inbox content, create grounded drafts in the employee's style, suggest follow-ups and review exact simulated sending. Phase 4A extends those services with fictional company-email source capabilities; see [COMPANY_EMAIL_DEMO.md](COMPANY_EMAIL_DEMO.md). Live company access is Phase 4B after administrator discovery; optional live Gmail/Microsoft adapters and Twilio investor texting remain separately gated later work.
+
+
+### Transaction preparation correspondence
+
+Transactions can save current title preparation to an owned email source, then open the same draft in desktop/native Inbox. This trusted path binds the thread to the private transaction and the draft to its current preparation reference. Repeating the preparation reopens the same result without replacing edits or recreating a sent/discarded draft. Changed sources withhold obsolete unsent content and invalidate reviews, while historical simulated messages retain their original text with current source access. List/search/detail/actions and saved Copilot references recheck that access. Public composition cannot forge transaction metadata. Existing exact simulation review remains required; no message or file reaches a provider, and no transaction outcome is inferred. See [DOCUMENT_WORK](DOCUMENT_WORK.md) for the domain contract and [PROGRESS](PROGRESS.md) for acceptance evidence.
