@@ -47,7 +47,12 @@ try{
  await stop(worker);worker=undefined;await stop(app);app=undefined;await start();
  check((await request<Conversation>('/conversations/'+result.conversation.id)).messages.filter(m=>m.content==='Your fictional reasoning result is saved after approval.').length===1,'The final result survives another process restart');
  const stopped=await request<{conversation:Conversation;result:ToolResult}>('/chat',{message:'Explain the next fictional property step.',requestId:'http-cancel-original'});
- const stopReview=(await request<{reviews:AssignmentReview[]}>('/assignment-reviews')).reviews.find(item=>item.canCancel)!;check(stopReview,'The current original request can be canceled');
+ let stopReview=(await request<{reviews:AssignmentReview[]}>('/assignment-reviews')).reviews.find(item=>item.canCancel)!;check(stopReview,'The current original request can be canceled');
+ const previousReview=stopReview,renewInput={quoteId:stopReview.quoteId,revision:stopReview.revision,eventKey:'http-renew-scope'};
+ stopReview=await request<AssignmentReview>('/assignment-reviews/'+previousReview.id+'/renew',renewInput);
+ check(stopReview.id!==previousReview.id&&stopReview.canDecide,'Renewal preserves the request and asks for a fresh exact decision');
+ check((await request<AssignmentReview>('/assignment-reviews/'+previousReview.id+'/renew',renewInput)).id===stopReview.id,'Renewal retry returns its same replacement quote');
+ await request('/assignment-reviews/'+previousReview.id+'/cancel',{quoteId:previousReview.quoteId,revision:previousReview.revision,eventKey:'obsolete-cancel'},409);
  const stopInput={quoteId:stopReview.quoteId,revision:stopReview.revision,eventKey:'http-cancel-scope'};
  check((await request<AssignmentReview>('/assignment-reviews/'+stopReview.id+'/cancel',stopInput)).executionState==='canceled','Exact employee cancellation closes unstarted work');
  check((await request<AssignmentReview>('/assignment-reviews/'+stopReview.id+'/cancel',stopInput)).heldCents===0,'Cancellation retries preserve released credit');

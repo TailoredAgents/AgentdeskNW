@@ -1,5 +1,19 @@
 # AgentDesk progress log
 
+## October 31, 2026 — Original unstarted-request quote renewal
+
+**Scope:** extends `6830f03` with migration 044. Desktop/native reviews and exact Renew/Refresh S-reference commands replace an unstarted admitted-text quote using the current configured tariff and a new expiry. The original request/root/host remains; above-$1 replacement scope needs fresh approval. Renewal does not dispatch a model call. Stable retry identity persists the replacement across restart. The service rejects changed business context/configuration, claimed/in-flight/paid work and canceled/denied requests; these require separate scope/recovery work.
+
+**Continuity:** retiring old conversation cost reviews and updating the protected text checkpoint commit with the replacement, so a previous exact review does not prevent the original request resuming. No source content or completed usage is silently changed. Old approvals/cancellations cannot target the new quote. Renewal is a synchronous control and cannot bypass a currently responding conversation or start a second model execution. No default operational/deployment setting was enabled.
+
+**Verification:** 16 renewal cases; all 1,154 root tests across 63 files and 78 mobile tests passed. Root/mobile types, lint/build, iOS/Android JavaScript exports and production/development web exports passed. All 1,746 existing HTTP/workflow checks passed. Compiled delegation/cancellation/renewal harness: 59 checks; admitted-text harness: 29; metered restart: twelve; separate-process text restart passed. Counts in polling-based HTTP harnesses vary with the number of status reads. All provider/message transport was mocked; no external messages, payments or live AI calls occurred.
+
+**Preservation:** a disposable schema-043 → 044 copy preserved 316 rows across 128 prior tables, with clean integrity and no foreign-key violations. Active development data was untouched. Evidence: ignored `artifacts/mobile/assignment-renewal-preservation.json`.
+
+**Interface:** native-browser renewal retained the original request and left its $2.05 replacement awaiting approval with zero spent/held. The final desktop build displayed the replacement and labeled the prior review “Replaced by updated quote,” without stale actions. Screenshot: ignored `artifacts/mobile/assignment-renewal-desktop.png`. Browser/export verification is not installed-device acceptance.
+
+**Roadmap:** replaced the accumulated history inside Immediate next work with six concrete remaining tracks. Existing checkpoint evidence stays in this log; full C1–C7 requirements remain intact. Unstarted quote refresh is accepted locally; revised paid scopes/instructions, pause/continue, unknown-usage recovery, other paid hosts and role-depth/mobile/proactive/company work remain unfinished. External acceptance stays deferred; no deployment or overall completion is claimed.
+
 ## October 31, 2026 — Employee whole-assignment cancellation
 
 **Scope:** extends `8b36b43` with migration 043. Desktop/native spending reviews and exact “Cancel S…”/“Stop S…” employee commands stop the owned current assignment and its included local jobs. A cancellation command can execute while the Agent is responding without launching another model turn. Current quote/root ownership is required; expired quotes and ended subscriptions do not prevent stopping owned work. Completed results and incurred usage remain. This does not enable paid pause/resume, scope changes or other paid hosts.

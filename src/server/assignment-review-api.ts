@@ -1,3 +1,4 @@
+import {renewTextAssignment,assignmentRenewalSchema} from './text-renewal';
 import {NextRequest,NextResponse} from 'next/server';
 import type {Actor} from '../lib/contracts';
 import {AppError} from './db';
@@ -9,5 +10,6 @@ export async function assignmentReviewRoute(request:NextRequest,actor:Actor,path
  if(path.length===2&&request.method==='GET')return json(getAssignmentReview(actor,path[1]));
  if(path.length===3&&path[2]==='decision'&&request.method==='POST')return json(decideAssignmentReview(actor,path[1],assignmentDecisionSchema.parse(await body())));
  if(path.length===3&&path[2]==='cancel'&&request.method==='POST')return json(cancelAssignmentReview(actor,path[1],assignmentCancellationSchema.parse(await body())));
+ if(path.length===3&&path[2]==='renew'&&request.method==='POST')return json(renewTextAssignment(actor,path[1],assignmentRenewalSchema.parse(await body())));
  throw new AppError(404,'This assignment review operation is not available.');
 }

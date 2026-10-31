@@ -1,8 +1,9 @@
+import {renewTextAssignment} from './text-renewal';
 import {randomBytes} from 'node:crypto';
 import {z} from 'zod';
 import type {Actor,ToolResult} from '../lib/contracts';
 import type {AssignmentReview} from '../lib/assignment-review-contracts';
-import {assignmentReviewStatus,assignmentExecutionStatus} from '../lib/assignment-review-contracts';
+import {assignmentReviewLabel} from '../lib/assignment-review-contracts';
 import type {WorkConversationOptions} from '../lib/work-conversation-contracts';
 import {AppError,getDb,now,scopedGet} from './db';
 import {requireFeature} from './billing';
@@ -15,12 +16,13 @@ const money=(cents:number)=>`$${(cents/100).toFixed(2)}`;
 export const assignmentConversationReference=(reviewId:string)=>`S${fingerprint(reviewId).slice(0,16).toUpperCase()}`;
 const result=(message:string,reviews:AssignmentReview[]=[]):ToolResult=>({message,specialistIds:[],artifacts:reviews.filter(review=>!review.contentRestricted&&review.state!=='obsolete').map(review=>({type:'work_run',title:'Assignment spending review',data:{assignmentReviewReference:assignmentReviewReference(review)}}))});
 const presentation=(review:AssignmentReview)=>fingerprint({id:review.id,quoteId:review.quoteId,revision:review.revision,title:review.title,summary:review.summary,parts:review.parts,estimated:review.estimatedCents,maximum:review.maximumCents,expires:review.expiresAt});
-type Intent={action:'list'|'review'|'status'|'approve'|'deny'|'cancel'|'help';target?:string};
+type Intent={action:'list'|'review'|'status'|'approve'|'deny'|'cancel'|'renew'|'help';target?:string};
 /** Whole employee commands only. No model, retrieved text, quoted sentence or vague yes can approve. */
 export function assignmentConversationIntent(message:string):Intent|null {
  const text=message.trim().replace(/[.!?]+$/,'').replace(/^(?:(?:can|could|would) you\s+)?(?:please\s+)?/i,'');let match:RegExpExecArray|null;
  if(/^(?:show|list|review|check)(?: me)?(?: my| the)? (?:spending|spending reviews|cost approvals|assignment costs)$/i.test(text))return {action:'list'};
  if((match=/^(review|show|status|check)(?: (?:spending|cost|assignment))?\s+(S[0-9a-f]{16})$/i.exec(text)))return {action:match[1].toLowerCase()==='review'?'review':'status',target:match[2].toUpperCase()};
+ if((match=/^(?:renew|refresh)(?: (?:quote|spending|assignment))?\s+(S[0-9a-f]{16})$/i.exec(text)))return {action:'renew',target:match[1].toUpperCase()};
  if((match=/^(?:cancel|stop)(?: (?:remaining work|assignment|spending))?\s+(S[0-9a-f]{16})$/i.exec(text)))return {action:'cancel',target:match[1].toUpperCase()};
  if((match=/^(approve|deny)\s+(R[0-9a-f]{16})$/i.exec(text)))return {action:match[1].toLowerCase() as 'approve'|'deny',target:match[2].toUpperCase()};
  if(/^(?:yes|approve|deny|approve (?:it|that|the cost|the job)|deny (?:it|that|the cost|the job))$/i.test(text))return {action:'help'};
@@ -29,7 +31,7 @@ export function assignmentConversationIntent(message:string):Intent|null {
 type Row={code:string;request_id:string;review_id:string;quote_id:string;revision:number;presentation_hash:string;channel:string;created_at:string;expires_at:string};
 function showReview(actor:Actor,review:AssignmentReview,conversationId:string,requestId:string,options:WorkConversationOptions):ToolResult {
  const reference=assignmentConversationReference(review.id);
- if(!review.canDecide)return result(`${reference}: ${assignmentExecutionStatus[review.executionState]||assignmentReviewStatus[review.state]}. Simulated credits: ${money(review.spentCents)} spent, ${money(review.heldCents)} held, ${money(review.maximumCents)} quoted maximum. No new cost decision is available.${review.canCancel?` Say “Cancel ${reference}” to stop remaining execution.`:""}`,[review]);
+ if(!review.canDecide)return result(`${reference}: ${assignmentReviewLabel(review)}. Simulated credits: ${money(review.spentCents)} spent, ${money(review.heldCents)} held, ${money(review.maximumCents)} quoted maximum. No new cost decision is available.${review.canRenew?` Say “Renew ${reference}” to refresh the original request’s quote.`:""}${review.canCancel?` Say “Cancel ${reference}” to stop remaining execution.`:""}`,[review]);
  const prior=getDb().prepare('SELECT * FROM assignment_conversation_reviews WHERE organization_id=? AND office_id=? AND user_id=? AND conversation_id=? AND request_id=?').get(...owner(actor),conversationId,requestId) as Row|undefined;
  if(prior&&(prior.review_id!==review.id||prior.presentation_hash!==presentation(review)||(options.channel??'web')!==prior.channel))throw new AppError(409,'This request already represents a different spending review.');
  const code=prior?.code??`R${randomBytes(8).toString('hex').toUpperCase()}`;
@@ -68,11 +70,12 @@ export function executeAssignmentConversationAction(actor:Actor,message:string,c
    const reviews=listAssignmentReviews(actor);
    if(intent.action==='help')return reviews.some(review=>review.canDecide)?result('Use the exact Approve R… or Deny R… command from the spending review. Say “Show my spending” to select it. A general yes does not approve a cost.'):null;
    if(intent.action==='list'){
-    const selected=reviews.filter(review=>!review.contentRestricted&&review.state!=='obsolete').slice(0,8);
-    return result(selected.length?selected.map(review=>`${assignmentConversationReference(review.id)} — ${review.title}: ${assignmentExecutionStatus[review.executionState]||assignmentReviewStatus[review.state]}, ${money(review.maximumCents)} simulated maximum.`).join('\n')+'\nSay “Review spending S…” with the intended reference.':'No available assignment spending reviews are saved. You can also check Work → Copilot jobs.',selected);
+    const selected=reviews.filter(review=>!review.contentRestricted&&(review.state!=='obsolete'||review.canRenew)).slice(0,8);
+    return result(selected.length?selected.map(review=>`${assignmentConversationReference(review.id)} — ${review.title}: ${assignmentReviewLabel(review)}, ${money(review.maximumCents)} simulated maximum.`).join('\n')+'\nSay “Review spending S…” with the intended reference.':'No available assignment spending reviews are saved. You can also check Work → Copilot jobs.',selected);
    }
    const matches=reviews.filter(review=>assignmentConversationReference(review.id)===intent.target&&(intent.action==='cancel'||!review.contentRestricted));
    if(matches.length!==1)throw new AppError(404,'That spending review is unavailable. Say “Show my spending” to select a current review.');
+   if(intent.action==='renew'){const review=matches[0],updated=renewTextAssignment(actor,review.id,{quoteId:review.quoteId,revision:review.revision,eventKey:`conversation:${fingerprint({conversationId,requestId})}`});return result(`The original request has an updated quote: estimate ${money(updated.estimatedCents)}, maximum ${money(updated.maximumCents)} in simulated credits. ${updated.canDecide?`Say “Review spending ${assignmentConversationReference(updated.id)}” for the current approval code.`:'The original request is ready for the worker to continue within this maximum.'} No AI generation was dispatched by the renewal command.`,[updated]);}
    if(intent.action==='cancel'){const review=matches[0],updated=cancelAssignmentReview(actor,review.id,{quoteId:review.quoteId,revision:review.revision,eventKey:`conversation:${fingerprint({conversationId,requestId})}`});return result(updated.executionState==='stopping'?'Remaining execution stopped. An in-flight or uncertain request still needs its outcome checked; held credit remains reserved. Completed work and incurred usage stay saved.':'Remaining assignment canceled. Completed work and incurred credits stay saved; unused credit was released.',[updated]);}
    return showReview(actor,matches[0],conversationId,requestId,options);
   }catch(error){if(error instanceof AppError&&[400,402,403,404,409,422].includes(error.status))return result(`${error.message} Nothing was approved by this command.`);throw error;}

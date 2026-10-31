@@ -1,6 +1,6 @@
 # AgentDesk NW mobile — local development checkpoint
 
-**Assignment cancellation and included local cost display verified locally October 31, 2026; actual-phone acceptance remains pending.** [The implementation roadmap](../docs/IMPLEMENTATION_ROADMAP.md) is the sole authority for status, build order and next work. [Mobile requirements](../docs/MOBILE_DELIVERY_PLAN.md) define acceptance scope. This README records reproducible setup and the boundary between local/browser evidence and native acceptance.
+**Original quote renewal and assignment cancellation verified locally October 31, 2026; actual-phone acceptance remains pending.** [The implementation roadmap](../docs/IMPLEMENTATION_ROADMAP.md) is the sole authority for status, build order and next work. [Mobile requirements](../docs/MOBILE_DELIVERY_PLAN.md) define acceptance scope. This README records reproducible setup and the boundary between local/browser evidence and native acceptance.
 
 ## Architecture and current source
 
@@ -168,3 +168,7 @@ Native Work now identifies included local jobs and explains that their zero AI c
 ## Whole-assignment cancellation
 
 Native Work spending reviews now stop the current admitted assignment and included local jobs with an exact retained command. The UI distinguishes canceled, completed and stopping-with-usage-pending outcomes; it preserves uncertain action retry identity and displays incurred/held credits. A 390×844 browser rehearsal canceled a queued local buyer job from the phone; desktop showed the same cancellation, zero remaining held credit and the retained 6¢ mock reasoning charge. Screenshots: ignored `artifacts/mobile/assignment-stop-phone.png` and `assignment-stop-desktop.png`. All 78 client tests, types and native/production-web/development-web exports passed. Actual phone, provider and payment acceptance remain deferred.
+
+## Original quote renewal
+
+Work spending reviews now offer **Refresh original quote** for an eligible unstarted text request. The replacement retains the original request, rechecks the configured tariff and needs fresh approval above $1. Pending uncertain requests retain exact retry identity; old and new reviews cannot be mixed. Independent types, 78 mobile tests and native/production-web/development-web exports passed. Browser checks use fictional data with live AI/outbound delivery disabled; actual-phone acceptance remains deferred.

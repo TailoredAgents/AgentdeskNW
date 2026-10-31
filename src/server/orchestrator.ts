@@ -468,17 +468,17 @@ export async function chat(actor:Actor,message:string,conversationId?:string,req
     }
     const conversation=conversationId?service.getConversation(actor,conversationId):service.createConversation(actor,message.slice(0,70));
     db.prepare("UPDATE assistant_turns SET status='interrupted' WHERE conversation_id=? AND status='running' AND started_at<?").run(conversation.id,new Date(Date.now()-20*60*1000).toISOString());
-    const cancellationCommand=assignmentConversationIntent(message)?.action==='cancel';
+    const assignmentIntent=assignmentConversationIntent(message),cancellationCommand=assignmentIntent?.action==='cancel',synchronousControl=cancellationCommand||assignmentIntent?.action==='renew';
     if(db.prepare("SELECT 1 FROM assistant_turns WHERE conversation_id=? AND status='running'").get(conversation.id)&&!cancellationCommand)throw new service.AppError(409,'This conversation is already responding. Please wait.');
-    db.prepare('INSERT INTO assistant_turns VALUES(?,?,?,?,?,?,?,?,?)').run(actor.organizationId,actor.officeId,actor.id,requestId,conversation.id,requestHash,cancellationCommand?'control':'running',now(),null);
+    db.prepare('INSERT INTO assistant_turns VALUES(?,?,?,?,?,?,?,?,?)').run(actor.organizationId,actor.officeId,actor.id,requestId,conversation.id,requestHash,synchronousControl?'control':'running',now(),null);
     service.addMessage(actor,conversation.id,{role:'user',content:message});
     explicitResult=executeAssignmentConversationAction(actor,message,conversation.id,requestId,{channel,receivedAt:options.receivedAt})??executeWorkConversationAction(actor,message,conversation.id,requestId,{channel,receivedAt:options.receivedAt})??explicitMemoryCommand(actor,message,requestId)??executeConversationAction(actor,message,conversation.id,requestId,{asOf:options.receivedAt});
     if(explicitResult)rememberTaskResults(actor,explicitResult,{conversationId:conversation.id,requestId,message,receivedAt:options.receivedAt},'employee_command');
     const continued=[...new Set(explicitResult?.artifacts.filter(a=>a.type==='work_run'&&a.id).map(a=>a.id!)??[])];
     if(continued.length===1)withAssignment(actor,{kind:'work',id:continued[0]},()=>bindAssignment(actor,{kind:'turn',id:requestId}));
     else bindAssignment(actor,{kind:'turn',id:requestId});
-    if(cancellationCommand){
-      if(!explicitResult)throw new service.AppError(409,'Select the exact assignment to cancel.');
+    if(synchronousControl){
+      if(!explicitResult)throw new service.AppError(409,'Select the exact assignment control.');
       const saved=service.addMessage(actor,conversation.id,{role:'assistant',content:explicitResult.message,specialistIds:explicitResult.specialistIds,artifacts:explicitResult.artifacts});
       db.prepare("UPDATE assistant_turns SET status='completed',result=? WHERE organization_id=? AND office_id=? AND user_id=? AND request_id=?").run(JSON.stringify({messageId:saved.id}),actor.organizationId,actor.officeId,actor.id,requestId);
       return {conversation:service.getConversation(actor,conversation.id),cached:explicitResult};
