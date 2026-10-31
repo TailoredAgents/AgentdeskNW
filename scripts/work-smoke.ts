@@ -40,7 +40,7 @@ try{
  const capabilities=await request<{capabilities:{capabilityId:string;available:boolean;simulation:boolean}[]}>('work/capabilities');
  check(capabilities.capabilities.some(item=>item.capabilityId==='match_existing_buyers'&&item.available)&&capabilities.capabilities.every(item=>item.simulation),'Capability discovery exposes permitted, explicitly simulated work');
  await request('work','POST',{requestId:randomUUID(),presetId:'management'},403);
- await request('work','POST',{requestId:randomUUID(),presetId:'dispositions'},422);
+ const missingTarget=await request<WorkRun>('work','POST',{requestId:randomUUID(),presetId:'dispositions'},201);check(missingTarget.status==='waiting_for_input'&&!!missingTarget.question,'Missing property now asks a saved question');await control(missingTarget,'cancel');
  await request('work','POST',{requestId:randomUUID(),presetId:'dispositions',propertyId:'property-maple',maximumCents:0},400);
  await request('work','POST',{requestId:randomUUID(),presetId:'dispositions',propertyId:'property-maple',ownerId:'user-taylor'},400);
  await request('work','POST',{requestId:randomUUID(),presetId:'dispositions',propertyId:'not-a-property'},404);

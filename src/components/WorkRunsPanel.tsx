@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowRight, ArrowUpRight, Check, CirclePause, Clock, FileText, Info, Play, Plus, RefreshCw, ShieldCheck, Sparkles, X } from 'lucide-react';
 import type { Artifact, Bootstrap } from '@/lib/contracts';
 import type { WorkRun, WorkRunStatus, WorkStep } from '@/lib/work-contracts';
+import {WorkQuestionPanel} from './WorkQuestionPanel';
 import {HandoffsPanel} from './HandoffsPanel';
 import {AcquisitionIntakePanel} from './AcquisitionIntakePanel';
 import { api, ApiError, Badge, EmptyState, Modal, Panel, readable, SectionHead, Spinner } from './ui';
@@ -16,6 +17,7 @@ const statusLabels: Record<WorkRunStatus, string> = {
 };
 const statusTone = (status: WorkRunStatus): 'green' | 'amber' | 'cyan' | 'neutral' | 'red' => status === 'completed' ? 'green' : ['waiting_cost_approval', 'waiting_for_input', 'reconciling'].includes(status) ? 'amber' : ['queued', 'running', 'waiting_for_dependency'].includes(status) ? 'cyan' : status === 'failed' ? 'red' : 'neutral';
 const capabilityLabels: Record<string, string> = {
+  request_information: 'Ask for missing information',
   inspect_property: 'Read property facts', match_existing_buyers: 'Find existing buyers',
   relationship_next_step: 'Prepare the relationship next step', review_handoff: 'Review the acquisition handoff',
   office_priorities: 'Prepare office priorities', create_followup: 'Save the requested follow-up',
@@ -70,8 +72,8 @@ function WorkStepScope({ step, steps, data }: { step: WorkStep; steps: WorkStep[
   };
   target('propertyId', 'Property', id => { const property = data.properties.find(item => item.id === id); return property ? `${property.address} · ${property.city}` : undefined; });
   target('investorId', 'Investor', id => { const investor = data.investors.find(item => item.id === id); return investor ? `${investor.name} · ${investor.company}` : undefined; });
-  if (typeof input.title === 'string') rows.push({ label: 'Task', value: input.title });
-  if ('dueAt' in input) rows.push({ label: 'Due', value: typeof input.dueAt === 'string' ? moment(input.dueAt) : 'No due date' });
+  if ('title' in input) {const title=resolve(input.title);rows.push({label:'Task',value:title.reference??String(title.value)});}
+  if ('dueAt' in input) {const due=resolve(input.dueAt);rows.push({label:'Due',value:due.reference??(typeof due.value==='string'?moment(due.value):'No due date')});}
   if (typeof input.limit === 'number') rows.push({ label: 'Research', value: `Up to ${input.limit} fictional prospects` });
   if ('jobId' in input) {
     const result = resolve(input.jobId);
@@ -198,7 +200,7 @@ export function WorkRunsPanel({ data, initialRunId, onChange, onError, onArtifac
   const reviewExpired = review ? Date.parse(review.budget.expiresAt) <= clock : false;
   const reviewChanged = !!review && !!detail && detail.id === review.id && (detail.version !== review.version || detail.budget.quoteId !== review.budget.quoteId);
   const canPause = !!detail && ['queued', 'running', 'waiting_for_dependency'].includes(detail.status);
-  const canResume = !!detail && ['paused', 'failed', 'waiting_for_input'].includes(detail.status) && !detail.contentRestricted;
+  const canResume = !!detail && !detail.question && ['paused', 'failed', 'waiting_for_input'].includes(detail.status) && !detail.contentRestricted;
   const canCancel = !!detail && !['completed', 'canceled', 'reconciling'].includes(detail.status);
 
   return <section className="work-runs" aria-label="Saved Copilot jobs">
@@ -215,7 +217,8 @@ export function WorkRunsPanel({ data, initialRunId, onChange, onError, onArtifac
         {detail.contentRestricted && <div className="work-run-error"><p>Some saved context is no longer available with your current access. Protected results are hidden. You can still stop the remaining work.</p></div>}
         <dl className="work-cost-summary"><div><dt>Estimated total</dt><dd>{dollars(detail.budget.estimatedCents)}</dd><small>Simulated credits</small></div><div><dt>Job maximum</dt><dd>{dollars(detail.budget.maximumCents)}</dd><small>{detail.budget.approvedMaximumCents !== null ? `Approved up to ${dollars(detail.budget.approvedMaximumCents)}` : 'Approval above $1'}</small></div><div><dt>Spent so far</dt><dd>{dollars(detail.budget.spentCents)}</dd><small>{dollars(detail.budget.reservedCents)} still held</small></div></dl>
         {detail.status === 'waiting_cost_approval' && <div className="work-cost-request"><h4><ShieldCheck size={17}/>Your spending decision</h4><p>{expired ? 'This estimate expired. Refresh it before reviewing the current job.' : `The complete job is quoted up to ${dollars(detail.budget.maximumCents)}. Review the steps and maximum before anything further runs.`}</p>{expired ? <button className="button secondary" disabled={busy || detail.contentRestricted} onClick={() => control('resume')}><RefreshCw size={15}/>Refresh estimate</button> : <button className="button primary" disabled={busy || detail.contentRestricted} onClick={() => { setReviewError(''); setReview(structuredClone(detail)); }}><ShieldCheck size={15}/>Review cost & scope</button>}</div>}
-        {detail.lastError && <div className="work-run-error"><p>{detail.lastError}</p></div>}
+        {detail.question&&<WorkQuestionPanel key={`${detail.id}:${detail.question.reference}`} run={detail} onSaved={accept}/>}
+        {detail.lastError && !detail.question && <div className="work-run-error"><p>{detail.lastError}</p></div>}
         {detail.status === 'reconciling' && <p className="work-review-note">An outcome needs review. Its credits remain held until it is resolved; the uncertain step will not be repeated automatically.</p>}
         {(canPause || canResume || canCancel) && <div className="work-run-controls">{canPause && <button className="button secondary small" disabled={busy} onClick={() => control('pause')}><CirclePause size={15}/>Pause job</button>}{canResume && <button className="button secondary small" disabled={busy} onClick={() => control('resume')}><Play size={15}/>Resume job</button>}{canCancel && <button className="text-link" disabled={busy} onClick={() => control('cancel')}><X size={14}/>Cancel remaining work</button>}{busy && <Spinner label="Saving…"/>}</div>}
         <div className="work-progress-label"><strong>Steps & results</strong><span>{completed} of {detail.steps.length} complete</span></div><div className="work-progress-track" role="progressbar" aria-label="Completed job steps" aria-valuemin={0} aria-valuemax={Math.max(1, detail.steps.length)} aria-valuenow={completed}><span style={{ width: `${detail.steps.length ? completed / detail.steps.length * 100 : 0}%` }}/></div>

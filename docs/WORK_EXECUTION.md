@@ -24,6 +24,18 @@ The new-job form explicitly includes saving that personal task. Generic model-co
 
 Example offline command: “Start a job for 123 Example Street and Mike Bennett and create a follow-up task.” Add “with fictional new-investor research” to exercise cost review, or “without research” to keep the basic scope. “Show my Copilot jobs” retrieves saved statuses. Unsupported or ambiguous offline requests point to the starter form rather than inventing a completed job.
 
+## Saved questions and continuation
+
+The `request_information` capability pauses a saved job for an employee-supplied property, investor, text, number or timezone-explicit date/time. It costs zero simulated credits. A dependent step can read its `answer`, `propertyId` or `investorId`; supported task title/date and research-count fields accept typed result references. Missing-property acquisitions/dispositions starters now create this question rather than discarding the request. Management and other custom supported plans can compose questions as well.
+
+The shared `POST /api/work/:id/answer` action binds the authenticated owner, expected job version and a question reference derived from the current plan, prompt and authorized source/choice data. Exact retries preserve one answer receipt. Record choices require one exact current ID/name/address; arbitrary text remains employee-supplied data, never verified CRM facts or action authority. Invalid types or incompatible immediately dependent inputs fail before saving the answer, so the same question can be corrected. This is typed dependency continuation, not arbitrary document ingestion or unrestricted replanning.
+
+An answer completes only the zero-cost question step, retains earlier results/receipts and creates a new immutable plan/whole-job quote. Any previous cost approval is invalidated; above $1 waits for a fresh explicit decision. Future missing answers remain pending. Resume cannot bypass a question, and neither an answer nor an instruction-like string can authorize spending or sending. Cancellation remains available. No new schema migration is required: current job/plan JSON and immutable step receipts hold the state.
+
+Copilot displays the question and a source-bound `Answer Q…: …` command. A bare exact record selection such as “Use 123 Example Street” is accepted only when the latest delivered, still-visible assistant message identifies one current question. Otherwise the employee uses the explicit current question reference or Work. Older queued channel answers cannot answer a newer question. Question references also protect stored conversation/tool replay and derived work provenance when choices or source facts change. Desktop and native Work have answer controls, explicit uncertain-result retry and fresh-source checks; native navigation guards unsaved answers. UI state remains memory-only.
+
+Real SMS/Slack, installed-device behavior and model-quality acceptance remain deferred. The dispatcher and tests establish local shared authority, not live channel delivery. Saved answers do not add a general model approval/write tool, guarantee every missing fact can be inferred, or complete all C1 planning/edit/voice requirements.
+
 ## Capability execution
 
 The server-owned catalog in work-capabilities.ts declares input schemas, output fields, role/feature requirements, effect and fictional rate version. Implemented capabilities are property inspection, existing-buyer matching, relationship next step, acquisition handoff review, office priorities, personal follow-up, synthetic research start and synthetic research result collection. The planner composes up to twelve steps with explicit dependencies; it does not rely on only the three UI presets.
@@ -72,7 +84,7 @@ Run `npm run build` then `npm run test:work` for the isolated compiled HTTP/work
 
 Acceptance includes unit/service tests, mocked model planning/replay, compiled HTTP checks, a real local worker processing fictional work, source/role/cost failures, migration-copy preservation and desktop/narrow responsive-browser walkthroughs. [PROGRESS.md](PROGRESS.md) records historical verification evidence; the canonical roadmap owns current completion status. Passing local tests does not establish live model quality, real channel delivery or production readiness.
 
-Outstanding acceptance includes general missing-information continuation and broader corrections (C1/C3), native-device behavior (C2/C3), source/versioned methods and useful workflows across all three roles (C4), proactive/SMS behavior (C5), actual spending and optional top-up (C6), and approved connections/rollout (C7). The canonical roadmap sets their order and dependencies; this specification does not create another delivery schedule.
+Outstanding acceptance includes richer document/context clarification and broader corrections (C1/C3), native-device behavior (C2/C3), source/versioned methods and useful workflows across all three roles (C4), proactive/SMS behavior (C5), actual spending and optional top-up (C6), and approved connections/rollout (C7). The canonical roadmap sets their order and dependencies; this specification does not create another delivery schedule.
 
 
 ## Shared conversational work controls — local acceptance

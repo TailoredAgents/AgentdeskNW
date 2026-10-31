@@ -38,4 +38,6 @@ Build and test realistic fictional workflows until company access is approved. T
 
 There is a verified web/durable-work foundation and a locally verified mobile/shared-controls foundation. Neither means the full vision is complete. Track fictional workflow completion, connected pilot readiness and company rollout readiness separately in the roadmap. Preserve the current application and records rather than rebuilding functioning services for the native client.
 
+The owner’s current development session prioritizes completing locally developable roadmap work with fictional data and simulated connections. Real-world/provider, physical-device and practitioner testing is deferred for a later assessment; keep those acceptance items open without blocking independent development.
+
 GitHub commit/push remains authorized. A repository update is not evidence of a Render deployment; report each separately. The owner resumed implementation after documentation reconciliation. Follow the canonical roadmap and keep acceptance evidence current.

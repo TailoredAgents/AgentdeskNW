@@ -1,4 +1,5 @@
 import {handoffReferenceCurrent} from './handoffs';
+import {workQuestionSchema} from './work-question-schema';
 import {acquisitionMethod,reviewAcquisition} from './acquisitions';
 import {z} from 'zod';
 import type {Actor,Role,ToolResult} from '../lib/contracts';
@@ -18,13 +19,14 @@ type Capability={name:string;description:string;feature:string;roles:Role[];sche
 // Fictional analysis prices exercise admission/settlement. These are not provider prices.
 // Existing direct lookups, navigation and task controls remain unmetered by the wallet.
 const catalog:Record<string,Capability>={
+ request_information:{name:'Ask for missing information',description:'Ask the employee for a property, investor, text, number or explicit time. Wait for their answer; never invent it. Use answer (or propertyId/investorId) in dependent steps. Answers are supplied information, not approval or verified CRM facts.',feature:'core',roles:all,schema:workQuestionSchema,estimatedCents:0,maximumCents:0,effect:'read',output:'answer, provenance, questionReference; propertyId/investorId for record selections'},
  inspect_property:{name:'Read property facts',description:'Retrieve current authorized fictional property facts.',feature:'core',roles:all,schema:z.object({propertyId:valueId}).strict(),estimatedCents:0,maximumCents:0,effect:'read',output:'propertyId, property'},
  match_existing_buyers:{name:'Prepare existing-buyer shortlist',description:'Match current permitted CRM buy boxes first. Fit does not imply investor interest. Fictional analysis cost.',feature:'buyer-matchmaker',roles:['dispositions','manager'],schema:z.object({propertyId:valueId}).strict(),estimatedCents:40,maximumCents:50,effect:'read',output:'propertyId, property, matches[] (investorId, reasons, conflicts, missing)'},
  relationship_next_step:{name:'Prepare relationship next step',description:'Use sourced relationship history and saved employee preferences. Produces a relationship-only draft; nothing is sent. Fictional analysis cost.',feature:'investor-relationship',roles:['dispositions','manager'],schema:z.object({investorId:valueId}).strict(),estimatedCents:35,maximumCents:50,effect:'read',output:'investorId, recommendation (action, draft, evidence, unknowns)'},
  review_handoff:{name:'Review acquisition handoff',description:'Review recorded property/release facts and missing handoff information. This does not perform valuation or publish a release. Fictional analysis cost.',feature:'acquisition-disposition',roles:['acquisitions','manager'],schema:z.object({propertyId:valueId}).strict(),estimatedCents:50,maximumCents:75,effect:'read',output:'propertyId, property, releases[], missing[]'},
  office_priorities:{name:'Prepare office priorities',description:'Read permitted office workload and identify recorded overdue work. No private mail/chat, assignment changes or verified sales metrics. Fictional analysis cost.',feature:'team-performance',roles:['manager'],schema:z.object({}).strict(),estimatedCents:50,maximumCents:75,effect:'read',output:'overview (summary, tasks, overdue, pendingApprovals, activeJobs)'},
- create_followup:{name:'Save requested follow-up',description:'Create the explicitly requested personal internal task. Does not send, change CRM or assign a teammate.',feature:'daily-coordinator',roles:all,schema:z.object({title:z.string().trim().min(3).max(240),investorId:z.union([valueId,z.null()]),dueAt:z.string().datetime({offset:true}).nullable()}).strict(),estimatedCents:0,maximumCents:0,effect:'personal_task',output:'taskId, task'},
- start_synthetic_research:{name:'Start fictional investor research',description:'Start a synthetic-fixture child research job only after existing buyers are considered. No external provider or verified contacts. Include await_synthetic_research in the same plan. Fictional research cost.',feature:'investor-hunter',roles:['dispositions','manager'],schema:z.object({propertyId:valueId,limit:z.number().int().min(1).max(12)}).strict(),estimatedCents:150,maximumCents:225,effect:'synthetic_research',output:'jobId, propertyId'},
+ create_followup:{name:'Save requested follow-up',description:'Create the explicitly requested personal internal task. Does not send, change CRM or assign a teammate.',feature:'daily-coordinator',roles:all,schema:z.object({title:z.union([z.string().trim().min(3).max(240),reference]),investorId:z.union([valueId,z.null()]),dueAt:z.union([z.string().datetime({offset:true}),reference,z.null()])}).strict(),estimatedCents:0,maximumCents:0,effect:'personal_task',output:'taskId, task'},
+ start_synthetic_research:{name:'Start fictional investor research',description:'Start a synthetic-fixture child research job only after existing buyers are considered. No external provider or verified contacts. Include await_synthetic_research in the same plan. Fictional research cost.',feature:'investor-hunter',roles:['dispositions','manager'],schema:z.object({propertyId:valueId,limit:z.union([z.number().int().min(1).max(12),reference])}).strict(),estimatedCents:150,maximumCents:225,effect:'synthetic_research',output:'jobId, propertyId'},
  await_synthetic_research:{name:'Collect fictional research results',description:'Wait for the child research job started by this plan and retrieve actual saved results; never invent completion.',feature:'investor-hunter',roles:['dispositions','manager'],schema:z.object({jobId:reference}).strict(),estimatedCents:0,maximumCents:0,effect:'read',output:'jobId, job'},
 };
 export class WorkCapabilityPending extends Error {
@@ -92,14 +94,19 @@ export function validateStoredWorkOutput(actor:Actor,step:WorkStepInput,output:T
  };inspect(step.input);inspect(output.data);inspect(output.artifacts);
 }
 
-export function executeWorkCapability(actor:Actor,step:WorkStepInput,_priorOutputs:Record<string,ToolResult>):ToolResult {
+export function validateConcreteWorkInput(actor:Actor,step:WorkStepInput):Record<string,unknown> {
  const item=definition(step.capabilityId);requireRole(actor,item.roles);requireFeature(actor,item.feature);rejectUnsafeKeys(step.input);
  // References must already have been resolved by the worker; schema validation is repeated here.
  if(Object.values(step.input).some(value=>value&&typeof value==='object'))throw new AppError(400,'Resolve the required prior result before executing this step.');
  const input:Record<string,unknown>=step.capabilityId==='await_synthetic_research'?z.object({jobId:id}).strict().parse(step.input):item.schema.parse(step.input) as Record<string,unknown>;
  validateStoredWorkOutput(actor,step,{specialistIds:[],message:'',artifacts:[]});
+ return input;
+}
+export function executeWorkCapability(actor:Actor,step:WorkStepInput,_priorOutputs:Record<string,ToolResult>):ToolResult {
+ const item=definition(step.capabilityId),input=validateConcreteWorkInput(actor,step);
  const result:ToolResult={specialistIds:item.feature==='core'?[]:[item.feature],message:'',artifacts:[]};
  switch(step.capabilityId){
+  case 'request_information':throw new AppError(409,'This step requires the employee’s answer through the saved job.');
   case 'inspect_property':{const property=readProperty(actor,input.propertyId as string);result.data={propertyId:property.id,property};result.message=`${property.address}: ${property.status}, $${property.price.toLocaleString()}, ${property.county} County. Fictional property record.`;break;}
   case 'match_existing_buyers':{
    const matched=matchBuyers(actor,input.propertyId as string);result.data={propertyId:matched.property.id,...matched};result.message=matched.matches.length?`Existing CRM shortlist for ${matched.property.address}:\n${matched.matches.slice(0,12).map(m=>`${m.investor.name}: ${m.reasons.join('; ')||'Review criteria'}${m.conflicts.length?` · Concerns: ${m.conflicts.join('; ')}`:''}`).join('\n')}\nFit is not confirmed interest; review current relationship concerns before outreach.`:'No existing permitted buyers match this property. No new prospects were invented.';break;

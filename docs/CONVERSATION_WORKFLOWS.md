@@ -12,6 +12,10 @@ The dashboard's default first message opens the employee's ongoing Copilot conve
 
 Slack and SMS transport the employee's requests to the same dispatcher as web Copilot. Linked-channel notifications respect the employee's reminder setting, quiet hours, subscription/allowance and current permissions. They do not send messages to investors. Long replies retain a concise preview and a link to the saved answer when the configured channel origin is available.
 
+## Answering a saved job
+
+A supported job can ask for missing information and wait without losing its progress. App/web Work and the ongoing conversation share the same versioned answer service. Use the displayed `Answer Q…: …` command across configured employee channels; an exact property/investor selection also works as the immediate reply to one current question. Ambiguous, obsolete or early-arriving replies do not select another job. A supplied answer remains unverified data, cannot approve spending and refreshes the whole-job estimate before continuation. See [WORK_EXECUTION.md](WORK_EXECUTION.md#saved-questions-and-continuation).
+
 ## Shared handoff review
 
 “Show office handoffs” and the read-only `handoff_overview` tool retrieve current authorized assignments, acknowledgment, blockers and outcomes. Managers see their office; employees see only their current release-authorized assignment. Links open desktop/native Work. Current board references participate in saved conversation/work provenance and invalidate obsolete assessments. Assignment/report/resolution still use reviewed Work actions; full conversational handoff execution and general clarification are not implemented by this read tool. See [MANAGEMENT_HANDOFFS.md](MANAGEMENT_HANDOFFS.md).

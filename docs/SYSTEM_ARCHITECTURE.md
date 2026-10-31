@@ -1,7 +1,7 @@
 # System architecture
 
 
-**Document role:** architecture specification; [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) alone controls delivery status and sequencing. The October 30 shared-handoff slice extends follow-up/intake checkpoint `f2cce5e` and has local integrated acceptance. Installed-phone and live-provider acceptance remain pending.
+**Document role:** architecture specification; [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) alone controls delivery status and sequencing. The October 30 saved-question continuation slice extends shared-handoff checkpoint `218ae0e` and has local integrated acceptance. Installed-phone and live-provider acceptance remain pending.
 
 ## Native client and shared command transport
 
@@ -15,9 +15,13 @@ The `mobile/` Expo/React Native project has an independent dependency graph and 
 
 `handoffs.ts` implements shared operational coordination independently of private correspondence and reminders. Manager and assignee projections recheck current release access. Migration 025 adds current records and immutable decision events. Typed/read-only Copilot, office-priorities work and web voice use the same current board fingerprint; saved history/work provenance masks obsolete results. Native `HandoffsScreen` and desktop `HandoffsPanel` use explicit reviewed mutations. See [MANAGEMENT_HANDOFFS.md](MANAGEMENT_HANDOFFS.md).
 
+## Saved questions
+
+`work-questions.ts` projects source-bound questions and validates employee-supplied answers; its schema is separate to avoid a native ESM dependency cycle. `request_information` is a zero-cost capability whose completion is only available to the authenticated answer service. Existing job/plan JSON and immutable step receipts persist continuation without a migration. Answers preserve prior work, create a fresh whole-job quote and invalidate prior cost decisions. Current question/choice references protect saved history and derived work context; answered questions stay readable while their original sources remain current. Desktop and native Work share the same API. See [the continuation contract](WORK_EXECUTION.md#saved-questions-and-continuation).
+
 ## Durable local execution layer
 
-The verified bounded [shared-work foundation](IMPLEMENTATION_ROADMAP.md#c1--shared-conversation-and-work-controls) (legacy A1–A3) implementation adds private work runs, immutable versioned plans, steps/dependencies, events, leases and transactional receipts around existing domain services. `work-capabilities.ts` defines eight typed local capabilities; Copilot composes these through `start_work`, and Work queue offers role starters and pause/resume/cancel/exact cost decisions. `work-budget.ts` owns the fictional whole-job quote, hold and partial settlement, including child synthetic research. Original model context and immutable plan references are rechecked on execution, display and chat replay. See [WORK_EXECUTION.md](WORK_EXECUTION.md). The worker performs no additional model calls, real research or sending. Bounded conversational controls have local integrated acceptance; general continuation, automatic top-up and real provider cost integration remain pending. Roadmap C4–C7 add source/versioned methods, linked deal/party/document context, scheduling and tested standing action authority. Every surface reuses current scoped services and authoritative receipts.
+The verified bounded [shared-work foundation](IMPLEMENTATION_ROADMAP.md#c1--shared-conversation-and-work-controls) (legacy A1–A3) implementation adds private work runs, immutable versioned plans, steps/dependencies, events, leases and transactional receipts around existing domain services. `work-capabilities.ts` defines nine typed local capabilities; Copilot composes these through `start_work`, and Work queue offers role starters and pause/resume/cancel/exact cost decisions. `work-budget.ts` owns the fictional whole-job quote, hold and partial settlement, including child synthetic research. Original model context and immutable plan references are rechecked on execution, display and chat replay. See [WORK_EXECUTION.md](WORK_EXECUTION.md). The worker performs no additional model calls, real research or sending. Bounded conversational controls have local integrated acceptance; broader continuation, automatic top-up and real provider cost integration remain pending. Roadmap C4–C7 add source/versioned methods, linked deal/party/document context, scheduling and tested standing action authority. Every surface reuses current scoped services and authoritative receipts.
 
 ## Company-email demonstration — communications Phase 4A
 

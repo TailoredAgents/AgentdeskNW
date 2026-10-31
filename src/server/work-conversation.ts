@@ -1,4 +1,5 @@
 import {createHash,randomBytes} from 'node:crypto';
+import {workQuestionText} from './work-questions';
 import {z} from 'zod';
 import type {Actor,Artifact,ToolResult} from '../lib/contracts';
 import type {WorkRun,WorkStepInput} from '../lib/work-contracts';
@@ -8,7 +9,7 @@ import {requireFeature} from './billing';
 import {assertInboxToolResultVisible,readHistoryMessage,type StoredMessage} from './history';
 import {readInvestor,readProperty} from './access';
 import {listInvestors} from './services';
-import {controlWorkRun,decideWorkCost,getWorkRun,listWorkRuns,reviseWorkRun} from './work-runs';
+import {controlWorkRun,decideWorkCost,getWorkRun,listWorkRuns,reviseWorkRun,answerWorkQuestion} from './work-runs';
 import {buildWorkPreset} from './work-presets';
 import {conversationLink} from './messaging-config';
 
@@ -17,12 +18,13 @@ const owner=(actor:Actor)=>[actor.organizationId,actor.officeId,actor.id];
 const money=(cents:number)=>`$${(cents/100).toFixed(2)}`;
 const terminal=new Set(['completed','canceled']);
 export const workConversationReference=(id:string)=>`W${hash(id).slice(0,8).toUpperCase()}`;
-const artifact=(run:WorkRun):Artifact=>({type:'work_run',id:run.id,title:run.title,data:{workRunId:run.id,workPlanVersion:run.planVersion}});
+const artifact=(run:WorkRun):Artifact=>({type:'work_run',id:run.id,title:run.title,data:{workRunId:run.id,workPlanVersion:run.planVersion,...(run.question?{questionReference:run.question.reference}:{})}});
 const reply=(message:string,runs:WorkRun[]=[]):ToolResult=>({specialistIds:[],message,artifacts:runs.map(artifact)});
 const clean=(message:string)=>message.trim().replaceAll('’',"'").replace(/[.!?]+$/,'').replace(/^(?:(?:can|could|would) you\s+)?(?:please\s+)?/i,'');
-interface Intent {action:'list'|'status'|'review'|'pause'|'resume'|'cancel'|'approve'|'deny'|'add_research'|'remove_research'|'investor'|'unsupported'|'decision_help';target:string;investor?:string}
+interface Intent {action:'answer'|'list'|'status'|'review'|'pause'|'resume'|'cancel'|'approve'|'deny'|'add_research'|'remove_research'|'investor'|'unsupported'|'decision_help';target:string;investor?:string;answer?:string}
 /** Only the actual employee's complete command is parsed; quoted or hypothetical text is not authority. */
 export function workConversationIntent(message:string):Intent|null {
+ const answer=/^(?:please\s+)?(?:answer|reply)\s+(Q[0-9a-f]{16})\s*:\s*([\s\S]+)$/i.exec(message.trim());if(answer)return {action:'answer',target:answer[1].toUpperCase(),answer:answer[2].trim()};
  const text=clean(message);let match:RegExpExecArray|null;
  if(/^(?:show|list|check)(?: me)?(?: my| the)? (?:copilot |saved |work )?jobs$/i.test(text))return {action:'list',target:''};
  if((match=/^(approve|deny)\s+(A[0-9a-f]{8})$/i.exec(text)))return {action:match[1].toLowerCase() as 'approve'|'deny',target:match[2].toUpperCase()};
@@ -69,7 +71,7 @@ function choose(actor:Actor,lead='Which saved job do you mean?'):ToolResult {
 }
 function statusResult(run:WorkRun,prefix=''):ToolResult {
  const code=workConversationReference(run.id),completed=run.steps.filter(step=>step.status==='completed').length;
- return {...reply(`${prefix?`${prefix}\n`:''}${code} — ${run.title}: ${run.status.replaceAll('_',' ')}. ${completed}/${run.steps.length} steps complete.\nSimulated credits: ${money(run.budget.spentCents)} spent; ${money(run.budget.reservedCents)} held; ${money(run.budget.maximumCents)} maximum.${run.lastError?`\n${run.lastError}`:''}${run.status==='waiting_cost_approval'?`\nSay “Review job ${code}” for the exact scope and cost decision.`:''}`, [run]),data:{run}};
+ return {...reply(`${prefix?`${prefix}\n`:''}${code} — ${run.title}: ${run.status.replaceAll('_',' ')}. ${completed}/${run.steps.length} steps complete.\nSimulated credits: ${money(run.budget.spentCents)} spent; ${money(run.budget.reservedCents)} held; ${money(run.budget.maximumCents)} maximum.${run.question?`\n${workQuestionText(run.question)}`:run.lastError?`\n${run.lastError}`:''}${run.status==='waiting_cost_approval'?`\nSay “Review job ${code}” for the exact scope and cost decision.`:''}`, [run]),data:{run}};
 }
 function resultValue(run:WorkRun,value:unknown,seen=new Set<string>()):unknown {
  if(!value||typeof value!=='object'||!('$step' in value)||!('path' in value))return value;
@@ -79,15 +81,15 @@ function resultValue(run:WorkRun,value:unknown,seen=new Set<string>()):unknown {
  return result;
 }
 function reviewScope(actor:Actor,run:WorkRun):string {
- const labels:Record<string,string>={inspect_property:'Property facts',match_existing_buyers:'Existing buyers',relationship_next_step:'Relationship',review_handoff:'Handoff review',office_priorities:'Office priorities',create_followup:'Personal task',start_synthetic_research:'Fictional research',await_synthetic_research:'Collect research'};
+ const labels:Record<string,string>={request_information:'Ask for missing information',inspect_property:'Property facts',match_existing_buyers:'Existing buyers',relationship_next_step:'Relationship',review_handoff:'Handoff review',office_priorities:'Office priorities',create_followup:'Personal task',start_synthetic_research:'Fictional research',await_synthetic_research:'Collect research'};
  const targets=new Map<string,string>(),definitions:string[]=[];
  const target=(kind:'property'|'investor',id:string)=>{const key=`${kind}:${id}`;if(targets.has(key))return targets.get(key)!;const label=`${kind==='property'?'P':'I'}${[...targets.keys()].filter(item=>item.startsWith(kind+':')).length+1}`;const name=kind==='property'?readProperty(actor,id).address:readInvestor(actor,id).name;targets.set(key,label);definitions.push(`${label}: ${name}`);return label;};
  const steps=run.steps.map((step,index)=>{
   const input=step.resolvedInput??step.input,details:string[]=[];
   for(const field of ['propertyId','investorId'] as const){const value=resultValue(run,input[field]);if(typeof value==='string')details.push(target(field==='propertyId'?'property':'investor',value));else if(input[field]&&typeof input[field]==='object')details.push(`${field==='propertyId'?'property':'investor'} from prior result`);}
   if(typeof input.limit==='number')details.push(`${input.limit} prospects`);
-  if(typeof input.title==='string')details.push(`“${input.title}”`);
-  if('dueAt' in input)details.push(typeof input.dueAt==='string'?`due ${input.dueAt}`:'no due date');
+  if('title'in input)details.push(`Task: ${String(resultValue(run,input.title)??'answer from a prior step')}`);
+  if('dueAt' in input)details.push(input.dueAt===null?'no due date':`due ${String(resultValue(run,input.dueAt)??'answer from a prior step')}`);
   if('jobId' in input){const ref=input.jobId as {$step?:string};details.push(ref?.$step?`from step ${run.steps.findIndex(item=>item.key===ref.$step)+1}`:'saved child result');}
   return `${index+1}. ${labels[step.capabilityId]??step.capabilityId}${details.length?` [${details.join('; ')}]`:''}: ${step.status==='completed'?'done':`${money(step.maximumCents)} max`}`;
  });
@@ -142,7 +144,18 @@ function revise(actor:Actor,run:WorkRun,intent:Intent,conversationId:string,requ
 }
 /** Invoke before the model with the authenticated employee message; never expose as a model tool. */
 export function executeWorkConversationAction(actor:Actor,message:string,conversationId:string,requestId:string,options:WorkConversationOptions={}):ToolResult|null {
- const intent=workConversationIntent(message);if(!intent)return null;
+ let intent=workConversationIntent(message);
+ if(!intent){
+  const focused=focusedRun(actor,conversationId,options),question=focused?.question;
+  if(question){
+   const row=getDb().prepare("SELECT data FROM messages WHERE conversation_id=? AND organization_id=? AND office_id=? AND owner_id=? AND json_extract(data,'$.role')='assistant' ORDER BY sequence DESC LIMIT 1").get(conversationId,...owner(actor)) as {data:string}|undefined;
+   const prior=row?JSON.parse(row.data) as StoredMessage:null;
+   const shown=prior?.artifacts.some(a=>(a.data as {questionReference?:string}|undefined)?.questionReference===question.reference);
+   const answer=message.trim().replace(/^use\s+/i,'');
+   if(shown&&question.choices.some(choice=>choice.label.toLowerCase()===answer.toLowerCase()||choice.value.toLowerCase()===answer.toLowerCase()))intent={action:'answer',target:question.reference,answer};
+  }
+ }
+ if(!intent)return null;
  scopedGet(actor,'conversations',conversationId,true);requireFeature(actor,'core');z.string().min(1).max(150).parse(requestId);
  if(/^(?:pause|resume|continue|cancel|stop)\s+(?:it|that|this)$/i.test(clean(message))){
   const row=getDb().prepare("SELECT data FROM messages WHERE conversation_id=? AND organization_id=? AND office_id=? AND owner_id=? AND json_extract(data,'$.role')='assistant' ORDER BY sequence DESC LIMIT 1").get(conversationId,...owner(actor)) as {data:string}|undefined;
@@ -156,7 +169,13 @@ export function executeWorkConversationAction(actor:Actor,message:string,convers
   if(prior){if(prior.request_hash!==requestHash)throw new AppError(409,'This conversation request already represents different work.');const result=JSON.parse(prior.result) as ToolResult;assertInboxToolResultVisible(actor,result.artifacts);return result;}
   const execute=():ToolResult|null=>{
   let result:ToolResult;
-  if(intent.action==='decision_help'){
+  if(intent.action==='answer'){
+   const matches=listWorkRuns(actor).filter(run=>!run.contentRestricted&&run.question?.reference===intent.target);
+   if(matches.length!==1)throw new AppError(409,'That question is no longer current. Show the intended job and answer its current question.');
+   const run=matches[0];
+   if(options.receivedAt&&(Date.parse(z.string().datetime({offset:true}).parse(options.receivedAt))<=Date.parse(run.question!.askedAt)||Date.parse(options.receivedAt)>Date.now()))throw new AppError(409,'This answer arrived before the current question. Retrieve the current job before replying.');
+   result=statusResult(answerWorkQuestion(actor,run.id,{expectedVersion:run.version,eventKey:`conversation:${hash({conversationId,requestId})}`,questionReference:intent.target,answer:intent.answer!}),'Answer saved. Completed work stays saved; the remaining whole-job estimate has been refreshed.');
+  }else if(intent.action==='decision_help'){
    const pending=getDb().prepare('SELECT run_id FROM work_conversation_reviews WHERE organization_id=? AND office_id=? AND user_id=? AND conversation_id=? AND expires_at>? ORDER BY created_at DESC').all(...owner(actor),conversationId,now()) as {run_id:string}[];
    const awaiting=pending.some(row=>{const job=getWorkRun(actor,row.run_id);return job.status==='waiting_cost_approval';});
    if(!awaiting)return null;

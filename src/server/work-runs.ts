@@ -1,4 +1,7 @@
 import {createHash} from 'node:crypto';
+import type {AnswerWorkInput} from '../lib/work-contracts';
+import {getWorkQuestion,nextReadyStep,parseWorkAnswer} from './work-questions';
+import {readProperty} from './access';
 import {z} from 'zod';
 import type {Actor,Role,ToolResult} from '../lib/contracts';
 import type {CreateWorkRunInput,ControlWorkRunInput,DecideWorkCostInput,ReviseWorkRunInput,WorkRun,WorkRunEvent,WorkRunStatus,WorkStep,WorkStepInput,WorkSourceReferences} from '../lib/work-contracts';
@@ -6,17 +9,18 @@ import {AppError,assertActor,audit,getDb,newId,now} from './db';
 import {requireFeature} from './billing';
 import {validateWorkSourceReferences} from './work-context';
 import {quoteWorkBudget,getWorkBudget,decideWorkBudget,reserveWorkBudget,consumeWorkBudget,releaseWorkBudget} from './work-budget';
-import {validateWorkSteps,estimateWorkStep,executeWorkCapability,validateStoredWorkOutput,WorkCapabilityPending,cancelWorkChildren} from './work-capabilities';
+import {validateWorkSteps,validateConcreteWorkInput,estimateWorkStep,executeWorkCapability,validateStoredWorkOutput,WorkCapabilityPending,cancelWorkChildren} from './work-capabilities';
 
 const id=z.string().trim().min(1).max(150);
 const stepKey=z.string().regex(/^[a-zA-Z0-9_-]{1,60}$/,'Use a short step key containing letters, numbers, underscores or dashes.');
 const stepSchema=z.object({key:stepKey,capabilityId:id,input:z.record(z.string(),z.unknown()),dependsOn:z.array(stepKey).max(12)}).strict();
-const sourceReferencesSchema=z.object({handoffAccess:z.array(z.string().regex(/^[a-f0-9]{64}$/)).max(200).optional(),investors:z.array(id).max(200),properties:z.array(id).max(200),releases:z.array(id).max(200),packages:z.array(id).max(200),debriefs:z.array(id).max(200),inboxThreads:z.array(id).max(200),inboxAccess:z.array(z.string().min(1).max(500)).max(200)}).strict();
+const sourceReferencesSchema=z.object({workQuestions:z.array(z.string().min(1).max(200)).max(200).optional(),handoffAccess:z.array(z.string().regex(/^[a-f0-9]{64}$/)).max(200).optional(),investors:z.array(id).max(200),properties:z.array(id).max(200),releases:z.array(id).max(200),packages:z.array(id).max(200),debriefs:z.array(id).max(200),inboxThreads:z.array(id).max(200),inboxAccess:z.array(z.string().min(1).max(500)).max(200)}).strict();
 export const createWorkRunSchema=z.object({requestId:id,title:z.string().trim().min(3).max(180),instructions:z.string().trim().min(3).max(6000),conversationId:id.optional(),steps:z.array(stepSchema).min(1).max(12),sourceReferences:sourceReferencesSchema.optional()}).strict();
 const change={expectedVersion:z.number().int().positive(),eventKey:id};
 export const reviseWorkRunSchema=z.object({...change,title:z.string().trim().min(3).max(180).optional(),instructions:z.string().trim().min(3).max(6000),steps:z.array(stepSchema).min(1).max(12)}).strict();
 export const controlWorkRunSchema=z.object({...change,action:z.enum(['pause','resume','cancel'])}).strict();
 export const decideWorkCostSchema=z.object({...change,quoteId:id,decision:z.enum(['approve','deny'])}).strict();
+export const answerWorkSchema=z.object({...change,questionReference:z.string().regex(/^Q[0-9A-F]{16}$/),answer:z.string().trim().min(1).max(2000)}).strict();
 
 type StoredRun=Omit<WorkRun,'budget'|'events'|'contentRestricted'> & {sourceReferences?:WorkSourceReferences;sourceRole?:Role};
 interface RunRow {id:string;organization_id:string;office_id:string;owner_id:string;request_hash:string;status:WorkRunStatus;lease_token:string|null;lease_expires_at:string|null;lease_step_key:string|null;data:string}
@@ -53,7 +57,7 @@ function display(actor:Actor,row:RunRow):WorkRun {
  let restricted=false;
  try{validateWorkSourceReferences(actor,sourceReferences,sourceRole);}catch(error){if(error instanceof AppError&&[403,404,409].includes(error.status))restricted=true;else throw error;}
  for(const step of run.steps){try{validateStoredWorkOutput(actor,concreteStep(step),step.result??emptyResult);}catch(error){if(error instanceof AppError&&[403,404,409].includes(error.status)){restricted=true;break;}throw error;}}
- if(!restricted)return {...visibleRun,budget:getWorkBudget(actor,run.id),events,contentRestricted:false};
+ if(!restricted)return {...visibleRun,question:getWorkQuestion(actor,run),budget:getWorkBudget(actor,run.id),events,contentRestricted:false};
  return {...visibleRun,title:'Saved work with restricted context',instructions:'Some source records are no longer available. Saved content is hidden; you can still stop this work.',lastError:'Current source access is required to inspect or continue this work.',steps:run.steps.map((step,index)=>({...step,key:`step-${index+1}`,input:{},resolvedInput:null,dependsOn:[],result:null,error:null})),budget:getWorkBudget(actor,run.id),events:events.map(entry=>({...entry,message:'Saved work history; source content is restricted.',stepKey:null})),contentRestricted:true};
 }
 export function getWorkRun(actor:Actor,runId:string):WorkRun {return display(actor,readRow(actor,runId));}
@@ -99,6 +103,7 @@ function savePlan(actor:Actor,run:StoredRun){
  const budget=quoteWorkBudget(actor,quoteInput);
  getDb().prepare('INSERT INTO work_run_plans VALUES(?,?,?,?,?)').run(run.id,run.planVersion,quoteInput.planHash,JSON.stringify({title:run.title,instructions:run.instructions,sourceReferences:run.sourceReferences,sourceRole:run.sourceRole,steps:run.steps.map(inputOf),quoteInput}),now());
  run.status=budget.status==='awaiting_approval'?'waiting_cost_approval':'queued';run.lastError=null;
+ if(nextReadyStep(run.steps)?.capabilityId==='request_information'){run.status='waiting_for_input';run.lastError='Answer the pending question to continue this saved job.';}
 }
 function refreshBudget(actor:Actor,run:StoredRun){
  const row=getDb().prepare('SELECT data FROM work_run_plans WHERE run_id=? AND plan_version=?').get(run.id,run.planVersion) as {data:string};
@@ -115,7 +120,7 @@ export function createWorkRun(actor:Actor,input:CreateWorkRunInput):WorkRun {
   const stamp=now(),run:StoredRun={id:newId('work'),ownerId:actor.id,title:parsed.title,instructions:parsed.instructions,conversationId:parsed.conversationId??null,version:1,planVersion:1,status:'queued',steps:makeSteps(actor,inputs,1),createdAt:stamp,updatedAt:stamp,lastError:null,simulation:true,...(parsed.sourceReferences?{sourceReferences:parsed.sourceReferences,sourceRole:actor.role}:{})};
   getDb().prepare('INSERT INTO work_runs(id,organization_id,office_id,owner_id,request_id,request_hash,status,version,plan_version,data,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)').run(run.id,...scope(actor),parsed.requestId,digest,run.status,run.version,run.planVersion,JSON.stringify(run),stamp,stamp);
   savePlan(actor,run);getDb().prepare('UPDATE work_runs SET status=?,data=? WHERE id=?').run(run.status,JSON.stringify(run),run.id);
-  appendEvent(run,'created',run.status==='waiting_cost_approval'?'Work saved. Review the complete simulated estimate before it starts.':'Work saved and queued with a bounded simulated estimate.');
+  appendEvent(run,'created',run.status==='waiting_for_input'?'Work saved. Answer the pending question to continue.':run.status==='waiting_cost_approval'?'Work saved. Review the complete simulated estimate before it starts.':'Work saved and queued with a bounded simulated estimate.');
   audit(actor,'work.created',run.id,{planVersion:1,stepCount:run.steps.length,simulated:true});return run.id;
  }).immediate();return getWorkRun(actor,runId);
 }
@@ -140,6 +145,30 @@ export function reviseWorkRun(actor:Actor,runId:string,input:ReviseWorkRunInput)
   appendEvent(run,'revised','Instructions and remaining work revised. Earlier completed results remain in history.');
  });
 }
+/** An authenticated employee supplies information, never cost/action approval. */
+export function answerWorkQuestion(actor:Actor,runId:string,input:AnswerWorkInput):WorkRun {
+ const parsed=answerWorkSchema.parse(input);return changeRun(actor,runId,parsed,'answered',parsed,run=>{
+  requireFeature(actor,'core');validateWorkSourceReferences(actor,run.sourceReferences,run.sourceRole);validatePlan(actor,run.steps.map(inputOf));
+  for(const step of run.steps.filter(step=>step.status==='completed'))validateStoredWorkOutput(actor,concreteStep(step),step.result??emptyResult);
+  const question=getWorkQuestion(actor,run);
+  if(!question||question.reference!==parsed.questionReference)throw new AppError(409,'This question or its source context changed. Retrieve the current question before answering.');
+  const result=parseWorkAnswer(question,parsed.answer),step=run.steps.find(step=>step.key===question.stepKey)!;
+  // Fill the server-authored starter's placeholder once its missing target is supplied.
+  if(step.key==='choose_property'&&question.answerType==='property'&&['Prepare buyers: the selected property','Review handoff: the selected property'].includes(run.title)){
+   const address=readProperty(actor,(result.data as {propertyId:string}).propertyId).address;
+   run.title=run.title.replace('the selected property',address).slice(0,180);
+   for(const pending of run.steps.filter(item=>item.status==='pending'&&item.key==='followup'&&item.capabilityId==='create_followup'))if(typeof pending.input.title==='string')pending.input={...pending.input,title:pending.input.title.replace('the selected property',address).slice(0,240)};
+  }
+  step.status='completed';step.result=result;step.resolvedInput=step.input;step.completedAt=now();step.error=null;
+  // Reject incompatible answers before committing them, while the employee can still correct this question.
+  for(const consumer of run.steps.filter(item=>item.status==='pending'&&item.dependsOn.includes(step.key)&&item.dependsOn.every(key=>run.steps.some(source=>source.key===key&&source.status==='completed')))){
+   try{validateConcreteWorkInput(actor,{...inputOf(consumer),input:resolveWorkInput(consumer,run.steps)});}catch(error){if(error instanceof z.ZodError)throw new AppError(422,`This answer does not fit the next step: ${error.issues.map(issue=>issue.message).join('; ')}`);throw error;}
+  }
+  getDb().prepare('INSERT INTO work_step_receipts VALUES(?,?,?,?,?,?)').run(run.id,step.key,run.planVersion,hash(inputOf(step)),JSON.stringify({step:inputOf(step),resolvedInput:step.input,result,chargedCents:0}),now());
+  appendEvent(run,'answer_received','Employee information saved; prior results are retained and the remaining job estimate will be refreshed.',step.key);
+  run.planVersion++;run.steps=makeSteps(actor,run.steps.map(inputOf),run.planVersion,run.steps);savePlan(actor,run);
+ });
+}
 export function controlWorkRun(actor:Actor,runId:string,input:ControlWorkRunInput):WorkRun {
  const parsed=controlWorkRunSchema.parse(input);return changeRun(actor,runId,parsed,parsed.action,parsed,run=>{
   if(terminal.has(run.status)||run.status==='reconciling')throw new AppError(409,'This work cannot be changed in its current state.');
@@ -149,6 +178,7 @@ export function controlWorkRun(actor:Actor,runId:string,input:ControlWorkRunInpu
   }else if(parsed.action==='pause'){
    if(!['queued','running','waiting_for_dependency'].includes(run.status))throw new AppError(409,'Only queued or running work can be paused.');run.status='paused';appendEvent(run,'paused','Work paused. Completed results and its credit reservation are retained.');
   }else{
+   if(getWorkQuestion(actor,run))throw new AppError(409,'Answer the pending question before resuming this job.');
    requireFeature(actor,'core');validateWorkSourceReferences(actor,run.sourceReferences,run.sourceRole);validatePlan(actor,run.steps.map(inputOf));
    for(const step of run.steps)if(step.status==='failed')step.status='pending';
    const budget=refreshBudget(actor,run);run.status=budget.status==='awaiting_approval'?'waiting_cost_approval':'queued';run.lastError=null;appendEvent(run,'resumed',run.status==='waiting_cost_approval'?'Review the refreshed whole-job estimate before work resumes.':'Work queued to continue from its saved progress.');
@@ -208,6 +238,7 @@ export function claimNextWorkStep(actor?:Actor):WorkStepClaim|null {
      if(run.steps.every(item=>item.status==='completed')){releaseWorkBudget(owner,run.id);run.status='completed';run.lastError=null;appendEvent(run,'completed','Every planned step completed. Unused simulated credits were released.');write(run,true);}
      else{run.status='waiting_for_input';run.lastError='No remaining step can proceed. Review its dependencies.';write(run,true);}continue;
     }
+    if(step.capabilityId==='request_information'){run.status='waiting_for_input';run.lastError='Answer the pending question to continue this saved job.';appendEvent(run,'question_requested','A required answer is needed before the next step.',step.key);write(run,true);continue;}
     const budget=getWorkBudget(owner,run.id);
     if(budget.status==='awaiting_approval'){run.status='waiting_cost_approval';write(run,true);continue;}
     if(budget.status==='unknown'){run.status='reconciling';run.lastError='A prior outcome is unresolved. No additional work will execute.';write(run,true);continue;}

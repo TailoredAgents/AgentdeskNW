@@ -12,14 +12,18 @@ export interface WorkStep extends WorkStepInput {
  attempts:number; startedAt:string|null; completedAt:string|null;
 }
 export interface WorkRunEvent { id:string; kind:string; message:string; createdAt:string; planVersion:number; stepKey:string|null }
+export type WorkAnswerType='property'|'investor'|'text'|'number'|'datetime';
+export interface WorkQuestion {reference:string;stepKey:string;prompt:string;answerType:WorkAnswerType;choices:{value:string;label:string}[];askedAt:string}
+export interface AnswerWorkInput {expectedVersion:number;eventKey:string;questionReference:string;answer:string}
 export interface WorkRun {
  id:string; ownerId:string; title:string; instructions:string; conversationId:string|null;
  version:number; planVersion:number; status:WorkRunStatus; steps:WorkStep[];
  budget:WorkBudget; events:WorkRunEvent[]; createdAt:string; updatedAt:string;
  lastError:string|null; contentRestricted:boolean; simulation:true;
+ question?:WorkQuestion|null;
 }
 /** Server-derived model provenance. Never accept these references from an HTTP/model caller. */
-export interface WorkSourceReferences { investors:string[];properties:string[];releases:string[];packages:string[];debriefs:string[];inboxThreads:string[];inboxAccess:string[];handoffAccess?:string[] }
+export interface WorkSourceReferences { investors:string[];properties:string[];releases:string[];packages:string[];debriefs:string[];inboxThreads:string[];inboxAccess:string[];handoffAccess?:string[];workQuestions?:string[] }
 export interface CreateWorkRunInput { requestId:string; title:string; instructions:string; conversationId?:string; steps:WorkStepInput[]; sourceReferences?:WorkSourceReferences }
 export interface WorkRunChange { expectedVersion:number; eventKey:string }
 export interface ReviseWorkRunInput extends WorkRunChange { title?:string; instructions:string; steps:WorkStepInput[] }
