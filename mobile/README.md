@@ -136,3 +136,8 @@ Private Transactions can now save current title preparation to an owned email ac
 ### Transaction conversation and saved jobs — October 31, 2026
 
 Agent can retrieve current private transactions and prepare title email through the shared backend, including a saved review → draft job. Agent and Work results open the exact transaction or Inbox thread. A current unique “that transaction” reference can continue from desktop to phone; ambiguous or obsolete context requires a fresh choice. The same services are exercised with mock employee SMS. This does not add live voice tools, transaction report editing through chat or provider delivery. See [PROGRESS](../docs/PROGRESS.md) for verification and remaining acceptance.
+
+
+### Shared transaction coordination — October 31, 2026
+
+Work → Transactions includes a Team coordination view alongside private records. Owners review exactly which summary and reported dates go to named teammates; assigned employees acknowledge and report sourced outcomes, and the owner separately resolves follow-ups. Current content is withheld after source changes or withdrawal. Shared records never expose the owner's private Inbox, investor details or source files. The same shared controller handles stale views, protected unsaved work and exact unknown retries on both interfaces. See [DOCUMENT_WORK](../docs/DOCUMENT_WORK.md) and [PROGRESS](../docs/PROGRESS.md) for the verified scope; real device and practitioner acceptance remain deferred.

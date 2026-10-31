@@ -84,3 +84,9 @@ export function saveTransaction(actor:Actor,raw:SaveTransaction):TransactionDeta
   getDb().prepare('INSERT INTO transaction_events VALUES(?,?,?,?,?,?,?,?,?)').run(newId('transaction_event'),...scope(actor),request.eventKey,fingerprint,record.id,record.version,stamp);audit(actor,'transaction.reported',record.id,{version:record.version});return getTransaction(actor,record.id);
  }).immediate();
 }
+
+/** Stable current-use identity for an explicitly reviewed team summary; no daily expiry. */
+export function transactionTeamSourceReference(actor:Actor,transactionId:string){
+ const record=stored(actor,transactionId),documents=transactionMilestones.map(key=>{const ref=record.input.milestones[key]?.document;if(!ref)return null;try{const doc=getDocument(actor,ref.documentId);return {key,reference:doc.reference,version:doc.document.revision};}catch(error){if(error instanceof AppError&&[403,404].includes(error.status))return {key,unavailable:true};throw error;}});
+ return hash({actor:scope(actor),role:actor.role,record,sources:context(actor,record.input),documents});
+}
