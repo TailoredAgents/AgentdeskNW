@@ -140,3 +140,10 @@
 .inbox-review-file { margin-top: 14px; border-top: 1px solid var(--border, #dfe5e2); padding-top: 12px; }
 .inbox-review-file summary { cursor: pointer; font-weight: 650; overflow-wrap: anywhere; }
 .inbox-review-file pre { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; line-height: 1.6; background: #f5f7f6; padding: 12px; border-radius: 8px; }
+.transaction-section{border-top:1px solid var(--border,#e4e8e6);padding:14px 0;margin-top:8px;overflow-wrap:anywhere}
+.transaction-section summary{cursor:pointer;font-weight:600;padding:8px 0}
+.transaction-section label{margin:12px 0}
+.transaction-preparation{background:var(--surface-soft,#f5f8f5);border:1px solid var(--border,#e4e8e6);border-radius:16px;padding:20px;margin-top:24px;overflow-wrap:anywhere}
+.transaction-preparation li{margin-bottom:8px}
+@media(min-width:1100px){.settings-grid.transaction-workspace{grid-template-columns:300px minmax(0,1fr);align-items:start}.transaction-workspace>div:first-child{position:sticky;top:92px;max-height:calc(100vh - 116px);overflow:auto}}
+.transaction-workspace>div:first-child .setting-row{display:flex;flex-direction:column;align-items:flex-start;gap:10px}

@@ -16,13 +16,13 @@ The target is a primary iPhone/Android app and a detailed desktop workspace, wit
 
 ## Current state
 
-**Current local checkpoint: reviewed local text attachments**, verified October 31, 2026, extending `5785b6f`. Employees select saved text revisions for email drafts, inspect exact contents and recipients, and record a simulated send across desktop and phone. Corrected or withdrawn sources invalidate old reviews. No email or file is delivered externally.
+**Current local checkpoint: private transaction coordination**, verified October 31, 2026, extending `b94b7bb`. Employees track contacts, financing, a closing target, reported milestones and unresolved issues across desktop and phone. Current supporting text enables an unsent title-opening preparation. Title opening, clearance, signing, funding and closing remain separate reports; none is independently verified by saving a record.
 
-Verification: **886 root tests, 51 mobile tests, 1,499 HTTP/workflow checks and 12 metered restart checks**; root/mobile typechecks, lint/build, iOS/Android/web exports and desktop/phone-browser rehearsal passed. No schema/dependency change; prior document migration-preservation evidence applies. Sixteen specialists are two locally ready and fourteen demo; effectiveness and company-approved expertise are not established.
+Verification: **903 root tests, 57 mobile tests, 1,553 HTTP/workflow checks and 12 metered restart checks**; root/mobile typechecks, lint/build, native/web exports and desktop/phone-browser rehearsal passed. Migration 034 preserved 316 prior rows across 112 tables in a disposable copy. Sixteen specialists remain two locally ready and fourteen demo; complete expertise and effectiveness are not established.
 
 **Mobile is prepared locally, not yet installed or released.** The phone-width browser rehearsal passed pairing, shared history, cross-surface cost approval, pause/resume, background worker completion and remote device revocation. Native binary builds, real phone speech/push and store distribution remain pending. [Mobile preparation notes](mobile/README.md) distinguish each acceptance layer. Whole-job costs remain fictional; live model/provider usage is separately metered.
 
-Implementation follows the single roadmap. C1–C4 remain partial. Shared source/versioned guidance and private Onboarding self-review are now locally accepted. New correspondence is locally accepted. Private text-document handling and reviewed local-text correspondence are also accepted. Next: connect spending review/continuation and paid hosts before broader live autonomy, while continuing independent fictional transaction coordination, file ingestion and role depth. Live-host spending integration remains required before broader paid autonomy under the canonical roadmap. The owner has deferred real-world/device/provider acceptance to a later assessment; independent fictional development continues.
+Implementation follows the single roadmap. C1–C4 remain partial. Shared source/versioned guidance and private Onboarding self-review are now locally accepted. New correspondence is locally accepted. Private text-document handling and reviewed local-text correspondence are also accepted. Next: connect spending review/continuation and paid hosts before broader live autonomy, while continuing independent fictional transaction correspondence/Copilot continuation, file ingestion and role depth. Live-host spending integration remains required before broader paid autonomy under the canonical roadmap. The owner has deferred real-world/device/provider acceptance to a later assessment; independent fictional development continues.
 
 Repository: [TailoredAgents/AgentdeskNW](https://github.com/TailoredAgents/AgentdeskNW). The owner reported a Render deployment; the latest deployed revision has not been verified. Push and deployment are separate. Real company data, live mailboxes/investor delivery, actual payments, managed identity and broad expert autonomy remain unfinished.
 
@@ -66,6 +66,7 @@ npm run test:conversation
 npm run test:wallet
 npm run test:metered
 node scripts/smoke-runner.mjs proactive
+node scripts/smoke-runner.mjs transactions
 npm run test:hosted
 npm run test:inbox
 npm run test:communications
