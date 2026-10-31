@@ -6,7 +6,7 @@ import { reserveUsage,releaseUsage,reconcileTextUsage } from './metering';
 import { beginProviderOperation,fingerprint,recordProviderUsage } from './provider-runtime';
 import { assertInboxToolResultVisible } from './history';
 import { textProviderConfig } from './provider-config';
-import {prepareTextSpending,textSpendingWait,countTextInput,admitTextSpending,settleTextSpending,finishTextSpending} from './text-spending';
+import {prepareTextSpending,textSpendingWait,countTextInput,admitTextSpending,settleTextSpending,finishTextSpending,assertTextAssignmentRunning} from './text-spending';
 import {captureTextReplyTarget} from './text-delivery';
 import {responsesReceipt} from './responses-receipt';
 import {openTextExecution,advanceTextExecution,readTextExecution,type TextState} from './text-execution';
@@ -57,6 +57,7 @@ async function executeLiveText(input:{actor:Actor;conversationId:string;requestI
  const finish=(message:string)=>{
   const result:ToolResult={message,specialistIds:[...specialists],artifacts:artifacts.slice(0,20)};
   execution=db.transaction(()=>{
+   assertTextAssignmentRunning(actor,execution);
    const state={...execution.data,result,artifacts:[...artifacts],specialistIds:[...specialists],response:null};
    if(Buffer.byteLength(JSON.stringify(state.items))<=config.maxContextBytes)db.prepare('INSERT INTO assistant_context VALUES(?,?,?,?) ON CONFLICT(conversation_id) DO UPDATE SET scope_hash=excluded.scope_hash,items=excluded.items,updated_at=excluded.updated_at').run(conversationId,execution.scopeHash,JSON.stringify(state.items),now());
    const completed=advanceTextExecution(actor,execution,'completed',state);
@@ -102,6 +103,7 @@ async function executeLiveText(input:{actor:Actor;conversationId:string;requestI
     throw error;
    }
   }
+  assertTextAssignmentRunning(actor,execution);
   restore();
   const raw=execution.data.response!;
   let output:z.infer<typeof outputSchema>;
@@ -119,6 +121,7 @@ async function executeLiveText(input:{actor:Actor;conversationId:string;requestI
    execution.data={...execution.data,items:nextItems};return finish(text);
   }
   execution=db.transaction(()=>{
+   assertTextAssignmentRunning(actor,execution);
    if(fingerprint(input.currentScope())!==requestScope)throw new AppError(409,'Workspace permissions changed before tool execution. Retrieve current context.');
    let count=execution.data.toolCount;const handled=new Set(execution.data.handled),nextArtifacts=[...execution.data.artifacts],nextSpecialists=new Set(execution.data.specialistIds);
    for(const call of calls){

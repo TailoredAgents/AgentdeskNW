@@ -1,4 +1,4 @@
-import {executeAssignmentConversationAction} from './assignment-conversation';
+import {executeAssignmentConversationAction,assignmentConversationIntent} from './assignment-conversation';
 import {queueTextContinuationReply} from './text-delivery';
 import {bindAssignment,withAssignment} from './assignment-roots';
 import {readTextExecution,advanceTextExecution} from './text-execution';
@@ -451,7 +451,7 @@ async function localReply(actor:Actor,message:string,conversation:Conversation,c
 }
 
 export async function chat(actor:Actor,message:string,conversationId?:string,requestId=newId('turn'),channel:'web'|'slack'|'sms'|'mobile'='web',options:{receivedAt?:string}={}):Promise<{conversation:Conversation;result:ToolResult}>{
-  requireFeature(actor,'core');
+  if(assignmentConversationIntent(message)?.action!=='cancel')requireFeature(actor,'core');
   z.string().min(1).max(150).parse(requestId);
   z.string().trim().min(1).max(12000).parse(message);
   if(options.receivedAt)z.string().datetime({offset:true}).parse(options.receivedAt);
@@ -468,14 +468,21 @@ export async function chat(actor:Actor,message:string,conversationId?:string,req
     }
     const conversation=conversationId?service.getConversation(actor,conversationId):service.createConversation(actor,message.slice(0,70));
     db.prepare("UPDATE assistant_turns SET status='interrupted' WHERE conversation_id=? AND status='running' AND started_at<?").run(conversation.id,new Date(Date.now()-20*60*1000).toISOString());
-    if(db.prepare("SELECT 1 FROM assistant_turns WHERE conversation_id=? AND status='running'").get(conversation.id))throw new service.AppError(409,'This conversation is already responding. Please wait.');
-    db.prepare('INSERT INTO assistant_turns VALUES(?,?,?,?,?,?,?,?,?)').run(actor.organizationId,actor.officeId,actor.id,requestId,conversation.id,requestHash,'running',now(),null);
+    const cancellationCommand=assignmentConversationIntent(message)?.action==='cancel';
+    if(db.prepare("SELECT 1 FROM assistant_turns WHERE conversation_id=? AND status='running'").get(conversation.id)&&!cancellationCommand)throw new service.AppError(409,'This conversation is already responding. Please wait.');
+    db.prepare('INSERT INTO assistant_turns VALUES(?,?,?,?,?,?,?,?,?)').run(actor.organizationId,actor.officeId,actor.id,requestId,conversation.id,requestHash,cancellationCommand?'control':'running',now(),null);
     service.addMessage(actor,conversation.id,{role:'user',content:message});
     explicitResult=executeAssignmentConversationAction(actor,message,conversation.id,requestId,{channel,receivedAt:options.receivedAt})??executeWorkConversationAction(actor,message,conversation.id,requestId,{channel,receivedAt:options.receivedAt})??explicitMemoryCommand(actor,message,requestId)??executeConversationAction(actor,message,conversation.id,requestId,{asOf:options.receivedAt});
     if(explicitResult)rememberTaskResults(actor,explicitResult,{conversationId:conversation.id,requestId,message,receivedAt:options.receivedAt},'employee_command');
     const continued=[...new Set(explicitResult?.artifacts.filter(a=>a.type==='work_run'&&a.id).map(a=>a.id!)??[])];
     if(continued.length===1)withAssignment(actor,{kind:'work',id:continued[0]},()=>bindAssignment(actor,{kind:'turn',id:requestId}));
     else bindAssignment(actor,{kind:'turn',id:requestId});
+    if(cancellationCommand){
+      if(!explicitResult)throw new service.AppError(409,'Select the exact assignment to cancel.');
+      const saved=service.addMessage(actor,conversation.id,{role:'assistant',content:explicitResult.message,specialistIds:explicitResult.specialistIds,artifacts:explicitResult.artifacts});
+      db.prepare("UPDATE assistant_turns SET status='completed',result=? WHERE organization_id=? AND office_id=? AND user_id=? AND request_id=?").run(JSON.stringify({messageId:saved.id}),actor.organizationId,actor.officeId,actor.id,requestId);
+      return {conversation:service.getConversation(actor,conversation.id),cached:explicitResult};
+    }
     return {conversation,cached:null};
   }).immediate();
   const {conversation}=start;if(start.cached)return {conversation,result:start.cached};

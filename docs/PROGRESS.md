@@ -1,5 +1,17 @@
 # AgentDesk progress log
 
+## October 31, 2026 — Employee whole-assignment cancellation
+
+**Scope:** extends `8b36b43` with migration 043. Desktop/native spending reviews and exact “Cancel S…”/“Stop S…” employee commands stop the owned current assignment and its included local jobs. A cancellation command can execute while the Agent is responding without launching another model turn. Current quote/root ownership is required; expired quotes and ended subscriptions do not prevent stopping owned work. Completed results and incurred usage remain. This does not enable paid pause/resume, scope changes or other paid hosts.
+
+**Reliability:** cancellation and included child changes commit atomically; paused, question-waiting and synthetic-child work is included. Dispatched/unknown requests retain holds; late authoritative receipts settle the original usage. The text runtime cannot execute returned tools or start another request after stop. Stable command retries survive restart, stale quotes cannot target a revised scope, and completed work cannot be turned into a refund. Stopped ready reviews are excluded from worker selection so they cannot starve later work.
+
+**Verification:** 23 cancellation cases cover before-approval, approved, expired, cross-owner, counting/in-flight timing, unknown/late receipt, included child states, claimed steps, synthetic children, rollback, completed work, disk restart, all four conversation channels, API boundaries, ended subscription and worker scan saturation. All 1,138 root tests across 62 files, 78 mobile tests, types/lint/build and native/web exports passed. All 1,746 existing HTTP/workflow checks passed; compiled delegation/cancellation harness passed 54 checks, admitted-text harness 30, metered restart twelve, plus separate-process text restart. Provider/message transports were mocked; no live AI, external message or payment occurred.
+
+**Preservation and interface:** a disposable schema-042 → 043 copy preserved 316 rows across 127 prior tables with clean integrity/foreign keys; active development data was untouched. Evidence: ignored `artifacts/mobile/assignment-stop-preservation.json`. Native-browser cancellation of a queued buyer job appeared on desktop with its completed 6¢ mock reasoning charge retained and zero held credit. Screenshots: ignored `assignment-stop-phone.png` and `assignment-stop-desktop.png`. Browser/export evidence is not installed-device acceptance.
+
+**Remaining:** complete paid scope revisions/renewal, broader recovery controls, paid research/voice integration and the remaining role-depth/proactive/mobile/company requirements. All C1–C7 checkpoints remain partial; real-world acceptance stays deferred. No deployment or overall completion claim.
+
 ## October 31, 2026 — Included local delegation within admitted text
 
 **Scope:** extends `e83c197` with migration 042. New saved work created by a received admitted-text response retains an immutable private parent binding and uses an explicit allowlist of currently local/synthetic capabilities at zero additional AI credit cost. It waits for the parent answer before executing. The original reasoning remains charged from its mock receipts. Standalone jobs and historical sample pricing are unchanged; default operational mode is unchanged and no environment was enabled.

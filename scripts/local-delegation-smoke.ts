@@ -46,5 +46,14 @@ try{
  check(readFileSync(log,'utf8')==='count\ngeneration\ncount\ngeneration\n','Two reasoning rounds used mock transport; local work needed no extra model call');
  await stop(worker);worker=undefined;await stop(app);app=undefined;await start();
  check((await request<Conversation>('/conversations/'+result.conversation.id)).messages.filter(m=>m.content==='Your fictional reasoning result is saved after approval.').length===1,'The final result survives another process restart');
+ const stopped=await request<{conversation:Conversation;result:ToolResult}>('/chat',{message:'Explain the next fictional property step.',requestId:'http-cancel-original'});
+ const stopReview=(await request<{reviews:AssignmentReview[]}>('/assignment-reviews')).reviews.find(item=>item.canCancel)!;check(stopReview,'The current original request can be canceled');
+ const stopInput={quoteId:stopReview.quoteId,revision:stopReview.revision,eventKey:'http-cancel-scope'};
+ check((await request<AssignmentReview>('/assignment-reviews/'+stopReview.id+'/cancel',stopInput)).executionState==='canceled','Exact employee cancellation closes unstarted work');
+ check((await request<AssignmentReview>('/assignment-reviews/'+stopReview.id+'/cancel',stopInput)).heldCents===0,'Cancellation retries preserve released credit');
+ await stop(app);app=undefined;await start();
+ check((await request<AssignmentReview>('/assignment-reviews/'+stopReview.id)).canCancel===false,'Cancellation survives another process restart');
+ const status=await request<{result:ToolResult}>('/chat',{conversationId:stopped.conversation.id,message:'Show my spending',requestId:'http-cancel-status'});check(status.result.message.includes('Remaining work canceled'),'Shared conversation reports the canceled outcome');
+ check(readFileSync(log,'utf8')==='count\ngeneration\ncount\ngeneration\n','Cancel/status did not trigger a new provider call');
  console.info(`PASS: ${checks} local-delegation HTTP/worker checks; shared parent, exact approval, zero-charge local work, restart and settled mock reasoning. No external provider call.`);
 }finally{await stop(worker);await stop(app);rmSync(directory,{recursive:true,force:true});}

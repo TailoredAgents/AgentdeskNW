@@ -1,17 +1,19 @@
 import {z} from 'zod';
+import {localAssignmentHasPendingWork} from './local-assignment-work';
 import type {Actor,Artifact} from '../lib/contracts';
-import type {AssignmentReview,AssignmentReviewDecision} from '../lib/assignment-review-contracts';
+import type {AssignmentReview,AssignmentReviewDecision,AssignmentCancellation} from '../lib/assignment-review-contracts';
 import {AppError,assertActor,getDb,newId,now} from './db';
 import {requireFeature} from './billing';
 import {currentAssignment,getAssignmentBinding,type AssignmentHost} from './assignment-roots';
 import {currentMeteredAssignment} from './assignment-metering';
-import {getMeteredAssignment,decideMeteredAssignment} from './metered-work';
+import {getMeteredAssignment,decideMeteredAssignment,finishMeteredAssignment} from './metered-work';
 import {collectHistoryReferences,historyReferencesVisible,type HistoryReferences} from './history';
 import {fingerprint} from './provider-runtime';
-import {getWorkRun} from './work-runs';
+import {getWorkRun,cancelIncludedAssignmentWork} from './work-runs';
 
 const id=z.string().trim().min(1).max(150);
 export const assignmentDecisionSchema=z.object({quoteId:id,revision:z.number().int().positive(),decision:z.enum(['approve','deny']),eventKey:id}).strict();
+export const assignmentCancellationSchema=z.object({quoteId:id,revision:z.number().int().positive(),eventKey:id}).strict();
 const presentation=z.object({summary:z.string().trim().min(3).max(4000),parts:z.array(z.object({key:id,label:z.string().trim().min(3).max(200)}).strict()).min(1).max(40)}).strict();
 type ReviewData=z.infer<typeof presentation>&{references:HistoryReferences;quote:{title:string;estimatedCents:number;maximumCents:number;expiresAt:string;calls:Record<string,number>}};
 type Row={id:string;assignment_id:string;binding_id:string;quote_id:string;revision:number;scope_hash:string;presentation_hash:string;data:string;state:'waiting'|'ready'|'claimed'|'continued'|'denied';claim_token:string|null;created_at:string;updated_at:string};
@@ -37,12 +39,14 @@ function projection(actor:Actor,row:Row):AssignmentReview {
  const contentRestricted=!historyReferencesVisible(actor,data.references);
  const same=assignment.revision===row.revision&&budget.quoteId===row.quote_id&&assignment.scopeHash===row.scope_hash;
  const closed=!!assignment.stopRequested||['completed','canceled','paused','reconciling'].includes(assignment.status);
+ const employeeStopped=!!getDb().prepare('SELECT 1 FROM assignment_cancellations WHERE review_id=? LIMIT 1').get(row.id);
+ const pendingLocal=localAssignmentHasPendingWork(actor,assignment.id);
  const expired=Date.parse(budget.expiresAt)<=Date.now()&&['approved','awaiting_approval'].includes(budget.status);
  const state:AssignmentReview['state']=!same||contentRestricted||expired?'obsolete':closed?'closed':row.state;
  return {id:row.id,title:contentRestricted?'Assignment context changed':data.quote.title,summary:contentRestricted?'The original sources changed or are no longer available. Ask the Agent to prepare a current review.':data.summary,revision:row.revision,quoteId:row.quote_id,
   parts:contentRestricted?[]:data.parts.map(p=>({...p,maximumCalls:data.quote.calls[p.key]})),
   estimatedCents:data.quote.estimatedCents,maximumCents:data.quote.maximumCents,spentCents:budget.spentCents,heldCents:budget.reservedCents,
-  expiresAt:data.quote.expiresAt,createdAt:row.created_at,state,contentRestricted,canDecide:state==='waiting'&&budget.status==='awaiting_approval',simulation:true};
+  expiresAt:data.quote.expiresAt,createdAt:row.created_at,state,contentRestricted,canCancel:same&&!employeeStopped&&assignment.status!=='completed'&&(assignment.status!=='canceled'||pendingLocal),executionState:assignment.stopRequested==='canceled'?(assignment.status==='canceled'?'canceled':'stopping'):assignment.status==='completed'?'completed':['reconciling','paused'].includes(assignment.status)?'needs_attention':'open',canDecide:state==='waiting'&&budget.status==='awaiting_approval',simulation:true};
 }
 export function getAssignmentReview(actor:Actor,reviewId:string){return projection(actor,read(actor,reviewId));}
 /** Current-use history keeps the exact quote and sources. State changes alone do not erase the reviewed scope. */
@@ -119,5 +123,20 @@ export function completeAssignmentContinuation(actor:Actor,reviewId:string,token
   if(active.id!==row.binding_id||row.claim_token!==id.parse(token)||!['claimed','continued'].includes(row.state))throw new AppError(409,'This continuation does not belong to the original execution.');
   getDb().prepare("UPDATE assignment_reviews SET state='continued',updated_at=? WHERE id=?").run(now(),row.id);
   return getAssignmentReview(actor,reviewId);
+ }).immediate();
+}
+
+/** Authenticated employee stop. Expired/restricted source content never prevents stopping owned current work. */
+export function cancelAssignmentReview(actor:Actor,reviewId:string,raw:AssignmentCancellation):AssignmentReview {
+ const input=assignmentCancellationSchema.parse(raw);
+ return getDb().transaction(()=>{
+  const row=read(actor,reviewId),assignment=current(actor,row),digest=fingerprint({reviewId,...input});
+  const prior=getDb().prepare('SELECT payload_hash FROM assignment_cancellations WHERE organization_id=? AND office_id=? AND user_id=? AND event_key=?').get(...owner(actor),input.eventKey) as {payload_hash:string}|undefined;
+  if(prior){if(prior.payload_hash!==digest)throw new AppError(409,'This command already represents a different cancellation.');return projection(actor,row);}
+  if(input.quoteId!==row.quote_id||input.revision!==row.revision||assignment.revision!==row.revision||assignment.budget.quoteId!==row.quote_id)throw new AppError(409,'This assignment scope changed. Select its current review before canceling.');
+  finishMeteredAssignment(actor,row.assignment_id,'canceled');
+  cancelIncludedAssignmentWork(actor,row.assignment_id);
+  getDb().prepare('INSERT INTO assignment_cancellations VALUES(?,?,?,?,?,?,?)').run(...owner(actor),input.eventKey,row.id,digest,now());
+  return projection(actor,row);
  }).immediate();
 }

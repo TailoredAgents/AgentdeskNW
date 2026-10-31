@@ -1,6 +1,6 @@
 # AgentDesk NW mobile — local development checkpoint
 
-**Included local delegation cost display verified locally October 31, 2026; actual-phone acceptance remains pending.** [The implementation roadmap](../docs/IMPLEMENTATION_ROADMAP.md) is the sole authority for status, build order and next work. [Mobile requirements](../docs/MOBILE_DELIVERY_PLAN.md) define acceptance scope. This README records reproducible setup and the boundary between local/browser evidence and native acceptance.
+**Assignment cancellation and included local cost display verified locally October 31, 2026; actual-phone acceptance remains pending.** [The implementation roadmap](../docs/IMPLEMENTATION_ROADMAP.md) is the sole authority for status, build order and next work. [Mobile requirements](../docs/MOBILE_DELIVERY_PLAN.md) define acceptance scope. This README records reproducible setup and the boundary between local/browser evidence and native acceptance.
 
 ## Architecture and current source
 
@@ -164,3 +164,7 @@ Typed Agent and reviewed dictation use the same private document search/read/rev
 ## Included local delegation display
 
 Native Work now identifies included local jobs and explains that their zero AI charge excludes the original reasoning recorded in the assignment review. The compiled server and native browser at 390×844 show the same completed two-step buyer shortlist and $0.00 local spend, while the parent review retains its 6¢ mock reasoning receipt. Independent typecheck, 78 mobile tests, iOS/Android JavaScript exports and production/development web exports passed. Evidence: ignored `artifacts/mobile/local-delegation-phone.png`. This is browser/export evidence, not installed-device or real billing acceptance.
+
+## Whole-assignment cancellation
+
+Native Work spending reviews now stop the current admitted assignment and included local jobs with an exact retained command. The UI distinguishes canceled, completed and stopping-with-usage-pending outcomes; it preserves uncertain action retry identity and displays incurred/held credits. A 390×844 browser rehearsal canceled a queued local buyer job from the phone; desktop showed the same cancellation, zero remaining held credit and the retained 6¢ mock reasoning charge. Screenshots: ignored `artifacts/mobile/assignment-stop-phone.png` and `assignment-stop-desktop.png`. All 78 client tests, types and native/production-web/development-web exports passed. Actual phone, provider and payment acceptance remain deferred.

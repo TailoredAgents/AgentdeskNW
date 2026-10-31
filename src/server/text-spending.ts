@@ -81,3 +81,10 @@ export function finishTextSpending(actor:Actor,execution:TextExecution,outcome:'
   finishMeteredAssignment(actor,execution.data.metering.assignmentId,outcome==='completed'?localAssignmentOutcome(actor,execution.data.metering.assignmentId):outcome);
  }
 }
+
+/** A stop may arrive while transport is in flight. Keep its receipt, but never execute the returned tools. */
+export function assertTextAssignmentRunning(actor:Actor,execution:TextExecution){
+ if(!execution.data.metering)return;
+ const value=getMeteredAssignment(actor,execution.data.metering.assignmentId);
+ if(value.stopRequested||['canceled','completed','paused','reconciling'].includes(value.status))throw new AppError(409,'The assignment stopped. No further tools or AI requests will run. Completed work and incurred usage remain saved.');
+}

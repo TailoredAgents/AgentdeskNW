@@ -306,3 +306,15 @@ export function processWorkRuns(actor?:Actor,limit=1):number {
  for(let index=0;index<bounded;index++){const claim=claimNextWorkStep(actor);if(!claim)break;if(executeClaimedWorkStep(claim))completed++;}
  return completed;
 }
+
+/** Trusted root stop, including paused/question-waiting children. Only immutable included-local bindings qualify. */
+export function cancelIncludedAssignmentWork(actor:Actor,assignmentId:string){
+ const rows=getDb().prepare("SELECT w.data FROM work_runs w JOIN local_assignment_work l ON l.run_id=w.id WHERE l.assignment_id=? AND l.organization_id=? AND l.office_id=? AND l.user_id=? AND w.status NOT IN ('completed','canceled')").all(assignmentId,...scope(actor)) as {data:string}[];
+ for(const row of rows){const run=JSON.parse(row.data) as StoredRun;
+  if(!['stopped','unresolved'].includes(localWorkAdmission(actor,run.id)))throw new AppError(409,'Stop the original assignment before canceling its local work.');
+  if(run.steps.some(step=>step.maximumCents!==0))throw new AppError(409,'This child requires paid-work reconciliation.');
+  cancelWorkChildren(actor,run.steps);releaseWorkBudget(actor,run.id);
+  for(const step of run.steps)if(step.status!=='completed')step.status='canceled';
+  run.status='canceled';run.lastError=null;appendEvent(run,'canceled','Employee canceled the original assignment. Completed local results remain saved.');write(run,true);
+ }
+}
