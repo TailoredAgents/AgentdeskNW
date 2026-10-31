@@ -68,3 +68,10 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+## Phase 3 daily-use continuity
+
+- Shared workspace links are navigation hints only. Parse only allowlisted destinations, reject ambiguous/credential-bearing links, and reload current scoped records. A prepared handoff/opportunity decision must not be mistaken for an applied record. SMS excerpts retain the full conversation; focused links must not truncate a complete cost decision.
+- Chat-request reconciliation is read-only and bound to employee, conversation and original request. Preserve current history redaction and pending identity; never infer permission to resume or rerun from a status check.
+- Native transient read failures preserve mounted foreground editors; access failures still retire private views and background/sign-out still clears them. No offline draft store is implied. Compose nested navigation guards so notification-setting edits cannot be discarded by an update-item link.
+- Shared settings updates with an expected snapshot reject changed current settings; confirmed identical retries have no second effect. This is preference editing, not standing action authority or permission to deliver messages.

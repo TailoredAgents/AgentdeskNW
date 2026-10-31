@@ -5,8 +5,8 @@ import {opportunityFieldLabel,opportunityFields,opportunityForm,parseOpportunity
 import {submissionFields} from '../lib/acquisition-contracts';
 import {api,ApiError,Modal,Panel,SectionHead} from './ui';
 
-export function OpportunitiesPanel({onOpenAnalysis}:{onOpenAnalysis?:(id:string)=>void}){
- const [board,setBoard]=useState<OpportunityBoard|null>(null),[detail,setDetail]=useState<OpportunityDetail|null>(null),[selected,setSelected]=useState<string|null>(null);
+export function OpportunitiesPanel({onOpenAnalysis,initialId}:{initialId?:string;onOpenAnalysis?:(id:string)=>void}){
+ const [board,setBoard]=useState<OpportunityBoard|null>(null),[detail,setDetail]=useState<OpportunityDetail|null>(null),[selected,setSelected]=useState<string|null>(initialId??null);
  const [form,setForm]=useState(opportunityForm()),[editing,setEditing]=useState(false),[base,setBase]=useState(0),[preview,setPreview]=useState<OpportunityPreview|null>(null),[pending,setPending]=useState<OpportunitySave|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const epoch=useRef(0),mutating=useRef(false),alive=useRef(true);
  function failure(e:unknown){setError(e instanceof Error?e.message:'Could not retrieve opportunities.');if(e instanceof ApiError&&[401,402,403,404].includes(e.status)){setBoard(null);setDetail(null);setPreview(null);setForm(opportunityForm());setEditing(false);setPending(null);}}

@@ -99,3 +99,7 @@ Slack's DM round-trip, reminder and reconnect checks remain available when that 
 ## Assignment spending through messaging
 
 The optional admitted-text development mode supports “Show my spending”, “Review spending S…” and exact “Approve R…” / “Deny R…” decisions. Complete short reviews can be decided in SMS/Slack after their reply receipt; long reviews open the full app scope without an approval code. These are separate from W/A fictional job reviews. The resumed original request produces one reply to its captured connection and one saved conversation result. Changed destination, STOP/disconnect and lost access prevent that send; uncertain delivery is not retried automatically. This flow is accepted with mocked provider transports only. No live connection is enabled by these commands. See [usage metering](USAGE_METERING.md).
+
+## Saved-work links (Phase 3)
+
+Configured employee SMS/Slack replies now include a focused HTTPS link when the current saved response has exactly one supported destination. Several distinct artifacts keep the ongoing conversation link. Long replies remain labeled excerpts with a link to the full conversation; a link never authorizes an action or makes an incomplete approval valid. The website offers an explicit installed-app link for supported destinations. Actual Twilio transport, deep-link registration on installed phones and closed-app behavior still need owner testing; no account or sending flag was enabled by this change.

@@ -4,8 +4,8 @@ import * as Crypto from 'expo-crypto';
 import type {Bootstrap} from '../../src/lib/contracts';
 import type {AcquisitionReview,SubmissionForm} from '../../src/lib/acquisition-contracts';
 import {parseSubmissionForm,submissionFields,submissionForm} from '../../src/lib/acquisition-contracts';
-import {ApiError,createApi} from './client';
-import {Button} from './WorkScreen';
+import {ApiError,isAccessFailure,createApi} from './client';
+import {Button} from './Button';
 import {styles as s} from './styles';
 type Attempt={propertyId:string;expectedVersion:number;eventKey:string;submission:ReturnType<typeof parseSubmissionForm>};
 type Guard=(leave:()=>void)=>void;
@@ -14,7 +14,7 @@ export function AcquisitionScreen({api,bootstrap,onAuthError,onGuard}:{api:Retur
  const alive=useRef(true),generation=useRef(0),editingRef=useRef(false),mutating=useRef(false);useEffect(()=>{editingRef.current=editing;},[editing]);
  const locked=busy||!!pending;
  function fail(e:unknown){onAuthError(e);setError(e instanceof Error?e.message:'Could not load the opportunity.');if(e instanceof ApiError&&[401,403,404].includes(e.status)){setValue(null);setForm(submissionForm(null));setConfirm(null);setEditing(false);}}
- async function load(){if(!propertyId||mutating.current)return;const epoch=++generation.current;try{const next=await api<AcquisitionReview>(`/acquisitions/${encodeURIComponent(propertyId)}`);if(!alive.current||epoch!==generation.current)return;setValue(next);if(!editingRef.current)setForm(submissionForm(next.submission));}catch(e){if(alive.current&&epoch===generation.current){setValue(null);setConfirm(null);fail(e);}}}
+ async function load(){if(!propertyId||mutating.current)return;const epoch=++generation.current;try{const next=await api<AcquisitionReview>(`/acquisitions/${encodeURIComponent(propertyId)}`);if(!alive.current||epoch!==generation.current)return;setValue(next);if(!editingRef.current)setForm(submissionForm(next.submission));}catch(e){if(alive.current&&epoch===generation.current){if(isAccessFailure(e)){setValue(null);setConfirm(null);}fail(e);}}}
  useEffect(()=>{alive.current=true;return()=>{alive.current=false;generation.current++;onGuard(null);};},[]);
  useEffect(()=>{setValue(null);void load();const timer=setInterval(()=>void load(),12000);return()=>{generation.current++;clearInterval(timer);};},[api,propertyId]);
  useEffect(()=>{onGuard(leave=>{if(locked||editing||confirm){setError(locked?'Finish or retry the outstanding submission before leaving.':'Save or discard the unsaved submission before leaving.');return;}leave();});return()=>onGuard(null);},[locked,editing,confirm]);

@@ -41,7 +41,7 @@ const presets = {
 type Props = {
   data: Bootstrap;
   initialRunId?: string;
-  initialAnalysisId?: string;
+  initialAnalysisId?: string;initialOpportunityId?:string;initialHandoffId?:string;
   onChange: (message?: string) => Promise<void>;
   onError: (error: unknown) => void;
   onArtifact?: (artifact: Artifact) => void;
@@ -91,7 +91,7 @@ function WorkStepScope({ step, steps, data }: { step: WorkStep; steps: WorkStep[
   return rows.length ? <dl className="work-step-scope">{rows.map(row => <div key={row.label}><dt>{row.label}</dt><dd>{row.value}</dd></div>)}</dl> : null;
 }
 
-export function WorkRunsPanel({ data, initialRunId, initialAnalysisId, onChange, onError, onArtifact }: Props) {
+export function WorkRunsPanel({ data, initialRunId, initialAnalysisId, initialOpportunityId, initialHandoffId, onChange, onError, onArtifact }: Props) {
   const [runs, setRuns] = useState<WorkRun[]>([]);
   const [selectedId, setSelectedId] = useState<string | undefined>(initialRunId);
   const [detail, setDetail] = useState<WorkRun | null>(null);
@@ -214,9 +214,9 @@ export function WorkRunsPanel({ data, initialRunId, initialAnalysisId, onChange,
   return <section className="work-runs" aria-label="Saved Copilot jobs">
     <AssignmentReviewsPanel/>
     <RolePreparationsPanel/>
-    <HandoffsPanel/>
-    <AnalysisPanel key={initialAnalysisId??"board"} initialId={initialAnalysisId}/>
-    {data.actor.role!=='dispositions'&&<><OpportunitiesPanel onOpenAnalysis={onArtifact?id=>onArtifact({type:"analysis",id,title:"Review acquisition scenario"}):undefined}/><AcquisitionIntakePanel data={data} onChange={onChange}/></>}
+    <details className="work-tool-section" open={!!initialHandoffId}><summary>Shared handoffs · ownership and next actions</summary><HandoffsPanel key={initialHandoffId??"board"} initialId={initialHandoffId}/></details>
+    <details className="work-tool-section" open={!!initialAnalysisId}><summary>Deal analysis · assumptions and scenarios</summary><AnalysisPanel key={initialAnalysisId??"board"} initialId={initialAnalysisId}/></details>
+    {data.actor.role!=='dispositions'&&<><details className="work-tool-section" open={!!initialOpportunityId}><summary>New opportunities · wholesaler intake and screening</summary><OpportunitiesPanel key={initialOpportunityId??"board"} initialId={initialOpportunityId} onOpenAnalysis={onArtifact?id=>onArtifact({type:"analysis",id,title:"Review acquisition scenario"}):undefined}/></details><details className="work-tool-section"><summary>Inventory intake · existing property review</summary><AcquisitionIntakePanel data={data} onChange={onChange}/></details></>}
     <div className="work-runs-heading"><div><h2>Put a plan in motion.</h2><p>Keep the steps, results and spending decision together. Your job stays saved when you leave this page.</p></div><button className="button primary" disabled={busy} onClick={() => { setError(''); setCreating(true); }}><Plus size={16}/>New sample job</button></div>
     <div className="work-demo-notice"><Info size={17}/><span>Fictional records and simulated job costs. These jobs do not collect payment or contact investors. AI reasoning has a separate assignment spending review when enabled; included local steps add no AI charge.</span></div>
     {notice && <p className="work-status-notice" role="status">{notice}</p>}

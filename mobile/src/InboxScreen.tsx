@@ -7,7 +7,7 @@ import * as Crypto from 'expo-crypto';
 import type {InboxAssistance,InboxFilter,InboxFollowUpResult,InboxObservationResult,InboxSendResult,InboxSendReview,InboxState,InboxThreadDetail} from '../../src/lib/communications-contracts';
 import {ApiError,createApi} from './client';
 import {editorDirty,editorFor,inboxContextKey,keepReviewedEdits,reconcileEditor,reviewMatches,type InboxEditor} from './inbox-editor';
-import {Button} from './WorkScreen';
+import {Button} from './Button';
 import {colors,styles as s} from './styles';
 
 type Guard=(leave:()=>void)=>void;

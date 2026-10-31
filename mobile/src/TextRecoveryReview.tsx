@@ -3,7 +3,7 @@ import type {AssignmentReview,TextRecoveryPreview,TextRecoveryDecision} from '..
 import {Text,TextInput,View} from 'react-native';
 import * as Crypto from 'expo-crypto';
 import {createApi,ApiError} from './client';
-import {Button} from './WorkScreen';
+import {Button} from './Button';
 import {styles as s} from './styles';
 
 export function TextRecoveryReview({api,review,disabled,onActivity,onSaved,onAuthError}:{api:ReturnType<typeof createApi>;onAuthError:(error:unknown)=>void;review:AssignmentReview;disabled:boolean;onActivity:(active:boolean)=>void;onSaved:(next:AssignmentReview)=>void}){

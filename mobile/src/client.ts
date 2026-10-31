@@ -1,9 +1,12 @@
+import {parseWorkspaceLink} from '../../src/lib/workspace-links';
 import type {Actor,Conversation,ToolResult} from '../../src/lib/contracts';
 export interface MobileConnection {origin:string;token:string;expiresAt:string;actor:Actor;conversationId:string;sessionId:string}
 export interface PairResponse extends Omit<MobileConnection,'origin'> {}
 export interface MobileSession extends Omit<PairResponse,'token'> {}
 export interface ChatResponse {conversation:Conversation;result:ToolResult}
 export class ApiError extends Error {constructor(message:string,readonly status:number){super(message);this.name='ApiError';}}
+/** Access failures retire private views; transport failures keep foreground drafts for recovery. */
+export function isAccessFailure(error:unknown){return error instanceof ApiError&&[401,402,403,404].includes(error.status);}
 export function normalizeOrigin(raw:string,allowLocalDevelopment=false):string {
  let url:URL;try{url=new URL(raw.trim());}catch{throw new Error('Enter the complete workspace address, including https://.');}
  if(url.username||url.password||url.search||url.hash||!['','/'].includes(url.pathname))throw new Error('Use only the workspace address, without a path, password or query.');
@@ -34,12 +37,10 @@ export class RequestIdentity {
  for(signature:string){if(this.pending&&this.pending.signature!==signature)throw new Error('Check or retry the outstanding request before starting different work.');if(!this.pending)this.pending={signature,id:this.newId()};return this.pending.id;}
  complete(id:string){if(this.pending?.id===id)this.pending=null;}
  clear(){this.pending=null;}
+ get id(){return this.pending?.id??null;}
  get outstanding(){return this.pending!==null;}
 }
 /** Ignore late responses after sign-out, re-pairing, or background privacy clearing. */
 export class SessionEpoch {private current=0;next(){return ++this.current;}capture(){return this.current;}matches(value:number){return value===this.current;}}
-export function workIdFromUrl(raw:string):string|null {
- try{const url=new URL(raw);if(url.protocol!=='agentdesknw:'||url.hostname!=='work'||url.search||url.hash)return null;const id=decodeURIComponent(url.pathname.slice(1));return /^work_[a-zA-Z0-9_-]{1,150}$/.test(id)?id:null;}catch{return null;}
-}
-
-export function updateIdFromUrl(raw:string):string|null {try{const url=new URL(raw);if(url.protocol!=='agentdesknw:'||url.hostname!=='updates'||url.username||url.password||url.port||url.search||url.hash)return null;const id=decodeURIComponent(url.pathname.slice(1));return /^update_[a-zA-Z0-9_-]{1,150}$/.test(id)?id:null;}catch{return null;}}
+export function workIdFromUrl(raw:string):string|null {const target=parseWorkspaceLink(raw);return target?.kind==='work'?target.id:null;}
+export function updateIdFromUrl(raw:string):string|null {const target=parseWorkspaceLink(raw);return target?.kind==='updates'?target.id:null;}

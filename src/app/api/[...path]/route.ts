@@ -1,3 +1,5 @@
+import {getChatRequest} from '@/server/chat-requests';
+import {getRecordBoard,getRecordDetail} from '@/server/records';
 import {decideRolePreparation,listRolePreparations} from '@/server/role-preparations';
 import {reviewOpportunityScreening} from '@/server/opportunity-screening';
 import {transactionsRoute} from '@/server/transactions-api';
@@ -75,6 +77,11 @@ async function route(request:NextRequest,{params}:{params:Promise<{path:string[]
       await service.tickJobs(actor);
       const response=json(service.getBootstrap(actor));if(newSession)setSession(response,actor.role);return response;
     }
+    if(resource==='records'&&method==='GET'){
+      if(path.length===1)return json(getRecordBoard(actor));
+      if(path.length===3&&(id==='investor'||id==='property'))return json(getRecordDetail(actor,{kind:id,id:idSchema.parse(operation)}));
+      throw new service.AppError(404,'This record link is not available.');
+    }
     if(resource==='providers'&&method==='GET')return json(providerStatus(actor));
     if(resource==='voice'&&id==='status'&&method==='GET')return json(getVoiceStatus(actor,idSchema.parse(request.nextUrl.searchParams.get('voiceSessionId'))));
     const mobileResponse=await mobileRoute(request,actor,path,()=>body(request),mobile?.session);if(mobileResponse)return mobileResponse;
@@ -92,7 +99,8 @@ async function route(request:NextRequest,{params}:{params:Promise<{path:string[]
     const work=await workRoute(request,actor,path,()=>body(request));if(work)return work;
     const memoryJourney=await memoryJourneyRoute(request,actor,path,()=>body(request));if(memoryJourney)return memoryJourney;
     const phaseTwo=await phaseTwoRoute(request,actor,path,()=>body(request));if(phaseTwo)return phaseTwo;
-    if(resource==='chat'&&method==='POST'){
+    if(resource==='chat'&&id==='requests'&&path.length===3&&method==='GET')return json(getChatRequest(actor,idSchema.parse(request.nextUrl.searchParams.get('conversationId')),idSchema.parse(operation)));
+    if(resource==='chat'&&path.length===1&&method==='POST'){
       const input=z.object({conversationId:idSchema.optional(),requestId:idSchema.optional(),message:z.string().trim().min(1).max(12000)}).strict().parse(await body(request));
       return json(await chat(actor,input.message,input.conversationId,input.requestId,mobile?'mobile':'web'));
     }
@@ -152,8 +160,10 @@ async function route(request:NextRequest,{params}:{params:Promise<{path:string[]
       const input=z.object({title:z.string().trim().min(3).max(240),dueAt:z.string().datetime({offset:true}).nullable().optional(),investorId:idSchema.nullable().optional()}).strict().parse(await body(request));return json(service.createTask(actor,input),201);
     }
     if(resource==='notifications'&&id&&operation==='read'&&method==='POST')return json(service.readNotification(actor,id));
-    if(resource==='settings'&&method==='PATCH'){
-      const input=z.object({guidance:z.enum(['concise','guided']).optional(),notifications:z.boolean().optional(),quietHoursStart:z.number().int().min(0).max(23).optional(),quietHoursEnd:z.number().int().min(0).max(23).optional()}).strict().parse(await body(request));return json(service.updateSettings(actor,input));
+    if(resource==='settings'&&path.length===1&&method==='GET')return json(service.getSettings(actor));
+    if(resource==='settings'&&path.length===1&&method==='PATCH'){
+      const settings=z.object({guidance:z.enum(['concise','guided']),notifications:z.boolean(),quietHoursStart:z.number().int().min(0).max(23),quietHoursEnd:z.number().int().min(0).max(23)}).strict();
+      const {expected,...input}=settings.partial().extend({expected:settings.optional()}).strict().parse(await body(request));return json(service.updateSettings(actor,input,expected));
     }
     if(resource==='voice'&&method==='POST'){
       if(id==='session'){rateLimit(actor,'voice_session',5);const input=z.object({conversationId:idSchema.optional()}).strict().parse(await body(request));const {voiceSessionId,conversationId,maxSeconds,expiresAt}=await createVoiceSession(actor,input.conversationId);return json({voiceSessionId,conversationId,maxSeconds,expiresAt},201);}

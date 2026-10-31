@@ -4,7 +4,7 @@ import * as Crypto from 'expo-crypto';
 import {KnowledgeController} from '../../src/lib/knowledge-controller';
 import {knowledgeFields,knowledgeTopicLabels,knowledgeTopics,type KnowledgeInput} from '../../src/lib/knowledge-contracts';
 import {createApi} from './client';
-import {Button} from './WorkScreen';
+import {Button} from './Button';
 import {styles as s} from './styles';
 function Source({input}:{input:KnowledgeInput}){return <><Text style={s.copy}>{input.summary}</Text><Text style={s.help}>{knowledgeTopicLabels[input.topic]}</Text><Text style={s.help}>{input.sourceTitle} · {input.sourceOwner} · {input.sourceDate}{'\n'}{input.sourceReference}{'\n'}Effective {input.effectiveOn} · Review by {input.reviewOn}{'\n'}For {input.roles.join(', ')}</Text>{[['Establish first',input.prerequisites],['Working steps',input.steps],['Exceptions and limits',input.exceptions]].map(([label,lines])=><View key={label as string} style={s.result}><Text style={s.stepTitle}>{label as string}</Text>{(lines as string[]).map((line,i)=><Text key={i} style={s.copy}>{i+1}. {line}</Text>)}</View>)}<Text style={s.copy}>Example: {input.example}</Text></>;}
 export function KnowledgeScreen({initialId,api,onAuthError,onGuard}:{initialId?:string|null;api:ReturnType<typeof createApi>;onAuthError:(e:unknown)=>void;onGuard:(guard:((leave:()=>void)=>void)|null)=>void}){

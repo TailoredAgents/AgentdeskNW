@@ -3,7 +3,7 @@ import {Modal,ScrollView,Text,TextInput,View} from 'react-native';
 import * as Crypto from 'expo-crypto';
 import {autoTopUpAmounts,autoTopUpDollars,type AutoTopUpState,type AutoTopUpInput,type AutoTopUpPreview,type AutoTopUpPurchase} from '../../src/lib/auto-topup-contracts';
 import {ApiError,createApi} from './client';
-import {Button} from './WorkScreen';
+import {Button} from './Button';
 import {styles as s} from './styles';
 const money=(n:number)=>`$${(n/100).toFixed(2)}`;
 export function AutoTopUpSettings({api,onAuthError,onGuard}:{api:ReturnType<typeof createApi>;onAuthError:(error:unknown)=>void;onGuard:(guard:((leave:()=>void)=>void)|null)=>void}){

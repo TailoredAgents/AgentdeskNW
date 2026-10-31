@@ -54,10 +54,14 @@ export function getSettings(actor:Actor):Settings {
  const row=getDb().prepare('SELECT data FROM user_settings WHERE organization_id=? AND office_id=? AND owner_id=?').get(actor.organizationId,actor.officeId,actor.id) as {data:string}|undefined;
  return row?settingsSchema.parse(JSON.parse(row.data)):{...defaultSettings};
 }
-export function updateSettings(actor:Actor,partial:Partial<Settings>):Settings {
- assertActor(actor); const value={...getSettings(actor),...settingsSchema.partial().parse(partial)};
- getDb().prepare('INSERT INTO user_settings VALUES(?,?,?,?) ON CONFLICT(organization_id,office_id,owner_id) DO UPDATE SET data=excluded.data').run(actor.organizationId,actor.officeId,actor.id,JSON.stringify(value));
- audit(actor,'preferences.updated'); return value;
+export function updateSettings(actor:Actor,partial:Partial<Settings>,expected?:Settings):Settings {
+ assertActor(actor);const changes=settingsSchema.partial().parse(partial),snapshot=expected?settingsSchema.parse(expected):undefined;
+ return getDb().transaction(()=>{const current=getSettings(actor),keys=Object.keys(changes) as (keyof Settings)[];
+  if(snapshot&&keys.every(key=>current[key]===changes[key]))return current; // A confirmed exact retry has no second effect.
+  if(snapshot&&(Object.keys(snapshot) as (keyof Settings)[]).some(key=>current[key]!==snapshot[key]))throw new AppError(409,'Notification preferences changed elsewhere. Reload the current settings before saving.');
+  const value={...current,...changes};getDb().prepare('INSERT INTO user_settings VALUES(?,?,?,?) ON CONFLICT(organization_id,office_id,owner_id) DO UPDATE SET data=excluded.data').run(actor.organizationId,actor.officeId,actor.id,JSON.stringify(value));
+  audit(actor,'preferences.updated');return value;
+ }).immediate();
 }
 export function notificationsAllowed(actor:Actor):boolean {
  const settings=getSettings(actor);

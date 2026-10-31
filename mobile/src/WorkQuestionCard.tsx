@@ -3,7 +3,8 @@ import {Text,TextInput,View} from 'react-native';
 import * as Crypto from 'expo-crypto';
 import type {AnswerWorkInput,WorkRun} from '../../src/lib/work-contracts';
 import {ApiError} from './client';
-import {Button,type Api} from './WorkScreen';
+import {Button} from './Button';
+import type {Api} from './WorkScreen';
 import {styles as s} from './styles';
 export function WorkQuestionCard({run,api,onSaved,onAuthError,onGuard}:{run:WorkRun;api:Api;onSaved:(run:WorkRun)=>void;onAuthError:(error:unknown)=>void;onGuard?:(guard:((leave:()=>void)=>void)|null)=>void}){
  const [answer,setAnswer]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('');

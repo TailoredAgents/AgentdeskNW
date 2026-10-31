@@ -2,7 +2,7 @@ import {useState} from 'react';
 import {Text,View} from 'react-native';
 import type {OpportunityScreening} from '../../src/lib/opportunity-contracts';
 import {formatAnalysisMetric} from '../../src/lib/analysis-contracts';
-import {Button} from './WorkScreen';
+import {Button} from './Button';
 import {styles as s} from './styles';
 
 export function OpportunityScreeningCard({screening,onOpenAnalysis}:{screening:OpportunityScreening;onOpenAnalysis?:(id:string)=>void}){

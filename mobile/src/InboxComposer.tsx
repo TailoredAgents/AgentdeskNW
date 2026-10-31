@@ -4,7 +4,7 @@ import * as Crypto from 'expo-crypto';
 import type {CommunicationAccount,CommunicationDocumentOption,InboxThreadDetail} from '../../src/lib/communications-contracts';
 import {CommunicationComposer,composingAccounts} from '../../src/lib/communication-composer';
 import {createApi} from './client';
-import {Button} from './WorkScreen';
+import {Button} from './Button';
 import {styles as s} from './styles';
 
 import {DocumentAttachmentPicker} from './DocumentAttachmentPicker';

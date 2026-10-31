@@ -149,3 +149,17 @@
 .transaction-workspace>div:first-child .setting-row{display:flex;flex-direction:column;align-items:flex-start;gap:10px}
 
 .document-source-card{margin:18px 0;padding:18px;border:1px solid #dbe6de;border-radius:12px;background:#f4f8f4;overflow-wrap:anywhere}.document-source-card>strong{display:block;color:#234b3c;font-size:14px}.document-source-card p{font-size:12px;line-height:1.7;margin:8px 0}.document-source-card .button{margin-top:8px}
+
+/* Daily-use source context and recovery remain readable at phone widths. */
+.record-context-section { border-top:1px solid var(--border, #dfe6dd); padding:18px 0; display:flex; flex-direction:column; align-items:flex-start; gap:10px; }
+.record-context-section p { margin:0; line-height:1.65; max-width:100%; }
+.record-context-section .button { white-space:normal; text-align:left; min-height:44px; }
+.chat-recovery,.linked-work-notice { display:flex; flex-wrap:wrap; align-items:center; gap:10px; padding:12px 16px; background:#fbf4df; border-radius:12px; margin-bottom:12px; font-size:13px; }
+.chat-recovery p { flex-basis:100%; margin:0; }
+.linked-work-notice span { flex:1; min-width:180px; }
+
+.work-tool-section { border:1px solid #dfe6dd; border-radius:14px; background:#fff; margin-bottom:12px; overflow:hidden; }
+.work-tool-section > summary { cursor:pointer; padding:16px; min-height:48px; font-weight:600; color:#173d2f; }
+.work-tool-section > summary:focus-visible { outline:3px solid #39735b; outline-offset:-3px; }
+.work-tool-section[open] > summary { border-bottom:1px solid #dfe6dd; }
+.work-tool-section > .panel { border:0; margin:0; }

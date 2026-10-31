@@ -1,6 +1,6 @@
 import {Text,View} from 'react-native';
 import type {CommunicationDocumentOption,CommunicationDocumentReference} from '../../src/lib/communications-contracts';
-import {Button} from './WorkScreen';
+import {Button} from './Button';
 import {styles as s} from './styles';
 
 export function DocumentAttachmentPicker({options,value,disabled,onChange}:{options:CommunicationDocumentOption[];value:CommunicationDocumentReference[];disabled:boolean;onChange:(value:CommunicationDocumentReference[])=>void}){

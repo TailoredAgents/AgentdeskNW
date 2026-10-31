@@ -5,7 +5,7 @@ import {TransactionTeamController,teamDecisionText,teamHistoryText,teamHistoryHe
 import {transactionTeamTaskClosed} from '../../src/lib/transaction-team-contracts';
 import {transactionMilestones,transactionMilestoneLabels} from '../../src/lib/transaction-contracts';
 import {createApi} from './client';
-import {Button} from './WorkScreen';
+import {Button} from './Button';
 import {styles as s} from './styles';
 export function TransactionTeamScreen({api,transactionId,initialTeamId,onGuard}:{api:ReturnType<typeof createApi>;transactionId?:string;initialTeamId?:string|null;onGuard:(guard:((leave:()=>void)=>void)|null)=>void}){
  const controller=useMemo(()=>new TransactionTeamController(api,()=>Crypto.randomUUID()),[api]),[state,setState]=useState(controller.value);

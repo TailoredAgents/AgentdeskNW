@@ -1,11 +1,12 @@
+import {destinationFromArtifact,workspacePath} from '../lib/workspace-links';
 import {proactiveMessageFor} from './proactive-delivery';
 import {proactiveOwnsTopic} from './proactive-policy';
-import type { Actor,Notification,ResearchJob } from '../lib/contracts';
+import type { Actor,Artifact,Notification,ResearchJob } from '../lib/contracts';
 import { AppError,getDb,now,scopedGet } from './db';
 import { chat } from './orchestrator';
 import { getConversation,notificationsAllowed } from './services';
 import { messagingConversation,queueOutbound,requireMessagingLink,type MessagingLink,type Outbox } from './messaging';
-import { channelConfigured,conversationLink,dailyMessageLimit,messagingEnabled,sendingEnabled } from './messaging-config';
+import { channelConfigured,conversationLink,dailyMessageLimit,messagingEnabled,messagingOrigin,sendingEnabled } from './messaging-config';
 import { releaseUsage,reserveUsage } from './metering';
 import { applyTwilioReceipt,DeliveryRejected,fetchTwilioReceipt,sendChannelMessage } from './messaging-providers';
 import { taskForReminder } from './task-actions';
@@ -64,9 +65,12 @@ export function queueMessagingReminders(){
 }
 /** UCS-2 is the conservative upper bound, including surrogate pairs. */
 export function smsReservation(body:string){return body.length<=70?1:Math.ceil(body.length/67);}
-export function formatChannelReply(text:string,provider:'sms'|'slack',conversationId:string){
+export function formatChannelReply(text:string,provider:'sms'|'slack',conversationId:string,artifacts:Artifact[]=[]){
+ const targets=artifacts.map(destinationFromArtifact).filter(item=>item!==null),unique=[...new Map(targets.map(target=>[workspacePath(target),target])).values()];
+ const origin=messagingOrigin(),focused=origin&&unique.length===1?`${origin}${workspacePath(unique[0])}`:null;
  const url=conversationLink(conversationId),limit=provider==='sms'?700:3500;
- const complete=`${text}${url?`\n\n${url}`:''}`;if(complete.length<=limit)return complete;
+ const complete=`${text}${focused?`\n\nOpen saved work: ${focused}`:url?`\n\n${url}`:''}`;if(complete.length<=limit)return complete;
+ const ordinary=`${text}${url?`\n\n${url}`:''}`;if(ordinary.length<=limit)return ordinary;
  const suffix=url?`\n\nFull reply: ${url}`:'\n\nOpen your ongoing Copilot conversation for the full reply.';
  const prefix='Excerpt:\n',budget=limit-prefix.length-suffix.length;
  // Keep complete paragraphs or sentences. Never cut a URL, amount, task name or caution mid-sentence.
@@ -98,7 +102,7 @@ function deliveryBody(row:Outbox,actor:Actor,link:MessagingLink){
  }
  const answer=getConversation(actor,conversationId).messages.find(message=>message.id===row.reference_id&&message.role==='assistant');
  if(!answer)return null;
- return formatChannelReply(answer.content,link.provider,conversationId);
+ return formatChannelReply(answer.content,link.provider,conversationId,answer.artifacts);
 }
 export async function processMessagingOutbox(send=sendChannelMessage){
  if(!sendingEnabled())return;

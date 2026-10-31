@@ -5,7 +5,7 @@ import * as Crypto from 'expo-crypto';
 import {DocumentController} from '../../src/lib/document-controller';
 import {documentPurposes,documentPurposeLabels} from '../../src/lib/document-contracts';
 import {createApi} from './client';
-import {Button} from './WorkScreen';
+import {Button} from './Button';
 import {styles as s} from './styles';
 export function DocumentsScreen({api,onGuard,initialId}:{initialId?:string;api:ReturnType<typeof createApi>;onGuard:(guard:((leave:()=>void)=>void)|null)=>void}){
  const controller=useMemo(()=>new DocumentController(api,()=>Crypto.randomUUID()),[api]),[state,setState]=useState(controller.value),[libraryOpen,setLibraryOpen]=useState(!initialId);

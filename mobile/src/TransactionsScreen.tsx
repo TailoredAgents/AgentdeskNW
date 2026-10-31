@@ -5,7 +5,7 @@ import * as Crypto from 'expo-crypto';
 import {TransactionController} from '../../src/lib/transaction-controller';
 import {transactionPartyRoles,transactionPartyLabels,transactionMilestones,transactionMilestoneLabels,type TransactionInput,type TransactionMilestone,type TransactionPartyRole} from '../../src/lib/transaction-contracts';
 import {createApi} from './client';
-import {Button} from './WorkScreen';
+import {Button} from './Button';
 import {styles as s} from './styles';
 function PrivateTransactionsScreen({api,initialId,onGuard,onInbox,onTeam}:{onTeam:(id:string)=>void;initialId?:string|null;onInbox:(id:string)=>void;api:ReturnType<typeof createApi>;onGuard:(guard:((leave:()=>void)=>void)|null)=>void}){
  const controller=useMemo(()=>new TransactionController(api,()=>Crypto.randomUUID()),[api]),[state,setState]=useState(controller.value),[partyKey,setPartyKey]=useState<TransactionPartyRole|null>(null),[reportKey,setReportKey]=useState<TransactionMilestone|null>(null),[showFiles,setShowFiles]=useState(false);
