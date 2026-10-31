@@ -7,11 +7,8 @@ import {requireFeature} from './billing';
 import {fingerprint} from './provider-runtime';
 import {quoteWorkBudget,getWorkBudget,decideWorkBudget,reserveWorkBudget,releaseWorkBudget,settleRecordedWorkBudgetUsage} from './work-budget';
 
-// Deliberately fictional test rates. No production model alias or inferred provider price is accepted.
-const rates:MeteredRate[]=[
- {id:'test-text-v1',provider:'test-double',model:'fictional-text',basis:'test_fixture',customerMicrosPerUnit:{input_tokens:10,cached_input_tokens:2,output_tokens:50},source:'AgentDesk authored test fixture; not OpenAI pricing'},
- {id:'test-search-v1',provider:'test-double',model:'fictional-search',basis:'test_fixture',customerMicrosPerUnit:{search_calls:500000},source:'AgentDesk authored test fixture; not a research provider price'},
-];
+import {meteredRate,assertMeteredRateCurrent} from './metered-rates';
+
 const id=z.string().trim().min(1).max(150),hash=z.string().regex(/^[a-f0-9]{64}$/),count=z.number().int().min(0).max(1_000_000_000);
 const units=z.record(z.string().min(1).max(80),count);
 const part=z.object({key:id,parentKey:id.optional(),feature:id,rateId:id,maximumCalls:z.number().int().min(1).max(100),maximumUnits:units,estimatedUnits:units}).strict();
@@ -20,13 +17,13 @@ const admit=z.object({assignmentId:id,revision:z.number().int().positive(),scope
 const receipt=z.object({assignmentId:id,attemptId:id,status:z.enum(['succeeded','failed','canceled','unknown']),responseId:id.nullable(),usage:units.nullable(),providerCostMicros:count.nullable()}).strict();
 const owner=(actor:Actor)=>[actor.organizationId,actor.officeId,actor.id];
 const unresolved=(attempt:MeteredAttempt)=>attempt.status==='dispatched'||attempt.status==='unknown';
-const ceilCents=(micros:number)=>Math.ceil(micros/10000);
+const ceilCents=(nanos:number)=>Math.ceil(nanos/10_000_000);
 function authorized(actor:Actor){assertActor(actor);assertBillingDemo();}
-function rate(id:string):MeteredRate {const result=rates.find(value=>value.id===id);if(!result)throw new AppError(409,'No supported versioned rate is available. Paid dispatch is unavailable.');return structuredClone(result);}
-function price(value:UsageUnits,rate:MeteredRate):number {
- if(Object.keys(value).some(key=>rate.customerMicrosPerUnit[key]===undefined))throw new AppError(400,'Usage includes an unpriced unit; do not dispatch.');
- const total=Object.entries(value).reduce((sum,[key,n])=>sum+n*rate.customerMicrosPerUnit[key],0);
- if(!Number.isSafeInteger(total)||total>10_000_000_000)throw new AppError(400,'The usage bound is too large. Prepare a smaller bounded scope.');return total;
+function priceNanos(value:UsageUnits,rate:MeteredRate):number {
+ const prices=rate.customerNanosPerUnit??Object.fromEntries(Object.entries(rate.customerMicrosPerUnit).map(([key,n])=>[key,n*1000]));
+ if(Object.keys(value).some(key=>prices[key]===undefined))throw new AppError(400,'Usage includes an unpriced unit; do not dispatch.');
+ const total=Object.entries(value).reduce((sum,[key,n])=>sum+n*prices[key],0);
+ if(!Number.isSafeInteger(total)||total>10_000_000_000_000)throw new AppError(400,'The usage bound is too large. Prepare a smaller bounded scope.');return total;
 }
 function within(value:UsageUnits,bound:UsageUnits){return Object.entries(value).every(([key,n])=>n<=(bound[key]??0));}
 function sumUnits(values:UsageUnits[]):UsageUnits {const total:UsageUnits={};for(const value of values)for(const [key,n] of Object.entries(value))total[key]=(total[key]??0)+n;return total;}
@@ -37,9 +34,9 @@ function read(actor:Actor,assignmentId:string):MeteredAssignment {
 function write(actor:Actor,value:MeteredAssignment){getDb().prepare('INSERT INTO metered_assignments VALUES(?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data').run(value.id,...owner(actor),value.assignmentKey,JSON.stringify({...value,updatedAt:now()}));}
 function event(actor:Actor,value:MeteredAssignment,key:string,payload:unknown){getDb().prepare('INSERT INTO metered_assignment_events VALUES(?,?,?,?,?,?,?,?,?)').run(newId('metered_event'),value.id,...owner(actor),key,fingerprint(payload),JSON.stringify(payload),now());}
 function partTotals(value:MeteredAssignment,key:string){return sumUnits(value.attempts.filter(a=>a.partKey===key).map(a=>unresolved(a)?a.bounds:a.usage??{}));}
-function assertParts(parts:MeteredPart[],attempts:MeteredAttempt[]){
+function assertParts(parts:MeteredPart[],attempts:MeteredAttempt[],rates:MeteredRate[]){
  const keys=new Set(parts.map(p=>p.key));if(keys.size!==parts.length)throw new AppError(400,'Assignment part keys must be unique.');
- for(const p of parts){const r=rate(p.rateId);price(p.maximumUnits,r);price(p.estimatedUnits,r);if(!within(p.estimatedUnits,p.maximumUnits))throw new AppError(400,'Estimated usage exceeds its maximum.');
+ for(const p of parts){const r=rates.find(rate=>rate.id===p.rateId)!;priceNanos(p.maximumUnits,r);priceNanos(p.estimatedUnits,r);if(!within(p.estimatedUnits,p.maximumUnits))throw new AppError(400,'Estimated usage exceeds its maximum.');
   const visited=new Set([p.key]);let parent=p.parentKey;while(parent){if(visited.has(parent)||!keys.has(parent))throw new AppError(400,'Delegated parts need an existing parent without a cycle.');visited.add(parent);parent=parts.find(item=>item.key===parent)!.parentKey;}
   const used=attempts.filter(a=>a.partKey===p.key);if(used.length>p.maximumCalls||!within(sumUnits(used.map(a=>a.usage??a.bounds)),p.maximumUnits)||used.some(a=>a.rate.id!==p.rateId))throw new AppError(409,'A revision cannot erase admitted work or change its rate.');
  }
@@ -56,8 +53,14 @@ export function quoteMeteredAssignment(actor:Actor,raw:z.input<typeof quote>):Me
   if(prior?.attempts.some(a=>a.discrepancy))throw new AppError(409,'A receipt exceeded its bounds. Operator reconciliation is required.');
   if(prior&&input.revision<prior.revision)throw new AppError(409,'Use the current assignment revision.');
   const planHash=fingerprint(input);if(prior&&input.revision===prior.revision&&prior.budget.planHash!==planHash)throw new AppError(409,'Changed scope requires a new assignment revision.');
-  assertParts(input.parts,prior?.attempts??[]);
-  const snapshots=[...new Set(input.parts.map(p=>p.rateId))].map(rate),maximum=ceilCents(input.parts.reduce((sum,p)=>sum+price(p.maximumUnits,rate(p.rateId)),0)),estimate=Math.max(prior?.budget.spentCents??0,ceilCents(input.parts.reduce((sum,p)=>sum+price(p.estimatedUnits,rate(p.rateId)),0)));
+  // A retired tariff may remain only on a part with every call already consumed.
+  // Receipts keep that original rate; future parts need a currently configured tariff.
+  const snapshots=input.parts.map(p=>{
+   const used=prior?.attempts.filter(a=>a.partKey===p.key)??[],saved=prior?.rates.find(r=>r.id===p.rateId);
+   return saved&&used.length===p.maximumCalls?structuredClone(saved):meteredRate(p.rateId);
+  }).filter((rate,index,all)=>all.findIndex(r=>r.id===rate.id)===index);
+  assertParts(input.parts,prior?.attempts??[],snapshots);
+  const maximum=ceilCents(input.parts.reduce((sum,p)=>sum+priceNanos(p.maximumUnits,snapshots.find(r=>r.id===p.rateId)!),0)),estimate=Math.max(prior?.budget.spentCents??0,ceilCents(input.parts.reduce((sum,p)=>sum+priceNanos(p.estimatedUnits,snapshots.find(r=>r.id===p.rateId)!),0)));
   const assignmentId=prior?.id??newId('metered'),budget=quoteWorkBudget(actor,{runId:assignmentId,planVersion:input.revision,planHash,estimatedCents:estimate,maximumCents:maximum,costBasis:'metered_simulation'});
   const value:MeteredAssignment={...input,id:assignmentId,rates:snapshots,attempts:prior?.attempts??[],status:budget.status==='reserved'?'active':'quoted',budget,customerMicros:prior?.customerMicros??0,providerCostMicros:prior?.providerCostMicros??null,unbilledMicros:0,createdAt:prior?.createdAt??now(),updatedAt:now(),simulation:true};
   if(!prior||prior.budget.quoteId!==budget.quoteId){write(actor,value);event(actor,value,`quote:${budget.quoteId}`,{kind:'quote',revision:value.revision,scopeHash:value.scopeHash,parts:value.parts,rates:value.rates,budget});}return read(actor,assignmentId);
@@ -76,7 +79,7 @@ export function admitMeteredAttempt(actor:Actor,raw:z.input<typeof admit>):{disp
   requireFeature(actor,'core');if(value.revision!==input.revision||value.scopeHash!==input.scopeHash)throw new AppError(409,'Assignment scope changed. Review its current maximum.');
   if(value.stopRequested||['completed','canceled','paused','reconciling'].includes(value.status)||value.attempts.some(a=>a.status==='unknown'))throw new AppError(409,'This assignment cannot dispatch additional work.');
   const p=value.parts.find(p=>p.key===input.partKey);if(!p)throw new AppError(404,'This part is not included in the approved assignment.');requireFeature(actor,p.feature);
-  const r=value.rates.find(r=>r.id===p.rateId)!;price(input.bounds,r);
+  const r=value.rates.find(r=>r.id===p.rateId)!;assertMeteredRateCurrent(r);priceNanos(input.bounds,r);
   if(value.attempts.filter(a=>a.partKey===p.key).length>=p.maximumCalls||!within(sumUnits([partTotals(value,p.key),input.bounds]),p.maximumUnits))throw new AppError(409,'This call exceeds the quoted whole-assignment allocation. Revise the scope before dispatch.');
   const budget=reserveWorkBudget(actor,value.id),stamp=now(),attempt:MeteredAttempt={id:input.attemptId,partKey:p.key,requestHash:input.requestHash,bounds:input.bounds,rate:r,status:'dispatched',usage:null,responseId:null,customerMicros:null,providerCostMicros:null,receiptHash:null,discrepancy:null,createdAt:stamp,updatedAt:stamp};
   const updated={...value,budget,status:'active' as const,attempts:[...value.attempts,attempt]};write(actor,updated);event(actor,updated,`dispatch:${attempt.id}`,{kind:'dispatch',attempt});return {dispatch:true,assignment:read(actor,value.id),attempt};
@@ -92,16 +95,17 @@ export function recordMeteredReceipt(actor:Actor,raw:z.input<typeof receipt>):Me
   if(input.status==='unknown'&&(input.usage!==null||input.providerCostMicros!==null))throw new AppError(400,'Uncertain usage cannot be settled or treated as zero.');
   if(attempt.responseId&&input.responseId!==attempt.responseId)throw new AppError(409,'Reconciliation must retain the original provider response identity.');
   if(input.responseId){const claim=getDb().prepare('SELECT assignment_id,attempt_id FROM metered_response_claims WHERE provider=? AND response_id=?').get(attempt.rate.provider,input.responseId) as {assignment_id:string;attempt_id:string}|undefined;if(claim&&(claim.assignment_id!==value.id||claim.attempt_id!==attempt.id))throw new AppError(409,'This provider receipt is already assigned to other work.');if(!claim)getDb().prepare('INSERT INTO metered_response_claims VALUES(?,?,?,?)').run(attempt.rate.provider,input.responseId,value.id,attempt.id);}
-  const customerMicros=input.usage===null?null:price(input.usage,attempt.rate),discrepancy=input.usage&&!within(input.usage,attempt.bounds)?'Provider usage exceeded the admitted unit bounds. No further dispatch; customer debit remains capped.':null;
+  const customerMicros=input.usage===null?null:priceNanos(input.usage,attempt.rate)/1000,discrepancy=input.usage&&!within(input.usage,attempt.bounds)?'Provider usage exceeded the admitted unit bounds. No further dispatch; customer debit remains capped.':null;
   const updatedAttempt:MeteredAttempt={...attempt,status:input.status,usage:input.usage,responseId:input.responseId,customerMicros,providerCostMicros:input.providerCostMicros,receiptHash,discrepancy,updatedAt:now()};
   if(attempt.receiptHash===receiptHash)return value;
-  const attempts=value.attempts.map(a=>a.id===attempt.id?updatedAttempt:a),total=attempts.reduce((sum,a)=>sum+(a.customerMicros??0),0),cap=value.budget.approvedMaximumCents;
+  const attempts=value.attempts.map(a=>a.id===attempt.id?updatedAttempt:a),total=attempts.reduce((sum,a)=>sum+(a.usage?priceNanos(a.usage,a.rate):0),0),cap=value.budget.approvedMaximumCents;
+  if(!Number.isSafeInteger(total))throw new AppError(409,'Aggregate provider usage exceeds supported accounting precision. Keep the reservation for operator reconciliation.');
   if(cap===null)throw new AppError(409,'This call has no original cost authority.');
   const charge=Math.min(ceilCents(total),cap)-value.budget.spentCents;if(charge<0)throw new AppError(409,'A receipt cannot erase settled usage.');
   if(charge)settleRecordedWorkBudgetUsage(actor,{runId:value.id,stepKey:`receipt:${attempt.id}`,amountCents:charge});
   const outstanding=attempts.some(unresolved),paused=attempts.some(a=>a.discrepancy),status=outstanding&&attempts.some(a=>a.status==='unknown')?'reconciling':paused?'paused':'active';
-  const updated:MeteredAssignment={...value,attempts,status,customerMicros:total,providerCostMicros:attempts.some(a=>a.providerCostMicros===null)?null:attempts.reduce((sum,a)=>sum+(a.providerCostMicros??0),0),unbilledMicros:Math.max(0,total-cap*10000),budget:getWorkBudget(actor,value.id)};
-  write(actor,updated);event(actor,updated,`receipt:${attempt.id}:${receiptHash}`,{kind:'receipt',attempt:updatedAttempt,customerMicros:total,unbilledMicros:updated.unbilledMicros});
+  const updated:MeteredAssignment={...value,attempts,status,customerMicros:total/1000,providerCostMicros:attempts.some(a=>a.providerCostMicros===null)?null:attempts.reduce((sum,a)=>sum+(a.providerCostMicros??0),0),unbilledMicros:Math.max(0,total-cap*10_000_000)/1000,budget:getWorkBudget(actor,value.id)};
+  write(actor,updated);event(actor,updated,`receipt:${attempt.id}:${receiptHash}`,{kind:'receipt',attempt:updatedAttempt,customerMicros:total/1000,unbilledMicros:updated.unbilledMicros});
   if(!outstanding&&updated.stopRequested)return finishMeteredAssignment(actor,value.id,updated.stopRequested);
   return read(actor,value.id);
  }).immediate();

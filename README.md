@@ -16,9 +16,9 @@ The target is a primary iPhone/Android app and a detailed desktop workspace, wit
 
 ## Current state
 
-**Current local checkpoint: Responses admission and strict receipts**, verified October 30, 2026, extending private-document checkpoint `fc559da`. An offline adapter now exercises counted text requests under one assignment budget; the existing live text runtime stops before using output with unconfirmed usage or a mismatched model/tier. Live wallet admission and employee quote/continuation remain unfinished.
+**Current local checkpoint: versioned customer tariffs**, verified October 30, 2026, extending Responses checkpoint `45835a0`. The simulated spending engine now supports operator-owned prices with fixed versions, effective dates and precise fractional-token accounting. Existing costs retain their original rate when a policy changes. This neither enables live wallet billing nor collects payment.
 
-Verification: **853 root tests**, root typecheck/lint/build, **109 isolated HTTP workflow checks and 12 metered restart checks**. No schema/dependency/UI change. The prior document checkpoint retains its 48 mobile tests, 1,469 HTTP/workflow checks, exports, desktop/mobile-browser rehearsal and migration-033 preservation evidence. Sixteen specialists are two locally ready and fourteen demo; effectiveness and company-approved expertise are not established.
+Verification: **873 root tests**, root typecheck/lint/build, **109 workflow + 91 wallet HTTP checks and 12 metered restart checks**. No schema/dependency/UI change. Prior document/mobile evidence remains at `fc559da`: 48 mobile tests, 1,469 HTTP/workflow checks, exports, cross-surface rehearsal and migration preservation. Sixteen specialists are two locally ready and fourteen demo; effectiveness and company-approved expertise are not established.
 
 **Mobile is prepared locally, not yet installed or released.** The phone-width browser rehearsal passed pairing, shared history, cross-surface cost approval, pause/resume, background worker completion and remote device revocation. Native binary builds, real phone speech/push and store distribution remain pending. [Mobile preparation notes](mobile/README.md) distinguish each acceptance layer. Whole-job costs remain fictional; live model/provider usage is separately metered.
 

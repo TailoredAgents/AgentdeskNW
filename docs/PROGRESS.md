@@ -1,5 +1,15 @@
 # AgentDesk progress log
 
+## October 30, 2026 — Versioned customer tariffs accepted in the simulated ledger
+
+**Scope:** extends `45835a0`; no migration, dependency, UI or provider change. Optional server/operator tariff configuration binds an exact model, default processing tier, policy source and effective interval to a content-derived immutable identity. Customer prices use integer nanodollars per token; provider invoice cost stays separate/unknown. Empty configuration provides no implicit live-model tariff. Invalid/overlapping configuration fails closed without echoing its contents.
+
+**Authority and arithmetic:** new dispatch requires the original tariff to remain current. Already-admitted receipts settle original snapshots after expiry/removal. Revisions preserve retired parts only when all permitted calls are consumed; new parts use current rates and the aggregate quote includes earlier spending. Exact $0.99/$1/$1.01 boundaries and small fractional-micro-dollar prices use integer arithmetic and cumulative cent rounding. Existing fixture IDs, amounts and historical JSON remain compatible. Configuration enables no network transport or payment; the Responses adapter remains offline/fixture-only, and existing live calls remain outside the assignment wallet.
+
+**Verification:** **873 root tests across 47 files**, including twenty new tariff cases, plus root typecheck/lint/build, 109 isolated workflow checks, 91 wallet HTTP checks and twelve disk-backed metered restart checks. All providers disabled/mocked. No active DB or private environment file changed. Existing mobile acceptance is unchanged; no physical-device or provider acceptance is claimed.
+
+**Next:** finish C6 host binding and exact employee review/continuation while preserving one root for planning/delegation. Production tariff approval and real invoice/payment reconciliation remain separate acceptance. Continue independent fictional role workflows under the canonical roadmap. No deployment occurred.
+
 ## October 30, 2026 — Responses admission adapter and strict receipts accepted locally
 
 **Scope:** extends `fc559da`; no schema, dependency or UI change. Added a text-only Responses admission host using an injected offline transport and the existing fictional rate/whole-assignment service. It checks approval before counting, derives request bounds from the same token-bearing fields, commits one dispatch, settles trusted usage and stops on incomplete/uncertain outcomes. Source changes and in-flight cancellation withhold output while preserving receipts. Exact/concurrent retries cannot redispatch. Conservative cache allocations never count cached tokens twice in settlement; a combined-input overrun also stops the assignment. This is offline contract acceptance, not live wallet admission.

@@ -1,7 +1,7 @@
 import type {WorkBudget} from './wallet-contracts';
 export type UsageUnits=Record<string,number>;
 export interface MeteredPart {key:string;parentKey?:string;feature:string;rateId:string;maximumCalls:number;maximumUnits:UsageUnits;estimatedUnits:UsageUnits}
-export interface MeteredRate {id:string;provider:string;model:string;basis:'test_fixture';customerMicrosPerUnit:UsageUnits;source:string}
+export interface MeteredRate {id:string;provider:string;model:string;basis:'test_fixture'|'configured_customer_tariff';customerMicrosPerUnit:UsageUnits;customerNanosPerUnit?:UsageUnits;serviceTier?:'default';validFrom?:string;validUntil?:string;source:string}
 export interface MeteredAttempt {
  id:string;partKey:string;requestHash:string;bounds:UsageUnits;rate:MeteredRate;
  status:'dispatched'|'unknown'|'succeeded'|'failed'|'canceled';usage:UsageUnits|null;

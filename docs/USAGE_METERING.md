@@ -20,11 +20,11 @@ These prices are explicit fictional scenarios, not observed provider expense: pr
 
 ## Metered assignment admission — test-transport acceptance
 
-Migration 029 adds a server-only metered assignment contract that reuses the existing whole-job budget and wallet. A stable assignment key groups bounded planning, delegated reasoning, search and retries. Versioned parts declare permitted features, rates, aggregate unit bounds and call limits. The server derives one estimate/maximum; no HTTP or model caller supplies prices. Only authored `test-text-v1` and `test-search-v1` rates are accepted. Unknown production rates/models fail closed; these are deliberately fictional tariffs, not inferred OpenAI prices.
+Migration 029 adds a server-only metered assignment contract that reuses the existing whole-job budget and wallet. A stable assignment key groups bounded planning, delegated reasoning, search and retries. Versioned parts declare permitted features, rates, aggregate unit bounds and call limits. The server derives one estimate/maximum; no HTTP or model caller supplies prices. The original authored `test-text-v1` and `test-search-v1` rates remain fictional fixtures. Optional operator-owned customer text tariffs now have separate local acceptance below. Unknown/unconfigured rates fail closed; no provider price is inferred.
 
 Every attempt commits its request fingerprint, immutable rate snapshot and unit allocation before the adapter runs. Concurrent attempts compete within the same remaining allocation and wallet hold. Exact replays never redispatch. Unknown outcomes stop subsequent dispatch and retain reservations; cancellation records a stopping intent until all already-admitted outcomes reconcile. Revisions cannot remove consumed work, change its rate, shrink below actual usage or proceed with unresolved calls. New scope uses a new quote and appropriate cost decision.
 
-Trusted test receipts settle cumulative customer micro-dollars, rounding the assignment total to cents rather than each subcall. Cached tokens are separated from uncached input; reasoning tokens are included in output, not charged again. Known rejected requests settle zero; incomplete/failed responses with usage settle consumed units. Missing/malformed usage remains unknown. Duplicate final receipts are idempotent; conflicting outcomes and reused provider response IDs fail. Actual provider invoice expense stays independently nullable. An unexpected unit overrun records a discrepancy, halts further dispatch and caps customer debit at the approved maximum; excess is retained as unbilled evidence.
+Trusted receipts calculate cumulative customer charges in integer nanodollars, rounding the assignment total to cents rather than each subcall. Historical micro-dollar fields remain readable; new small tariffs can produce fractional micro-dollar evidence without changing integer-cent wallet accounting. Cached tokens are separated from uncached input; reasoning tokens are included in output, not charged again. Known rejected requests settle zero; incomplete/failed responses with usage settle consumed units. Missing/malformed usage remains unknown. Duplicate final receipts are idempotent; conflicting outcomes and reused provider response IDs fail. Actual provider invoice expense stays independently nullable. An unexpected unit overrun records a discrepancy, halts further dispatch and caps customer debit at the approved maximum; excess is retained as unbilled evidence.
 
 Receipt-only internal settlement can reconcile original holds after subscription cancellation without granting new execution. Current membership/ownership still applies; loss of identity requires future operator reconciliation, not invented receipt authority. No client/model settlement endpoint exists. The test adapter performs no network request, and the new contract is not yet wired into live text, voice, Hunter or SMS. Existing live calls therefore remain outside this whole-job credit gate. Host integration must bind each paid quick turn and every delegated job to the same stable root, derive trustworthy input/output/tool bounds, expose its exact review in each channel, validate current rates/tier/cache variants and retain provider receipts before live acceptance.
 
@@ -39,6 +39,35 @@ Dispatch commits before the response await. Concurrent count completions cannot 
 The existing live text runtime now shares the strict receipt validator and explicitly requests the default processing tier. It requires a response ID, matching model/tier, terminal status and valid usage subsets **before exposing output or executing tools**. Previously a completed envelope with missing usage could still execute its output; that path now stops with an unresolved allowance reservation. This correction does not yet connect live text to the wallet or the assignment adapter. Existing live-host dollar admission, cross-channel quote/continuation, delegated-root linkage and current production tariffs remain open C6 work.
 
 Verification: 31 offline adapter cases, nine additional live-host malformed/identity cases, and the complete 853-test regression. Updated older provider mocks supply complete response identities/status/tier/usage. No live provider operation or payment occurred. The design follows OpenAI's [per-run spending controller](https://developers.openai.com/cookbook/articles/per_run_spending_controller_responses_api#check-the-budget-before-each-request) and [token-count request contract](https://developers.openai.com/api/reference/resources/responses/subresources/input_tokens/methods/count), reviewed October 30, 2026. Those sources establish protocol behavior, not our customer tariffs or actual invoice expense.
+
+## Versioned customer text tariffs — local simulated acceptance
+
+`metered-rates.ts` separates customer credit prices from provider expense. An optional **server/operator-only** `AGENTDESK_TEXT_CUSTOMER_TARIFFS` JSON array defines exact model, default processing tier, source/policy label, effective interval and integer `customerNanosPerUnit` for `input_tokens`, `cached_input_tokens` and `output_tokens`. One nanodollar per token equals $0.001 per million tokens. Input/output rates must be positive, cached input cannot cost more than ordinary input, and overlapping intervals for the same model are rejected. Unknown fields, unsupported units, malformed or oversized configuration fail without echoing its contents. There is no default live-model tariff.
+
+Configuration shape (illustrative field names; supply an operator-approved **customer** policy before use):
+
+```json
+[
+  {
+    "model": "exact-response-model-name",
+    "serviceTier": "default",
+    "source": "Fictional example customer-credit policy; not provider pricing",
+    "validFrom": "2026-10-01T00:00:00Z",
+    "validUntil": "2026-11-01T00:00:00Z",
+    "customerNanosPerUnit": {
+      "input_tokens": 25,
+      "cached_input_tokens": 5,
+      "output_tokens": 125
+    }
+  }
+]
+```
+
+These example numbers are test data, not proposed retail prices or current OpenAI prices. Changing any field creates a different immutable tariff ID. Every new dispatch rechecks the original snapshot against the currently effective configuration. Expiry, removal or invalid configuration stops further calls; admitted receipts still settle against their original snapshot after a change. A revised assignment may retain a retired rate only on a part with every permitted call already consumed; additional work needs a current rate and one new aggregate quote including prior spending. It cannot erase earlier expense or reset the $1 threshold.
+
+All multiplication and aggregate rounding use safe integer nanodollars. This supports prices smaller than one micro-dollar per token while preserving old fixture settlements. Existing stored rate snapshots and JSON records need no migration. Invoice expense remains independently unknown; all wallets/assignments still carry simulated accounting. Configuring a tariff does **not** enable a network adapter, alter the legacy live host, authorize a payment, select prices from model output or complete C6. The offline Responses adapter remains limited to its fixture rate; paid-host and employee approval/continuation integration remain next work.
+
+Local acceptance covers version identity, effective boundaries, overlapping/invalid configuration, exact $0.99/$1/$1.01 gates, fractional prices, cumulative rounding, original-rate late receipts, withdrawn-rate dispatch refusal, preserved historical parts and aggregate revision approval. No real prices, provider charges or purchases were tested.
 
 ## Full policy and remaining expansion
 
