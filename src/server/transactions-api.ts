@@ -1,4 +1,4 @@
-import {getTransactionTeams,getTransactionTeam,transactionTeamSetup,reviewTransactionTeam,publishTransactionTeam,mutateTransactionTeam,transactionTeamPublishSchema,transactionTeamCommitSchema,transactionTeamActionSchema} from './transaction-team';
+import {getTransactionTeamTaskHistory,getTransactionTeams,getTransactionTeam,transactionTeamSetup,reviewTransactionTeam,publishTransactionTeam,mutateTransactionTeam,transactionTeamPublishSchema,transactionTeamCommitSchema,transactionTeamActionSchema} from './transaction-team';
 import {transactionEmailAccounts,prepareTransactionEmail,prepareTransactionEmailSchema} from './transaction-correspondence';
 import {NextRequest,NextResponse} from 'next/server';
 import type {Actor} from '../lib/contracts';
@@ -11,6 +11,7 @@ export async function transactionsRoute(request:NextRequest,actor:Actor,path:str
   if(request.method==='GET'&&path.length===2)return json(getTransactionTeams(actor));
   if(request.method==='POST'&&path.length===3&&path[2]==='review')return json(reviewTransactionTeam(actor,transactionTeamPublishSchema.parse(await body())));
   if(request.method==='POST'&&path.length===3&&path[2]==='publish')return json(publishTransactionTeam(actor,transactionTeamCommitSchema.parse(await body())));
+  if(request.method==='GET'&&path.length===6&&path[3]==='tasks'&&path[5]==='history')return json(getTransactionTeamTaskHistory(actor,path[2],path[4]));
   if(request.method==='GET'&&path.length===3)return json(getTransactionTeam(actor,path[2]));
   if(request.method==='POST'&&path.length===3)return json(mutateTransactionTeam(actor,path[2],transactionTeamActionSchema.parse(await body())));
   throw new AppError(404,'This team coordination action is unavailable.');

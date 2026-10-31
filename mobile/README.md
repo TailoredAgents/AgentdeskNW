@@ -1,6 +1,6 @@
 # AgentDesk NW mobile — local development checkpoint
 
-**Shared transaction Agent/saved-work/update navigation verified locally October 31, 2026; actual-phone acceptance remains pending.** This slice extends team coordination checkpoint `7bc9562`. [The implementation roadmap](../docs/IMPLEMENTATION_ROADMAP.md) is the sole authority for status, build order and next work. [Mobile requirements](../docs/MOBILE_DELIVERY_PLAN.md) define acceptance scope. This README records reproducible setup and the boundary between local/browser evidence and native acceptance.
+**Shared transaction lifecycle and continuation verified locally October 31, 2026; actual-phone acceptance remains pending.** This slice extends shared Agent/update checkpoint `f68f2cd`. [The implementation roadmap](../docs/IMPLEMENTATION_ROADMAP.md) is the sole authority for status, build order and next work. [Mobile requirements](../docs/MOBILE_DELIVERY_PLAN.md) define acceptance scope. This README records reproducible setup and the boundary between local/browser evidence and native acceptance.
 
 ## Architecture and current source
 
@@ -146,3 +146,8 @@ Work → Transactions includes a Team coordination view alongside private record
 ### Shared transaction Agent and update continuity — October 31, 2026
 
 Agent opens only the explicitly shared projection, with exact shared-work links distinct from private transactions. A requested saved team review completes through the same durable worker and opens the same record from its result. My updates offers an opt-in Shared transactions topic for the assigned employee/coordination owner; resolved or changed sources are withheld. Browser rehearsal verified desktop shared lookup → exact team view, phone Agent → saved review → exact team view, and phone chosen topic → assigned follow-up. Scheduled delivery remained off in that rehearsal. Screenshot: ignored `artifacts/mobile/team-agent-phone-update.png`. Independent types, 67 mobile tests and iOS/Android/production-web/development-web exports passed. No physical device or real channel acceptance is claimed.
+
+
+### Shared follow-up lifecycle — October 31, 2026
+
+Team coordination now supports owner-reviewed reassignment, instruction/date changes, cancellation and reopening. The phone displays exact before/after decisions and current-cycle history. Changed responsibility/instructions require a fresh acknowledgment; date-only changes keep the existing report. Canceled/resolved work leaves current reminders. Sharing refresh offers explicit unfinished-task selection; selected instructions restart without prior outcomes. The same controller preserves original versions and uncertain request identity, and clears obsolete history/reviews. Independent types, 73 mobile tests and native/web exports passed. Browser rehearsal covered desktop reassignment → receiving-phone acknowledgment/blocker → owner cancellation and refreshed phone history; installed-phone acceptance remains deferred. See [PROGRESS](../docs/PROGRESS.md) for evidence.

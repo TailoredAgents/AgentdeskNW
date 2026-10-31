@@ -1,3 +1,4 @@
+import {transactionTeamTaskClosed} from '../lib/transaction-team-contracts';
 import {proactiveDeliveryState} from './proactive-delivery-state';
 import {z} from 'zod';
 import type {Actor,Role} from '../lib/contracts';
@@ -53,7 +54,7 @@ export function currentProactiveItems(actor:Actor,preferences=prefs(actor).prefe
   }
   const today=new Date().toLocaleDateString('en-CA',{timeZone:preferences.timeZone});
   for(const task of team.tasks){
-   if(task.state==='resolved'||(!team.canManage&&task.assignedTo!==actor.id))continue;
+   if(transactionTeamTaskClosed(task)||(!team.canManage&&task.assignedTo!==actor.id))continue;
    const overdue=task.dueDate<today,dueToday=task.dueDate===today;
    const detail=task.state==='reported'?(team.canManage?'Completion reported · needs your review':'Completion reported · awaiting owner review'):task.state==='blocked'?'Blocker reported · review the next step':task.state==='assigned'?(task.assignedTo===actor.id?'Assigned to you · acknowledgment needed':'Assigned · awaiting acknowledgment'):overdue?'Follow-up overdue':dueToday?'Follow-up due today':'Follow-up in progress';
    const key=`team-task:${team.id}:${task.id}:${fingerprint({generation:team.generation,task,overdue,dueToday})}`;

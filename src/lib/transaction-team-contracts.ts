@@ -4,9 +4,11 @@ export interface TransactionTeamMember {id:string;name:string;role:Role}
 export interface TransactionTeamSnapshot {propertyId:string;address:string;closingDate:string|null;summary:string;milestones:Partial<Record<TransactionMilestone,string>>}
 export interface TransactionTeamTask {
  id:string;generation:number;assignedTo:string;instruction:string;dueDate:string;
- state:'assigned'|'acknowledged'|'blocked'|'reported'|'resolved';acknowledgedAt:string|null;
+ state:'assigned'|'acknowledged'|'blocked'|'reported'|'resolved'|'canceled';acknowledgedAt:string|null;
  report:{kind:'blocked'|'completed';note:string;source:string;by:string;at:string}|null;
  resolution:{note:string;by:string;at:string}|null;
+ cancellation?:{note:string;by:string;at:string}|null;
+ change?:{note:string;by:string;at:string;resetOutcome:boolean}|null;
 }
 export interface TransactionTeamItem {
  id:string;version:number;generation:number;viewerId:string;privateTransactionId:string|null;owner:TransactionTeamMember;members:TransactionTeamMember[];
@@ -15,11 +17,15 @@ export interface TransactionTeamItem {
  attention:{overdue:number;blocked:number;review:number;open:number};reference:string;notice:string;
 }
 export interface TransactionTeamBoard {items:TransactionTeamItem[];notice:string}
-export interface TransactionTeamSetup {transactionId:string;expectedVersion:number;sourceReference:string;members:TransactionTeamMember[];current:TransactionTeamItem|null;preview:TransactionTeamSnapshot;canPublish:boolean}
-export interface TransactionTeamPublish {transactionId:string;expectedVersion:number;sourceReference:string;memberIds:string[];summary:string;milestones:TransactionMilestone[];eventKey:string}
-export interface TransactionTeamReview {request:TransactionTeamPublish;reviewHash:string;snapshot:TransactionTeamSnapshot;members:TransactionTeamMember[];notice:string}
+export interface TransactionTeamSetup {transactionId:string;expectedVersion:number;sourceReference:string;members:TransactionTeamMember[];current:TransactionTeamItem|null;preview:TransactionTeamSnapshot;canPublish:boolean;carryCandidates?:TransactionTeamTask[]}
+export interface TransactionTeamPublish {transactionId:string;expectedVersion:number;sourceReference:string;memberIds:string[];summary:string;milestones:TransactionMilestone[];eventKey:string;carryTaskIds?:string[]}
+export interface TransactionTeamReview {request:TransactionTeamPublish;reviewHash:string;snapshot:TransactionTeamSnapshot;members:TransactionTeamMember[];notice:string;carriedTasks?:TransactionTeamTask[]}
 export type TransactionTeamAction={expectedVersion:number;eventKey:string}&(
  {action:'withdraw'}|{action:'assign';assignedTo:string;instruction:string;dueDate:string}|
  {action:'acknowledge';taskId:string}|{action:'report';taskId:string;kind:'blocked'|'completed';note:string;source:string}|
- {action:'resolve';taskId:string;note:string}
+ {action:'resolve';taskId:string;note:string}|{action:'cancel';taskId:string;note:string}|
+ {action:'change'|'reopen';taskId:string;assignedTo:string;instruction:string;dueDate:string;note:string}
 );
+
+export interface TransactionTeamTaskHistory {teamId:string;taskId:string;reference:string;entries:{version:number;action:string;at:string;actorName:string;task:TransactionTeamTask}[];notice:string}
+export const transactionTeamTaskClosed=(task:Pick<TransactionTeamTask,'state'>)=>task.state==='resolved'||task.state==='canceled';
