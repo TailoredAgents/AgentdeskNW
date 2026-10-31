@@ -109,3 +109,8 @@ Native Inbox can save edited body/subject and explicit email CC recipients, retr
 ### New-correspondence checkpoint — October 30, 2026
 
 Inbox → New message starts a private email or business text from a selected account. Explicit primary recipient and email CC, guarded unsaved edits, exact uncertain-save retry and separate simulation review share server behavior with desktop. An opening draft never invents an incoming message. Desktop opening-email save → native-browser exact review → one simulated outcome passed; native-browser creation of a one-to-one text also passed. Independent typecheck, 41 mobile tests and iOS/Android/production-web/development-web exports passed. This is browser/export acceptance, not an installed phone, actual SMS or email result. Screenshots are local ignored artifacts `compose-continuity.png` and `compose-text-review.png`.
+
+
+### Private source-text documents — October 30, 2026
+
+Work → Documents reads, creates/corrects and withdraws private fictional text using the same server as desktop. It retains old revisions, linked-source permissions, unsaved-navigation protection, stale-write checks and exact uncertain retry. Desktop file import → 390×844 native-browser correction → website read/withdrawal continuity passed. Full mobile suite: 48 tests; independent typecheck and native/production-web/development-web exports passed. The phone uses pasted text; actual file picking, PDF extraction and attachment transfer remain unfinished. Screenshot: ignored `artifacts/mobile/document-phone-revision.png`. No installed-device or real-world acceptance is claimed.

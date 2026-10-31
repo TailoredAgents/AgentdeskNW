@@ -1,3 +1,4 @@
+import {documentsRoute} from '@/server/documents-api';
 import {knowledgeRoute} from '@/server/knowledge-api';
 import {proactiveRoute} from '@/server/proactive-api';
 import {getAnalysisBoard,getAnalysis,previewAnalysis,saveAnalysis} from '@/server/deal-analysis';
@@ -73,6 +74,7 @@ async function route(request:NextRequest,{params}:{params:Promise<{path:string[]
     const messaging=await messagingRoute(request,actor,path,()=>body(request));if(messaging)return messaging;
     const billing=await billingRoute(request,actor,path,()=>body(request));if(billing)return billing;
     const inbox=await communicationsRoute(request,actor,path,()=>body(request));if(inbox)return inbox;
+    const documents=await documentsRoute(request,actor,path,()=>body(request));if(documents)return documents;
     const knowledge=await knowledgeRoute(request,actor,path,()=>body(request));if(knowledge)return knowledge;
     const updates=await proactiveRoute(request,actor,path,()=>body(request));if(updates)return updates;
     const wallet=await walletRoute(request,actor,path,()=>body(request));if(wallet)return wallet;

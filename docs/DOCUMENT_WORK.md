@@ -1,0 +1,39 @@
+# Source documents and transaction work
+
+This is the domain contract for the C3/C4 document extension. [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) remains the only scheduling/status authority. **Private text-document foundation accepted locally, October 30, 2026.** Real provider retrieval, actual delivery and company-approved title/payment procedures remain deferred.
+
+## Usable document foundation
+
+Start with private, versioned text documents that employees can read, correct and reuse across desktop and mobile. Desktop can import a bounded UTF-8 text file; either interface can paste/edit fictional document contents. This gives the application actual content instead of treating an attachment filename as evidence. It does not parse PDF images, verify a signature, confirm a deposit or obtain an absent provider attachment.
+
+Each document has a title, file name, purpose, source label/date, optional permitted property/investor references and exact content. These are employee-supplied records, explicitly fictional and unverified. Document text is data, never an instruction or action authority. Private ownership is independent of manager CRM access. A property/investor reference must remain accessible on every read, save, download and replay. Binding the source records at creation prevents a revision from silently moving a document to a different relationship or deal.
+
+Content revisions are immutable; correction creates a new revision. A current-use reference binds document identity/version/content digest and current authorized source context. Withdrawal stops current use; original private history is retained only while the employee still has source access. Shared work and eventual attachment reviews must recheck the exact reference before use; no fallback to an older revision. A read/download is not approval to share it.
+
+UI edits preserve their original base version. An unknown save outcome may only retry its original payload. Newer server revisions do not silently overwrite unsaved changes or adopt a new write version. A changed/revoked source removes protected content. Navigation and unsaved discard remain explicit. Downloads use authenticated private routes and attachment disposition, never public file URLs.
+
+## Correspondence and transaction extension
+
+After the document foundation passes, connect exact document references to reviewed correspondence and transaction records. A title-coordination package needs known parties, financing type, closing date, a sourced agreement and a sourced deposit record. A missing item remains missing. Alex's stated reservation/stop-marketing sequence is provisional discovery, not verified company policy. Document presence alone never proves signatures, receipt of money, lien clearance or closing.
+
+Track employee-reported milestones separately from external confirmation; retain who reported each fact, when and its supporting revision. Changes to parties, dates, evidence or release eligibility invalidate prepared packages. Draft preparation may identify gaps and assemble a reviewable package; it cannot invent attorney/lender contacts, wire instructions, signed agreements or payment outcomes. All local sends and transaction outcomes remain clearly simulated until separately authorized connections exist.
+
+## Acceptance requirements
+
+- Private account, organization/office/role and source access on every path, including replay and historical content.
+- Actual text content and stable digest survive save/read/download and process restart; original revisions remain immutable.
+- Correction, withdrawal or source changes invalidate a prepared reference; stale writes cannot overwrite newer content.
+- Unknown outcomes recover once; no duplicate documents/revisions or lost unsaved edits across surfaces.
+- Desktop/mobile content continuity, readable source labels, guarded navigation and explicit missing-file behavior.
+- Full regression, isolated HTTP checks, migration-copy preservation and updated roadmap evidence before claiming acceptance.
+
+Binary/PDF ingestion, extraction provenance, mailbox attachment retrieval, document sharing/transfer, natural-language document tools and transaction packages are separate unfinished requirements. This text-content foundation must not be presented as all document handling completed.
+
+
+## Verified foundation and boundaries
+
+Migration 033 adds private document heads, immutable content revisions and append-only scoped events. Inputs accept `.txt`/`.md` names and valid Unicode text (32,000 characters / 64 KB); null characters, paths, binary filenames and future source dates are rejected. Source bindings stay fixed across revisions. The local library is bounded to 200 documents per employee. Immutable content digest/byte length and versions are visible through the API; historical reads recheck current ownership and linked-source scope. An ended subscription retains readable private history but cannot mutate or use documents in new work.
+
+Desktop Documents supports actual UTF-8 file import and authenticated attachment downloads. Native Work → Documents supports paste, read, correct and withdraw; binary picking/download and PDFs are still separate work. Both screens preserve unsaved text and its base version, invalidate stale withdrawal review, retain exact uncertain operation identity and suppress late reads after navigation. An interrupted refresh cannot repopulate an old document into a new form.
+
+Local acceptance: ten backend cases, seven shared-controller cases, 42 new HTTP checks and the full regression. Schema upgrade preserved 316 existing rows across 109 prior tables, with clean integrity and foreign keys. Desktop import and guarded navigation, 390×844 native-browser correction, website retrieval of that exact revision and cross-surface withdrawal passed. Browser evidence is not physical-device acceptance. No model document tool, source ingestion from mailboxes, actual transfer, provider call or charge was added. Current totals and remaining work are in the single roadmap and PROGRESS.

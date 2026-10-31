@@ -124,3 +124,7 @@
 .relationship-method summary{cursor:pointer;font-weight:600;line-height:1.5;min-height:28px}
 .relationship-method p,.relationship-method li{font-size:13px;line-height:1.65}
 .relationship-method ol,.relationship-method ul{padding-left:22px}
+
+.document-form label{margin:16px 0}.document-text{white-space:pre-wrap;overflow-wrap:anywhere;font:13px/1.75 var(--font);padding:20px;background:var(--panel-raised);border:1px solid var(--border);border-radius:10px;margin:20px 0;max-height:520px;overflow:auto}
+
+.document-workspace .button-row{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}.document-workspace h4{margin-top:20px}.document-form>.button{margin:12px 8px 0 0}
