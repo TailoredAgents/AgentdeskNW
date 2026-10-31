@@ -8,12 +8,13 @@ import {fingerprint} from './provider-runtime';
 import {listPersonalTasks} from './task-actions';
 import {getInboxState,getInboxThread} from './communications';
 import {listWorkRuns} from './work-runs';
+import {getTransactionTeams} from './transaction-team';
 import {getHandoffBoard} from './handoffs';
 import {notificationsAllowed,notify} from './services';
 import {dueBriefingSlot,validTimeZone} from './proactive-time';
 
 const id=z.string().trim().min(1).max(150),time=z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/);
-export const proactiveSettingsSchema=z.object({expectedVersion:z.number().int().nonnegative(),eventKey:id,enabled:z.boolean(),timeZone:z.string().max(100).refine(validTimeZone,'Choose a valid IANA timezone, such as America/New_York.'),times:z.array(time).min(1).max(3),weekdays:z.array(z.number().int().min(0).max(6)).min(1).max(7),topics:z.array(z.enum(proactiveTopics)).min(1).max(4),watchChanges:z.boolean(),preferredChannel:z.enum(['app','sms','slack'])}).strict().refine(v=>new Set(v.times).size===v.times.length&&new Set(v.weekdays).size===v.weekdays.length&&new Set(v.topics).size===v.topics.length,'Remove duplicate times, weekdays or topics.');
+export const proactiveSettingsSchema=z.object({expectedVersion:z.number().int().nonnegative(),eventKey:id,enabled:z.boolean(),timeZone:z.string().max(100).refine(validTimeZone,'Choose a valid IANA timezone, such as America/New_York.'),times:z.array(time).min(1).max(3),weekdays:z.array(z.number().int().min(0).max(6)).min(1).max(7),topics:z.array(z.enum(proactiveTopics)).min(1).max(proactiveTopics.length),watchChanges:z.boolean(),preferredChannel:z.enum(['app','sms','slack'])}).strict().refine(v=>new Set(v.times).size===v.times.length&&new Set(v.weekdays).size===v.weekdays.length&&new Set(v.topics).size===v.topics.length,'Remove duplicate times, weekdays or topics.');
 type Cursor={slot:string|null;seen:string[];sequence:number;lastCreatedAt:string|null};
 export type StoredUpdate=Omit<ProactiveUpdate,'items'|'withheldCount'|'summary'>&{preferenceVersion?:number;references:{key:string;reference:string}[]};
 const owner=(actor:Actor)=>[actor.organizationId,actor.officeId,actor.id];
@@ -43,6 +44,21 @@ export function currentProactiveItems(actor:Actor,preferences=prefs(actor).prefe
   if(['waiting','resolved'].includes(handoff.attention))continue;
   const key=`handoff:${handoff.releaseId}:${handoff.releaseVersion}:${handoff.record?.version??0}:${handoff.attention}`;
   items.push({key,topic:'handoffs',title:handoff.address,detail:handoff.nextStep,reference:fingerprint({release:handoff.releaseVersion,record:handoff.record,attention:handoff.attention}),artifact:{type:'handoff',id:handoff.releaseId,title:'Review handoff'},watchEligible:true});
+ }
+ if(preferences.topics.includes('transactions')&&hasFeature(actor,'transaction-coordinator'))for(const team of getTransactionTeams(actor).items){
+  // Reports remain separate from deal outcomes; observers do not inherit another person's reminders.
+  if(team.status!=='current'){
+   if(team.status==='source_changed'&&team.canManage)items.push({key:`team-refresh:${team.id}:${team.reference}`,topic:'transactions',title:'Shared coordination needs refresh',detail:'The source changed. Review a current summary before teammates continue.',reference:team.reference,artifact:{type:'transaction_team',id:team.id,title:'Review shared coordination'},watchEligible:true});
+   continue;
+  }
+  const today=new Date().toLocaleDateString('en-CA',{timeZone:preferences.timeZone});
+  for(const task of team.tasks){
+   if(task.state==='resolved'||(!team.canManage&&task.assignedTo!==actor.id))continue;
+   const overdue=task.dueDate<today,dueToday=task.dueDate===today;
+   const detail=task.state==='reported'?(team.canManage?'Completion reported · needs your review':'Completion reported · awaiting owner review'):task.state==='blocked'?'Blocker reported · review the next step':task.state==='assigned'?(task.assignedTo===actor.id?'Assigned to you · acknowledgment needed':'Assigned · awaiting acknowledgment'):overdue?'Follow-up overdue':dueToday?'Follow-up due today':'Follow-up in progress';
+   const key=`team-task:${team.id}:${task.id}:${fingerprint({generation:team.generation,task,overdue,dueToday})}`;
+   items.push({key,topic:'transactions',title:team.snapshot!.address,detail:`${detail}. ${task.instruction} · due ${task.dueDate}. Employee reports are not verified transaction outcomes.`,reference:team.reference,artifact:{type:'transaction_team',id:team.id,title:'Review shared follow-up'},watchEligible:task.state==='assigned'&&task.assignedTo===actor.id||task.state==='blocked'||task.state==='reported'&&team.canManage||overdue||dueToday});
+  }
  }
  return items.sort((a,b)=>a.topic.localeCompare(b.topic)||a.key.localeCompare(b.key)).slice(0,200);
 }
@@ -92,5 +108,5 @@ export function getProactiveUpdate(actor:Actor,updateId:string):ProactiveUpdate 
 /** References for non-job summaries never recurse through job/history validation. */
 export function proactiveItemReference(item:ProactiveItem):string{return JSON.stringify({key:item.key,reference:item.reference});}
 export function proactiveReferenceCurrent(actor:Actor,reference:string):boolean {
- try{const saved=JSON.parse(reference) as {key:string;reference:string};return currentProactiveItems(actor,{...prefs(actor).preferences,topics:['tasks','replies','handoffs']}).some(item=>item.key===saved.key&&item.reference===saved.reference);}catch(error){if(error instanceof SyntaxError||error instanceof AppError&&[402,403,404].includes(error.status))return false;throw error;}
+ try{const saved=JSON.parse(reference) as {key:string;reference:string};return currentProactiveItems(actor,{...prefs(actor).preferences,topics:['tasks','replies','handoffs','transactions']}).some(item=>item.key===saved.key&&item.reference===saved.reference);}catch(error){if(error instanceof SyntaxError||error instanceof AppError&&[402,403,404].includes(error.status))return false;throw error;}
 }

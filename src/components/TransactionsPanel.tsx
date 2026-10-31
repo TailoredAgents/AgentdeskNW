@@ -23,9 +23,9 @@ function PrivateTransactionsPanel({initialId,onDirtyChange,onBusyChange,onInbox,
  </Panel></div>}</>;
 }
 
-export function TransactionsPanel(props:{initialId?:string;onInbox:(id:string)=>void;onDirtyChange:(value:boolean)=>void;onBusyChange:(value:boolean)=>void}){
+export function TransactionsPanel(props:{initialTeamId?:string;initialId?:string;onInbox:(id:string)=>void;onDirtyChange:(value:boolean)=>void;onBusyChange:(value:boolean)=>void}){
  const {onDirtyChange,onBusyChange}=props;
- const [section,setSection]=useState<'private'|'team'>('private'),[teamId,setTeamId]=useState<string>(),[dirty,setDirty]=useState(false),[busy,setBusy]=useState(false);
+ const [section,setSection]=useState<'private'|'team'>(props.initialTeamId!==undefined?'team':'private'),[teamId,setTeamId]=useState<string>(),[dirty,setDirty]=useState(false),[busy,setBusy]=useState(false);
  useEffect(()=>{onDirtyChange(dirty);onBusyChange(busy);return()=>{onDirtyChange(false);onBusyChange(false);};},[dirty,busy,onDirtyChange,onBusyChange]);
- return <><div className="button-row"><button className={`button ${section==='private'?'primary':'secondary'}`} disabled={dirty||busy} onClick={()=>setSection('private')}>Private transactions</button><button className={`button ${section==='team'?'primary':'secondary'}`} disabled={dirty||busy} onClick={()=>{setTeamId(undefined);setSection('team');}}>Team coordination</button></div>{section==='private'?<PrivateTransactionsPanel {...props} onDirtyChange={setDirty} onBusyChange={setBusy} onTeam={id=>{setTeamId(id);setSection('team');}}/>:<TransactionTeamPanel transactionId={teamId} onDirtyChange={setDirty} onBusyChange={setBusy}/>}</>;
+ return <><div className="button-row"><button className={`button ${section==='private'?'primary':'secondary'}`} disabled={dirty||busy} onClick={()=>setSection('private')}>Private transactions</button><button className={`button ${section==='team'?'primary':'secondary'}`} disabled={dirty||busy} onClick={()=>{setTeamId(undefined);setSection('team');}}>Team coordination</button></div>{section==='private'?<PrivateTransactionsPanel {...props} onDirtyChange={setDirty} onBusyChange={setBusy} onTeam={id=>{setTeamId(id);setSection('team');}}/>:<TransactionTeamPanel initialTeamId={teamId?undefined:props.initialTeamId} transactionId={teamId} onDirtyChange={setDirty} onBusyChange={setBusy}/>}</>;
 }

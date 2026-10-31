@@ -32,9 +32,9 @@ function PrivateTransactionsScreen({api,initialId,onGuard,onInbox,onTeam}:{onTea
  </>}</ScrollView>;
 }
 
-export function TransactionsScreen(props:{initialId?:string|null;onInbox:(id:string)=>void;api:ReturnType<typeof createApi>;onGuard:(guard:((leave:()=>void)=>void)|null)=>void}){
- const [section,setSection]=useState<'private'|'team'>('private'),[teamId,setTeamId]=useState<string>(),guard=useRef<((leave:()=>void)=>void)|null>(null);
+export function TransactionsScreen(props:{initialTeamId?:string|null;initialId?:string|null;onInbox:(id:string)=>void;api:ReturnType<typeof createApi>;onGuard:(guard:((leave:()=>void)=>void)|null)=>void}){
+ const [section,setSection]=useState<'private'|'team'>(props.initialTeamId!=null?'team':'private'),[teamId,setTeamId]=useState<string>(),guard=useRef<((leave:()=>void)=>void)|null>(null);
  const register=useCallback((value:((leave:()=>void)=>void)|null)=>{guard.current=value;props.onGuard(value);},[props.onGuard]);
  const choose=(next:'private'|'team')=>{const action=()=>{setTeamId(undefined);setSection(next);};if(guard.current)guard.current(action);else action();};
- return <View style={s.grow}><View style={[s.wrap,{paddingHorizontal:20,paddingTop:12}]}><Button label="Private transactions" secondary={section!=='private'} onPress={()=>choose('private')}/><Button label="Team coordination" secondary={section!=='team'} onPress={()=>choose('team')}/></View>{section==='private'?<PrivateTransactionsScreen {...props} onGuard={register} onTeam={id=>{setTeamId(id);setSection('team');}}/>:<TransactionTeamScreen api={props.api} transactionId={teamId} onGuard={register}/>}</View>;
+ return <View style={s.grow}><View style={[s.wrap,{paddingHorizontal:20,paddingTop:12}]}><Button label="Private transactions" secondary={section!=='private'} onPress={()=>choose('private')}/><Button label="Team coordination" secondary={section!=='team'} onPress={()=>choose('team')}/></View>{section==='private'?<PrivateTransactionsScreen {...props} onGuard={register} onTeam={id=>{setTeamId(id);setSection('team');}}/>:<TransactionTeamScreen initialTeamId={teamId?undefined:props.initialTeamId} api={props.api} transactionId={teamId} onGuard={register}/>}</View>;
 }

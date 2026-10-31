@@ -6,9 +6,9 @@ import {transactionMilestones,transactionMilestoneLabels} from '../../src/lib/tr
 import {createApi} from './client';
 import {Button} from './WorkScreen';
 import {styles as s} from './styles';
-export function TransactionTeamScreen({api,transactionId,onGuard}:{api:ReturnType<typeof createApi>;transactionId?:string;onGuard:(guard:((leave:()=>void)=>void)|null)=>void}){
+export function TransactionTeamScreen({api,transactionId,initialTeamId,onGuard}:{api:ReturnType<typeof createApi>;transactionId?:string;initialTeamId?:string|null;onGuard:(guard:((leave:()=>void)=>void)|null)=>void}){
  const controller=useMemo(()=>new TransactionTeamController(api,()=>Crypto.randomUUID()),[api]),[state,setState]=useState(controller.value);
- useEffect(()=>{controller.activate();const unsub=controller.subscribe(setState);void controller.load().then(()=>{if(transactionId)return controller.share(transactionId);});const timer=setInterval(()=>void controller.load(),7000);return()=>{unsub();clearInterval(timer);controller.dispose();};},[controller,transactionId]);
+ useEffect(()=>{controller.activate();const unsub=controller.subscribe(setState);void controller.load().then(()=>{if(initialTeamId)return controller.select(initialTeamId);if(transactionId)return controller.share(transactionId);});const timer=setInterval(()=>void controller.load(),7000);return()=>{unsub();clearInterval(timer);controller.dispose();};},[controller,transactionId,initialTeamId]);
  useEffect(()=>{onGuard(fn=>controller.leave(fn));return()=>onGuard(null);},[controller,onGuard]);
  const {board,item,setup,publish,review,action,decision}=state,locked=controller.locked;
  const button=(label:string,fn:()=>unknown,disabled=false,primary=false)=><Button label={label} onPress={()=>void fn()} secondary={!primary} disabled={locked||disabled}/>;

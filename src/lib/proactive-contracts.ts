@@ -1,7 +1,7 @@
 import type {Artifact} from './contracts';
-export const proactiveTopics=['replies','tasks','jobs','handoffs'] as const;
+export const proactiveTopics=['replies','tasks','jobs','handoffs','transactions'] as const;
 export type ProactiveTopic=typeof proactiveTopics[number];
-export const proactiveTopicLabels:Record<ProactiveTopic,string>={replies:'Investor replies',tasks:'Follow-ups and deadlines',jobs:'Saved work and decisions',handoffs:'Deal handoffs'};
+export const proactiveTopicLabels:Record<ProactiveTopic,string>={replies:'Investor replies',tasks:'Follow-ups and deadlines',jobs:'Saved work and decisions',handoffs:'Deal handoffs',transactions:'Shared transactions'};
 export interface ProactivePreferences {version:number;enabled:boolean;timeZone:string;times:string[];weekdays:number[];topics:ProactiveTopic[];watchChanges:boolean;preferredChannel:'app'|'sms'|'slack';updatedAt:string|null}
 export interface ProactiveItem {key:string;topic:ProactiveTopic;title:string;detail:string;reference:string;artifact:Artifact;watchEligible:boolean}
 export type ProactiveDeliveryStatus='in_app'|'connection_required'|'queued'|'dispatching'|'accepted'|'service_received'|'delivered'|'unknown'|'failed'|'canceled'|'expired';

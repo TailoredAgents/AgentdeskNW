@@ -3,9 +3,9 @@ import {useEffect,useMemo,useState} from 'react';
 import {TransactionTeamController,teamDecisionText} from '@/lib/transaction-team-controller';
 import {transactionMilestones,transactionMilestoneLabels} from '@/lib/transaction-contracts';
 import {api,Panel,SectionHead} from './ui';
-export function TransactionTeamPanel({transactionId,onDirtyChange,onBusyChange}:{transactionId?:string;onDirtyChange:(value:boolean)=>void;onBusyChange:(value:boolean)=>void}){
+export function TransactionTeamPanel({transactionId,initialTeamId,onDirtyChange,onBusyChange}:{transactionId?:string;initialTeamId?:string|null;onDirtyChange:(value:boolean)=>void;onBusyChange:(value:boolean)=>void}){
  const controller=useMemo(()=>new TransactionTeamController(api,()=>crypto.randomUUID()),[]),[state,setState]=useState(controller.value);
- useEffect(()=>{controller.activate();const unsub=controller.subscribe(setState);void controller.load().then(()=>{if(transactionId)return controller.share(transactionId);});const timer=setInterval(()=>void controller.load(),7000);return()=>{unsub();clearInterval(timer);controller.dispose();};},[controller,transactionId]);
+ useEffect(()=>{controller.activate();const unsub=controller.subscribe(setState);void controller.load().then(()=>{if(initialTeamId)return controller.select(initialTeamId);if(transactionId)return controller.share(transactionId);});const timer=setInterval(()=>void controller.load(),7000);return()=>{unsub();clearInterval(timer);controller.dispose();};},[controller,transactionId,initialTeamId]);
  useEffect(()=>{onDirtyChange(controller.dirty);onBusyChange(controller.locked);return()=>{onDirtyChange(false);onBusyChange(false);};},[state,controller,onDirtyChange,onBusyChange]);
  useEffect(()=>{if(!controller.dirty&&!controller.locked)return;const block=(event:BeforeUnloadEvent)=>{event.preventDefault();event.returnValue='';};window.addEventListener('beforeunload',block);return()=>window.removeEventListener('beforeunload',block);},[state,controller]);
  const {board,item,setup,publish,review,action,decision}=state,locked=controller.locked;

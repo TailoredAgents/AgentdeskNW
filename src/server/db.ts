@@ -24,7 +24,17 @@ export function getDb(): Database.Database {
   try {
     database.pragma('busy_timeout = 5000');
     database.pragma('foreign_keys = ON');
-    database.pragma('journal_mode = WAL');
+    // SQLite may return BUSY immediately while another fresh connection switches journal modes,
+    // even with busy_timeout. Retry only that setup step within the same five-second window.
+    const journalDeadline=performance.now()+5000,waitBuffer=new Int32Array(new SharedArrayBuffer(4));
+    for(;;){
+      try{database.pragma('journal_mode = WAL');break;}
+      catch(error){
+        const remaining=journalDeadline-performance.now();
+        if((error as {code?:string}).code!=='SQLITE_BUSY'||remaining<=0)throw error;
+        Atomics.wait(waitBuffer,0,0,Math.min(25,remaining));
+      }
+    }
     // Serialize the migration checks, schema changes and fictional seed as one unit.
     database.transaction(() => {
       database!.exec('CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL)');

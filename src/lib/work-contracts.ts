@@ -23,7 +23,7 @@ export interface WorkRun {
  question?:WorkQuestion|null;
 }
 /** Server-derived model provenance. Never accept these references from an HTTP/model caller. */
-export interface WorkSourceReferences {transactionAccess?:string[]; investors:string[];properties:string[];releases:string[];packages:string[];debriefs:string[];inboxThreads:string[];inboxAccess:string[];handoffAccess?:string[];workQuestions?:string[];knowledgeAccess?:string[];updatesAccess?:string[];analysisAccess?:string[];opportunityAccess?:string[] }
+export interface WorkSourceReferences {transactionTeamAccess?:string[];transactionAccess?:string[]; investors:string[];properties:string[];releases:string[];packages:string[];debriefs:string[];inboxThreads:string[];inboxAccess:string[];handoffAccess?:string[];workQuestions?:string[];knowledgeAccess?:string[];updatesAccess?:string[];analysisAccess?:string[];opportunityAccess?:string[] }
 export interface CreateWorkRunInput { requestId:string; title:string; instructions:string; conversationId?:string; steps:WorkStepInput[]; sourceReferences?:WorkSourceReferences }
 export interface WorkRunChange { expectedVersion:number; eventKey:string }
 export interface ReviseWorkRunInput extends WorkRunChange { title?:string; instructions:string; steps:WorkStepInput[] }
