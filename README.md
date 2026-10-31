@@ -16,13 +16,13 @@ The target is a primary iPhone/Android app and a detailed desktop workspace, wit
 
 ## Current state
 
-**Current local checkpoint: whole-assignment metered admission with test transport**, verified October 30, 2026, extending automatic top-up checkpoint `32580fb`. Planning and delegated parts share one server-derived maximum, dispatch claims survive restart, and authoritative test receipts settle once. Unknown outcomes retain holds; cancellation releases only unused funds. This server foundation uses fictional tariffs and is not yet connected to the existing live AI paths. Desktop/phone top-up, analysis, intake and work controls remain available.
+**Current local checkpoint: chosen briefings and saved in-app updates**, verified October 30, 2026, extending metered admission checkpoint `12c6763`. Employees choose up to three briefing times, weekdays, topics, timezone and change alerts. Desktop and phone share preferences, saved updates and read state; resolved or inaccessible source details are withheld. SMS/Slack preferences are saved for later routing. No external delivery or paid reasoning occurs.
 
-Verification: **726 root tests, 27 mobile tests, 1,303 HTTP/workflow checks and 12 metered restart/adapter checks**, plus root typecheck/lint/build. Mobile typecheck/tests passed; the unchanged native exports/interface walkthrough remain the previous checkpoint's evidence. Migration 029 preserved all 316 prior rows across 98 tables on a disposable schema-028 copy. No dependency change. Sixteen specialists remain two locally ready, thirteen demo and one planned; effectiveness and company-approved expertise are not established.
+Verification: **746 root tests, 27 mobile tests, 1,351 HTTP/workflow checks and 12 metered restart/adapter checks**, plus root typecheck/lint/build, final native/web exports and a connected desktop/phone-width walkthrough. Migration 030 preserved all 316 prior rows across 101 tables on a disposable schema-029 copy. No dependency change. Sixteen specialists remain two locally ready, thirteen demo and one planned; effectiveness and company-approved expertise are not established.
 
 **Mobile is prepared locally, not yet installed or released.** The phone-width browser rehearsal passed pairing, shared history, cross-surface cost approval, pause/resume, background worker completion and remote device revocation. Native binary builds, real phone speech/push and store distribution remain pending. [Mobile preparation notes](mobile/README.md) distinguish each acceptance layer. Whole-job costs remain fictional; live model/provider usage is separately metered.
 
-Implementation follows the single roadmap. C1–C4 remain partial. Next: chosen briefings/watchers and proactive usefulness, followed by further role depth. Live-host spending integration remains required before broader paid autonomy under the canonical roadmap. The owner has deferred real-world/device/provider acceptance to a later assessment; independent fictional development continues.
+Implementation follows the single roadmap. C1–C4 remain partial. Next: preferred-channel routing and sourced Copilot update retrieval, followed by further role depth. Live-host spending integration remains required before broader paid autonomy under the canonical roadmap. The owner has deferred real-world/device/provider acceptance to a later assessment; independent fictional development continues.
 
 Repository: [TailoredAgents/AgentdeskNW](https://github.com/TailoredAgents/AgentdeskNW). The owner reported a Render deployment; the latest deployed revision has not been verified. Push and deployment are separate. Real company data, live mailboxes/investor delivery, actual payments, managed identity and broad expert autonomy remain unfinished.
 
@@ -65,6 +65,7 @@ npm run test:intelligence
 npm run test:conversation
 npm run test:wallet
 npm run test:metered
+node scripts/smoke-runner.mjs proactive
 npm run test:hosted
 npm run test:inbox
 npm run test:communications

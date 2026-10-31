@@ -2,6 +2,10 @@
 
 [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) is the sole authority for completion status and development order. This document records schema contracts and historical preservation evidence, not permission to apply migrations to the active database.
 
+## Personal updates — migration 030
+
+`proactive_preferences` holds employee-scoped versioned settings and scheduler cursors. `proactive_updates` holds generic saved-update metadata and source keys/fingerprints, not copied correspondence or work content. Current authorized records are reprojected on every read. `proactive_events` preserves append-only settings/read/creation evidence and exact-retry hashes. Unique scope/dedupe keys and immediate transactions prevent overlapping workers from repeating a slot or change batch. Migration 030 preserved all 316 previous rows across 101 tables on a disposable schema-029 copy, with clean integrity/foreign keys. No active database was used.
+
 ## Metered assignment contract — migration 029
 
 `metered_assignments` binds one stable assignment key to organization/office/employee, versioned parts/rates, attempt claims, receipts and cancellation intent. `metered_assignment_events` preserves immutable dispatch/quote/receipt/finish evidence. `metered_response_claims` prevents the same provider response being applied to two calls. The assignment's budget and wallet hold reuse existing tables; no new spendable balance exists. Raw prompts/responses are not stored in these billing records. The adapter is test-only and no public receipt endpoint exists. Migration 029 preserved all 316 previous rows across 98 tables on a disposable schema-028 copy, with clean integrity/foreign keys. See [USAGE_METERING.md](USAGE_METERING.md).

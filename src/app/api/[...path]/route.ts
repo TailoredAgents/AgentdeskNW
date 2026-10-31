@@ -1,3 +1,4 @@
+import {proactiveRoute} from '@/server/proactive-api';
 import {getAnalysisBoard,getAnalysis,previewAnalysis,saveAnalysis} from '@/server/deal-analysis';
 import {analysisPreviewSchema,analysisSaveSchema} from '@/server/analysis-schema';
 import {getOpportunityBoard,getOpportunity,previewOpportunity,saveOpportunity,opportunityPreviewSchema,opportunitySaveSchema} from '@/server/opportunities';
@@ -71,6 +72,7 @@ async function route(request:NextRequest,{params}:{params:Promise<{path:string[]
     const messaging=await messagingRoute(request,actor,path,()=>body(request));if(messaging)return messaging;
     const billing=await billingRoute(request,actor,path,()=>body(request));if(billing)return billing;
     const inbox=await communicationsRoute(request,actor,path,()=>body(request));if(inbox)return inbox;
+    const updates=await proactiveRoute(request,actor,path,()=>body(request));if(updates)return updates;
     const wallet=await walletRoute(request,actor,path,()=>body(request));if(wallet)return wallet;
     const work=await workRoute(request,actor,path,()=>body(request));if(work)return work;
     const memoryJourney=await memoryJourneyRoute(request,actor,path,()=>body(request));if(memoryJourney)return memoryJourney;

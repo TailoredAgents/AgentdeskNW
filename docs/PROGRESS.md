@@ -1,5 +1,21 @@
 # AgentDesk progress log
 
+## October 30, 2026 — Chosen briefings and in-app updates accepted locally
+
+**Scope:** extends metered-admission commit `12c6763` under the owner’s continuing fictional-data roadmap. Additive migration 030; no dependency change, provider delivery, paid model call, payment, deployment or real-device acceptance.
+
+**Behavior:** employees opt into up to three daily briefing times, weekdays, topics, timezone and grouped change alerts. Current private replies, due follow-ups, saved-work decisions/results and permitted handoffs supply deterministic summaries. Quiet hours use the chosen timezone throughout existing notification services. Repeated daylight-saving hours create one slot; nonexistent hours catch up once. Downtime combines missed times into the latest current-day briefing. Baselines prevent old-condition floods on enabling/editing; five-minute grouping and ten updates per day bound changes. Updates never authorize business actions or paid work.
+
+**Privacy and continuity:** update rows retain generic metadata and source references, not copied private content. Reads recheck source scope/fingerprints and remove resolved, changed or unavailable items. Settings are versioned, exact-retry audited and employee-private. Overlapping workers share transactional cursors/deduplication. Desktop My updates and native Work → My updates share schedules, updates and read state, with guarded edits, stale-write handling and exact source navigation. Existing quiet-hour values remain editable in desktop Settings. SMS/Slack preferences are saved only; this checkpoint does not route external delivery or integrate Copilot summary tools. Existing job push/task-channel notification mechanisms remain separate.
+
+**Verification:** 746 root tests across 41 files, root typecheck/lint/production build, 27 mobile tests, independent mobile typecheck, final iOS/Android Hermes exports (~2 MB each) and production/development web exports passed. Twenty new scheduler cases cover timezone/DST, quiet hours, downtime, coalescing, source revocation, privacy, version/retry, caps and access loss. **1,351 HTTP/workflow checks passed**: prior 1,303 plus 48 proactive checks for shared desktop/phone settings/read state, concurrency, stale/forged input, source links, resolution, isolation and device revocation. Twelve separate metered restart/adapter checks passed again. No live provider or payment operation occurred.
+
+**Preservation:** disposable schema-029 copy upgraded through 030 with all 316 previous rows across 101 tables unchanged, clean integrity and no foreign-key violations. Active database untouched. Evidence: ignored `artifacts/mobile/proactive-migration-preservation.json`.
+
+**Interface acceptance:** desktop opt-in/Pacific schedule → unsaved-edit discard → new fictional Salesforce-flow reply → one saved update. Paired phone showed the same schedule and update; unsaved edits blocked tab changes. Reading on phone updated desktop read state. The saved item opened Mike’s exact correspondence; marking it handled withheld the old content on both screens. The 390×844 layout was inspected without captured application console errors. Screenshot: ignored `artifacts/mobile/proactive-phone.png`. This remains browser/native-export evidence, not a physical-phone test.
+
+**Next:** selected-channel routing, exact update links and sourced Copilot retrieval, followed by remaining specialist/role depth. C5 remains partial; all sixteen scopes remain two locally ready, thirteen demo and one planned. C6 live-host spending integration remains required before broad paid autonomy. Real-world/provider/device/practitioner acceptance stays deferred. Commit/push is authorized; Render remains unverified.
+
 ## October 30, 2026 — Metered assignment contract accepted with test transport
 
 **Scope:** continued C6 after automatic top-up commit `32580fb`. Added a server-only whole-assignment contract and test transport; no UI, provider activation, live delivery/payment or deployment change. Existing live text/voice/research calls remain separately metered and are not governed by this new contract yet. The OpenAI Docs skill was used to verify output/reasoning usage semantics; test tariffs are explicitly fictional and no provider price/invoice was inferred.

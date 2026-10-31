@@ -1,3 +1,4 @@
+import {employeeTimeZone} from './proactive-time';
 import {getHandoffBoard} from './handoffs';
 import { researchConfig } from './external-research-provider';
 import { z } from 'zod';
@@ -58,7 +59,7 @@ export function updateSettings(actor:Actor,partial:Partial<Settings>):Settings {
 export function notificationsAllowed(actor:Actor):boolean {
  const settings=getSettings(actor);
  if(!settings.notifications) return false;
- const hour=Number(new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',hour:'numeric',hourCycle:'h23'}).format(new Date()));
+ const hour=Number(new Intl.DateTimeFormat('en-US',{timeZone:employeeTimeZone(actor),hour:'numeric',hourCycle:'h23'}).format(new Date()));
  const start=settings.quietHoursStart,end=settings.quietHoursEnd;
  return start===end || !(start<end?hour>=start&&hour<end:hour>=start||hour<end);
 }
