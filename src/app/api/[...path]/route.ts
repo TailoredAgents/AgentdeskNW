@@ -1,3 +1,4 @@
+import {getHandoffBoard,getHandoff,handoffMutationSchema,mutateHandoff} from '@/server/handoffs';
 import {acquisitionInputSchema,recordAcquisitionSubmission,reviewAcquisition} from '@/server/acquisitions';
 import {assertMobileRequest,getMobileAuthentication,pairMobileDevice} from '@/server/mobile-auth';
 import {mobileRoute} from '@/server/mobile-api';
@@ -104,6 +105,10 @@ async function route(request:NextRequest,{params}:{params:Promise<{path:string[]
     }
     if(resource==='investors'&&id&&method==='PATCH'){
       const {changes}=z.object({changes:qualificationChangesSchema}).strict().parse(await body(request));return json(service.proposeInvestorUpdate(actor,id,changes),201);
+    }
+    if(resource==='handoffs'&&path.length<=2){
+      if(method==='GET')return json(id?getHandoff(actor,id):getHandoffBoard(actor));
+      if(method==='POST'&&id)return json(mutateHandoff(actor,id,handoffMutationSchema.parse(await body(request))));
     }
     if(resource==='acquisitions'&&id&&path.length===2){
       if(method==='GET')return json(reviewAcquisition(actor,id));

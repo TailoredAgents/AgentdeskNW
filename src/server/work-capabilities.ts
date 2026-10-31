@@ -1,3 +1,4 @@
+import {handoffReferenceCurrent} from './handoffs';
 import {acquisitionMethod,reviewAcquisition} from './acquisitions';
 import {z} from 'zod';
 import type {Actor,Role,ToolResult} from '../lib/contracts';
@@ -69,6 +70,8 @@ export function estimateWorkStep(actor:Actor,step:WorkStepInput){const item=defi
 export function validateStoredWorkOutput(actor:Actor,step:WorkStepInput,output:ToolResult):void {
  assertActor(actor);requireRole(actor,definition(step.capabilityId).roles);
  const acquisition=(output.data as {acquisitionReview?:{property:{id:string};version:number;method:{version:number}}}|undefined)?.acquisitionReview;
+ const handoff=(output.data as {overview?:{handoffs?:{handoffAccessReference:string}}}|undefined)?.overview?.handoffs;
+ if(handoff&&!handoffReferenceCurrent(actor,handoff.handoffAccessReference))throw new AppError(409,'The handoff evidence changed. Prepare a fresh office review.');
  if(acquisition){const current=reviewAcquisition(actor,acquisition.property.id);if(current.version!==acquisition.version||JSON.stringify(current.property)!==JSON.stringify(acquisition.property)||acquisition.method.version!==acquisitionMethod.version)throw new AppError(409,'The acquisition source changed. Prepare a fresh handoff review.');}
  const inspect=(value:unknown,depth=0)=>{
   if(!value||typeof value!=='object'||depth>14)return;
@@ -106,7 +109,7 @@ export function executeWorkCapability(actor:Actor,step:WorkStepInput,_priorOutpu
    const review=reviewAcquisition(actor,input.propertyId as string),releases=listReleases(actor).filter(r=>r.propertyId===review.property.id);
    result.data={propertyId:review.property.id,property:review.property,releases,missing:review.questions.map(item=>item.reason),acquisitionReview:review};result.message=review.handoffDraft;break;
   }
-  case 'office_priorities':{const overview=getManagementOverview(actor);result.data={overview};result.message=`${overview.summary}\n${overview.overdue.length?`Recorded overdue work: ${overview.overdue.slice(0,8).map(t=>t.title).join('; ')}.`:'No overdue tasks are recorded in this office view.'}\nLocal workload evidence only; no private mailbox access or verified sales-performance claim.`;break;}
+  case 'office_priorities':{const overview=getManagementOverview(actor);result.data={overview};result.artifacts=[{type:'handoff',title:'Review shared handoffs',data:{handoffAccessReference:overview.handoffs.handoffAccessReference}}];result.message=`${overview.summary}\n${overview.handoffs.summary}\n${overview.handoffs.items.slice(0,8).map(item=>`${item.address}: ${item.nextStep} ${item.evidence.join(' ')}`).join('\n')}\n${overview.overdue.length?`Recorded overdue work: ${overview.overdue.slice(0,8).map(t=>t.title).join('; ')}.`:'No overdue tasks are recorded in this office view.'}\nLocal workload evidence only; no private mailbox access or verified sales-performance claim.`;break;}
   case 'create_followup':{const task=createTask(actor,input as {title:string;investorId:string|null;dueAt:string|null});result.data={taskId:task.id,task};result.message=`Saved your personal follow-up: ${task.title}.`;result.artifacts=[{type:'task',id:task.id,title:task.title}];break;}
   case 'start_synthetic_research':{
    const property=readProperty(actor,input.propertyId as string);

@@ -1,3 +1,4 @@
+import {getHandoffBoard} from './handoffs';
 import {relationshipMethodFingerprint} from './relationship-methods';
 import {executeWorkConversationAction} from './work-conversation';
 import { workToolSchemas,workToolDescriptions,dispatchWorkTool,localWorkReply } from './work-tooling';
@@ -44,6 +45,7 @@ const toolSchemas = {
   qualification_review:z.object({investorId:z.string().min(1).max(100)}).strict(),
   transaction_context:noArgs,
   acquisition_context:z.object({releaseId:nullableId}).strict(),
+  handoff_overview:noArgs,
   team_overview:noArgs,
   daily_priorities:noArgs,
   search_crm:z.object({query:z.string().max(200)}).strict(),
@@ -78,6 +80,7 @@ const descriptions: Record<ToolName,string> = {
   qualification_review:'Premium Investor Qualification: review separate buy boxes, provenance and missing criteria for a verified investor.',
   transaction_context:'Premium Transaction Coordinator: summarize recorded upstream/downstream milestones and missing closing information, without legal conclusions.',
   acquisition_context:'Premium Acquisition-to-Disposition Coordinator: review authorized acquisition releases, source data, milestones and missing handoff information. This retrieves saved records; publishing or changing a release requires the employee to use the existing release editor.',
+  handoff_overview:'Read current shared handoff assignments, acknowledgment, blockers and employee-reported outcomes. Managers see the office; other employees see only their current authorized assignments. Does not read private correspondence or mutate records. Open Work to review an assignment or outcome. Personal task completion never proves deal progress.',
   team_overview:'Premium Team Performance: authorized office workload counts, not private conversations.',
   daily_priorities:'Retrieve actual current tasks, research status, approvals and follow-ups for this employee.',
   search_crm:'Search the authorized local demo CRM by person, company or county. This is existing CRM, not external discovery.',
@@ -186,7 +189,8 @@ function dispatchToolSync(actor: Actor,name: string,raw:unknown,command?:TurnCom
     case 'qualification_review':{requireFeature(actor,'investor-qualification');const {investorId}=toolSchemas.qualification_review.parse(raw);const profile=intelligence.getInvestorIntelligence(actor,investorId);const guidance=service.getGuidance(actor,investorId);result.specialistIds=['investor-qualification'];result.data={profile,guidance};result.message=`Qualification review: ${guidance.nextAction} ${guidance.explanation} Review the separate buy boxes and their source evidence in Deals & investors.`;result.artifacts=[{type:'investors',title:'Review qualification and source evidence'}];break;}
     case 'transaction_context':{requireFeature(actor,'transaction-coordinator');const releases=workflows.listReleases(actor);result.specialistIds=['transaction-coordinator'];result.data=releases.map(({id,upstreamStage,downstreamStage,closingStructure,closingAt})=>({id,upstreamStage,downstreamStage,closingStructure,closingAt}));result.message=releases.length?releases.map(r=>`${r.property.address}: upstream ${r.upstreamStage||'not recorded'}; downstream ${r.downstreamStage||'not recorded'}; closing ${r.closingAt||'date not recorded'}. Source: ${r.source}.`).join('\n'):'No authorized releases available. Supply verified milestones before preparing a transaction checklist.';break;}
     case 'acquisition_context':{requireFeature(actor,'acquisition-disposition');const {releaseId}=toolSchemas.acquisition_context.parse(raw);const releases=workflows.listReleases(actor).filter(r=>!releaseId||r.id===releaseId);if(releaseId&&!releases.length)throw new service.AppError(404,'Release not found in your authorized workspace.');result.specialistIds=['acquisition-disposition'];result.data=releases.map(r=>({id:r.id,address:r.property.address,status:r.status,version:r.version,source:r.source,upstreamStage:r.upstreamStage,downstreamStage:r.downstreamStage,missing:[...(!r.propertyType?['Property type']:[]),...(!r.upstreamStage?['Acquisition milestone']:[]),...(!r.downstreamStage?['Disposition milestone']:[]),...(!r.closingAt?['Closing date']:[]),...(r.mediaAccess==='unverified'?['Media sharing eligibility']:[])]}));result.message=releases.length?'Retrieved the saved acquisition releases and missing handoff information. Review Property releases to confirm source details and make an explicit release change. No release was published or changed.':'No authorized acquisition releases are saved. Use Property releases to prepare a draft from a known property.';result.artifacts=releases.slice(0,20).map(r=>({type:'release',id:r.id,title:r.property.address}));break;}
-    case 'team_overview':{const overview=service.getManagementOverview(actor);result.specialistIds=['team-performance'];result.data=overview;result.message=`Authorized office workload: ${JSON.stringify(overview)}. Fictional local demo data.`;break;}
+    case 'handoff_overview':{if(actor.role==='manager')requireFeature(actor,'team-performance');const board=getHandoffBoard(actor);result.data=board;result.message=`${board.summary}\n${board.items.slice(0,10).map(item=>`${item.address}: ${item.nextStep}\n${item.evidence.join('\n')}`).join('\n\n')}\n${board.method.notice}`;result.artifacts=[{type:'handoff',title:'Review shared handoffs',data:{handoffAccessReference:board.handoffAccessReference}}];break;}
+    case 'team_overview':{const overview=service.getManagementOverview(actor);result.specialistIds=['team-performance'];result.data=overview;result.artifacts=[{type:'handoff',title:'Review office handoffs',data:{handoffAccessReference:overview.handoffs.handoffAccessReference}}];result.message=`Authorized office workload: ${JSON.stringify(overview)}. Fictional local demo data.`;break;}
     case 'daily_priorities': {
       const data=service.getDailyBrief(actor);
       const priorities=[...data.tasks].sort((a,b)=>(a.dueAt?Date.parse(a.dueAt):Infinity)-(b.dueAt?Date.parse(b.dueAt):Infinity)).slice(0,8);
@@ -334,6 +338,7 @@ async function localReply(actor:Actor,message:string,conversation:Conversation,c
   const lower=message.toLowerCase();
   const inboxReply=await localInboxReply(actor,message,dispatch);if(inboxReply)return inboxReply;
   if(/^(?:show|list|what are) (?:me )?my (?:(?:open|active|all) )?(?:tasks|reminders)[?.!]?$/i.test(message.trim()))return dispatch('list_my_tasks',{status:/\ball\b/i.test(message)?'all':'open',query:null});
+  if(/(handoffs?|handover).*(stuck|stall|status|update|review|assignment)|(?:show|review|check|my|our|office).*(handoffs?|handovers?)/.test(lower))return dispatch('handoff_overview',{});
   if(/team (overview|performance|workload)/.test(lower))return dispatch('team_overview',{});
   if(/transaction (context|milestones|checklist)/.test(lower))return dispatch('transaction_context',{});
   if(/acquisition (context|handoff|releases)/.test(lower))return dispatch('acquisition_context',{releaseId:null});
@@ -425,7 +430,7 @@ export async function chat(actor:Actor,message:string,conversationId?:string,req
         const visibleInvestorIds=new Set(current.investors.map(investor=>investor.id));
         const relationshipReports=(db.prepare('SELECT investor_id,data FROM relationship_reports WHERE organization_id=? ORDER BY rowid').all(actor.organizationId) as {investor_id:string;data:string}[]).filter(report=>visibleInvestorIds.has(report.investor_id));
         const protectedState=['investor_intelligence','buy_boxes','property_releases','deal_packages','channel_templates','journey_observations','debriefs','tasks'].map(table=>db.prepare(`SELECT data FROM ${table} WHERE organization_id=? AND office_id=? ORDER BY rowid`).all(actor.organizationId,actor.officeId));
-        return {actor,workingMethods:relationshipMethodFingerprint(),workAccess:workContextSnapshot(actor),employeeMemory:getEmployeeMemory(actor),investors:current.investors,properties:current.properties,protectedState,relationshipReports,inbox:inboxContextFingerprint(actor),access:service.specialists.map(s=>featureAccess(actor,s.id)),withheld:service.getConversation(actor,conversation.id).messages.filter(m=>m.content.startsWith('This historical message is withheld')).map(m=>m.id)};
+        return {actor,handoffs:getHandoffBoard(actor).handoffAccessReference,workingMethods:relationshipMethodFingerprint(),workAccess:workContextSnapshot(actor),employeeMemory:getEmployeeMemory(actor),investors:current.investors,properties:current.properties,protectedState,relationshipReports,inbox:inboxContextFingerprint(actor),access:service.specialists.map(s=>featureAccess(actor,s.id)),withheld:service.getConversation(actor,conversation.id).messages.filter(m=>m.content.startsWith('This historical message is withheld')).map(m=>m.id)};
       };
       const scope=currentScope();
       result=await runLiveText({actor,conversationId:conversation.id,requestId,message,instructions:assistantInstructions(actor)+(channel==='sms'?' This reply goes to the employee by SMS. Prefer a concise plain-text answer under 500 characters. Preserve essential caveats; the application adds a link to the full saved conversation.':channel==='slack'?' This reply goes to the employee in a private Slack DM. Be concise and use plain text.':''),context,scope,currentScope,history:currentPreferenceHistory(conversation,employeeMemory,24).map(m=>({role:m.role,content:m.content})),tools:toolDefinitions(),dispatch:(name,args)=>dispatchToolSync(actor,name,args,command),artifacts,specialists});

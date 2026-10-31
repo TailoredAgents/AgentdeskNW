@@ -16,13 +16,13 @@ The target is a primary iPhone/Android app and a detailed desktop workspace, wit
 
 ## Current state
 
-**Current local checkpoint: native follow-up controls and acquisitions intake**, verified October 30, 2026, extending Inbox/method checkpoint `ee9985a`. Employees can open an Inbox follow-up directly in native Work, change its reminder, complete/cancel it and revisit its source. Acquisitions employees and managers can record versioned wholesaler submissions for existing inventory, distinguish supplied facts from missing evidence, compare revisions and prepare internal handoffs. The existing acquisitions Copilot job uses that same review and withholds obsolete results when the source changes.
+**Current local checkpoint: shared management handoffs**, verified October 30, 2026, extending `f2cce5e`. Managers can identify a sourced handoff gap, assign a next step, see the employee’s acknowledgment and evidence-backed outcome, then record a separate resolution. Desktop and native Work share these records. Copilot retrieves the same current evidence; old assessments are withheld when the release or assignment changes. Assignment/outcome changes currently use reviewed Work screens.
 
-Verification: **609 root tests, 19 mobile client tests, 1,004 HTTP/workflow checks and 36 relationship scenarios / 54 assertions**; root typecheck/lint/production build, independent mobile typecheck, iOS/Android JavaScript exports and connected phone-width/desktop walkthroughs. No schema/dependency change was added. Sixteen registered specialists still comprise two locally ready, ten demo and four planned. The Acquisition Lead Assistant remains planned; the new intake method is provisional, with no valuation, company-approved procedure or expert-intelligence claim.
+Verification: **622 root tests, 21 mobile tests and 1,056 HTTP/workflow checks**, plus typecheck/lint/build, mobile exports and connected interface walkthroughs. Additive migration 025 preserved 316 existing rows across 89 tables in a disposable prior-checkpoint copy. Sixteen registered specialists remain two locally ready, ten demo and four planned. Methods are provisional; employee effectiveness and company-approved expertise are not established.
 
 **Mobile is prepared locally, not yet installed or released.** The phone-width browser rehearsal passed pairing, shared history, cross-surface cost approval, pause/resume, background worker completion and remote device revocation. Native binary builds, real phone speech/push and store distribution remain pending. [Mobile preparation notes](mobile/README.md) distinguish each acceptance layer. Whole-job costs remain fictional; live model/provider usage is separately metered.
 
-Implementation follows the single roadmap. C1–C4 remain partial. Next: deepen management’s stalled-handoff/outcome workflow and shared missing-information continuation, with actual-device acceptance when tooling/devices are available.
+Implementation follows the single roadmap. C1–C4 remain partial. Next: shared missing-information continuation, then further role-specific depth, with actual-device acceptance when tooling/devices are available.
 
 Repository: [TailoredAgents/AgentdeskNW](https://github.com/TailoredAgents/AgentdeskNW). The owner reported a Render deployment; the latest deployed revision has not been verified. Push and deployment are separate. Real company data, live mailboxes/investor delivery, actual payments, managed identity and broad expert autonomy remain unfinished.
 
@@ -73,6 +73,7 @@ npm run test:work
 npm run test:mobile
 npm run test:mobile-inbox
 npm run test:mobile-followthrough
+npm run test:handoffs
 npm run test:relationship-quality -- --all
 ```
 

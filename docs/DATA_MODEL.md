@@ -2,6 +2,10 @@
 
 [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) is the sole authority for completion status and development order. This document records schema contracts and historical preservation evidence, not permission to apply migrations to the active database.
 
+## Shared handoff coordination — migration 025
+
+`handoff_coordination` stores one current scoped release-linked assignment with a separate version, responsible employee, due instant, acknowledgment, reported outcome/evidence and reviewed resolution. `handoff_events` preserves each immutable decision and actor-scoped idempotency hash. Composite foreign keys bind scoped releases and memberships; updates and audit commit transactionally. These operational records do not repurpose personal tasks, private correspondence or transaction facts. Expected release/assignment versions and current permissions control writes and replay. See [MANAGEMENT_HANDOFFS.md](MANAGEMENT_HANDOFFS.md). The disposable schema-024 → 025 preservation check retained all 316 previous rows across 89 tables; active data was not used.
+
 ## October 30 follow-up and acquisitions intake increment
 
 No schema migration. Existing `tasks` and scoped `communication_workflow_actions` link a personal follow-up to its private Inbox source; the detail projection rechecks source access and never grants it through the task. Existing `property_releases.data` and immutable `release_events.data` accept optional `acquisitionSubmission`: source/contact/date, supplied price/repair assumption/scope/evidence, occupancy and comparable references. Legacy missing fields remain valid, and release saves that omit the submission preserve it. An explicit intake revision resets the release to draft and invokes existing package invalidation. History is retained; the review returns up to twenty revisions. Inventory and verified CRM facts remain unchanged. See [ACQUISITIONS_INTAKE.md](ACQUISITIONS_INTAKE.md) for authority, replay and source-version rules. Prior migration preservation counts below remain dated evidence, not a new migration run.

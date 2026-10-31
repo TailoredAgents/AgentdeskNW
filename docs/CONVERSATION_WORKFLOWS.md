@@ -12,6 +12,10 @@ The dashboard's default first message opens the employee's ongoing Copilot conve
 
 Slack and SMS transport the employee's requests to the same dispatcher as web Copilot. Linked-channel notifications respect the employee's reminder setting, quiet hours, subscription/allowance and current permissions. They do not send messages to investors. Long replies retain a concise preview and a link to the saved answer when the configured channel origin is available.
 
+## Shared handoff review
+
+“Show office handoffs” and the read-only `handoff_overview` tool retrieve current authorized assignments, acknowledgment, blockers and outcomes. Managers see their office; employees see only their current release-authorized assignment. Links open desktop/native Work. Current board references participate in saved conversation/work provenance and invalidate obsolete assessments. Assignment/report/resolution still use reviewed Work actions; full conversational handoff execution and general clarification are not implemented by this read tool. See [MANAGEMENT_HANDOFFS.md](MANAGEMENT_HANDOFFS.md).
+
 ## Native personal follow-ups
 
 Native Work now has My follow-ups and history, using the same owner-only list/read/PATCH task services. Inbox’s saved follow-up and Agent task artifacts open its exact detail. Employees review completion, cancellation, a two-hour snooze, a device-local custom date/time or removal of a reminder date before saving. Polling preserves the reviewed version; competing changes disable stale confirmation, and the server checks it again. Uncertain responses offer an explicit retry with the same operation ID. The original Inbox link is returned only after rechecking current private source access. Losing that source does not erase the separately saved task. Task completion does not resolve an investor concern or establish a transaction outcome.

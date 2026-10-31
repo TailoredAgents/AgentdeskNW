@@ -1,7 +1,7 @@
 # System architecture
 
 
-**Document role:** architecture specification; [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) alone controls delivery status and sequencing. The October 30 native follow-up/acquisitions-intake slice extends Inbox/method checkpoint `ee9985a` and has local integrated acceptance. Installed-phone and live-provider acceptance remain pending.
+**Document role:** architecture specification; [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) alone controls delivery status and sequencing. The October 30 shared-handoff slice extends follow-up/intake checkpoint `f2cce5e` and has local integrated acceptance. Installed-phone and live-provider acceptance remain pending.
 
 ## Native client and shared command transport
 
@@ -12,6 +12,8 @@ The `mobile/` Expo/React Native project has an independent dependency graph and 
 `mobile/src/InboxScreen.tsx` uses existing scoped inbox services over the same authenticated client; `inbox-editor.ts` keeps dirty text tied to its original expected version until explicit comparison. Source changes reset protected editors/reviews. Stable operation IDs support explicit retry while the screen remains active. Native Agent links open Inbox without duplicating the assistant conversation. All private rendered state is cleared on backgrounding; unsaved editors/pending UI state are not persisted offline. No migration or native dependency was added for Inbox.
 
 `WorkHome` separates personal follow-ups, durable jobs and role-scoped Intake. `task-context.ts` decorates an owner-only personal task with a currently authorized source link without expanding mailbox access. Existing task mutations retain version/replay checks. `acquisitions.ts` adds supplied wholesaler statements to existing versioned releases and derives sourced questions/changes/internal handoff; it does not create a second release store. The existing `review_handoff` capability uses this service. Current property, release and method versions invalidate stale saved work displays and protected conversation replay. See [acquisitions intake](ACQUISITIONS_INTAKE.md).
+
+`handoffs.ts` implements shared operational coordination independently of private correspondence and reminders. Manager and assignee projections recheck current release access. Migration 025 adds current records and immutable decision events. Typed/read-only Copilot, office-priorities work and web voice use the same current board fingerprint; saved history/work provenance masks obsolete results. Native `HandoffsScreen` and desktop `HandoffsPanel` use explicit reviewed mutations. See [MANAGEMENT_HANDOFFS.md](MANAGEMENT_HANDOFFS.md).
 
 ## Durable local execution layer
 

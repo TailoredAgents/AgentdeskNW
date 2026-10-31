@@ -4,7 +4,7 @@ import {getDb} from './db';
 import {collectHistoryReferences,historyReferencesVisible,type HistoryReferences,type StoredMessage} from './history';
 import {getConversation,listInvestors,listProperties} from './services';
 
-const keys=['investors','properties','releases','packages','debriefs','inboxThreads','inboxAccess'] as const;
+const keys=['investors','properties','releases','packages','debriefs','inboxThreads','inboxAccess','handoffAccess'] as const;
 /** Bind model-authored prose to the authorized context it could have used. Never trust caller-supplied provenance. */
 export function deriveWorkSourceReferences(actor:Actor,conversationId:string,requestId:string):WorkSourceReferences {
  getConversation(actor,conversationId);const db=getDb(),scope=[actor.organizationId,actor.officeId,actor.id];
@@ -21,19 +21,19 @@ export function deriveWorkSourceReferences(actor:Actor,conversationId:string,req
   if(historyReferencesVisible(actor,collectHistoryReferences(actor,structured)))artifacts.push(...structured);
  }
  const references=collectHistoryReferences(actor,artifacts,inherited,{investors:listInvestors(actor),properties:listProperties(actor)});
- const refs:WorkSourceReferences={investors:[],properties:[],releases:[],packages:[],debriefs:[],inboxThreads:[],inboxAccess:[]};
+ const refs:WorkSourceReferences={investors:[],properties:[],releases:[],packages:[],debriefs:[],inboxThreads:[],inboxAccess:[],handoffAccess:[]};
  const seen=new Set<string>();
  const flatten=(value:HistoryReferences)=>{
-  for(const key of keys)refs[key].push(...value[key]);
+  for(const key of keys)(refs[key]??=[]).push(...(value[key]??[]));
   // Flatten prior work into record references. Stored provenance never links back to another job.
   for(const reference of value.workRuns??[]){
    if(seen.has(reference))continue;seen.add(reference);const [runId,version]=reference.split('@');
    const row=db.prepare('SELECT data,plan_version FROM work_runs WHERE id=? AND organization_id=? AND office_id=? AND owner_id=?').get(runId,...scope) as {data:string;plan_version:number}|undefined;if(!row)continue;
    const run=JSON.parse(row.data) as {sourceReferences?:WorkSourceReferences;steps:unknown[]};
-   if(run.sourceReferences)for(const key of keys)refs[key].push(...run.sourceReferences[key]);
+   if(run.sourceReferences)for(const key of keys)(refs[key]??=[]).push(...(run.sourceReferences[key]??[]));
    const plan=db.prepare('SELECT data FROM work_run_plans WHERE run_id=? AND plan_version=?').get(runId,version?Number(version):row.plan_version) as {data:string}|undefined;
    flatten(collectHistoryReferences(actor,[{type:'notes',title:'Prior work sources',data:{steps:run.steps,plan:plan?JSON.parse(plan.data):null}}]));
   }
  };
- flatten(references);for(const key of keys)refs[key]=[...new Set(refs[key])].sort();return refs;
+ flatten(references);for(const key of keys)refs[key]=[...new Set(refs[key]??[])].sort();return refs;
 }

@@ -28,6 +28,7 @@
     "test:work": "node scripts/smoke-runner.mjs work",
     "test:mobile": "node scripts/smoke-runner.mjs mobile",
     "test:mobile-inbox": "node scripts/smoke-runner.mjs mobile-inbox",
+    "test:handoffs": "node scripts/smoke-runner.mjs handoffs",
     "test:mobile-followthrough": "node scripts/smoke-runner.mjs mobile-followthrough"
   },
   "dependencies": {

@@ -31,7 +31,7 @@ These are authored engineering cases over deterministic services, not independen
 
 ## Provisional cases for the other role tracks
 
-These cases are provisional engineering targets, not confirmed company procedures. The three acquisitions cases now have bounded existing-inventory service/HTTP coverage in [ACQUISITIONS_INTAKE.md](ACQUISITIONS_INTAKE.md), including changed evidence and obsolete results; this does not complete acquisition intake/screening. The management workflow cases remain the next peer development target (existing private-mailbox boundaries already have regression coverage). Both roles still require practitioner review before role acceptance.
+These cases are provisional engineering targets, not confirmed company procedures. The three acquisitions cases now have bounded existing-inventory service/HTTP coverage in [ACQUISITIONS_INTAKE.md](ACQUISITIONS_INTAKE.md), including changed evidence and obsolete results; this does not complete acquisition intake/screening. The management cases now have bounded [shared handoff](MANAGEMENT_HANDOFFS.md) service/HTTP coverage: missing acknowledgment, separate evidenced outcome and no inference from personal-task completion. The new service does not query private mailboxes. Both roles still require practitioner review before role acceptance.
 
 | Role / case | Fictional input | Expected useful output |
 | --- | --- | --- |

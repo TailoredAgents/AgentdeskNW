@@ -1,0 +1,40 @@
+import assert from 'node:assert/strict';
+import {randomUUID} from 'node:crypto';
+import type {Conversation} from '../src/lib/contracts';
+import type {HandoffBoard,HandoffItem,HandoffMutation} from '../src/lib/handoff-contracts';
+import type {MobilePairing,MobilePairResult} from '../src/lib/mobile-contracts';
+import type {WorkRun} from '../src/lib/work-contracts';
+import {closeDb,demoActor,getDb} from '../src/server/db';
+import {saveRelease} from '../src/server/workflows';
+import {processWorkRuns} from '../src/server/work-runs';
+if(process.env.AGENTDESK_MOBILE_SMOKE_ISOLATED!=='true'||!process.env.SMOKE_BASE_URL||!process.env.AGENTDESK_DB_PATH||process.env.OPENAI_API_KEY)throw new Error('Run the isolated handoffs suite with providers disabled.');
+const origin=process.env.SMOKE_BASE_URL;assert.equal(new URL(origin).hostname,'127.0.0.1');let cookie='',token='',checks=0;
+async function request<T>(path:string,method='GET',body?:unknown,status=200,web=false):Promise<T>{const response=await fetch(`${origin}/api/${path}`,{method,headers:{...(web?{Cookie:cookie}:{Authorization:`Bearer ${token}`}), 'X-AgentDesk-Request':'1','Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body)});if(web&&response.headers.get('set-cookie'))cookie=response.headers.get('set-cookie')!.split(';')[0];const text=await response.text();assert.equal(response.status,status,`${method} ${path}: ${text}`);checks++;return (text?JSON.parse(text):undefined) as T;}
+const check=(value:unknown,message:string)=>{assert.ok(value,message);checks++;};
+async function pair(role:'manager'|'dispositions'|'acquisitions'){await request('session','POST',{role},200,true);const code=await request<MobilePairing>('mobile/pairing','POST',{},200,true);const result=await request<MobilePairResult>('mobile/pair','POST',{code:code.code,deviceName:`Handoff ${role}`},201,true);token=result.token;return result;}
+const revision=(item:HandoffItem)=>({eventKey:randomUUID(),expectedVersion:item.record?.version??0,expectedReleaseVersion:item.releaseVersion});
+try{
+ await request('bootstrap','GET',undefined,200,true);
+ const jordan=demoActor('acquisitions');const releaseInput={propertyId:'property-maple',status:'released' as const,source:'Fictional handoff acceptance fixture',eventKey:'handoff-fixture',propertyType:'House',description:'Fictional sample',notes:'',mediaUrl:null,mediaAccess:'unverified' as const,arv:null,repairEstimate:null,economicsSource:'',showingInstructions:'',authorizedUserIds:['user-alex'],upstreamParty:'Demo wholesaler',upstreamStage:'Reviewed',downstreamStage:'Awaiting handoff',closingStructure:'unspecified' as const,closingAt:new Date(Date.now()+3*86400000).toISOString()};const release=saveRelease(jordan,releaseInput),path=`handoffs/${release.id}`;
+ const before=getDb().prepare('SELECT id,data FROM investors ORDER BY id').all(),providerCount=(getDb().prepare('SELECT COUNT(*) n FROM provider_operations').get() as {n:number}).n;
+ const manager=await pair('manager'),managerCookie=cookie;
+ let item=await request<HandoffItem>(path);check(item.attention==='closing_soon'&&!item.record,'Manager sees sourced absence and actual closing target');
+ const conversation=await request<{conversation:Conversation}>('chat','POST',{conversationId:manager.conversationId,requestId:randomUUID(),message:'Show office handoffs.'});check(conversation.conversation.messages.at(-1)?.artifacts.some(a=>a.type==='handoff'),'Copilot provides a current handoff link');
+ let run=await request<WorkRun>('work','POST',{presetId:'management',requestId:randomUUID()},201);processWorkRuns(demoActor('manager'),10);run=await request<WorkRun>(`work/${run.id}`);check(run.status==='completed'&&!run.contentRestricted&&run.steps.some(step=>step.result?.message.includes('handoff')),'Management worker returns shared evidence with the existing budget');
+ const assign:HandoffMutation={...revision(item),action:'assign',assignedTo:'user-alex',nextAction:'Confirm access and report the operational outcome',dueAt:new Date(Date.now()+86400000).toISOString()};item=await request<HandoffItem>(path,'POST',assign);await request(path,'POST',assign);check(item.record?.version===1,'Exact assignment retry does not duplicate it');
+ check((await request<WorkRun>(`work/${run.id}`)).contentRestricted,'Changed evidence withholds the obsolete worker assessment');
+ check((await request<Conversation>(`conversations/${manager.conversationId}`)).messages.some(m=>m.content.startsWith('This historical message is withheld')),'Changed evidence also protects saved Copilot history');
+ const alex=await pair('dispositions'),alexCookie=cookie;check((await request<HandoffBoard>('handoffs')).items.length===1,'Assigned employee sees the shared item');await request(path,'POST',{...revision(item),action:'assign',assignedTo:'user-alex',nextAction:'Forged assignment',dueAt:new Date(Date.now()+86400000).toISOString()},403);
+ await request(path,'POST',{...revision(item),action:'report',kind:'resolved',note:'Cannot skip acknowledgment',evidence:'Fictional source'},403);
+ const old=revision(item);item=await request<HandoffItem>(path,'POST',{...revision(item),action:'acknowledge'});await request(path,'POST',{...old,action:'acknowledge'},409);
+ item=await request<HandoffItem>(path,'POST',{...revision(item),action:'report',kind:'blocked',note:'Access instructions are still missing',evidence:'Fictional operations log entry #8'});
+ cookie=managerCookie;token=manager.token;check((await request<HandoffItem>(path,'GET',undefined,200,true)).attention==='blocked','Desktop manager sees phone blocker');await request(path,'POST',{...revision(item),action:'resolve',note:'Cannot resolve this blocked report'},403);
+ token=alex.token;cookie=alexCookie;item=await request<HandoffItem>(path,'POST',{...revision(item),action:'report',kind:'resolved',note:'The access instructions have been recorded',evidence:'Fictional operations log entry #9'});
+ token=manager.token;cookie=managerCookie;item=await request<HandoffItem>(path,'POST',{...revision(item),action:'resolve',note:'Reviewed the operational source and confirmed this follow-up.'},200,true);check(item.record?.state==='resolved'&&item.history.length===5,'Reviewed resolution preserves all five separate decisions');
+ saveRelease(jordan,{...releaseInput,eventKey:'revise',expectedVersion:1,downstreamStage:'Revised handoff'});item=await request<HandoffItem>(path);check(item.sourceChanged&&item.attention==='source_changed'&&!item.actions.includes('resolve'),'A newer release cannot inherit old resolution');
+ item=await request<HandoffItem>(path,'POST',{...revision(item),action:'assign',assignedTo:'user-jordan',nextAction:'Review the revised release and its handoff',dueAt:new Date(Date.now()+86400000).toISOString()});token=alex.token;cookie=alexCookie;await request(path,'GET',undefined,404);check(!(await request<HandoffBoard>('handoffs')).items.length,'Former assignee loses shared coordination access');
+ const acquisition=await pair('acquisitions');check((await request<HandoffItem>(path)).record?.assignedTo==='user-jordan','Release owner can receive the next scoped assignment');await request(`mobile/devices/${acquisition.sessionId}/revoke`,'POST',{},200,true);await request('handoffs','GET',undefined,401);
+ check((getDb().prepare('SELECT COUNT(*) n FROM provider_operations').get() as {n:number}).n===providerCount,'No provider work added');assert.deepEqual(getDb().prepare('SELECT id,data FROM investors ORDER BY id').all(),before);checks++;
+ check((getDb().prepare('SELECT COUNT(*) n FROM messaging_outbox').get() as {n:number}).n===0,'No message queued');check(getDb().pragma('integrity_check',{simple:true})==='ok','Database integrity preserved');check((getDb().pragma('foreign_key_check') as unknown[]).length===0,'Foreign keys preserved');
+ console.info(`PASS: ${checks} handoff HTTP/worker checks. Manager assignment, phone acknowledgment/report, outcome review, exact retries, source revisions, Copilot continuity and device/access isolation. No external messages or payments.`);
+}finally{closeDb();}
