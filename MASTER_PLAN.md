@@ -26,7 +26,7 @@ Company email follows the existing Salesforce workflow first. Its underlying mai
 
 One workforce subscription includes implemented, role-authorized specialists. Current provisional simulated offers are $50 retail or a $30 explicitly assigned company seat, with $15 monthly usage credits. Pricing, business-line allowances and payer terms require validation; no company purchase commitment exists. See [pricing](docs/PRICING_AND_PACKAGES.md).
 
-Before an entire job exceeds $1 in customer-facing credits, request approve/deny for its scope and maximum. Include delegated work and pause before exceeding an approved maximum. Optional payer-enabled auto top-up has a balance trigger, purchase amount and monthly cap. Funding never authorizes expensive work. The verified job gate uses fictional charges; real usage enforcement and automatic purchases are unfinished.
+Before an entire job exceeds $1 in customer-facing credits, request approve/deny for its scope and maximum. Include delegated work and pause before exceeding an approved maximum. Optional payer-enabled auto top-up has a balance trigger, purchase amount and monthly cap. Funding never authorizes expensive work. The verified job gate uses fictional charges; optional automatic top-up has local simulated acceptance; real usage enforcement and actual purchases are unfinished.
 
 Action authority should be configurable, including scoped standing permission for routine work once tested. It cannot be inferred from an AI response. Preserve current identity, source, eligibility and exact-review controls until their replacements are implemented.
 

@@ -1,0 +1,9 @@
+export interface AutoTopUpSettings {version:number;enabled:boolean;triggerCents:number;amountCents:number;monthlyCapCents:number;armed:boolean;cycle:number;updatedAt:string|null}
+export interface AutoTopUpPurchase {id:string;payerId:string;amountCents:number;currency:'USD';month:string;cycle:number;settingsVersion:number;status:'pending'|'unknown'|'succeeded'|'failed';version:number;createdAt:string;updatedAt:string;simulated:true}
+export interface AutoTopUpState {settings:AutoTopUpSettings;payer:{id:string;name:string;kind:'personal_demo';paymentMethod:null};availableCents:number;walletVersion:number;monthlySpendLimitCents:number;month:string;committedThisMonthCents:number;remainingPurchaseCapCents:number;purchases:AutoTopUpPurchase[];canEnable:boolean;status:'off'|'unavailable'|'pending'|'cap_reached'|'waiting_recovery'|'watching'|'ready';explanation:string;notice:string}
+export interface AutoTopUpInput {expectedVersion:number;enabled:boolean;triggerCents:number;amountCents:number;monthlyCapCents:number;rearm:boolean}
+export interface AutoTopUpPreview {input:AutoTopUpInput;reviewReference:string;payerName:string;currentBalanceCents:number;committedThisMonthCents:number;willTrigger:boolean;explanation:string}
+export interface AutoTopUpSave extends AutoTopUpInput {eventKey:string;reviewReference:string}
+export interface AutoTopUpResolve {purchaseId:string;expectedVersion:number;outcome:'unknown'|'succeeded'|'failed';eventKey:string}
+export const autoTopUpAmounts=[1000,2500,5000,10000];
+export function autoTopUpDollars(value:string):number {if(!/^\d+(\.\d{1,2})?$/.test(value.trim()))throw new Error('Enter dollars with no more than two decimal places, without commas or currency symbols.');const cents=Math.round(Number(value)*100);if(!Number.isSafeInteger(cents)||cents>100000)throw new Error('Use an amount up to $1,000.');return cents;}

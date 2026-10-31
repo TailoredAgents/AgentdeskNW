@@ -1,5 +1,19 @@
 # AgentDesk progress log
 
+## October 30, 2026 — Optional automatic top-up accepted locally
+
+**Scope:** continued the authorized fictional roadmap after analysis commit `bc691b1`. Desktop billing and native Settings now share initially-off automatic top-up settings, exact review, personal demo payer, balance trigger, purchase amount, UTC monthly purchase cap and explicit recovery. No provider, real payment method, company funding or deployment was enabled.
+
+**Execution:** the worker prepares one simulated pending request per eligible low-balance cycle. Pending/unknown requests block additional purchases and count against the cap. Only reviewed simulated success adds purchased credits once; unknown/failure add none and never retry themselves. Balance recovery is observed inside wallet transactions so recovery/spending between worker polls is preserved. Still-low success does not buy repeatedly. Disablement/policy loss blocks new requests while prior outcomes can reconcile. Settings/outcomes use current scope, expected versions, exact retries and append-only evidence. In-app outcome notices follow existing quiet hours/deduplication; actual push/SMS receipt delivery is not added. Funding never changes the separate usage cap or job approval above $1.
+
+**Verification:** root typecheck, lint, build and **696 tests across 39 files** passed, including 21 automatic top-up cases. Independent mobile typecheck, **27 tests**, iOS/Android Hermes exports (about 2 MB each), production/development web exports passed. **1,303 isolated HTTP/workflow checks** passed: the prior 1,238 suites plus 65 auto-top-up checks. New cases include concurrent requests, unknown/success/failure, caps, month changes, exact replay, employee/manager isolation, policy loss, device revocation, recovery timing and unchanged expensive-job approval. No live provider/payment/delivery was exercised.
+
+**Preservation:** migration 028 preserved **all 316 prior rows across 95 tables** on a disposable schema-027 copy, with clean integrity and no foreign-key violations. Active data was not used. Evidence: ignored `artifacts/mobile/auto-topup-migration-preservation.json`.
+
+**Interface acceptance:** desktop enabled a $100 trigger/$10 amount/$20 cap and prepared one request. Marking its outcome uncertain left $14.60 available. The paired phone displayed that same status; unsaved cap edits blocked leaving. Reviewed simulated success added $10 once; another trigger check while still low created no second request. Desktop confirmed $24.60 and one purchase. The 390×844 phone view was inspected without captured application console errors. Screenshot: ignored `artifacts/mobile/auto-topup-phone.png`. Browser/mobile exports are not physical-device acceptance.
+
+**Next:** C6 actual-usage admission contracts with test doubles, then C5 initiative and remaining C4/C1/C3 depth under the canonical roadmap. Real payments, provider/account/device/practitioner acceptance stay deferred. All sixteen specialist scopes remain; this checkpoint does not establish complete workforce expertise or overall roadmap completion. Commit/push authorized; Render remains unverified.
+
 ## October 30, 2026 — Shared deal economics and provisional diligence accepted locally
 
 **Scope:** continued the owner-authorized local roadmap after opportunity commit `11a2123`. Investment Deal Analyst and Valuation & Due Diligence now have a bounded shared calculation/evidence capability and move from planned to **demo**. Additive migration 027 stores private scenario records and preserved reviewed revisions. No dependency change, provider connection, investor delivery, payment or deployment is included; real-world/device/practitioner testing remains deferred.

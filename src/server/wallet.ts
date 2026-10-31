@@ -1,3 +1,4 @@
+import {observeAutoTopUpBalance} from './auto-topup-cycle';
 import {createHash} from 'node:crypto';
 import {z} from 'zod';
 import type {Actor} from '../lib/contracts';
@@ -62,6 +63,7 @@ function ensureAccount(actor:Actor):Account {
   append(actor,monthlyKey,{kind:'monthly_credit',description:'Monthly included AgentDesk Credits — demonstration grant.',periodStart:account.periodStart,includedDeltaCents:allowance});
   account.version++;writeAccount(actor,account);
  }
+ observeAutoTopUpBalance(actor,()=>{const value=totals(actor,account.periodStart);return value.includedCents+value.purchasedCents;});
  return account;
 }
 export function getWalletState(actor:Actor):WalletState {
@@ -214,5 +216,17 @@ export function markWorkWalletUnknown(actor:Actor,input:{runId:string;operationI
   const updated:WalletOperation={...operation,status:'unknown',updatedAt:now()};
   append(actor,`job-unknown:${operation.id}`,{kind:'unknown',description:'Copilot job outcome unresolved; unused maximum remains held.',periodStart:operation.periodStart,operationId:operation.id});
   writeOperation(actor,updated);account.version++;writeAccount(actor,account);return updated;
+ }).immediate();
+}
+
+/** Internal simulator settlement. Credit only a scoped successful automatic-purchase record. */
+export function creditAutomaticTopUp(actor:Actor,purchaseId:string):void {
+ assertActor(actor);assertBillingDemo();getDb().transaction(()=>{
+  const db=getDb(),row=db.prepare("SELECT data FROM auto_topup_purchases WHERE id=? AND organization_id=? AND user_id=? AND status='succeeded'").get(purchaseId,...walletOwner(actor)) as {data:string}|undefined;
+  if(!row)throw new AppError(409,'Only a confirmed simulated automatic purchase can add credits.');
+  const purchase=JSON.parse(row.data) as {payerId:string;amountCents:number;simulated:boolean;status:string};
+  if(purchase.payerId!==actor.id||purchase.simulated!==true||purchase.status!=='succeeded'||![1000,2500,5000,10000].includes(purchase.amountCents))throw new AppError(409,'Automatic purchase settlement is invalid.');
+  const eventKey=`automatic-topup:${purchaseId}`;if(db.prepare('SELECT 1 FROM wallet_ledger WHERE organization_id=? AND user_id=? AND event_key=?').get(...walletOwner(actor),eventKey))return;
+  const account=ensureAccount(actor);append(actor,eventKey,{kind:'topup',description:`Simulated automatic top-up: $${(purchase.amountCents/100).toFixed(2)}. No payment collected.`,periodStart:account.periodStart,purchasedDeltaCents:purchase.amountCents});account.version++;writeAccount(actor,account);
  }).immediate();
 }
