@@ -4,7 +4,7 @@ import {workspaceReadiness} from '@/server/workspace-readiness';
 import {getChatRequest} from '@/server/chat-requests';
 import {getRecordBoard,getRecordDetail} from '@/server/records';
 import {decideRolePreparation,listRolePreparations} from '@/server/role-preparations';
-import {reviewOpportunityScreening} from '@/server/opportunity-screening';
+import {reviewOpportunityJourney} from '@/server/opportunity-journey';
 import {transactionsRoute} from '@/server/transactions-api';
 import {documentsRoute} from '@/server/documents-api';
 import {knowledgeRoute} from '@/server/knowledge-api';
@@ -160,9 +160,9 @@ async function route(request:NextRequest,{params}:{params:Promise<{path:string[]
       if(method==='POST'&&!id)return json(saveAnalysis(actor,analysisSaveSchema.parse(await body(request))));
     }
     if(resource==='opportunities'&&path.length<=2){
-      if(method==='GET')return json(id?reviewOpportunityScreening(actor,id):getOpportunityBoard(actor));
+      if(method==='GET')return json(id?reviewOpportunityJourney(actor,id):getOpportunityBoard(actor));
       if(method==='POST'&&id==='preview')return json(previewOpportunity(actor,opportunityPreviewSchema.parse(await body(request))));
-      if(method==='POST'&&!id)return json(reviewOpportunityScreening(actor,saveOpportunity(actor,opportunitySaveSchema.parse(await body(request))).opportunity.id));
+      if(method==='POST'&&!id)return json(reviewOpportunityJourney(actor,saveOpportunity(actor,opportunitySaveSchema.parse(await body(request))).opportunity.id));
     }
     if(resource==='acquisitions'&&id&&path.length===2){
       if(method==='GET')return json(reviewAcquisition(actor,id));

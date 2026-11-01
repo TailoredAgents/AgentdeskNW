@@ -1,10 +1,10 @@
-> **Operational reference, not the development roadmap.** Use [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) for current scope/status and [PROGRESS.md](PROGRESS.md) for dated evidence. Rehearse only accepted capabilities on the actual deployed revision; old presentation steps do not establish live connections, mobile readiness or production identity. The latest Render revision is unverified by this documentation reset.
+> **Operational reference, not the development roadmap.** Use [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) for current scope/status and [PROGRESS.md](PROGRESS.md) for dated evidence. Rehearse only accepted capabilities on the actual deployed revision; old presentation steps do not establish live connections, mobile readiness or production identity. Check the recorded deployment evidence in PROGRESS.md and the service dashboard before a presentation.
 
 # AgentDesk NW — private Render demonstration
 
 This deployment is a fictional customer demonstration, not an authorized New Western integration or a production tenant. The app has a private invitation entrance; invited presenters can switch between the three fictional roles. All invited visitors share the same sample workspace, so this is not separate customer accounts.
 
-The owner created `TailoredAgents/AgentdeskNW`, authorized publishing, and subsequently reported a Render deployment and authorized the PIN revision. Later source checkpoints are not automatically verified as deployed; inspect the hosted revision before a presentation. This planning update does not perform deployment. The existing `TailoredAgents/AgentDesk` repository is a separate project and must not be overwritten. The blueprint service name is `agentdesk-nw`.
+The owner created `TailoredAgents/AgentdeskNW`, authorized publishing, and subsequently reported a Render deployment and authorized the PIN revision. Later source checkpoints are not automatically verified as deployed; inspect the hosted revision before a presentation. On November 1 the owner requested automatic deployments again; the service setting was saved and reloaded as On Commit. The existing `TailoredAgents/AgentDesk` repository is a separate project and must not be overwritten. The blueprint service name is `agentdesk-nw`.
 
 ## Deployment package
 
@@ -16,7 +16,7 @@ The owner created `TailoredAgents/AgentdeskNW`, authorized publishing, and subse
 - Health: `/api/health` exposes only `{status:"ok"}` and never creates a demo session or reads business records.
 - Runtime: Node 22.22.0; repository packages remain locked in `package-lock.json`.
 - One instance only. SQLite and the worker must share the same filesystem. Do not split the worker into a separate Render service or enable replicas.
-- Automatic redeployment is off for presentation stability. Deploy a verified commit deliberately.
+- Automatic deployment is **On Commit** for `main`, matching `autoDeployTrigger: commit` in the blueprint. The owner requested this on November 1. Run required checks before pushing, then verify Render reaches Live for that commit; a push or a queued build alone is not a successful deployment.
 
 A paid Render disk preserves records across restarts and deploys. It also means deployments are not zero-downtime. See the official [disk documentation](https://render.com/docs/disks), [web-service requirements](https://render.com/docs/web-services), and [Blueprint fields](https://render.com/docs/blueprint-spec). Current compute plan IDs differ from older “Starter/Standard” examples; the blueprint uses `1c-2g`.
 

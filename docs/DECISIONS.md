@@ -106,3 +106,9 @@ As of the current documentation, new Connected App creation is restricted and Ex
 ## ADR-010 — No deployment or contact during initial build
 
 Work stays local. Investor outreach, external messages, production CRM changes, publishing and changes to third-party accounts require explicit authorization. Documentation and harmless local preparation continue independently of missing credentials.
+
+## November 1, 2026 — Restore automatic deployment and connect role presentation
+
+The owner requested continuing the fictional GM demonstration and restoring Render auto-redeploy. Use On Commit for the existing `agentdesk-nw` service and `autoDeployTrigger: commit` in its blueprint. No extra service, plan change, provider activation or live company data is part of this request. Required checks still precede pushes, and hosted success is verified separately.
+
+Acquisitions and management share current intake/assignment/report/review context through existing services. A one-time explicitly fictional sample makes the experience discoverable without resetting employee edits or implying provider work. Real CRM integration remains deferred.

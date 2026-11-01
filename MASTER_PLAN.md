@@ -46,4 +46,4 @@ There is a verified web/durable-work foundation and a locally verified mobile/sh
 
 The owner’s current development session prioritizes completing locally developable roadmap work with fictional data and simulated connections. Real-world/provider, physical-device and practitioner testing is deferred for a later assessment; keep those acceptance items open without blocking independent development.
 
-GitHub commit/push remains authorized. A repository update is not evidence of a Render deployment; report each separately. The owner resumed implementation after documentation reconciliation. Follow the canonical roadmap and keep acceptance evidence current.
+GitHub commit/push remains authorized. On November 1 the owner also requested restoring automatic Render deployment on main-branch commits; keep the blueprint and service setting aligned. A repository update is not evidence of a Render deployment; report each separately. The owner resumed implementation after documentation reconciliation. Follow the canonical roadmap and keep acceptance evidence current.

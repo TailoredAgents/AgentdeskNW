@@ -9,7 +9,7 @@ services:
     buildCommand: npm ci --include=dev && npm run build
     startCommand: npm run start:render
     healthCheckPath: /api/health
-    autoDeployTrigger: "off"
+    autoDeployTrigger: commit
     disk:
       name: agentdesk-nw-data
       mountPath: /var/data

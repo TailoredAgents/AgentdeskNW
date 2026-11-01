@@ -23,6 +23,7 @@ export interface OpportunityAssessment {
 }
 export interface OpportunityDetail extends OpportunityAssessment {
  screening?:OpportunityScreening;
+ followThrough?:{title:string;lines:string[];handoffId:string|null;handoffAccessReference:string};
  opportunity:Opportunity;opportunityAccessReference:string;
  history:{version:number;recordedAt:string;input:OpportunityInput}[];
  changes:{field:string;before:string;after:string}[];

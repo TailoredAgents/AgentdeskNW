@@ -2,7 +2,7 @@ import {qualificationResult,qualificationReferenceCurrent} from './qualification
 import {rolePreparationReferenceCurrent,prepareOpportunityIntake,prepareHandoffAction,handoffPreparationSchema} from './role-preparations';
 import {opportunityPreviewSchema} from './opportunities';
 import {preparePropertyOutreachResult} from './package-correspondence';
-import {reviewOpportunityScreening,opportunityScreeningMessage} from './opportunity-screening';
+import {reviewOpportunityJourney,opportunityJourneyMessage} from './opportunity-journey';
 import {buyerShortlistMessage,buyerShortlistReferenceCurrent} from './buyer-shortlist';
 import {reviewSourceDocument,documentContextReferenceCurrent} from './document-context';
 import {getDocument} from './documents';
@@ -114,6 +114,7 @@ export function validateStoredWorkOutput(actor:Actor,step:WorkStepInput,output:T
   if('$step' in value)return;
   for(const [key,item] of Object.entries(value)){
    if(typeof item==='string'){
+    if(key==='handoffAccessReference'&&!handoffReferenceCurrent(actor,item))throw new AppError(409,'The shared follow-through changed. Retrieve its current review.');
     if(key==='buyerShortlistReference'&&!options.retiredShortlist&&!buyerShortlistReferenceCurrent(actor,item))throw new AppError(409,'Buyer criteria or relationship context changed. Refresh this shortlist.');
     if(key==='documentAccessReference'&&!documentContextReferenceCurrent(actor,item))throw new AppError(409,'The source document changed. Retrieve its current revision.');
     if(key==='documentId'&&step.capabilityId==='review_source_document')getDocument(actor,item);
@@ -169,7 +170,7 @@ export function executeWorkCapability(actor:Actor,step:WorkStepInput,_priorOutpu
   }
   case 'relationship_next_step':{const recommendation=recommendInvestorNextStep(actor,input.investorId as string);result.data={investorId:input.investorId,recommendation};result.message=`${recommendation.action.title}\n${recommendation.action.description}${recommendation.draft?`\n\nRelationship-only draft: ${recommendation.draft}`:''}\n${recommendation.unknowns.length?`Missing: ${recommendation.unknowns.join('; ')}\n`:''}Nothing has been sent.`;break;}
   case 'review_investment_analysis':case 'review_diligence_analysis':{const review=reviewSavedAnalysis(actor,input.analysisId as string);result.data={analysisId:review.record.id,analysisReview:review};result.message=analysisMessage(review);result.artifacts=[{type:'analysis',id:review.record.id,title:'Review deal analysis',data:{analysisAccessReference:review.analysisAccessReference}}];break;}
-  case 'review_opportunity':{const review=reviewOpportunityScreening(actor,input.opportunityId as string);result.data={opportunityId:review.opportunity.id,opportunityReview:review};result.message=opportunityScreeningMessage(review);result.artifacts=[{type:'opportunity',id:review.opportunity.id,title:'Review wholesaler opportunity',data:{opportunityAccessReference:review.opportunityAccessReference,screening:review.screening}}];break;}
+  case 'review_opportunity':{const review=reviewOpportunityJourney(actor,input.opportunityId as string);result.data={opportunityId:review.opportunity.id,opportunityReview:review};result.message=opportunityJourneyMessage(review);result.artifacts=[{type:'opportunity',id:review.opportunity.id,title:'Review wholesaler opportunity',data:{opportunityAccessReference:review.opportunityAccessReference,screening:review.screening,followThrough:review.followThrough}}];break;}
   case 'review_handoff':{
    const review=reviewAcquisition(actor,input.propertyId as string),releases=listReleases(actor).filter(r=>r.propertyId===review.property.id);
    result.data={propertyId:review.property.id,property:review.property,releases,missing:review.questions.map(item=>item.reason),acquisitionReview:review};result.message=review.handoffDraft;break;

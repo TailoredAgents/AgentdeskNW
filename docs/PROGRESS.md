@@ -1,5 +1,17 @@
 # AgentDesk progress log
 
+## November 1, 2026 — Connected acquisitions/management demonstration and automatic deployments
+
+**Delivered:** acquisition opportunity details now join current intake/screening to accessible shared assignments, acknowledgment, employee reports and separate manager resolution. Desktop and native provide exact opportunity ↔ handoff links. The manager's Team overview includes the actionable shared board. Discuss with Copilot opens the current exact opportunity; typed tool and saved-work reviews include the same follow-through. The role-aware guide adds acquisition/manager entry points. The new projection does not change base intake/source fingerprints; shared reference changes invalidate earlier conversation/work advice, and obsolete assignment outcomes do not appear as current completion.
+
+**Fictional setup:** explicit presentation preparation adds `456 Preview Lane` once, through normal reviewed intake and handoff services, with a labeled authored repair/access blocker. Its versioned setup marker works for existing presentation databases and preserves later employee edits. It creates no inventory listing, provider request, investor contact or renewed trial. Expired capability access skips this additive setup rather than extending entitlement. No schema migration is introduced.
+
+**Verification:** **1,608 tests across 88 files**, all **84 native tests**, root/mobile typechecks, production build and iOS/Android exports passed. The **50-test focused regression** includes nine new role-journey cases. All **22 isolated HTTP suites** passed, with current opportunity context checked across manager desktop/phone, acquisition phone and Agent. Cases cover blocked/report/review separation, duplicate actions, corrected facts, not-pursuing status, access boundaries, stale history/work and idempotent legacy setup. Lint has no errors and retains the existing DemoAccess navigation warning. Browser rehearsal followed acquisition intake → exact assignment → source opportunity → actual offline Copilot review, then inspected the same blocker on manager Team overview. Local checks used disposable fictional data and no model/provider calls.
+
+**Deployment setting:** the existing Render service was inspected at `c8fc755`; Auto-Deploy was Off. At the owner's request it was changed to On Commit and verified after reload. The blueprint now specifies `autoDeployTrigger: commit` so a future blueprint sync cannot restore Off. Required checks passed before publication. The upcoming push and exact hosted deployment outcome are verified separately from this pre-publication entry. No plan, disk, credentials, company connection or provider-send settings were changed.
+
+**Next:** rehearse all three roles on the hosted revision, polish remaining navigation/empty/error states and assess configured-model task quality. This is functional fictional-data acceptance, not complete specialist expertise, installed-phone/SMS acceptance or a connected company rollout. Real CRM approval remains unnecessary for the GM demonstration.
+
 ## October 31, 2026 — Connected fictional buyer journey for the GM demonstration
 
 **Direction:** the immediate milestone is a coherent fictional workspace the owner and GM can explore before New Western approves company access. Live CRM/source promotion and production infrastructure remain in the roadmap but are not prerequisites or the next default task. Dispositions, acquisitions and management remain equal product audiences.

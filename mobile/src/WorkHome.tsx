@@ -38,8 +38,8 @@ export function WorkHome(props:Props){
  section==='updates'?<UpdatesScreen initialId={id('updates',initialUpdate)} api={api} onAuthError={onAuthError} onGuard={register} onOpen={artifact}/>:
  section==='analysis'?<AnalysisScreen key={id('analysis',initialAnalysis)??'board'} api={api} initialId={id('analysis',initialAnalysis)} onAuthError={onAuthError} onGuard={register}/>:
  section==='tasks'?<TasksScreen api={api} initialId={id('task',initialTask)} onAuthError={onAuthError} onGuard={register} onInbox={onInbox} onRecord={open}/>:
- section==='handoffs'?<HandoffsScreen key={id('handoff',initialHandoffId)??'board'} initialId={id('handoff',initialHandoffId)} api={api} onAuthError={onAuthError} onGuard={register}/>:
- section==='opportunities'?<OpportunitiesScreen key={id('opportunity',initialOpportunity)??'board'} onOpenAnalysis={value=>open({kind:'analysis',id:value})} api={api} initialId={id('opportunity',initialOpportunity)} onAuthError={onAuthError} onGuard={register}/>:
+ section==='handoffs'?<HandoffsScreen onOpenOpportunity={value=>open({kind:'opportunity',id:value})} key={id('handoff',initialHandoffId)??'board'} initialId={id('handoff',initialHandoffId)} api={api} onAuthError={onAuthError} onGuard={register}/>:
+ section==='opportunities'?<OpportunitiesScreen onAsk={text=>navigate(()=>onAsk(text))} onOpenHandoff={value=>open({kind:'handoff',id:value})} key={id('opportunity',initialOpportunity)??'board'} onOpenAnalysis={value=>open({kind:'analysis',id:value})} api={api} initialId={id('opportunity',initialOpportunity)} onAuthError={onAuthError} onGuard={register}/>:
  section==='intake'?<AcquisitionScreen api={api} bootstrap={bootstrap} onAuthError={onAuthError} onGuard={register}/>:
  <WorkScreen onArtifact={artifact} onRecord={open} api={api} bootstrap={bootstrap} initialId={id('work',initialJob)||null} onAuthError={onAuthError} onGuard={register}/>}</View>;
 }

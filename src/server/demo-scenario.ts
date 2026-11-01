@@ -1,3 +1,4 @@
+import {prepareRoleDemoScenario} from './demo-role-scenario';
 import { demoActor, getDb, now } from './db';
 import { grantTrial } from './billing';
 import { specialists } from './registry';
@@ -10,7 +11,7 @@ export function prepareDemoScenario() {
   if (process.env.AGENTDESK_DEMO !== 'true') throw new Error('Demo setup requires explicit demo mode.');
   const db = getDb();
   db.exec('CREATE TABLE IF NOT EXISTS demo_scenarios (id TEXT PRIMARY KEY, prepared_at TEXT NOT NULL)');
-  if (db.prepare('SELECT 1 FROM demo_scenarios WHERE id=?').get('monday-presentation-v1')) return {prepared:false};
+  if (db.prepare('SELECT 1 FROM demo_scenarios WHERE id=?').get('monday-presentation-v1')) return {prepared:prepareRoleDemoScenario()};
   return db.transaction(() => {
     const admin = demoActor('manager'), alex = demoActor(), jordan = demoActor('acquisitions');
     for (const actor of [alex,jordan,admin]) grantTrial(admin, {
@@ -40,6 +41,7 @@ export function prepareDemoScenario() {
       });
       proposeDebrief(alex,debrief.id,{investorId:'investor-mike',propertyId:'property-maple',createFollowUp:true});
     }
+    prepareRoleDemoScenario();
     db.prepare('INSERT INTO demo_scenarios VALUES(?,?)').run('monday-presentation-v1',now());
     return {prepared:true};
   }).immediate();
