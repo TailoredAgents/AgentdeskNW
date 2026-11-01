@@ -2,6 +2,10 @@
 
 Updated October 31, 2026. This is the stable product brief, **not a second development schedule**. Use [the roadmap](docs/IMPLEMENTATION_ROADMAP.md) for current status, next work, dependencies and completion gates; [the documentation map](docs/README.md) for specifications; [PROGRESS](docs/PROGRESS.md) for evidence.
 
+## Immediate owner-confirmed priority — GM demonstration
+
+Build a coherent fictional company workspace for the owner and New Western GM to explore before company access is requested. Prioritize useful end-to-end work through the master Agent and UI, starting with existing-buyer matching, relationship-aware outreach, simulated replies and saved follow-through. Demonstrated actions must have inspectable fictional effects; label simulated delivery clearly. Live CRM/source promotion, email adapters and production infrastructure are later tracks, not prerequisites or the next default priority. Preserve all three roles and flexible planning; demonstration journeys are acceptance examples, not mandatory scripts.
+
 ## What we are building
 
 AgentDesk NW is a company-wide AI workforce for New Western's dispositions, acquisitions and management employees. Each employee has one persistent master Copilot that understands their work, retrieves the right business context, coordinates permitted specialists, carries out useful tasks and follows through. Employees can describe an outcome instead of manually operating every feature.

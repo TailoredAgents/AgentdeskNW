@@ -1,5 +1,9 @@
 # Architecture decisions
 
+## Owner correction — demonstrate fictional business work before company integration
+
+The owner clarified that New Western and the GM must explore a capable fictional connected workspace before company access is requested. This supersedes the source-preview entry's suggested immediate next step of source promotion. Retain connector groundwork, but prioritize coherent master-Agent and UI outcomes, starting with existing buyers, relationship context, saved property outreach, controlled fictional replies and follow-through. Use normal services and inspectable results; do not replace execution with narrated pretend success. All three roles remain primary audiences and journeys remain flexible acceptance cases. Live company connections and production infrastructure remain later roadmap scope.
+
 ## October 31, 2026 — Shared turn-based speech before separate paid Realtime expansion
 
 Implement the primary desktop/native voice experience as recognition → existing authenticated text Copilot → device/browser playback. This reuses the complete tools, durable request recovery, role scope and current spending host rather than maintaining another limited assistant. Native requires on-device recognition; browser speech may use its provider online, disclosed before Start. The employee explicitly starts automatic completed-turn submission; possible spending decisions pause for exact-word review. The microphone is off while thinking/speaking, with manual interruption and foreground-only operation.

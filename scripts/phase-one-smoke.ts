@@ -1,3 +1,4 @@
+import type {RecordDetail} from '../src/lib/record-contracts';
 import {getRelationshipRecord,recordRelationshipReport} from '../src/server/relationship-record';
 import {getInvestorIntelligence} from '../src/server/intelligence';
 import type {Conversation,ToolResult} from '../src/lib/contracts';
@@ -36,6 +37,12 @@ try{
  const replyInput={expectedVersion:sent.detail.thread.version,scenario:'repair',eventKey:randomUUID()},reply=await request<InboxThreadDetail>(`inbox/${draft.thread.id}/receive-demo-reply`,'POST',replyInput,200,true);await request(`inbox/${draft.thread.id}/receive-demo-reply`,'POST',replyInput);
  check(reply.messages.length===2&&reply.messages.at(-1)?.body.includes('FICTIONAL REPLY'),'The selected thread receives one labeled controlled reply across surfaces');const advice=await request<InboxAssistance>(`inbox/${draft.thread.id}/assist`);check(advice.suggestedReply.body.includes('repair'),'Next recommendation responds to the new repair objection');
  check((await request<InboxThreadDetail>(`packages/${pkg.id}/inbox-preparation`,'POST',draftRequest)).draft===null,'Retry cannot recreate a consumed package draft');
+ const follow=advice.suggestedFollowUp!;check(!!follow,'Repair reply proposes a sourced follow-up');
+ const followRequest={expectedVersion:reply.thread.version,eventKey:randomUUID(),messageId:follow.messageId,title:follow.title,dueAt:null};
+ await request(`inbox/${draft.thread.id}/follow-up`,'POST',followRequest);await request(`inbox/${draft.thread.id}/follow-up`,'POST',followRequest);
+ const phoneProperty=await request<RecordDetail>('records/property/property-maple'),webProperty=await request<RecordDetail>('records/property/property-maple','GET',undefined,200,true);
+ check(JSON.stringify(phoneProperty)===JSON.stringify(webProperty),'Phone and desktop inspect the same saved property journey');
+ check(phoneProperty.kind==='property'&&phoneProperty.activity?.conversations.some(item=>item.threadId===draft.thread.id&&item.simulatedSent&&item.reply?.text.includes('FICTIONAL REPLY')&&item.followUps.length===1),'Property journey reports actual simulated send, incoming reply and one linked follow-up');
  const qualification=await request<{conversation:Conversation;result:ToolResult}>('chat','POST',{requestId:randomUUID(),message:'Qualify Mike'});
  check(qualification.result.message.includes('Ask the next useful question'),'Phone Agent receives evidence-led qualification');
  const qualificationRecord=getRelationshipRecord(demoActor(),'investor-mike'),box=getInvestorIntelligence(demoActor(),'investor-mike').buyBoxes[0];

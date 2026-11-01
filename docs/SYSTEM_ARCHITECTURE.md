@@ -1,5 +1,7 @@
 # System architecture
 
+`property-activity.ts` provides a current scoped projection for property details: existing-buyer shortlist, owner-only current package Inbox threads, actual simulated-send/inbound evidence and source-linked personal follow-ups. The existing records API and client-safe `record-presentation.ts` expose the same sections and links on desktop/native. It creates no workflow state, mailbox or provider action. Package context, body access and task scope are rechecked; ordinary Copilot package preparation uses the existing source-bound Inbox service.
+
 The current Salesforce source-inspection seam uses `salesforce-sync.ts` for trusted mapped pagination and `salesforce-source.ts` for a fixed fictional source lifecycle. Desktop/native Settings call the same authenticated `/api/salesforce-source` endpoints. Existing migration-051 staging stores the validated refresh atomically; there is no new schema, network transport, live-source activation or automatic CRM merge. See [the Salesforce contract](SALESFORCE_INTEGRATION.md).
 
 
