@@ -1,6 +1,6 @@
 # AgentDesk NW — product requirements
 
-Current requirements, reconciled October 30, 2026. [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) alone defines delivery status, order and completion gates. This document describes the target; a requirement is not a claim of implementation. [PROGRESS.md](PROGRESS.md) supplies evidence and [MASTER_PLAN.md](../MASTER_PLAN.md) the confirmed direction.
+Current requirements, reconciled October 30, 2026; conversational experience clarified November 1, 2026. [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) alone defines delivery status, order and completion gates. This document describes the target; a requirement is not a claim of implementation. [PROGRESS.md](PROGRESS.md) supplies evidence and [MASTER_PLAN.md](../MASTER_PLAN.md) the confirmed direction.
 
 ## Users and outcome
 
@@ -15,6 +15,8 @@ Dispositions, acquisitions and management are primary audiences. Each needs a us
 ## One useful master assistant
 
 Employees state desired outcomes in ordinary language. Copilot retrieves current permitted context, composes capabilities, delegates focused specialist work, verifies results and persists useful artifacts. A separate model persona is not required for each specialist. Calculations and mutations use tested services; reasoning handles interpretation, planning, ambiguity and synthesis.
+
+Ordinary exchanges should feel conversational: short useful answers, natural follow-ups, remembered current context and a focused clarification only when necessary. Requested detail remains available. Do not force specialist checklists, report headings or large tables into everyday messages. One-off wording corrections affect the current response or clearly labeled preview; permanent preferences require explicit employee intent. A saved draft must be distinguished from an unsaved wording preview.
 
 Support useful questions and multi-step tasks without forcing a fixed menu. The same server services power UI, tools and workers. Unsupported tasks identify the missing capability or essential information. A tool failure, prepared draft or queued message must never become a claim of completed external action.
 

@@ -6,6 +6,16 @@ The verified committed baseline through `2d16665` lets an employee complete, can
 
 All supplied demo people and records remain fictional. Live Slack/Twilio account configuration and real delivery acceptance are still pending. The product direction is a primary native app for iPhone/Android, included in the workforce subscription; optional employee SMS is provisionally $19/month. New Western does not currently use Slack, so that retained channel is lower priority. Desktop remains available for detailed work. These decisions do not imply the native draft is released.
 
+## Conversational presentation and focused replies
+
+The master’s text/voice instructions now use brief natural answers for ordinary exchanges, with explicit depth on request and saved employee preferences respected. Specialist methods guide the reasoning, not a mandatory report format. No generated answer is mechanically truncated for style. Web/native supporting source links collapse separately from primary drafts, tasks, jobs and decisions; a sole result remains directly available.
+
+Typed Inbox preparation accepts short explicit follow-ups such as “Draft a reply to that” after one current, scoped thread is uniquely established. It may cross up to two no-tool replies to a recognized short continuation such as “what would you do next?”; a new topic or another structured result stops that traversal. The original source must remain visible, younger than 24 hours and at the same thread version. Channel follow-ups additionally require accepted/delivered replies before the inbound timestamp. No hidden raw text or model-chosen thread grants authority. Ambiguous references need a focused clarification. This is bounded continuity, not arbitrary-topic resolution.
+
+Short task corrections such as “Actually, make that 2 p.m.” resolve only the current owned structured task focus. A time-only correction keeps its existing date; a task without a date needs clarification. Ambiguous or stale references, missing channel delivery and DST ambiguity still require resolution. An explicit new date uses the existing Eastern date parser. Wording changes such as “make it 2 sentences” do not become task edits.
+
+A casual/shorter wording request is not a permanent memory command. The existing reply tool saves its grounded service-owned draft; arbitrary rewritten body text in chat is an explicitly unsaved preview until edited in Inbox. Conversational wording alone never proves persistence or delivery. Use [CONVERSATIONAL_REHEARSAL](CONVERSATIONAL_REHEARSAL.md) for authored multi-turn acceptance cases; actual model results are recorded separately.
+
 ## One ongoing Copilot
 
 The dashboard's default first message opens the employee's ongoing Copilot conversation, the same one used by linked Slack and SMS. The **Continue phone and Slack conversation** control returns to it. The native client joins that same employee-owned conversation through the shared server. Selecting **New conversation** deliberately starts a separate chat; it does not merge every conversation into one history. Writing preferences remain employee-wide, while short references such as “it” are resolved within the selected conversation.

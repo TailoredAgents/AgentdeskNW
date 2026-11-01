@@ -1,6 +1,6 @@
 # AgentDesk NW — product direction
 
-Updated October 31, 2026. This is the stable product brief, **not a second development schedule**. Use [the roadmap](docs/IMPLEMENTATION_ROADMAP.md) for current status, next work, dependencies and completion gates; [the documentation map](docs/README.md) for specifications; [PROGRESS](docs/PROGRESS.md) for evidence.
+Updated November 1, 2026. This is the stable product brief, **not a second development schedule**. Use [the roadmap](docs/IMPLEMENTATION_ROADMAP.md) for current status, next work, dependencies and completion gates; [the documentation map](docs/README.md) for specifications; [PROGRESS](docs/PROGRESS.md) for evidence.
 
 ## Immediate owner-confirmed priority — GM demonstration
 
@@ -19,6 +19,7 @@ The native iPhone/Android app is the primary daily experience, with Agent, Work 
 ## What should make it valuable
 
 - **Convenience:** one conversation and work history across app, desktop, text, dictation, eventual live voice and configured messaging. Ask, leave, receive a useful update and continue without repeating context.
+- **Conversation:** respond like a capable colleague: brief and natural by default, keep the current subject through short follow-ups, adapt to corrections, and provide deeper evidence when asked. Supporting cards carry the detail; concise replies must still explain consequential uncertainty and actual saved outcomes.
 - **Understanding:** inspectable employee preferences; sourced investor/wholesaler/deal journeys; separate facts, assumptions, corrections, commitments and document versions. New information must change useful decisions.
 - **Expertise:** all sixteen specialist scopes have methods, appropriate knowledge/tools, excellent-output examples and realistic quality evaluation. A catalog name or a separate model call does not prove expertise.
 - **Execution:** composable durable work, essential clarification, progress/results, pause/cancel/change controls, recovery and verified outcomes. Routine authorized work proceeds without unnecessary interruptions.

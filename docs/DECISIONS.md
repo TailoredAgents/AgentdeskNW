@@ -1,5 +1,9 @@
 # Architecture decisions
 
+## November 1, 2026 — Conversational coworker as the default experience
+
+The owner explicitly prioritizes a natural ongoing exchange over report-style answers. Make ordinary responses brief, useful and context-aware; expand on request, and keep supporting sources/results inspectable without overwhelming chat. Pair prompt/presentation work with verified short-reference task/draft continuation and correction-sensitive rehearsal. Do not simulate a saved action by changing wording, infer permanent memory from one style correction, or remove exact action/spending controls to appear conversational. Authored service tests and actual model-conversation evidence remain separate.
+
 ## Owner correction — demonstrate fictional business work before company integration
 
 The owner clarified that New Western and the GM must explore a capable fictional connected workspace before company access is requested. This supersedes the source-preview entry's suggested immediate next step of source promotion. Retain connector groundwork, but prioritize coherent master-Agent and UI outcomes, starting with existing buyers, relationship context, saved property outreach, controlled fictional replies and follow-through. Use normal services and inspectable results; do not replace execution with narrated pretend success. All three roles remain primary audiences and journeys remain flexible acceptance cases. Live company connections and production infrastructure remain later roadmap scope.

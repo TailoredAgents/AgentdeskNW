@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Actor, Task } from '../src/lib/contracts';
 import { closeDb, demoActor, getDb } from '../src/server/db';
-import { createConversation, createTask, getInvestor } from '../src/server/services';
+import { addMessage, createConversation, createTask, getInvestor } from '../src/server/services';
+import { getInboxState } from '../src/server/communications';
 import { grantLegacyTestWorkforce } from './fixtures';
 import { getPersonalTask, mutateTask } from '../src/server/task-actions';
 import { readConversationFocus, setConversationFocus } from '../src/server/conversation-focus';
@@ -21,6 +22,7 @@ const task=(title='Call Mike about repair scope',dueAt:string|null='2026-10-29T1
 const ask=(message:string)=>executeConversationAction(actor,message,conversationId,`action-${++sequence}`);
 function focus(value:Task,turnKey='focus-turn'){
   setConversationFocus(actor,conversationId,{kind:'task',id:value.id,version:value.version??0,source:'assistant_result',eventKey:`focus-${++sequence}`,turnKey});
+  addMessage(actor,conversationId,{role:'assistant',content:`Saved reminder: ${value.title}.`,artifacts:[{type:'task',id:value.id,title:value.title}]});
 }
 const advance=()=>vi.setSystemTime(new Date(Date.now()+1));
 
@@ -78,6 +80,80 @@ describe('conversational task lifecycle',()=>{
   it('moves tomorrow at the original Eastern time and reports the actual deadline',()=>{
     const value=task();focus(value);advance();const result=ask('move it to tomorrow')!;
     expect(result.message).toContain('3:00 PM');expect(result.message).toContain('Eastern');expect(getPersonalTask(actor,value.id).dueAt).toBe('2026-10-30T19:00:00.000Z');
+  });
+
+  it('understands narrow time corrections without treating style edits or quotations as task commands',()=>{
+    expect(taskActionIntent('Actually, make that 2 p.m.')).toMatchObject({action:'reschedule',target:'that',dateText:'same date at 2 p.m'});
+    expect(taskActionIntent('Make it tomorrow at 2 pm')).toMatchObject({action:'reschedule',target:'it',dateText:'tomorrow at 2 pm'});
+    for(const text of ['Make it shorter','Make it 2 sentences','Make it 20% shorter','Actually, make that casual','Mike said make that 2pm','"Make it tomorrow at 2pm"','If possible make it 2pm','Do not make it 2pm'])expect(taskActionIntent(text)).toBeNull();
+  });
+
+  it('corrects the clock on the focused task’s existing day and replays once through Copilot',async()=>{
+    const selected=task('Repair breakdown check','2026-10-30T14:00:00Z'),other=task('Other check');focus(selected);advance();
+    const changed=await chat(actor,'Actually, make that 2 p.m.',conversationId,'clock-correction');
+    expect(changed.result.message).toContain('2:00 PM');expect(getPersonalTask(actor,selected.id)).toMatchObject({dueAt:'2026-10-30T18:00:00.000Z',version:2});
+    expect(getPersonalTask(actor,other.id).version).toBe(1);advance();
+    expect((await chat(actor,'Actually, make that 2 p.m.',conversationId,'clock-correction')).result).toEqual(changed.result);
+    expect(getPersonalTask(actor,selected.id).version).toBe(2);
+  });
+
+  it('keeps a time-only correction through an explicit choice without guessing between tasks',()=>{
+    const first=task('Repair callback','2026-10-30T14:00:00Z'),second=task('Lender callback','2026-10-31T14:00:00Z');
+    focus(first,'same-turn');focus(second,'same-turn');advance();
+    expect(ask('Actually, make that 2 p.m.')!.message).toContain('Which task');
+    expect(getPersonalTask(actor,first.id).version).toBe(1);expect(getPersonalTask(actor,second.id).version).toBe(1);
+    const choice=readConversationFocus(actor,conversationId).candidates.findIndex(item=>item.id===second.id)+1;advance();
+    expect(ask(String(choice))!.message).toContain('2:00 PM');
+    expect(getPersonalTask(actor,first.id).version).toBe(1);expect(getPersonalTask(actor,second.id)).toMatchObject({dueAt:'2026-10-31T18:00:00.000Z',version:2});
+  });
+
+  it('requires a current received reference and does not reuse a changed task for a correction',()=>{
+    const value=task('Private callback');
+    setConversationFocus(actor,conversationId,{kind:'task',id:value.id,version:value.version??0,source:'assistant_result',eventKey:'not-delivered',turnKey:'unseen',deliveryRequestId:'no-accepted-reply'});advance();
+    expect(ask('Make it tomorrow at 2pm')!.message).toContain('Which task');expect(getPersonalTask(actor,value.id).version).toBe(1);
+    focus(value);advance();mutateTask(actor,value.id,{action:'reschedule',dueAt:'2026-11-02T15:00:00Z',expectedVersion:value.version});advance();
+    expect(ask('Actually, make that 2 p.m.')!.message).toContain('earlier task reference has changed');expect(getPersonalTask(actor,value.id)).toMatchObject({dueAt:'2026-11-02T15:00:00.000Z',version:2});
+  });
+
+  it('asks for an unscheduled date and respects an explicit corrected date',()=>{
+    const value=task('Unscheduled check',null);focus(value);advance();
+    expect(ask('Actually, make that 2 p.m.')!.message).toContain('no scheduled date');expect(getPersonalTask(actor,value.id).version).toBe(1);advance();
+    expect(ask('Make it tomorrow at 2 pm')!.message).toContain('2:00 PM');expect(getPersonalTask(actor,value.id)).toMatchObject({dueAt:'2026-10-30T18:00:00.000Z',version:2});
+  });
+
+  it('clarifies an ambiguous correction clock and retains the task’s scheduled day',()=>{
+    const value=task('Tomorrow callback','2026-10-30T14:00:00Z');focus(value);advance();
+    expect(ask('Actually, make it 2')!.message).toContain('am/pm');expect(getPersonalTask(actor,value.id).version).toBe(1);advance();
+    expect(ask('2pm')!.message).toContain('2:00 PM');expect(getPersonalTask(actor,value.id)).toMatchObject({dueAt:'2026-10-30T18:00:00.000Z',version:2});
+  });
+
+  it('does not apply a generic correction to an old reminder after inspecting an Inbox thread',async()=>{
+    const value=task('Old reminder','2026-10-30T14:00:00Z');focus(value);advance();
+    const thread=getInboxState(actor).threads[0];await chat(actor,`Read ${thread.id}`,conversationId,'new-inbox-topic');advance();
+    const result=await chat(actor,'Actually, make it 2 p.m.',conversationId,'correction-after-email');
+    expect(result.result.message).toContain('Which reminder should I change');expect(getPersonalTask(actor,value.id)).toMatchObject({dueAt:'2026-10-30T14:00:00.000Z',version:1});
+  });
+
+  it.each(['property','plain'])('does not reuse old task focus after a newer %s topic',kind=>{
+    const value=task('Old callback','2026-10-30T14:00:00Z');focus(value);advance();
+    addMessage(actor,conversationId,{role:'user',content:kind==='property'?'Tell me about 123 Example Street.':'How should I introduce myself to the new wholesaler?'});
+    addMessage(actor,conversationId,{role:'assistant',content:'Here is the current topic.',artifacts:kind==='property'?[{type:'release',id:'release-maple',title:'123 Example Street'}]:[]});advance();
+    expect(ask('Actually, make that 2 p.m.')!.message).toContain('Which reminder should I change');expect(getPersonalTask(actor,value.id).version).toBe(1);
+  });
+
+  it('retains the same task through a narrow time-status follow-up without using model prose as authority',()=>{
+    const value=task('Tomorrow callback','2026-10-30T14:00:00Z');focus(value);advance();
+    addMessage(actor,conversationId,{role:'user',content:'What time did you set?'});
+    addMessage(actor,conversationId,{role:'assistant',content:'It is set for 10 a.m. tomorrow.'});advance();
+    expect(ask('Actually, make that 2 p.m.')!.message).toContain('2:00 PM');expect(getPersonalTask(actor,value.id)).toMatchObject({dueAt:'2026-10-30T18:00:00.000Z',version:2});
+  });
+
+  it('requires explicit selection after a topic change and applies only that selected reminder',async()=>{
+    const first=task('Old callback','2026-10-30T14:00:00Z'),second=task('Other callback','2026-10-31T14:00:00Z');focus(first);advance();
+    addMessage(actor,conversationId,{role:'user',content:'Tell me about your role.'});addMessage(actor,conversationId,{role:'assistant',content:'I help with the work you choose.'});advance();
+    const asked=await chat(actor,'Make it 2pm',conversationId,'choose-current-reminder');expect(asked.result.message).toContain('Which reminder should I change');
+    const choice=readConversationFocus(actor,conversationId).candidates.findIndex(item=>item.id===second.id)+1;advance();
+    await chat(actor,String(choice),conversationId,'choose-other-reminder');expect(getPersonalTask(actor,first.id).version).toBe(1);expect(getPersonalTask(actor,second.id)).toMatchObject({dueAt:'2026-10-31T18:00:00.000Z',version:2});
   });
 
   it('asks for a time on an unscheduled task and accepts a short time reply',()=>{
@@ -143,6 +219,11 @@ describe('conversational task lifecycle',()=>{
 });
 
 describe('Eastern scheduling',()=>{
+  it('preserves the existing scheduled day and applies its correct offset for a clock correction',()=>{
+    vi.setSystemTime(new Date('2026-10-31T12:00:00Z'));const value=task('After clocks change','2026-11-02T15:00:00Z');
+    expect(parseTaskDate('same date at 2 p.m.',value).dueAt).toBe('2026-11-02T19:00:00.000Z');
+    expect(parseTaskDate('tomorrow at 9 a.m.',value).dueAt).toBe('2026-11-01T14:00:00.000Z');
+  });
   it('preserves local wall time across spring-forward and fall-back',()=>{
     vi.setSystemTime(new Date('2027-03-13T13:00:00Z'));const spring=task('Spring task','2027-03-13T14:00:00Z');
     expect(parseTaskDate('tomorrow',spring).dueAt).toBe('2027-03-14T13:00:00.000Z');

@@ -1,8 +1,8 @@
 import type { Actor, Task, ToolResult } from '../lib/contracts';
-import { AppError, newId, scopedGet } from './db';
+import { AppError, getDb, newId, scopedGet } from './db';
 import { requireFeature } from './billing';
 import { fingerprint } from './provider-runtime';
-import { listInvestors } from './services';
+import { getConversation, listInvestors } from './services';
 import { getInvestorJourney, recordJourneyObservation } from './journey';
 import { listPersonalTasks, mutateTask } from './task-actions';
 import { readConversationFocus, saveConversationChoices } from './conversation-focus';
@@ -42,6 +42,13 @@ export function taskActionIntent(message:string):TaskIntent|null {
   if (match) return {action:'cancel',target:match[1]??''};
   match=/^(?:move|reschedule|postpone)\s+(.+)\s+(?:to|until|for)\s+(.+)$/i.exec(text);
   if (match) return {action:'reschedule',target:match[1],dateText:match[2]};
+  // A short correction still resolves only the current structured task focus.
+  // Keep clock-only edits on the task's existing day, including across DST.
+  match=/^(?:actually\s*,?\s*)?make\s+((?:it|that|this)(?: task| reminder)?)\s+(?:for\s+)?(.+)$/i.exec(text);
+  if(match){
+    const clockOnly=!!clock(match[2])||/^(?:at\s+)?\d{1,2}(?::\d{2})?$/.test(match[2]);
+    if(clockOnly||/^(?:today\b|tomorrow\b|\d{4}-\d{2}-\d{2}(?:\b|t)|(?:(?:this|next)\s+)?(?:sunday|monday|tuesday|wednesday|thursday|friday|saturday)\b)/i.test(match[2]))return {action:'reschedule',target:match[1],dateText:clockOnly?`same date at ${match[2].replace(/^at\s+/i,'')}`:match[2]};
+  }
   match=/^snooze(?:\s+(.*?))?(?:\s+for)?\s+(\d+(?:\.\d+)?|an?|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\s*(minutes?|mins?|hours?|hrs?)$/i.exec(text);
   if (match) return {action:'snooze',target:match[1]?.toLowerCase()==='for'?'':match[1]??'',minutes:(amounts[match[2].toLowerCase()]??Number(match[2]))*(/^(?:hour|hr)/i.test(match[3])?60:1)};
   match=/^snooze(?:\s+(.+))?$/i.exec(text);
@@ -75,7 +82,7 @@ function instantForWall(time:WallTime):{iso?:string;error?:string} {
   return {iso:new Date([...candidates][0]).toISOString()};
 }
 function clock(value:string):{hour:number;minute:number}|null {
-  const text=value.trim().replace(/^at\s+/i,'').toLowerCase();
+  const text=value.trim().replace(/^at\s+/i,'').toLowerCase().replace(/\b([ap])\.?\s*m\.?$/,'$1m');
   if (text==='noon') return {hour:12,minute:0};
   if (text==='midnight') return {hour:0,minute:0};
   let match=/^(\d{1,2})(?::(\d{2}))?\s*(am|pm)$/.exec(text);
@@ -97,6 +104,11 @@ export function parseTaskDate(dateText:string|undefined,task:Task,reference=new 
   }
   const today=wallTime(reference);
   let day:WallTime|undefined,timeText='';
+  const sameDate=/^same date at (.+)$/.exec(text);
+  if(sameDate){
+    if(!task.dueAt)return {error:'This task has no scheduled date yet. Give a date and time, such as “make it tomorrow at 2pm”.'};
+    day=wallTime(new Date(task.dueAt));timeText=sameDate[1];
+  }
   const relative=/^(today|tomorrow)(?:\s+(?:at\s+)?(.+))?$/.exec(text);
   if(relative){day=addDays(today,relative[1]==='tomorrow'?1:0);timeText=relative[2]??'';}
   const dated=/^(\d{4})-(\d{2})-(\d{2})(?:\s+(?:at\s+)?(.+))?$/.exec(text);
@@ -132,6 +144,35 @@ function choices(actor:Actor,conversationId:string,tasks:Task[],intent:TaskInten
   const selected=tasks.slice(0,8);
   saveConversationChoices(actor,conversationId,{...(deliveryRequestId?{deliveryRequestId}:{}),tasks:selected.map(task=>({id:task.id,version:task.version??0})),intent:{action:intent.action,...(intent.dateText!==undefined?{dateText:intent.dateText}:{}),...(intent.minutes!==undefined?{minutes:intent.minutes}:{}),...(intent.referenceAt?{referenceAt:intent.referenceAt}:{}),requestId}});
   return {kind:'clarification',result:{message:`${lead}\n${selected.map((task,index)=>`${index+1}. ${task.title}${task.dueAt?` — ${new Date(task.dueAt).toLocaleString('en-US',{timeZone:timezone,dateStyle:'medium',timeStyle:'short'})} Eastern`:''}`).join('\n')}\nReply with the number${tasks.length>8?' or the exact title':''}. Nothing has changed yet.`,specialistIds:[],artifacts:selected.map(task=>({type:'task',id:task.id,title:task.title,data:{taskId:task.id,investorId:task.investorId}}))}};
+}
+
+const shortTaskCorrection=(message:string)=>/^(?:actually\s*,?\s*)?make\s+(?:it|that|this)(?: task| reminder)?\s+/i.test(commandPrefix(withoutPunctuation(message)));
+const taskTimeFollowup=(message:string)=>/^(?:(?:and|okay|ok|please)[,.]?\s+)?(?:what time (?:is|was) (?:it|that|this|(?:the|my) (?:task|reminder))(?: (?:due|scheduled))?|what time did you (?:set|save)(?: (?:it|that|this))?|when (?:is|was) (?:it|that|this|(?:the|my) (?:task|reminder))(?: (?:due|scheduled))?)[.!?]?$/i.test(message.trim());
+
+/** Generic corrections cannot inherit an older task after the conversation changes subject. */
+function currentTaskSubject(actor:Actor,conversationId:string,task:Task,focus:ReturnType<typeof readConversationFocus>,asOf?:string):boolean {
+  const messages=getConversation(actor,conversationId).messages;
+  let index=messages.findLastIndex(message=>message.role==='assistant'),latest=messages[index];
+  const candidate=focus.candidates.find(item=>item.id===task.id);
+  // A current delivered reminder is also an actually shown subject. An older
+  // reminder cannot override a newer conversation answer.
+  if(candidate?.source==='reminder'&&(!latest||Date.parse(candidate.createdAt)>Date.parse(latest.createdAt)))return true;
+  for(let bridged=0;latest&&bridged<=2;bridged++){
+    if(latest.content.startsWith('This historical message is withheld'))return false;
+    if(asOf){
+      if(Date.parse(latest.createdAt)>=Date.parse(asOf))return false;
+      const delivered=getDb().prepare(`SELECT 1 FROM messaging_outbox o JOIN messaging_links l ON l.id=o.link_id
+       WHERE o.reference_id=? AND o.kind='reply' AND o.status IN ('accepted','delivered') AND o.updated_at<?
+       AND l.organization_id=? AND l.office_id=? AND l.user_id=? AND l.active=1 AND l.opted_out=0`)
+        .get(latest.id,asOf,actor.organizationId,actor.officeId,actor.id);
+      if(!delivered)return false;
+    }
+    if(latest.artifacts.length)return latest.artifacts.every(item=>item.type==='task'&&item.id===task.id);
+    const previousUser=messages.slice(0,index).findLastIndex(message=>message.role==='user');
+    if(bridged===2||previousUser<0||!taskTimeFollowup(messages[previousUser].content))return false;
+    index=messages.slice(0,previousUser).findLastIndex(message=>message.role==='assistant');latest=messages[index];
+  }
+  return false;
 }
 
 function prepareConcern(actor:Actor,message:string):PreparedConversationAction|null {
@@ -189,6 +230,7 @@ export function prepareConversationAction(actor:Actor,message:string,conversatio
       else return choices(actor,conversationId,matching.length?matching:tasks,intent,choiceRequestId,matching.length?'More than one task matches. Which one?':'I couldn’t match that title. Which task did you mean?',options.asOf?options.requestId:undefined);
     }
   }
+  if(shortTaskCorrection(message)&&!currentTaskSubject(actor,conversationId,selected,focus,options.asOf))return choices(actor,conversationId,tasks,intent,choiceRequestId,'Which reminder should I change? Name it or choose below.',options.asOf?options.requestId:undefined);
   let dueAt:string|null|undefined;
   if(intent.action==='reschedule'){
     const date=parseTaskDate(intent.dateText,selected,new Date(intent.referenceAt));

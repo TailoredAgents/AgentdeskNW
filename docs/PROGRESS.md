@@ -1,5 +1,19 @@
 # AgentDesk progress log
 
+## November 1, 2026 — Conversational coworker behavior and short follow-through
+
+**Owner direction:** ordinary exchanges should feel like a capable coworker, not an automatic report. The product brief, requirements, decision log and canonical roadmap now record that direction. The new CONVERSATIONAL_REHEARSAL reference defines nine multi-turn cases with separate authored-versus-live evidence.
+
+**Implemented:** shared master text/voice guidance now leads with the useful answer, uses brief natural paragraphs by default, respects saved/current detail preferences, expands on request, and treats specialist standards as reasoning methods rather than a response template. The final bounded synthesis follows the same guidance without mechanical truncation or changed model/request/spending limits. Corrections must update the current recommendation; a tone correction cannot silently become permanent memory or a claim of a saved draft edit.
+
+**Continuity:** explicit short Inbox drafting requests can reuse one current, scoped, version-bound conversation source, including through up to two recognized short no-tool follow-ups. Competing people/work, topic changes, obsolete/revoked/restored sources and uncertain channel delivery require clarification. Exact retries do not create another draft. Generic reminder corrections such as “Actually, make that 2 p.m.” preserve the current task's date, require the latest shown subject to remain that task, and retain ordinary ambiguity, version, delivery and DST checks. Bare-clock clarification keeps the same-date intent; wording edits cannot become time edits.
+
+**Presentation:** desktop and native keep answer text and primary action/result cards visible; supporting source links and desktop specialist labels use an accessible disclosure. Exact duplicate links can collapse only when their complete metadata agrees. Drafts, tasks, work/spending reviews and prepared decisions are never hidden as supporting evidence. A sole source link stays directly available.
+
+**Scope:** the grounded Inbox reply tool saves a service-owned draft. Custom casual/shorter wording can be supplied as an explicitly unsaved preview; arbitrary conversational body-edit persistence remains open. No real provider sending, company connection, payment or expanded action authority is introduced. Native body Markdown rendering and installed-device/SMS acceptance remain separate.
+
+**Verification:** focused continuity checks passed 27 tests, task/focus checks passed 54 tests, presentation/Markdown checks passed six tests, and all 84 native tests plus iOS/Android exports passed. The final full regression passed **1,644 tests across 91 files**. Root typecheck/lint/build, all **22 isolated HTTP suites** and separate ordinary/specialist process-restart checks passed. Lint retains only the existing DemoAccess navigation warning. Actual-model rehearsal is recorded separately after deployment. An independent review identified and fixed mixed-subject draft ambiguity and stale-topic reminder correction before publication.
+
 ## November 1, 2026 — Hosted three-role model rehearsal and answer readability
 
 **Hosted evidence:** commit `5c35e14` automatically deployed and Render reported Live; the browser health endpoint returned `{"status":"ok"}`. There was a brief 502 during deployment cutover; a reload after promotion opened the workspace normally. The owner-supplied invitation authenticated the fictional workspace. Three ordinary read-only requests used the configured live model, with no company source, live research or investor sending enabled.
