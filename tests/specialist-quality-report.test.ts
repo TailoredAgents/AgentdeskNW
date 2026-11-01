@@ -58,6 +58,80 @@ describe('comparable evidence accounting',()=>{
  });
 });
 
+describe('reviewer provenance',()=>{
+ const modelReviewer={kind:'model' as const,model:'Codex reviewer (session model not independently recorded)',blinded:true};
+ const humanReviewer={kind:'human' as const,blinded:true};
+ it('retains legacy reviews as unspecified rather than inferring a human from the reviewer name',()=>{
+  const report=summarizeQualityReview([specialist,generic]);
+  expect(report).toMatchObject({pairedCases:1,meansReviewerProvenance:{kind:'unspecified'},specialistMean:10});
+  expect(report.reviewerGroups).toHaveLength(1);
+  expect(report.reviewerGroups[0]).toMatchObject({reviewerProvenance:{kind:'unspecified'},submittedReviews:2,pairedCases:1});
+  expect(report.humanReviewed).toMatchObject({pairedCases:0,pairedSamples:0,specialistMean:null,genericMean:null});
+  expect(report.humanReviewed.pendingCases).toHaveLength(35);
+ });
+ it('keeps model-graded actual outputs separate from human coverage and declared expertise',()=>{
+  const report=summarizeQualityReview([{...specialist,reviewerProvenance:modelReviewer},{...generic,reviewerProvenance:modelReviewer}]);
+  expect(report).toMatchObject({pairedCases:1,meansReviewerProvenance:modelReviewer,specialistMean:10});
+  expect(report.reviewerGroups[0]).toMatchObject({reviewerProvenance:modelReviewer,pairedCases:1,pairedSamples:1,specialistMean:10});
+  expect(report.reviewerGroups[0].roles.find(value=>value.role==='dispositions')).toMatchObject({pairedCases:1});
+  expect(report.reviewerGroups[0].specialists.find(value=>value.specialistId==='investor-relationship')).toMatchObject({pairedCases:1});
+  expect(report.humanReviewed).toMatchObject({pairedCases:0,specialistMean:null});
+  expect(report.notice).toContain('not independently verified');
+  expect(report.notice).toContain('model grading does not count as human review or practitioner acceptance');
+ });
+ it('withholds combined means across human, model and unspecified grading without losing their coverage',()=>{
+  const report=summarizeQualityReview([
+   {...specialist,reviewerProvenance:modelReviewer},{...generic,reviewerProvenance:modelReviewer},
+   {...specialist,caseId:'specialist-34',reviewerProvenance:humanReviewer},{...generic,caseId:'specialist-34',reviewerProvenance:humanReviewer},
+   {...specialist,caseId:'specialist-35'},{...generic,caseId:'specialist-35'},
+  ]);
+  expect(report).toMatchObject({pairedCases:3,pairedSamples:3,specialistMean:null,genericMean:null,meansReviewerProvenance:null,meansWithheldForMixedReviewers:true});
+  expect(report.reviewerGroups.map(value=>[value.reviewerProvenance.kind,value.pairedCases,value.specialistMean])).toEqual([['model',1,10],['human',1,10],['unspecified',1,10]]);
+  expect(report.humanReviewed).toMatchObject({pairedCases:1,pairedSamples:1,specialistMean:10,genericMean:10,meansReviewerProvenance:humanReviewer});
+  expect(report.humanReviewed.roles.find(value=>value.role==='acquisitions')).toMatchObject({pairedCases:1});
+  expect(report.humanReviewed.roles.find(value=>value.role==='dispositions')).toMatchObject({pairedCases:0});
+  expect(report).not.toHaveProperty('practitionerAccepted');
+ });
+ it.each([
+  {kind:'human',blinded:true},
+  {kind:'model',model:'Another grading model',blinded:true},
+  {kind:'model',model:modelReviewer.model,blinded:false},
+  undefined,
+ ])('excludes unequal reviewer provenance within a paired comparison: %j',other=>{
+  const report=summarizeQualityReview([{...specialist,reviewerProvenance:modelReviewer},{...generic,reviewerProvenance:other}]);
+  expect(report).toMatchObject({pairedCases:0,specialistMean:null,genericMean:null});
+  expect(report.excludedPairs[0].reasons).toContain('reviewer_provenance_mismatch');
+  expect(report.humanReviewed.pairedCases).toBe(0);
+ });
+ it('does not merge different grading models or blinding declarations into aggregate means',()=>{
+  const otherReviewer={...modelReviewer,model:'Another grading model'};
+  const report=summarizeQualityReview([
+   {...specialist,reviewerProvenance:modelReviewer},{...generic,reviewerProvenance:modelReviewer},
+   {...specialist,sample:2,reviewerProvenance:otherReviewer},{...generic,sample:2,reviewerProvenance:otherReviewer},
+  ]);
+  expect(report).toMatchObject({pairedCases:1,pairedSamples:2,repeatedCases:1,specialistMean:null,meansWithheldForMixedReviewers:true});
+  expect(report.reviewerGroups).toHaveLength(2);
+  expect(report.roles.find(value=>value.role==='dispositions')).toMatchObject({specialistMean:null,meansWithheldForMixedReviewers:true});
+  expect(report.specialists.find(value=>value.specialistId==='investor-relationship')).toMatchObject({specialistMean:null,meansWithheldForMixedReviewers:true});
+ });
+ it('never promotes synthetic response fixtures to human evidence',()=>{
+  const report=summarizeQualityReview([{...specialist,transport:'fixture',reviewerProvenance:humanReviewer},{...generic,transport:'fixture',reviewerProvenance:humanReviewer}]);
+  expect(report).toMatchObject({fixtureReviewsExcluded:2,pairedCases:0,status:'not_run'});
+  expect(report.reviewerGroups).toEqual([]);
+  expect(report.humanReviewed).toMatchObject({pairedCases:0,specialistMean:null});
+ });
+ it.each([
+  {kind:'model',blinded:true},
+  {kind:'model',model:' ',blinded:true},
+  {kind:'model',model:'grader'},
+  {kind:'human',blinded:true,model:'grader'},
+  {kind:'human',blinded:true,practitioner:true},
+  {kind:'employee_expert',blinded:true},
+ ])('requires explicit valid provenance without unsupported authority fields: %j',reviewerProvenance=>{
+  expect(qualityReviewSchema.safeParse([{...specialist,reviewerProvenance}]).success).toBe(false);
+ });
+});
+
 describe('unrun three-role correction packets',()=>{
  it('reserves three new authored two-turn cases from runtime examples, preserving the original 32',()=>{
   expect(specialistQualityCases).toHaveLength(35);

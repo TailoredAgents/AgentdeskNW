@@ -1,6 +1,6 @@
 # OpenAI provider references and integration decisions
 
-Reviewed against official OpenAI documentation on October 29, 2026. This records documented API compatibility and engineering decisions. It does **not** establish that this workspace's API account can access a model or that live inference, speech, or external research has succeeded. Provider verification belongs in `PROGRESS.md` and the Phase 4 completion report.
+Initially reviewed against official OpenAI documentation on October 29, 2026; model selection and pricing rechecked November 1. This records documented API compatibility and engineering decisions. It does **not** establish that this workspace's API account can access a model or that live inference, speech, or external research has succeeded. Provider verification belongs in `PROGRESS.md` and the Phase 4 completion report.
 
 ## Model and request parameters
 
@@ -9,6 +9,16 @@ The documented model ID is `gpt-6-astra`. Its model page lists reasoning efforts
 Use `/v1/responses` for the manager's function calls. Astra's Chat Completions support does not include tool calling. Send `reasoning.effort`; do not send `temperature`, `top_p`, or `top_logprobs` with this reasoning configuration. Do not use an undocumented “Ultra” model alias or silently substitute a cheaper model when access fails. Configuration failure should be explicit. [Current model migration and parameter guidance](https://developers.openai.com/api/docs/guides/latest-model)
 
 The model's advertised context/output limits are ceilings, not appropriate per-employee spending budgets. AgentDesk must bound context, response output, tool rounds, tool counts and requests independently, then enforce the employee's remaining allowance before a request.
+
+### November 1 model comparison and test spending
+
+GPT-6.1 Sol is a candidate for ordinary Copilot work, subject to actual AgentDesk evidence. Both Sol and Astra support the existing Responses function-calling approach and high reasoning. Keep model choice separate from the value of specialist instructions: the current comparison gives both models identical specialist guidance. The [model-selection guide](https://developers.openai.com/api/docs/guides/model-selection) recommends evaluating quality, cost and latency on the application's tasks. [Sol reference](https://developers.openai.com/api/docs/models/gpt-6.1-sol).
+
+The [standard short-context pricing](https://developers.openai.com/api/docs/pricing) checked November 1 lists Astra at $10 input/$50 output and Sol at $2 input/$10 output per million tokens. Those are provider rates, not the product's customer tariffs or markup. The operator test budget conservatively accounts every input token at the maximum applicable listed cache-write rate ($25 Astra/$5 Sol per million) and takes no cache discount. Reasoning is already part of output usage and must not be charged again. This intentionally overestimates normal input cost; report it as conservative accounting rather than an invoice.
+
+Render was inspected without changing settings: its existing text configuration is Astra/**low**/3,000 output tokens. The local fallback is Astra/**high**/8,000. The frozen comparison uses **high**/4,096 for both models. Results at that setting cannot be called a measurement of the existing deployed configuration. Ordinary text and focused specialist consultation share `OPENAI_MODEL`; external research has its own model setting. Saved paid executions retain their original configuration and tariff snapshots.
+
+The operator-only paid runner and cumulative $9.99 authorization are described in [AI_EMPLOYEES](AI_EMPLOYEES.md#bounded-provider-model-selection). It counts the exact effective request with the [input-token endpoint](https://developers.openai.com/api/reference/resources/responses/subresources/input_tokens/methods/count), reserves before dispatch, retains unknown outcomes and never retries a paid call automatically. This operator testing cap is separate from the application's unfinished provider-dollar enforcement in ordinary operational mode.
 
 ## Manager loop and Agents SDK decision
 

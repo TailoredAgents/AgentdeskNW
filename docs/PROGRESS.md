@@ -1,5 +1,11 @@
 # AgentDesk progress log
 
+## November 1, 2026 — Bounded model-selection preparation
+
+The owner authorized comparing Sol with Astra and capped all remaining paid API tests below $10 total. The operator harness uses a shared $9.99 campaign, fixed plans, exact input counting, durable dispatch claims, private raw receipts and no automatic paid retries. The same specialist guidance, facts, reasoning setting and token limits are supplied to both models; the three two-turn role cases run twice, for 24 responses and a conservative $5.10912 ceiling. A separate actual-chat rehearsal can use the same campaign for three read-only role tasks on a newly seeded fictional database, at most nine Sol responses and $1.26864. These are provider-cost ceilings, not actual invoices or marked-up customer charges.
+
+Review provenance now distinguishes model grading, human grading and unspecified legacy reviews. Model grades cannot populate human acceptance, and mixed reviewer categories do not produce a misleading combined mean. The planned model comparison is separate from the generic-versus-specialist evaluation. Render was inspected without mutation: Astra/low/3,000 output is deployed, while local fallback is Astra/high/8,000; the comparison deliberately uses matched high/4,096. No live model, research or channel configuration has changed at this preparation checkpoint. Actual run evidence and the model decision will be recorded separately below/above this historical preparation entry.
+
 ## November 1, 2026 — Clear recovery states and fair specialist comparisons
 
 **Conversation recovery:** malformed success responses and mismatched conversation identities no longer clear pending requests. Browser and native clients publish a validated saved answer immediately and invalidate older refreshes. Read-only request lookup can find the current employee's first separate conversation without its ID; checking never repeats work or rewrites the original request. Browser recovery keeps a persistent explanation and original request, while missing/older linked conversations use a scoped read instead of presenting a new-chat welcome. Old linked conversations are reread rather than copied from protected cache; definitive access loss retires them even if another workspace read fails.
