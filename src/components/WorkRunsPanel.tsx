@@ -1,4 +1,5 @@
 'use client';
+import type {WorkToolSection} from '../lib/role-experience';
 
 import {RolePreparationsPanel} from './RolePreparationsPanel';
 import {includedLocalWorkNotice} from '@/lib/work-contracts';
@@ -41,6 +42,7 @@ const presets = {
 type Props = {
   data: Bootstrap;
   initialRunId?: string;
+  initialTool?:WorkToolSection;
   initialAnalysisId?: string;initialOpportunityId?:string;initialHandoffId?:string;
   onChange: (message?: string) => Promise<void>;
   onError: (error: unknown) => void;
@@ -92,7 +94,8 @@ function WorkStepScope({ step, steps, data }: { step: WorkStep; steps: WorkStep[
   return rows.length ? <dl className="work-step-scope">{rows.map(row => <div key={row.label}><dt>{row.label}</dt><dd>{row.value}</dd></div>)}</dl> : null;
 }
 
-export function WorkRunsPanel({ data, initialRunId, initialAnalysisId, initialOpportunityId, initialHandoffId, onChange, onError, onArtifact, onAsk }: Props) {
+export function WorkRunsPanel({ data, initialRunId, initialTool, initialAnalysisId, initialOpportunityId, initialHandoffId, onChange, onError, onArtifact, onAsk }: Props) {
+  useEffect(()=>{if(!initialTool)return;const frame=requestAnimationFrame(()=>document.getElementById(`work-tool-${initialTool}`)?.scrollIntoView({block:'start'}));return()=>cancelAnimationFrame(frame);},[initialTool]);
   const [runs, setRuns] = useState<WorkRun[]>([]);
   const [selectedId, setSelectedId] = useState<string | undefined>(initialRunId);
   const [detail, setDetail] = useState<WorkRun | null>(null);
@@ -215,9 +218,9 @@ export function WorkRunsPanel({ data, initialRunId, initialAnalysisId, initialOp
   return <section className="work-runs" aria-label="Saved Copilot jobs">
     <AssignmentReviewsPanel/>
     <RolePreparationsPanel/>
-    <details className="work-tool-section" open={!!initialHandoffId}><summary>Shared handoffs · ownership and next actions</summary><HandoffsPanel key={initialHandoffId??"board"} initialId={initialHandoffId} onOpenOpportunity={onArtifact?id=>onArtifact({type:"opportunity",id,title:"Review source opportunity"}):undefined}/></details>
-    <details className="work-tool-section" open={!!initialAnalysisId}><summary>Deal analysis · assumptions and scenarios</summary><AnalysisPanel key={initialAnalysisId??"board"} initialId={initialAnalysisId}/></details>
-    {data.actor.role!=='dispositions'&&<><details className="work-tool-section" open={!!initialOpportunityId}><summary>New opportunities · wholesaler intake and screening</summary><OpportunitiesPanel onAsk={onAsk} key={initialOpportunityId??"board"} initialId={initialOpportunityId} onOpenHandoff={onArtifact?id=>onArtifact({type:"handoff",id,title:"Review shared follow-through"}):undefined} onOpenAnalysis={onArtifact?id=>onArtifact({type:"analysis",id,title:"Review acquisition scenario"}):undefined}/></details><details className="work-tool-section"><summary>Inventory intake · existing property review</summary><AcquisitionIntakePanel data={data} onChange={onChange}/></details></>}
+    <details id="work-tool-handoffs" className="work-tool-section" open={!!initialHandoffId||initialTool==='handoffs'}><summary>Shared handoffs · ownership and next actions</summary><HandoffsPanel key={initialHandoffId??"board"} initialId={initialHandoffId} onOpenOpportunity={onArtifact?id=>onArtifact({type:"opportunity",id,title:"Review source opportunity"}):undefined}/></details>
+    <details id="work-tool-analysis" className="work-tool-section" open={!!initialAnalysisId||initialTool==='analysis'}><summary>Deal analysis · assumptions and scenarios</summary><AnalysisPanel key={initialAnalysisId??"board"} initialId={initialAnalysisId}/></details>
+    {data.actor.role!=='dispositions'&&<><details id="work-tool-opportunities" className="work-tool-section" open={!!initialOpportunityId||initialTool==='opportunities'}><summary>New opportunities · wholesaler intake and screening</summary><OpportunitiesPanel onAsk={onAsk} key={initialOpportunityId??"board"} initialId={initialOpportunityId} onOpenHandoff={onArtifact?id=>onArtifact({type:"handoff",id,title:"Review shared follow-through"}):undefined} onOpenAnalysis={onArtifact?id=>onArtifact({type:"analysis",id,title:"Review acquisition scenario"}):undefined}/></details><details id="work-tool-intake" className="work-tool-section" open={initialTool==='intake'}><summary>Inventory intake · existing property review</summary><AcquisitionIntakePanel data={data} onChange={onChange}/></details></>}
     <div className="work-runs-heading"><div><h2>Put a plan in motion.</h2><p>Keep the steps, results and spending decision together. Your job stays saved when you leave this page.</p></div><button className="button primary" disabled={busy} onClick={() => { setError(''); setCreating(true); }}><Plus size={16}/>New sample job</button></div>
     <div className="work-demo-notice"><Info size={17}/><span>Fictional records and simulated job costs. These jobs do not collect payment or contact investors. AI reasoning has a separate assignment spending review when enabled; included local steps add no AI charge.</span></div>
     {notice && <p className="work-status-notice" role="status">{notice}</p>}

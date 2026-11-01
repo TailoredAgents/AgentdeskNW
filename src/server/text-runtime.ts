@@ -74,10 +74,14 @@ async function executeLiveText(input:{actor:Actor;conversationId:string;requestI
   requireFeature(actor,'core');restore();
   const state=execution.data,round=state.round,requestScope=execution.scopeHash;
   const specialist=state.specialistQueue?.[0];
+  // Reserve the last already-budgeted request for a useful answer. Reaching the
+  // tool allowance also ends retrieval, not the employee's response.
+  const summaryOnly=!specialist&&(round>=(state.roundLimit??config.maxRounds)-1||state.toolCount>=(state.toolLimit??config.maxToolCalls));
   if(specialist&&specialist.scopeHash!==requestScope)throw new AppError(409,'The specialist evidence changed before review. Retrieve current evidence before continuing.');
   if(specialist)assertSpecialistReviewCurrent(actor,specialist);
   if(execution.phase==='ready'){
-   const payload={model:config.model,reasoning:{effort:config.reasoning},input:specialist?specialist.input:[...state.prefix,...state.items],tools:specialist||state.toolCount>=(state.toolLimit??config.maxToolCalls)?[]:input.tools,...(specialist?{text:specialistResponseFormat}:{}),max_output_tokens:config.maxOutputTokens,service_tier:'default',store:false,include:['reasoning.encrypted_content'],parallel_tool_calls:false};
+   const summaryInstruction={role:'developer',content:'This is the final answer step within the existing request allowance. Answer the employee now using only current authorized context and the tool results already obtained. Explain the useful findings and any missing evidence or unfinished work. Distinguish saved actions from recommendations and simulated effects from real delivery. Do not call tools, invent missing results, or claim unperformed work is complete.'};
+   const payload={model:config.model,reasoning:{effort:config.reasoning},input:specialist?specialist.input:[...state.prefix,...state.items,...(summaryOnly?[summaryInstruction]:[])],tools:specialist||summaryOnly?[]:input.tools,...(summaryOnly?{tool_choice:'none'}:{}),...(specialist?{text:specialistResponseFormat}:{}),max_output_tokens:config.maxOutputTokens,service_tier:'default',store:false,include:['reasoning.encrypted_content'],parallel_tool_calls:false};
    const body=JSON.stringify(payload),size=Buffer.byteLength(body);
    if(size>config.maxContextBytes)throw new AppError(413,'This conversation is too large for the configured AI request budget. Start a new conversation with the relevant details.');
    const operationId=`text:${requestId}:${round}`;
@@ -127,6 +131,7 @@ async function executeLiveText(input:{actor:Actor;conversationId:string;requestI
    const ids=output.filter(item=>item.type==='function_call').map(item=>item.call_id);
    if(new Set(ids).size!==ids.length)throw new AppError(502,'The response reused a tool identity. No tool from this response was executed.');
    if(specialist&&ids.length)throw new AppError(502,'A specialist assessment cannot execute tools. Its returned actions were withheld.');
+   if(summaryOnly&&ids.length)throw new AppError(502,'The model requested more tools during its final answer step. No further tool was executed; completed work remains saved for review.');
   }catch(error){execution=db.transaction(()=>{finishTextSpending(actor,execution,'canceled');return advanceTextExecution(actor,execution,'failed',execution.data);}).immediate();throw error;}
   const nextItems=[...execution.data.items,...output as Item[]],calls=output.filter(item=>item.type==='function_call');
   if(specialist){
@@ -174,7 +179,7 @@ async function executeLiveText(input:{actor:Actor;conversationId:string;requestI
    const currentPending=pending.filter(review=>{if(review.scopeHash===nextScope)return true;nextItems.push({type:'function_call_output',call_id:review.callId,output:JSON.stringify({completed:false,error:'The workspace changed while preparing this specialist review. Retrieve current evidence before requesting it again.'})});return false;});
    return advanceTextExecution(actor,execution,'ready',{...execution.data,specialistQueue:currentPending,evidenceScopes,contextManifest:textContextManifest(input.currentScope()),items:nextItems,round:round+1,toolCount:count,handled:[...handled],artifacts:nextArtifacts,specialistIds:[...nextSpecialists],response:null},nextScope);
   }).immediate();
-  restore();if(execution.data.toolCount>=(execution.data.toolLimit??config.maxToolCalls)&&!execution.data.specialistQueue?.length)break;
+  restore();
  }
  return finish('The assistant reached its step limit. Review completed items below before requesting further work.');
 }

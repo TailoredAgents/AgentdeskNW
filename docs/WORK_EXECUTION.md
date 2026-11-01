@@ -133,6 +133,8 @@ The metered root now has employee review panels and a private exact-decision API
 
 ### Durable text rounds
 
+The last configured/admitted master round is reserved for an answer grounded in the results already retrieved. Reaching the tool allowance also switches the next available round to summary-only, rather than ending without an answer. No request/output/cost limit increases: the final request uses the existing admission and receipt path, disables tools, and rejects unexpected function calls before execution. Missing evidence and unfinished actions must be stated explicitly. Specialist review slots still leave room for this master answer; uncertain calls remain non-retryable.
+
 The running text host now stores original-turn execution state separately from sample jobs. Saved model responses and their operational receipts commit before tool execution; local tool effects and the next round commit together. Trusted original-host reentry rechecks current context, preserves already-completed work and refuses to re-send uncertain provider requests. This is the persistence prerequisite for cost-triggered pauses. The optional admitted-text development mode now adds root quote publication, employee cost decisions, worker continuation and simulated receipt settlement. Original-channel SMS/Slack completion is queued atomically with the saved result, using the original authenticated destination; changed/disconnected destinations do not reroute. Other hosts, combined delegated allocation and broader controls remain pending; ordinary cached chat retries do not bypass these boundaries. `npm run test:text-restart` verifies response reuse across separate processes using fictional transport.
 
 ## Included local delegation — simulated assignment acceptance

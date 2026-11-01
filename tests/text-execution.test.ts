@@ -30,6 +30,27 @@ function fixture(){
 beforeEach(()=>{closeDb();sequence=0;vi.stubEnv('AGENTDESK_DB_PATH',':memory:');vi.stubEnv('AGENTDESK_DEMO','true');vi.stubEnv('AGENTDESK_ALLOW_PRODUCTION_DEMO','true');vi.stubEnv('OPENAI_API_KEY','mock-key-never-sent');vi.stubEnv('OPENAI_MODEL','gpt-6-astra');vi.stubEnv('OPENAI_REASONING_EFFORT','high');});
 afterEach(()=>{closeDb();vi.restoreAllMocks();vi.unstubAllEnvs();vi.unstubAllGlobals();if(directory){rmSync(directory,{recursive:true,force:true});directory='';}});
 describe('durable text rounds in the running host',()=>{
+ it('reserves the last allowed round for an answer with saved evidence and preserves exact retry',async()=>{
+  vi.stubEnv('AGENTDESK_TEXT_MAX_ROUNDS','2');const f=fixture(),fetcher=vi.fn().mockResolvedValueOnce(tool()).mockResolvedValueOnce(final());vi.stubGlobal('fetch',fetcher);
+  const answer=await f.run(),payload=JSON.parse(fetcher.mock.calls[1][1].body as string);
+  expect(answer.message).toBe('Fictional work is saved.');expect(payload).toMatchObject({tools:[],tool_choice:'none'});
+  expect(payload.input.some((item:{type?:string})=>item.type==='function_call_output')).toBe(true);expect(payload.input.at(-1).content).toContain('missing evidence');
+  expect(await f.run()).toEqual(answer);expect(fetcher).toHaveBeenCalledTimes(2);expect(f.dispatch).toHaveBeenCalledTimes(1);
+ });
+ it('answers after the tool allowance is exhausted without executing more tools',async()=>{
+  vi.stubEnv('AGENTDESK_TEXT_MAX_TOOL_CALLS','1');const f=fixture(),fetcher=vi.fn().mockResolvedValueOnce(tool()).mockResolvedValueOnce(final());vi.stubGlobal('fetch',fetcher);
+  expect((await f.run()).message).toBe('Fictional work is saved.');expect(fetcher).toHaveBeenCalledTimes(2);expect(f.dispatch).toHaveBeenCalledTimes(1);
+  expect(JSON.parse(fetcher.mock.calls[1][1].body as string)).toMatchObject({tools:[],tool_choice:'none'});
+ });
+ it('withholds unexpected final-step calls without replaying completed tools or failed requests',async()=>{
+  vi.stubEnv('AGENTDESK_TEXT_MAX_ROUNDS','2');const f=fixture(),fetcher=vi.fn().mockResolvedValueOnce(tool()).mockResolvedValueOnce(response([{type:'function_call',status:'completed',name:'create_task',arguments:'{}',call_id:'extra-task'}]));vi.stubGlobal('fetch',fetcher);
+  await expect(f.run()).rejects.toThrow('final answer step');expect(f.dispatch).toHaveBeenCalledTimes(1);expect(f.saved().phase).toBe('failed');
+  await expect(f.run()).rejects.toThrow('confirmed failure');expect(fetcher).toHaveBeenCalledTimes(2);
+ });
+ it('uses a single-round allowance for an honest answer without a tool dispatch',async()=>{
+  vi.stubEnv('AGENTDESK_TEXT_MAX_ROUNDS','1');const f=fixture(),fetcher=vi.fn().mockResolvedValueOnce(final());vi.stubGlobal('fetch',fetcher);
+  await f.run();expect(fetcher).toHaveBeenCalledTimes(1);expect(f.dispatch).not.toHaveBeenCalled();expect(JSON.parse(fetcher.mock.calls[0][1].body as string)).toMatchObject({tools:[],tool_choice:'none'});
+ });
  it('reuses a completed original execution without another request, tool or debit',async()=>{const f=fixture(),fetcher=vi.fn().mockResolvedValueOnce(tool()).mockResolvedValueOnce(final());vi.stubGlobal('fetch',fetcher);const one=await f.run(),before=usageBalances(f.actor);expect(await f.run()).toEqual(one);expect(fetcher).toHaveBeenCalledTimes(2);expect(f.dispatch).toHaveBeenCalledTimes(1);expect(usageBalances(f.actor)).toEqual(before);expect(f.saved().phase).toBe('completed');expect(JSON.parse(f.saved().data).round).toBe(1);});
  it('rolls back effects with a failed next-round checkpoint and reuses the saved paid response after restart',async()=>{
   directory=mkdtempSync(join(tmpdir(),'agentdesk-text-state-'));vi.stubEnv('AGENTDESK_DB_PATH',join(directory,'state.sqlite'));const f=fixture(),fetcher=vi.fn().mockResolvedValueOnce(tool()).mockResolvedValueOnce(final());vi.stubGlobal('fetch',fetcher);

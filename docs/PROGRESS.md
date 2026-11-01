@@ -1,5 +1,15 @@
 # AgentDesk progress log
 
+## November 1, 2026 — Role navigation polish and a live Copilot rehearsal fix
+
+**Observed on the hosted demo:** an actual read-only request about `123 Example Street` retrieved buyer matching and relationship evidence but ended with a step-limit notice instead of an explanation. The response was not accepted as a successful demonstration. This is live-model evidence of a runtime gap, not a fictional test result.
+
+**Changed:** the master now reserves its final configured/admitted round for a tool-free answer grounded in the evidence already retrieved, explicitly identifying missing facts and unfinished work. Exhausting the tool allowance also permits that answer within the existing round cap. Unexpected final-step tool calls are rejected before execution. Provider/model/output/request limits, spending admission, receipts, uncertain-request handling and separate specialist reviews retain their existing boundaries.
+
+**Role experience:** dispositions, acquisitions and management have tailored home shortcuts, demonstration guides and shared desktop/native Agent starters. Acquisitions no longer advertises unavailable calling/package/research navigation. Opportunity, handoff, analysis and intake shortcuts expand and scroll to the intended tool; general work navigation clears stale opportunity/handoff selections. Browser review confirmed the acquisitions home and guide, exact blocked handoff, and management opportunity shortcut. The runbook reflects the new labels.
+
+**Verification:** the focused runtime regression passed **91 tests**, including four new final-answer cases (round cap, tool cap, forbidden extra calls, single-round allowance) and existing specialist, spending, restart and receipt checks. All **1,612 tests across 88 files**, all **84 native tests**, root/mobile typechecks, production build, iOS/Android exports and all **22 isolated HTTP suites** passed. Separate process-restart checks passed for ordinary text and queued specialist reviews. Lint retains only the existing DemoAccess navigation warning. The exact hosted revision and post-deployment model rehearsal are verified separately from these local checks. No live company connection or investor delivery is enabled. The broader specialist comparison, actual phones/SMS and practitioner acceptance remain separate gates.
+
 ## November 1, 2026 — Connected acquisitions/management demonstration and automatic deployments
 
 **Delivered:** acquisition opportunity details now join current intake/screening to accessible shared assignments, acknowledgment, employee reports and separate manager resolution. Desktop and native provide exact opportunity ↔ handoff links. The manager's Team overview includes the actionable shared board. Discuss with Copilot opens the current exact opportunity; typed tool and saved-work reviews include the same follow-through. The role-aware guide adds acquisition/manager entry points. The new projection does not change base intake/source fingerprints; shared reference changes invalidate earlier conversation/work advice, and obsolete assignment outcomes do not appear as current completion.
