@@ -3,7 +3,7 @@ import {mkdtempSync,readFileSync,writeFileSync,rmSync,existsSync,readdirSync} fr
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {createHash} from 'node:crypto';
-import {executeWorkflowComparisonRequest,finishWorkflowComparison,inspectEvaluationCampaign,inspectWorkflowComparison,prepareWorkflowComparison,prepareWorkflowCapacityFollowup,prepareWorkflowCapacityConfirmation,closeWorkflowAfterCountLimit,recordWorkflowComparisonOutcome,workflowComparisonPolicy,workflowCapacityFollowupPolicy,workflowCapacityConfirmationPolicy,prepareToolRehearsal,executeToolRehearsalRequest,finishToolRehearsal,prepareEvaluation,runEvaluation,type EvaluationTransport,type WorkflowComparisonSlot,type WorkflowComparisonBindings,type EvaluationLedger} from '../evaluations/specialists/runner';
+import {executeWorkflowComparisonRequest,finishWorkflowComparison,inspectEvaluationCampaign,inspectWorkflowComparison,prepareWorkflowComparison,prepareWorkflowCapacityFollowup,prepareWorkflowCapacityConfirmation,prepareWorkflowRepairConfirmation,closeWorkflowAfterCountLimit,recordWorkflowComparisonOutcome,workflowComparisonPolicy,workflowCapacityFollowupPolicy,workflowCapacityConfirmationPolicy,workflowRepairConfirmationPolicy,prepareToolRehearsal,executeToolRehearsalRequest,finishToolRehearsal,prepareEvaluation,runEvaluation,type EvaluationTransport,type WorkflowComparisonSlot,type WorkflowComparisonBindings,type EvaluationLedger} from '../evaluations/specialists/runner';
 
 const roots:string[]=[];
 const digest=(value:unknown)=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
@@ -202,4 +202,56 @@ describe('proven preflight closure and final capacity confirmation',()=>{
   const {state,capacity}=await countLimitedCapacity();closeWorkflowAfterCountLimit(state.root,'capacity',capacity.planHash);prepareEvaluation(state.root,'other-reservation','a'.repeat(40));expect(()=>prepareConfirmation(state,capacity)).toThrow('$9.99');expect(existsSync(join(state.root,'confirmation'))).toBe(false);
   rmSync(join(capacity.directory,'preflight-closure.json'));expect(()=>prepareConfirmation(state,capacity)).toThrow('evidence');
  });
+});
+
+function repairSlots(state:State):WorkflowComparisonSlot[]{return state.planned.filter(slot=>slot.role==='dispositions'&&slot.arm==='guided').map(slot=>({...slot,id:`repair-${slot.id}`,employeeRequestId:`repair-${slot.employeeRequestId}`,maxCalls:5}));}
+function prepareRepair(state:State,confirmation:{planHash:string},name='repair',planned=repairSlots(state),revision='d'.repeat(40),bindings=state.bindings){return prepareWorkflowRepairConfirmation(state.root,name,revision,planned,bindings,{name:'workflow',planHash:state.planHash},{name:'confirmation',planHash:confirmation.planHash});}
+async function completedConfirmation(){
+ const {state,capacity}=await countLimitedCapacity();closeWorkflowAfterCountLimit(state.root,'capacity',capacity.planHash);const confirmation=prepareConfirmation(state,capacity),approval={planHash:confirmation.planHash,maximumCents:999},transport=fake();
+ for(const slot of confirmationSlots(state)){await executeWorkflowComparisonRequest(state.root,'confirmation',approval,input(slot),transport);recordWorkflowComparisonOutcome(state.root,'confirmation',confirmation.planHash,{slotId:slot.id,status:'completed',evidenceHash:'b'.repeat(64)});}finishWorkflowComparison(state.root,'confirmation',confirmation.planHash);return {state,capacity,confirmation};
+}
+describe('one-time guided disposition repair confirmation',()=>{
+ it('requires the original campaign and a completed settled predecessor at a different revision',async()=>{
+  const {state,capacity}=await countLimitedCapacity();closeWorkflowAfterCountLimit(state.root,'capacity',capacity.planHash);const confirmation=prepareConfirmation(state,capacity),planned=repairSlots(state);
+  expect(()=>prepareWorkflowRepairConfirmation(root(),'repair','d'.repeat(40),planned,state.bindings,{name:'workflow',planHash:state.planHash},{name:'confirmation',planHash:confirmation.planHash})).toThrow('original shared campaign');
+  expect(()=>prepareRepair(state,confirmation)).toThrow('completed settled capacity confirmation');expect(existsSync(join(state.root,'repair'))).toBe(false);
+  const transport=fake();for(const slot of confirmationSlots(state)){await executeWorkflowComparisonRequest(state.root,'confirmation',{planHash:confirmation.planHash,maximumCents:999},input(slot),transport);recordWorkflowComparisonOutcome(state.root,'confirmation',confirmation.planHash,{slotId:slot.id,status:'completed',evidenceHash:'b'.repeat(64)});}finishWorkflowComparison(state.root,'confirmation',confirmation.planHash);
+  expect(()=>prepareRepair(state,confirmation,'same-revision',planned,'c'.repeat(40))).toThrow('different committed');
+  expect(()=>prepareWorkflowRepairConfirmation(state.root,'wrong-parent','d'.repeat(40),planned,state.bindings,{name:'workflow',planHash:state.planHash},{name:'capacity',planHash:capacity.planHash})).toThrow('exact registered capacity confirmation');
+  expect(()=>prepareWorkflowRepairConfirmation(state.root,'wrong-hash','d'.repeat(40),planned,state.bindings,{name:'workflow',planHash:state.planHash},{name:'confirmation',planHash:'e'.repeat(64)})).toThrow('exact registered capacity confirmation');
+  expect(()=>prepareRepair(state,confirmation,'changed-fixture',planned,'d'.repeat(40),{...state.bindings,fixtureHash:'e'.repeat(64)})).toThrow('same immutable fixture');
+  const history=['workflow','capacity','confirmation'].flatMap(name=>['plan.json','ledger.json'].map(file=>[join(state.root,name,file),readFileSync(join(state.root,name,file),'utf8')] as const));
+  const run=prepareRepair(state,confirmation);expect(run).toMatchObject({kind:'workflow_repair_confirmation',status:'prepared',maximumCalls:10,maximumUsd:1.6596,policy:{model:'gpt-6.1-sol',maxInputTokens:25000,maxOutputTokens:4096},repairAfter:{name:'confirmation',planHash:confirmation.planHash}});expect(run.after).toBeUndefined();expect(run.slots).toHaveLength(2);expect(workflowRepairConfirmationPolicy.maximumNanos).toBe(1_659_600_000);
+  expect(inspectEvaluationCampaign(state.root)).toMatchObject({accountedUsd:0.065,committedMaximumUsd:1.7246,unresolved:[]});for(const [path,content] of history)expect(readFileSync(path,'utf8')).toBe(content);
+ },20_000);
+ it('accepts only the two original guided disposition turns with fresh campaign-wide employee identities',async()=>{
+  const {state,confirmation}=await completedConfirmation(),planned=repairSlots(state);
+  for(const changed of [planned.slice(1),[...planned,...planned],planned.map(slot=>({...slot,arm:'generic' as const})),planned.map(slot=>({...slot,role:'manager' as const})),planned.map(slot=>({...slot,maxCalls:4 as const})),planned.map(slot=>({...slot,turn:0 as const})),planned.map((slot,index)=>index===0?{...slot,conversationId:'different-conversation'}:slot)])expect(()=>prepareRepair(state,confirmation,'invalid-slots',changed)).toThrow();
+  expect(()=>prepareRepair(state,confirmation,'changed-request',planned.map(slot=>({...slot,request:'A different repair task.'})))).toThrow('preserve original requests');
+  expect(()=>prepareRepair(state,confirmation,'reused-original',planned.map(slot=>({...slot,employeeRequestId:slot.employeeRequestId.replace('repair-','')})))).toThrow('fresh employee request');
+  const previous=confirmationSlots(state).filter(slot=>slot.role==='dispositions'&&slot.arm==='guided');expect(()=>prepareRepair(state,confirmation,'reused-predecessor',planned.map((slot,index)=>({...slot,employeeRequestId:previous[index].employeeRequestId})))).toThrow('fresh across the original campaign');
+  prepareRepair(state,confirmation);expect(()=>prepareRepair(state,confirmation,'second-repair',planned.map(slot=>({...slot,id:`next-${slot.id}`,employeeRequestId:`next-${slot.employeeRequestId}`})))).toThrow('single repair confirmation is already registered');expect(existsSync(join(state.root,'second-repair'))).toBe(false);
+ },20_000);
+ it('enforces ten total calls in two five-call turns and preserves exact replay without extra dispatch',async()=>{
+  const {state,capacity,confirmation}=await completedConfirmation(),run=prepareRepair(state,confirmation),approval={planHash:run.planHash,maximumCents:999},planned=repairSlots(state),transport=fake({count:25_000});
+  await expect(executeWorkflowComparisonRequest(state.root,'repair',approval,input(planned[1]),transport)).rejects.toThrow('first turn');
+  expect(()=>finishWorkflowComparison(state.root,'repair',run.planHash)).toThrow('two terminal');
+  for(const slot of planned){for(let round=0;round<5;round++)await executeWorkflowComparisonRequest(state.root,'repair',approval,input(slot,round),transport);await expect(executeWorkflowComparisonRequest(state.root,'repair',approval,input(slot,5),transport)).rejects.toThrow('round limit');recordWorkflowComparisonOutcome(state.root,'repair',run.planHash,{slotId:slot.id,status:'completed',evidenceHash:'f'.repeat(64)});}
+  expect(finishWorkflowComparison(state.root,'repair',run.planHash)).toMatchObject({status:'completed',attemptedCalls:10});expect(transport.create).toHaveBeenCalledTimes(10);expect(inspectEvaluationCampaign(state.root)).toMatchObject({accountedUsd:0.09,committedMaximumUsd:0.09,unresolved:[]});
+  await executeWorkflowComparisonRequest(state.root,'repair',approval,input(planned[0]),transport);expect(transport.create).toHaveBeenCalledTimes(10);await expect(executeWorkflowComparisonRequest(state.root,'repair',approval,{...input(planned[0]),body:body(planned[0].request,{instructions:'different'})},transport)).rejects.toThrow('differs');
+  expect(()=>prepareConfirmation(state,capacity,'another-capacity',confirmationSlots(state).map(slot=>({...slot,employeeRequestId:`new-${slot.employeeRequestId}`})))).toThrow('final capacity confirmation is already registered');
+ },25_000);
+ it('rejects counted overflow before generation and retains an unknown hold without replay or outcome completion',async()=>{
+  const {state,confirmation}=await completedConfirmation(),run=prepareRepair(state,confirmation),approval={planHash:run.planHash,maximumCents:999},slot=repairSlots(state)[0],over=fake({count:25_001});
+  await expect(executeWorkflowComparisonRequest(state.root,'repair',approval,input(slot),over)).rejects.toThrow('input_count_limit_exceeded');expect(over.create).not.toHaveBeenCalled();
+  const unknown=fake({count:25_000,fail:true});await expect(executeWorkflowComparisonRequest(state.root,'repair',approval,input(slot),unknown)).rejects.toThrow('stopped');await expect(executeWorkflowComparisonRequest(state.root,'repair',approval,input(slot),unknown)).rejects.toThrow('unresolved');expect(unknown.create).toHaveBeenCalledTimes(1);expect(inspectEvaluationCampaign(state.root)).toMatchObject({committedMaximumUsd:1.7246});expect(inspectEvaluationCampaign(state.root).unresolved).toHaveLength(1);
+  expect(()=>recordWorkflowComparisonOutcome(state.root,'repair',run.planHash,{slotId:slot.id,status:'quality_failed',reason:'Cannot hide uncertain usage',evidenceHash:'f'.repeat(64)})).toThrow('unresolved');expect(()=>finishWorkflowComparison(state.root,'repair',run.planHash)).toThrow('settled');
+  expect(()=>prepareRepair(state,confirmation,'other-repair')).toThrow('unresolved provider outcome');
+ },20_000);
+ it('keeps whole-campaign holds and prior proof mandatory instead of treating the repair as a new budget',async()=>{
+  const {state,confirmation}=await completedConfirmation();prepareEvaluation(state.root,'remaining-reservation','a'.repeat(40));
+  const scenarios=(['dispositions','acquisitions','manager'] as const).map(role=>({id:role,role,request:'Read fictional records.'}));prepareToolRehearsal(state.root,'another-reservation','a'.repeat(40),scenarios);prepareToolRehearsal(state.root,'third-reservation','a'.repeat(40),scenarios);prepareToolRehearsal(state.root,'fourth-reservation','a'.repeat(40),scenarios);
+  expect(()=>prepareRepair(state,confirmation)).toThrow('$9.99');expect(existsSync(join(state.root,'repair'))).toBe(false);
+  rmSync(join(state.root,'confirmation','ledger.json'));expect(()=>prepareRepair(state,confirmation,'lost-proof')).toThrow('evidence');expect(()=>inspectEvaluationCampaign(state.root)).toThrow('evidence');
+ },20_000);
 });

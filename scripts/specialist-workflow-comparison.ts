@@ -6,10 +6,14 @@ import {tmpdir} from 'node:os';
 import {join,resolve} from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {z} from 'zod';
-import {closeWorkflowAfterCountLimit,defaultEvaluationRoot,executeWorkflowComparisonRequest,finishWorkflowComparison,inspectWorkflowComparison,prepareWorkflowCapacityConfirmation,prepareWorkflowCapacityFollowup,prepareWorkflowComparison,recordWorkflowComparisonOutcome,type EvaluationTransport,type WorkflowComparisonSlot} from '../evaluations/specialists/runner';
+import type {Actor} from '../src/lib/contracts';
+import {closeWorkflowAfterCountLimit,defaultEvaluationRoot,executeWorkflowComparisonRequest,finishWorkflowComparison,inspectWorkflowComparison,prepareWorkflowCapacityConfirmation,prepareWorkflowCapacityFollowup,prepareWorkflowComparison,prepareWorkflowRepairConfirmation,recordWorkflowComparisonOutcome,type EvaluationTransport,type WorkflowComparisonSlot} from '../evaluations/specialists/runner';
 import {workflowAllowedTools,workflowArms,workflowBusinessSnapshot,workflowCaseVersion,workflowDigest,workflowFinish,workflowFixture,workflowIntervene,workflowRequests,workflowRoles,workflowRubric,workflowStart} from '../evaluations/specialists/workflow-cases';
 import {closeDb,demoActor,getDb} from '../src/server/db';
 import {prepareDemoScenario} from '../src/server/demo-scenario';
+import {getInboxThread} from '../src/server/communications';
+import {inboxAccessReference,inboxDraftReference} from '../src/server/communications-context';
+import {getInboxAssistance} from '../src/server/communications-workflow';
 import {assistantInstructions,chat,currentTextContext,currentTextScope} from '../src/server/orchestrator';
 import {createConversation} from '../src/server/services';
 import {withSpecialistGuidanceEvaluation} from '../src/server/specialist-guidance-evaluation';
@@ -19,8 +23,8 @@ const runtime={AGENTDESK_AUTH_MODE:'demo',AGENTDESK_DATA_MODE:'demo',AGENTDESK_S
 const caps={dispositions:4,acquisitions:3,manager:3} as const;
 const followupRuntime={...runtime,AGENTDESK_TEXT_MAX_INPUT_TOKENS:'20000',AGENTDESK_TEXT_MAX_CONTEXT_BYTES:'180000'} as const;
 const confirmationRuntime={...followupRuntime,AGENTDESK_TEXT_MAX_INPUT_TOKENS:'25000'} as const;
-type WorkflowKind='workflow_comparison'|'workflow_capacity_followup'|'workflow_capacity_confirmation';
-const settingsFor=(kind:WorkflowKind)=>kind==='workflow_capacity_confirmation'?{runtime:confirmationRuntime,caps:{dispositions:[5,5],manager:[3,5]},maxToolCalls:8}:kind==='workflow_capacity_followup'?{runtime:followupRuntime,caps:{dispositions:5,manager:5},maxToolCalls:8}:{runtime,caps};
+type WorkflowKind='workflow_comparison'|'workflow_capacity_followup'|'workflow_capacity_confirmation'|'workflow_repair_confirmation';
+const settingsFor=(kind:WorkflowKind)=>kind==='workflow_repair_confirmation'?{runtime:confirmationRuntime,caps:{dispositions:[5,5]},arms:['guided'],maxToolCalls:8}:kind==='workflow_capacity_confirmation'?{runtime:confirmationRuntime,caps:{dispositions:[5,5],manager:[3,5]},maxToolCalls:8}:kind==='workflow_capacity_followup'?{runtime:followupRuntime,caps:{dispositions:5,manager:5},maxToolCalls:8}:{runtime,caps};
 const hashFile=(file:string)=>createHash('sha256').update(readFileSync(file)).digest('hex');
 const revision=()=>execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8',stdio:['ignore','pipe','ignore']}).trim();
 function committedSource(){const changes=execFileSync('git',['status','--porcelain','--','src/server','src/lib','scripts/specialist-workflow-comparison.ts','scripts/model-tool-rehearsal.ts','evaluations/specialists/workflow-cases.ts','evaluations/specialists/runner.ts','package.json','package-lock.json'],{encoding:'utf8',stdio:['ignore','pipe','ignore']});assert.equal(changes.trim(),'','Commit the relevant application and evaluation source before freezing or running paid evidence.');}
@@ -37,7 +41,7 @@ async function isolated<T>(path:string,key:string,rounds:3|4|5,work:()=>Promise<
 const fixtureSchema=z.object({opportunityId:z.string(),reportedOn:z.string(),dueAt:z.string(),preparedAt:z.string()}).strict();
 const slotSchema=z.object({id:z.string(),role:z.enum(workflowRoles),arm:z.enum(workflowArms),turn:z.union([z.literal(0),z.literal(1)]),conversationId:z.string(),employeeRequestId:z.string(),request:z.string(),maxCalls:z.union([z.literal(3),z.literal(4),z.literal(5)])}).strict();
 const basisSchema=z.object({name:z.string(),planHash:z.string(),fixtureHash:z.string(),databaseHash:z.string()}).strict();
-const manifestSchema=z.object({version:z.literal(1),kind:z.enum(['workflow_comparison','workflow_capacity_followup','workflow_capacity_confirmation']).default('workflow_comparison'),basis:basisSchema.optional(),after:z.object({name:z.string(),planHash:z.string(),closureHash:z.string()}).strict().optional(),planHash:z.string(),applicationRevision:z.string(),sourceHash:z.string(),runtimeHash:z.string(),fixtureHash:z.string(),databaseHash:z.string(),fixture:fixtureSchema,slots:z.array(slotSchema).min(8).max(12),rubric:z.unknown()}).strict();
+const manifestSchema=z.object({version:z.literal(1),kind:z.enum(['workflow_comparison','workflow_capacity_followup','workflow_capacity_confirmation','workflow_repair_confirmation']).default('workflow_comparison'),basis:basisSchema.optional(),after:z.object({name:z.string(),planHash:z.string(),closureHash:z.string()}).strict().optional(),repairAfter:z.object({name:z.string(),planHash:z.string()}).strict().optional(),planHash:z.string(),applicationRevision:z.string(),sourceHash:z.string(),runtimeHash:z.string(),fixtureHash:z.string(),databaseHash:z.string(),fixture:fixtureSchema,slots:z.array(slotSchema).min(2).max(12),rubric:z.unknown()}).strict();
 
 /** Preparation is offline and only creates new fictional fixture copies. It requires the original shared campaign. */
 export async function prepareActualWorkflowComparison(root:string,name:string){
@@ -66,6 +70,8 @@ function readManifest(root:string,name:string):{directory:string;manifest:z.infe
  else assert.equal(manifest.basis,undefined);
  if(manifest.kind==='workflow_capacity_confirmation'){assert.ok(manifest.after);assert.deepEqual(plan.after,manifest.after);const after=readManifest(root,manifest.after.name);assert.equal(after.plan.status,'closed_preflight');assert.equal(after.plan.planHash,manifest.after.planHash);assert.equal(after.manifest.fixtureHash,manifest.fixtureHash);assert.equal(after.manifest.databaseHash,manifest.databaseHash);}
  else assert.equal(manifest.after,undefined);
+ if(manifest.kind==='workflow_repair_confirmation'){assert.ok(manifest.repairAfter);assert.deepEqual(plan.repairAfter,manifest.repairAfter);const after=readManifest(root,manifest.repairAfter.name);assert.equal(after.manifest.kind,'workflow_capacity_confirmation');assert.equal(after.plan.status,'completed');assert.equal(after.plan.planHash,manifest.repairAfter.planHash);assert.equal(after.manifest.fixtureHash,manifest.fixtureHash);assert.equal(after.manifest.databaseHash,manifest.databaseHash);assert.notEqual(after.manifest.applicationRevision,manifest.applicationRevision);}
+ else assert.equal(manifest.repairAfter,undefined);
  return {directory,manifest,plan};}
 export function inspectActualWorkflowComparison(root:string,name:string){const {directory,manifest,plan}=readManifest(root,name);return {...plan,fixtureHash:manifest.fixtureHash,execution:existsSync(join(directory,'execution.json'))?readJson(join(directory,'execution.json')):null};}
 
@@ -96,6 +102,28 @@ export function prepareActualWorkflowCapacityConfirmation(root:string,name:strin
  return {...prepared,fixtureHash:original.manifest.fixtureHash,notice:'Final bounded confirmation after a verified input-count stop. Original fixtures, requests, interventions and scoring; 25,000 counted input limit and 36 maximum responses. Production defaults and original results are unchanged. No paid request made.'};
 }
 
+/** One guided repair observation; neither prior results nor the paired comparison are replaced. */
+export function prepareActualWorkflowRepairConfirmation(root:string,name:string,originalName:string,afterName:string){
+ committedSource();const directory=directoryFor(root,name);assert.equal(existsSync(directory),false,'Evidence cannot be replaced.');
+ const original=readManifest(root,originalName),after=readManifest(root,afterName);assert.equal(original.manifest.kind,'workflow_comparison');assert.equal(original.plan.status,'completed');assert.equal(after.manifest.kind,'workflow_capacity_confirmation');assert.equal(after.plan.status,'completed');assert.equal(after.plan.unresolved.length,0);assert.deepEqual(after.plan.original,{name:originalName,planHash:original.plan.planHash});
+ const age=Date.now()-Date.parse(original.manifest.fixture.preparedAt);assert.ok(Number.isFinite(age)&&age>=0&&age<86400000,'The original source fixture must still be within its frozen one-day window.');
+ const slots:WorkflowComparisonSlot[]=original.manifest.slots.filter(slot=>slot.role==='dispositions'&&slot.arm==='guided').map(slot=>({...slot,employeeRequestId:`repair-${slot.role}-${slot.arm}-${slot.turn}-${randomUUID()}`,maxCalls:5}));
+ const applicationRevision=revision(),runtimeHash=workflowDigest(settingsFor('workflow_repair_confirmation')),sources=sourceHash(),basis={name:originalName,planHash:original.plan.planHash,fixtureHash:original.manifest.fixtureHash,databaseHash:original.manifest.databaseHash};assert.notEqual(applicationRevision,after.manifest.applicationRevision,'The repair needs a different committed application revision.');
+ const prepared=prepareWorkflowRepairConfirmation(root,name,applicationRevision,slots,{...original.plan.bindings,sourceHash:sources,runtimeHash},{name:originalName,planHash:original.plan.planHash},{name:afterName,planHash:after.plan.planHash});assert.ok(prepared.repairAfter);
+ for(const file of ['fixture.sqlite','fixture-material.json']){copyFileSync(join(original.directory,file),join(directory,file),constants.COPYFILE_EXCL);chmodSync(join(directory,file),0o600);}
+ privateJson(join(directory,'workflow-manifest.json'),{...original.manifest,kind:'workflow_repair_confirmation',basis,repairAfter:prepared.repairAfter,planHash:prepared.planHash,applicationRevision,sourceHash:sources,runtimeHash,slots},true);
+ return {...prepared,fixtureHash:original.manifest.fixtureHash,notice:'One-time guided dispositions repair observation. The original two requests, fixture, employee interventions and authored rubric remain unchanged. Five responses per turn, 25,000 counted input tokens, 4,096 output tokens; ten responses maximum. This is not a new paired quality comparison. No paid request made.'};
+}
+
+/** Read-only repair check in addition to the original rubric; wording quality is reviewed separately. */
+export function inspectWorkflowRepairCurrentResult(actor:Actor,threadId:string,preparedResult:unknown){
+ const detail=getInboxThread(actor,threadId),assistance=getInboxAssistance(actor,threadId),ordinaryDraftReference=inboxDraftReference(actor,threadId),currentReference=ordinaryDraftReference??inboxAccessReference(actor,threadId);
+ const receipt=z.object({data:z.object({threadId:z.string(),inboxAccessReference:z.string(),draft:z.object({id:z.string(),version:z.number(),body:z.string(),subject:z.string()}).passthrough()}).passthrough()}).passthrough().safeParse(preparedResult);
+ const saved=detail.draft,prepared=receipt.success?receipt.data.data:null;
+ const checks={exactSavedPreparation:!!saved&&!!prepared&&prepared.threadId===threadId&&prepared.draft.id===saved.id&&prepared.draft.version===saved.version&&prepared.draft.body===saved.body&&prepared.draft.subject===saved.subject,currentAccess:!!prepared&&prepared.inboxAccessReference===currentReference,currentGeneratedReply:!!saved&&assistance.suggestedReply.eligible&&saved.body===assistance.suggestedReply.body&&saved.subject===assistance.suggestedReply.subject};
+ return {kind:'repair_only_current_saved_result',passed:Object.values(checks).every(Boolean),checks,threadId,currentReference,ordinaryDraftReference,notice:'Package-origin threads intentionally have no ordinary rewrite reference. Exact saved preparation, current Inbox access and current eligible service-generated body/subject are checked instead. This does not score model wording, authorize sending or require a particular tool order.'};
+}
+
 /** Executes ordinary chat/tools. The live model chooses the sequence; only reviewed tool capabilities can execute. */
 export async function runActualWorkflowComparison(root:string,name:string,approval:{planHash:string;maximumCents:number},transport:EvaluationTransport){
  committedSource();
@@ -104,7 +132,7 @@ export async function runActualWorkflowComparison(root:string,name:string,approv
  const key=process.env.OPENAI_API_KEY;assert.ok(key&&key.trim(),'A server credential is required only for the admitted run.');
  privateJson(join(directory,'execution.json'),{status:'running',startedAt:new Date().toISOString(),planHash:manifest.planHash},true);
  const originalFetch=globalThis.fetch,results:unknown[]=[];let active:WorkflowComparisonSlot|undefined,renderedRequest='',fetches=0,transportFailed=false;
- const evidence={version:1,kind:manifest.kind==='workflow_capacity_confirmation'?'workflow_final_bounded_capacity_confirmation':manifest.kind==='workflow_capacity_followup'?'workflow_capacity_and_output_representation_followup':'actual_workflow_catalog_ablation',...(manifest.basis?{basis:manifest.basis}:{}),...(manifest.after?{after:manifest.after}:{}),synthetic:true,fixtureHash:manifest.fixtureHash,planHash:manifest.planHash,rubric:workflowRubric,results};
+ const evidence={version:1,kind:manifest.kind==='workflow_repair_confirmation'?'single_guided_disposition_repair_observation':manifest.kind==='workflow_capacity_confirmation'?'workflow_final_bounded_capacity_confirmation':manifest.kind==='workflow_capacity_followup'?'workflow_capacity_and_output_representation_followup':'actual_workflow_catalog_ablation',...(manifest.basis?{basis:manifest.basis}:{}),...(manifest.after?{after:manifest.after}:{}),...(manifest.repairAfter?{repairAfter:manifest.repairAfter}:{}),synthetic:true,fixtureHash:manifest.fixtureHash,planHash:manifest.planHash,rubric:workflowRubric,results};
  try{
   globalThis.fetch=async(input,options)=>{
    const url=typeof input==='string'?input:input instanceof URL?input.href:input.url;
@@ -117,7 +145,7 @@ export async function runActualWorkflowComparison(root:string,name:string,approv
    return new Response(JSON.stringify(raw),{status:200,headers:{'content-type':'application/json'}});
   };
   const selectedRoles=workflowRoles.filter(role=>manifest.slots.some(slot=>slot.role===role));
-  for(const role of selectedRoles)for(const arm of workflowArms){
+  for(const role of selectedRoles)for(const arm of workflowArms.filter(arm=>manifest.slots.some(slot=>slot.role===role&&slot.arm===arm))){
    const database=join(directory,`${role}-${arm}.sqlite`);copyFileSync(join(directory,'fixture.sqlite'),database,constants.COPYFILE_EXCL);chmodSync(database,0o600);
    await isolated(database,key,manifest.slots.find(slot=>slot.role===role&&slot.arm===arm&&slot.turn===0)!.maxCalls,async()=>{
     getDb({initialize:false});assert.equal(workflowDigest({fixture:manifest.fixture,records:snapshot()}),manifest.fixtureHash);const protectedBefore=workflowBusinessSnapshot(),actor=demoActor(role);let state=workflowStart(role,manifest.fixture),priorFailed=false;
@@ -135,7 +163,7 @@ export async function runActualWorkflowComparison(root:string,name:string,approv
      const receipts=(getDb().prepare('SELECT call_id,result FROM assistant_tool_receipts WHERE conversation_id=? ORDER BY rowid').all(active.conversationId) as {call_id:string;result:string}[]).filter(row=>callIds.has(row.call_id)).map(row=>({callId:row.call_id,result:JSON.parse(row.result)}));
      const beforeReplay=fetches,beforeSnapshot=workflowDigest(snapshot()),replay=await withSpecialistGuidanceEvaluation(actor,arm==='guided'?'included':'omitted',()=>chat(actor,renderedRequest,active!.conversationId,active!.employeeRequestId));
      const replayVerified=fetches===beforeReplay&&workflowDigest(replay)===workflowDigest(result)&&workflowDigest(snapshot())===beforeSnapshot;
-     let outcome:unknown,reason:string|undefined;
+     let outcome:unknown,reason:string|undefined,repairCurrentResult:ReturnType<typeof inspectWorkflowRepairCurrentResult>|undefined;
      try{
       assert.equal(execution?.phase,'completed');assert.equal(replayVerified,true,'Exact replay changed state or made another request.');assert.ok(receipts.every(receipt=>receipt.result.completed!==false&&!receipt.result.error),'A selected tool failed.');
       // Require the explicitly requested existing-buyer check, then judge saved
@@ -143,10 +171,11 @@ export async function runActualWorkflowComparison(root:string,name:string,approv
       const required=role==='dispositions'&&turn===0?['match_buyers']:[];
       for(const tool of required)assert.ok(toolNames.includes(tool),`Missing required workflow capability: ${tool}`);
       if(turn===0){state=workflowIntervene(role,manifest.fixture,state,result.result);outcome={operatorEvents:state.operatorEvents};}else outcome=workflowFinish(role,manifest.fixture,state);
+      if(manifest.kind==='workflow_repair_confirmation'&&turn===1){assert.ok(state.threadId);const preparation=calls.filter(call=>call.name==='prepare_inbox_reply').at(-1);repairCurrentResult=inspectWorkflowRepairCurrentResult(actor,state.threadId,receipts.find(receipt=>receipt.callId===preparation?.call_id)?.result);assert.equal(repairCurrentResult.passed,true,'The repair-only current saved-result check failed.');}
       assert.deepEqual(workflowBusinessSnapshot(),protectedBefore,'A protected CRM, inventory, research, channel or payment record changed.');
      }catch(error){reason=error instanceof Error?error.message:'The saved workflow did not pass its authored checks.';priorFailed=turn===0;}
      const toolCalls=calls.map(call=>({name:call.name,callId:call.call_id,arguments:call.arguments}));
-     const entry={slotId:active.id,role,arm,turn,request:renderedRequest,startedAt,finishedAt:new Date().toISOString(),modelCalls:fetches-beforeCalls,executionPhase:execution?.phase,response:result.result,conversation:result.conversation,toolNames,toolCalls,receipts,replayVerified,operatorEvents:state.operatorEvents,outcome,status:reason?'quality_failed':'completed',...(reason?{reason}:{})};
+     const entry={slotId:active.id,role,arm,turn,request:renderedRequest,startedAt,finishedAt:new Date().toISOString(),modelCalls:fetches-beforeCalls,executionPhase:execution?.phase,response:result.result,conversation:result.conversation,toolNames,toolCalls,receipts,replayVerified,operatorEvents:state.operatorEvents,outcome,...(repairCurrentResult?{repairCurrentResult}:{}),status:reason?'quality_failed':'completed',...(reason?{reason}:{})};
      results.push(entry);privateJson(join(directory,'workflow-evidence.json'),evidence);
      recordWorkflowComparisonOutcome(root,name,manifest.planHash,{slotId:active.id,status:reason?'quality_failed':'completed',evidenceHash:workflowDigest(entry),...(reason?{reason}:{})});
     }
@@ -157,5 +186,5 @@ export async function runActualWorkflowComparison(root:string,name:string,approv
  }catch{privateJson(join(directory,'workflow-evidence.json'),evidence);privateJson(join(directory,'execution.json'),{status:'stopped',planHash:manifest.planHash,stoppedAt:active?.id,finishedAt:new Date().toISOString(),reason:'Stopped without automatically replaying uncertain usage. Inspect campaign and artifact evidence.'});throw new Error('Workflow comparison stopped. Inspect saved evidence and the shared campaign; no automatic restart is available.');}
  finally{globalThis.fetch=originalFetch;}
 }
-async function main(){const [command,name,...args]=process.argv.slice(2),root=defaultEvaluationRoot();assert.ok(name,'Use prepare, prepare-followup --from <original>, prepare-confirmation --from <original> --after <closed-followup>, close-preflight --approve-plan <hash>, inspect, or run --approve-plan <hash> --maximum-cents 999.');if(command==='prepare'&&!args.length)return prepareActualWorkflowComparison(root,name);if(command==='prepare-followup'&&args.length===2&&args[0]==='--from')return prepareActualWorkflowCapacityFollowup(root,name,args[1]);if(command==='prepare-confirmation'&&args.length===4&&args[0]==='--from'&&args[2]==='--after')return prepareActualWorkflowCapacityConfirmation(root,name,args[1],args[3]);if(command==='close-preflight'&&args.length===2&&args[0]==='--approve-plan'&&/^[a-f0-9]{64}$/.test(args[1]))return closeActualWorkflowPreflight(root,name,args[1]);if(command==='inspect'&&!args.length)return inspectActualWorkflowComparison(root,name);assert.ok(command==='run'&&args.length===4&&args[0]==='--approve-plan'&&/^[a-f0-9]{64}$/.test(args[1])&&args[2]==='--maximum-cents'&&args[3]==='999');if(existsSync('.env.local'))process.loadEnvFile('.env.local');const key=process.env.OPENAI_API_KEY;assert.ok(key&&key.trim());return runActualWorkflowComparison(root,name,{planHash:args[1],maximumCents:999},actualRehearsalTransport(key));}
+async function main(){const [command,name,...args]=process.argv.slice(2),root=defaultEvaluationRoot();assert.ok(name,'Use prepare, prepare-followup --from <original>, prepare-confirmation --from <original> --after <closed-followup>, prepare-repair --from <original> --after <completed-confirmation>, close-preflight --approve-plan <hash>, inspect, or run --approve-plan <hash> --maximum-cents 999.');if(command==='prepare'&&!args.length)return prepareActualWorkflowComparison(root,name);if(command==='prepare-followup'&&args.length===2&&args[0]==='--from')return prepareActualWorkflowCapacityFollowup(root,name,args[1]);if(command==='prepare-confirmation'&&args.length===4&&args[0]==='--from'&&args[2]==='--after')return prepareActualWorkflowCapacityConfirmation(root,name,args[1],args[3]);if(command==='prepare-repair'&&args.length===4&&args[0]==='--from'&&args[2]==='--after')return prepareActualWorkflowRepairConfirmation(root,name,args[1],args[3]);if(command==='close-preflight'&&args.length===2&&args[0]==='--approve-plan'&&/^[a-f0-9]{64}$/.test(args[1]))return closeActualWorkflowPreflight(root,name,args[1]);if(command==='inspect'&&!args.length)return inspectActualWorkflowComparison(root,name);assert.ok(command==='run'&&args.length===4&&args[0]==='--approve-plan'&&/^[a-f0-9]{64}$/.test(args[1])&&args[2]==='--maximum-cents'&&args[3]==='999');if(existsSync('.env.local'))process.loadEnvFile('.env.local');const key=process.env.OPENAI_API_KEY;assert.ok(key&&key.trim());return runActualWorkflowComparison(root,name,{planHash:args[1],maximumCents:999},actualRehearsalTransport(key));}
 if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).href){try{console.info(JSON.stringify(await main(),null,2));}catch{console.error('Workflow comparison stopped. Inspect its frozen manifest, execution evidence and campaign ledger. No automatic provider retry was made.');process.exitCode=1;}}

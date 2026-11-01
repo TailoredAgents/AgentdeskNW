@@ -1,5 +1,13 @@
 # Architecture decisions
 
+## November 1, 2026 — Explicit specialist completion contracts and iterative demo acceptance
+
+The owner asked to update documentation for the next goals and proceed after reviewing the uneven depth of the sixteen agents. Keep the canonical roadmap and existing product scope; add explicit per-agent demo completion contracts to AI_EMPLOYEES instead of another roadmap. Each contract must state the core employee outcome, meaningful variation/correction, inspectable output and missing evidence. Some tasks correctly produce a sourced read-only answer; do not create writes merely to satisfy a checklist. Registry status, implementation tests, actual-model judgment and later practitioner/company/device acceptance remain distinct.
+
+Develop and test in small groups spanning dispositions, acquisitions and management. Start by confirming the repaired compound reply-plus-reminder case before treating that gap as closed. Later groups deepen the specified role capabilities, then cover shared knowledge/coordination and presentation convenience. Rehearse the final deployed revision and the actual phone/channel intended for the meeting when account/device access is available. Journeys remain acceptance examples; model tool choice stays adaptive.
+
+Retain the original shared $9.99 paid-test campaign. The current $6.624105 accounted/$3.365895 remaining is a checkpoint, not a new budget. A new single guided repair-confirmation run may use the original fixture/prompts and cumulative admission, with its own immutable policy and evidence; it must not reopen the previous final capacity confirmation or erase failures. Unknown calls stop further dispatch. Free tests remain mocked. No company connector, payment, investor delivery or broad expert-readiness claim is authorized by updating the documentation. Meeting timing is still unknown; do not invent a deadline or reduce the full scope to fit one.
+
 ## November 1, 2026 — Conversational coworker as the default experience
 
 The owner explicitly prioritizes a natural ongoing exchange over report-style answers. Make ordinary responses brief, useful and context-aware; expand on request, and keep supporting sources/results inspectable without overwhelming chat. Pair prompt/presentation work with verified short-reference task/draft continuation and correction-sensitive rehearsal. Do not simulate a saved action by changing wording, infer permanent memory from one style correction, or remove exact action/spending controls to appear conversational. Authored service tests and actual model-conversation evidence remain separate.
