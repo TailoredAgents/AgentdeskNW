@@ -14,14 +14,14 @@ export class AppError extends Error {
   constructor(public status: number, message: string) { super(message); this.name = 'AppError'; }
 }
 
-export function getDb(): Database.Database {
+export function getDb(options:{initialize?:boolean}={}): Database.Database {
   assertSupportedStorageConfiguration();
   const path = process.env.AGENTDESK_DB_PATH ?? process.env.DATABASE_PATH ?? resolve(process.cwd(), 'data/agentdesk.sqlite');
   if (database && path === databasePath) return database;
   closeDb();
   // The runtime database is mutable data; it must not be traced into a deployment bundle.
   if (path !== ':memory:') mkdirSync(dirname(resolve(/* turbopackIgnore: true */ path)), { recursive: true });
-  database = new Database(path);
+  database = new Database(path,{fileMustExist:options.initialize===false});
   databasePath = path;
   try {
     database.pragma('busy_timeout = 5000');
@@ -38,9 +38,9 @@ export function getDb(): Database.Database {
       }
     }
     // Serialize the migration checks, schema changes and fictional seed as one unit.
-    database.transaction(() => {
+    if(options.initialize!==false)database.transaction(() => {
       database!.exec('CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL)');
-      for (const [version, file] of [[1,'001_initial.sql'],[2,'002_voice.sql'],[3,'003_investor_intelligence.sql'],[4,'004_workflows.sql'],[5,'005_billing.sql'],[6,'006_provider_runtime.sql'],[7,'007_voice_live.sql'],[8,'008_external_research.sql'],[9,'009_messaging.sql'],[10,'010_employee_memory.sql'],[11,'011_journey_observations.sql'],[12,'012_task_actions.sql'],[13,'013_conversation_focus.sql'],[14,'014_workforce_plans.sql'],[15,'015_credit_wallet.sql'],[16,'016_communications.sql'],[17,'017_communication_workflows.sql'],[18,'018_company_communications.sql'],[19,'019_relationship_reports.sql'],[20,'020_work_runs.sql'],[21,'021_work_budgets.sql'],[22,'022_work_conversation.sql'],[23,'023_mobile_sessions.sql'],[24,'024_mobile_notifications.sql'],[25,'025_handoff_coordination.sql'],[26,'026_acquisition_opportunities.sql'],[27,'027_deal_analyses.sql'],[28,'028_automatic_topups.sql'],[29,'029_metered_assignments.sql'],[30,'030_proactive_updates.sql'],[31,'031_proactive_delivery.sql'],[32,'032_role_knowledge.sql'],[33,'033_source_documents.sql'],[34,'034_transaction_coordination.sql'],[35,'035_transaction_correspondence.sql'],[36,'036_transaction_team.sql'],[37,'037_document_imports.sql'],[38,'038_assignment_roots.sql'],[39,'039_assignment_reviews.sql'],[40,'040_text_execution.sql'],[41,'041_assignment_conversation.sql'],[42,'042_local_assignment_work.sql'],[43,'043_assignment_cancellation.sql'],[44,'044_assignment_renewal.sql'],[45,'045_text_controls.sql'],[46,'046_role_preparations.sql'],[47,'047_opportunity_handoffs.sql'],[48,'048_assignment_operations.sql'],[49,'049_assignment_research.sql'],[50,'050_standing_permissions.sql'],[51,'051_integration_preparation.sql']] as const) {
+      for (const [version, file] of [[1,'001_initial.sql'],[2,'002_voice.sql'],[3,'003_investor_intelligence.sql'],[4,'004_workflows.sql'],[5,'005_billing.sql'],[6,'006_provider_runtime.sql'],[7,'007_voice_live.sql'],[8,'008_external_research.sql'],[9,'009_messaging.sql'],[10,'010_employee_memory.sql'],[11,'011_journey_observations.sql'],[12,'012_task_actions.sql'],[13,'013_conversation_focus.sql'],[14,'014_workforce_plans.sql'],[15,'015_credit_wallet.sql'],[16,'016_communications.sql'],[17,'017_communication_workflows.sql'],[18,'018_company_communications.sql'],[19,'019_relationship_reports.sql'],[20,'020_work_runs.sql'],[21,'021_work_budgets.sql'],[22,'022_work_conversation.sql'],[23,'023_mobile_sessions.sql'],[24,'024_mobile_notifications.sql'],[25,'025_handoff_coordination.sql'],[26,'026_acquisition_opportunities.sql'],[27,'027_deal_analyses.sql'],[28,'028_automatic_topups.sql'],[29,'029_metered_assignments.sql'],[30,'030_proactive_updates.sql'],[31,'031_proactive_delivery.sql'],[32,'032_role_knowledge.sql'],[33,'033_source_documents.sql'],[34,'034_transaction_coordination.sql'],[35,'035_transaction_correspondence.sql'],[36,'036_transaction_team.sql'],[37,'037_document_imports.sql'],[38,'038_assignment_roots.sql'],[39,'039_assignment_reviews.sql'],[40,'040_text_execution.sql'],[41,'041_assignment_conversation.sql'],[42,'042_local_assignment_work.sql'],[43,'043_assignment_cancellation.sql'],[44,'044_assignment_renewal.sql'],[45,'045_text_controls.sql'],[46,'046_role_preparations.sql'],[47,'047_opportunity_handoffs.sql'],[48,'048_assignment_operations.sql'],[49,'049_assignment_research.sql'],[50,'050_standing_permissions.sql'],[51,'051_integration_preparation.sql'],[52,'052_research_spending.sql'],[53,'053_company_sessions.sql'],[54,'054_oauth_credentials.sql']] as const) {
         const migrationPath=resolve(process.cwd(), 'src/server/migrations',file);
         if (!existsSync(migrationPath)) continue;
         if (!database!.prepare('SELECT 1 FROM schema_migrations WHERE version=?').get(version)) {
@@ -69,11 +69,21 @@ const actors: Record<Role, Actor> = {
 };
 export function demoActor(role: Role = 'dispositions'): Actor { getDb(); return { ...actors[role] }; }
 
-export function assertActor(actor: Actor): void {
+export function assertMembership(actor: Actor): void {
   const membership = getDb().prepare(`SELECT u.name,m.role FROM memberships m JOIN users u ON u.id=m.user_id
     WHERE m.organization_id=? AND m.office_id=? AND m.user_id=?`).get(actor.organizationId, actor.officeId, actor.id) as { name:string;role:Role } | undefined;
   if (!membership || membership.role !== actor.role || membership.name !== actor.name) throw new AppError(403, 'This identity is not authorized for the selected office.');
 }
+export function assertActor(actor:Actor):void {assertMembership(actor);
+  if(process.env.AGENTDESK_AUTH_MODE==='company_oidc'&&!getDb().prepare('SELECT 1 FROM company_identity_bindings WHERE issuer=? AND organization_id=? AND office_id=? AND user_id=? AND role=? AND revoked_at IS NULL').get(process.env.AGENTDESK_OIDC_ISSUER??'',actor.organizationId,actor.officeId,actor.id,actor.role))throw new AppError(403,'Company membership is no longer authorized.');
+}
+export function isAuthorizedActor(actor:Actor):boolean {try{assertActor(actor);return true;}catch(error){if(error instanceof AppError&&error.status===403)return false;throw error;}}
+/** Apply before a worker's LIMIT so departed owners cannot starve active employees.
+ * Fixed correlated table names only; never construct this predicate from a request. */
+export function researchOwnerEligibility(){return {sql:`EXISTS (SELECT 1 FROM memberships wm JOIN users wu ON wu.id=wm.user_id
+ WHERE wm.organization_id=research_jobs.organization_id AND wm.office_id=research_jobs.office_id AND wm.user_id=research_jobs.owner_id
+ AND (?<>'company_oidc' OR EXISTS (SELECT 1 FROM company_identity_bindings wb WHERE wb.issuer=? AND wb.organization_id=wm.organization_id
+ AND wb.office_id=wm.office_id AND wb.user_id=wm.user_id AND wb.role=wm.role AND wb.revoked_at IS NULL)))`,args:[process.env.AGENTDESK_AUTH_MODE??'demo',process.env.AGENTDESK_OIDC_ISSUER??'']};}
 export function requireRole(actor:Actor, allowed:Role[]) { assertActor(actor); if (!allowed.includes(actor.role)) throw new AppError(403, 'Your role cannot perform this action.'); }
 
 export type ScopedTable = 'investors'|'properties'|'conversations'|'research_jobs'|'proposed_actions'|'tasks'|'notifications';

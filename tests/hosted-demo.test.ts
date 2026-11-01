@@ -28,7 +28,7 @@ describe('private hosted demonstration',()=>{
   expect((await route('bootstrap')).status).toBe(401);
   expect((await route('session','POST',{role:'manager'})).status).toBe(401);
   expect((await route('providers')).status).toBe(401);
-  expect(await (await route('access')).json()).toEqual({required:true});
+  expect(await (await route('access')).json()).toEqual({required:true,mode:'demo'});
  });
  it('requires the code, signs a secure scoped session, and permits normal demo work after entry',async()=>{
   expect((await route('access','POST',{code:'wrong'})).status).toBe(401);

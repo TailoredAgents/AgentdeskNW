@@ -1,3 +1,4 @@
+import {isAuthorizedActor} from './db';
 import {transactionTeamTaskClosed} from '../lib/transaction-team-contracts';
 import {proactiveDeliveryState} from './proactive-delivery-state';
 import {z} from 'zod';
@@ -98,7 +99,7 @@ export function processProactiveActor(actor:Actor):number {
 }
 export function processProactiveUpdates():number {
  const rows=getDb().prepare('SELECT p.organization_id,p.office_id,p.user_id,u.name,m.role FROM proactive_preferences p JOIN memberships m ON m.organization_id=p.organization_id AND m.office_id=p.office_id AND m.user_id=p.user_id JOIN users u ON u.id=p.user_id').all() as {organization_id:string;office_id:string;user_id:string;name:string;role:Role}[];
- return rows.reduce((sum,row)=>sum+processProactiveActor({organizationId:row.organization_id,officeId:row.office_id,id:row.user_id,name:row.name,role:row.role}),0);
+ return rows.reduce((sum,row)=>{const actor:Actor={organizationId:row.organization_id,officeId:row.office_id,id:row.user_id,name:row.name,role:row.role};return sum+(isAuthorizedActor(actor)?processProactiveActor(actor):0);},0);
 }
 export function readProactiveUpdate(actor:Actor,updateId:string,eventKey:string):ProactiveState {
  assertActor(actor);id.parse(updateId);id.parse(eventKey);return getDb().transaction(()=>{const payload={updateId,read:true};if(replay(actor,eventKey,payload))return getProactiveState(actor);const row=getDb().prepare('SELECT data FROM proactive_updates WHERE id=? AND organization_id=? AND office_id=? AND user_id=?').get(updateId,...owner(actor)) as {data:string}|undefined;if(!row)throw new AppError(404,'Update not found in your workspace.');const value=JSON.parse(row.data) as StoredUpdate;getDb().prepare('UPDATE proactive_updates SET data=? WHERE id=?').run(JSON.stringify({...value,read:true}),updateId);getDb().prepare("UPDATE notifications SET data=json_set(data,'$.read',json('true')) WHERE organization_id=? AND office_id=? AND owner_id=? AND dedupe_key=?").run(...owner(actor),`proactive:${updateId}`);event(actor,eventKey,payload);return getProactiveState(actor);}).immediate();

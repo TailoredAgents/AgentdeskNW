@@ -42,7 +42,7 @@ describe('trusted stopped-text usage reconciliation',()=>{
   const preview=JSON.parse(execFileSync(process.execPath,args,{encoding:'utf8',env:{...process.env,OPENAI_API_KEY:''}}));expect(preview).toMatchObject({applied:false,status:'canceled',spentCents:2,heldCents:0,executionResumed:false});expect(getWalletState(actor()).reservedCents).toBeGreaterThan(0);closeDb();
   const applied=JSON.parse(execFileSync(process.execPath,[...args,'--apply'],{encoding:'utf8',env:{...process.env,OPENAI_API_KEY:''}}));expect(applied.applied).toBe(true);expect(getWalletState(actor()).reservedCents).toBe(0);
  });
- it('does not let admitted work bypass the root cap through unsupported continuous voice or paid external research',async()=>{
-  await expect(createVoiceSession(actor())).rejects.toThrow('dictation');expect(()=>createResearchJob(actor(),{address:'123 Example Street',county:'Cobb',price:150000,strategy:'flip',limit:1,provider:'openai-web-search-v1',propertyType:'single family',maxCostCents:1000})).toThrow('shared approved allocation');
+ it('does not let admitted work bypass the root cap through unsupported continuous voice or unconfigured external research',async()=>{
+  await expect(createVoiceSession(actor())).rejects.toThrow('dictation');expect(()=>createResearchJob(actor(),{address:'123 Example Street',county:'Cobb',price:150000,strategy:'flip',limit:1,provider:'openai-web-search-v1',propertyType:'single family',maxCostCents:1000})).toThrow('External research is disconnected');
  });
 });

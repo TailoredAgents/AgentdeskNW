@@ -1,3 +1,4 @@
+import {controlResearchAssignment} from './research-controls';
 import {z} from 'zod';
 import type {Actor} from '../lib/contracts';
 import {AppError,getDb,now} from './db';
@@ -18,6 +19,7 @@ export const assignmentRenewalSchema=z.object({quoteId:id,revision:z.number().in
  */
 export function renewTextAssignment(actor:Actor,reviewId:string,raw:z.input<typeof assignmentRenewalSchema>){
  const input=assignmentRenewalSchema.parse(raw);requireFeature(actor,'core');
+ if(originalAssignmentReview(actor,reviewId).host.kind==='research')return controlResearchAssignment(actor,reviewId,{...input,action:'continue'},true);
  return getDb().transaction(()=>{
   const original=originalAssignmentReview(actor,reviewId),hash=fingerprint({reviewId,...input});
   const retry=getDb().prepare('SELECT payload_hash,replacement_review_id FROM assignment_renewals WHERE organization_id=? AND office_id=? AND user_id=? AND event_key=?').get(actor.organizationId,actor.officeId,actor.id,input.eventKey) as {payload_hash:string;replacement_review_id:string}|undefined;

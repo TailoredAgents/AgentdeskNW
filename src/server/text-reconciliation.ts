@@ -1,5 +1,6 @@
 import {cancelIncludedAssignmentWork} from './work-runs';
 import {cancelIncludedResearch} from './local-assignment-work';
+import {cancelMeteredResearch} from './research-spending';
 import {z} from 'zod';
 import type {Actor} from '../lib/contracts';
 import {AppError,getDb,audit} from './db';
@@ -34,7 +35,7 @@ export function reconcileStoppedTextUsage(actor:Actor,requestId:string,raw:z.inp
   reconcileTextUsage(actor,operationId);
   if(saved.phase!=='failed')advanceTextExecution(actor,saved,'failed',{...saved.data,response:null,result:null});
   finishTextSpending(actor,saved,'canceled');
-  cancelIncludedAssignmentWork(actor,saved.data.metering.assignmentId);cancelIncludedResearch(actor,saved.data.metering.assignmentId);
+  cancelIncludedAssignmentWork(actor,saved.data.metering.assignmentId);cancelIncludedResearch(actor,saved.data.metering.assignmentId);cancelMeteredResearch(actor,saved.data.metering.assignmentId);
   // Source descriptions may contain private operator notes; retain only an evidence digest.
   if(saved.phase!=='failed')audit(actor,'text.usage_reconciled',requestId,{evidenceHash:fingerprint(input),receiptId:receipt.id,executionResumed:false});
   return getMeteredAssignment(actor,result!.id);

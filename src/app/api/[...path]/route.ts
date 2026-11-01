@@ -1,3 +1,4 @@
+import {companyAuthentication} from '@/server/company-auth';
 import {workspaceReadiness} from '@/server/workspace-readiness';
 import {getChatRequest} from '@/server/chat-requests';
 import {getRecordBoard,getRecordDetail} from '@/server/records';
@@ -58,19 +59,21 @@ async function route(request:NextRequest,{params}:{params:Promise<{path:string[]
     const mobile=request.headers.has('authorization')?getMobileAuthentication(request):null;
     if(mobile&&['session','access'].includes(resource))throw new service.AppError(403,'A phone connection cannot change employee identity.');
     if(resource==='access'&&path.length===1){
-      if(method==='GET')return json({required:hostedDemo()&&!getActor(request)});
+      if(method==='GET')return json({required:(hostedDemo()||companyAuthentication())&&!getActor(request),mode:companyAuthentication()?'company':'demo'});
       if(method==='POST'){
+        if(companyAuthentication())throw new service.AppError(403,'Use company sign-in for this workspace.');
         const {code}=z.object({code:z.string().min(1).max(256)}).strict().parse(await body(request));
         verifyDemoAccess(code);const response=json({ok:true});setSession(response,'dispositions');return response;
       }
     }
-    if(hostedDemo()&&!getActor(request))throw new service.AppError(401,'Enter your access code to open the private demonstration.');
+    if((hostedDemo()||companyAuthentication())&&!getActor(request))throw new service.AppError(401,companyAuthentication()?'Sign in with your company account to open this workspace.':'Enter your access code to open the private demonstration.');
     if(resource==='session'&&method==='POST'){
+      if(companyAuthentication())throw new service.AppError(403,'Company membership determines your role.');
       const {role}=z.object({role:z.enum(['dispositions','acquisitions','manager'])}).strict().parse(await body(request));
       const actor=service.demoActor(role);const response=json({actor});setSession(response,role);return response;
     }
     let actor=getActor(request);const newSession=!actor;
-    if(!hostedDemo()&&!actor&&resource==='bootstrap'&&method==='GET')actor=service.demoActor();
+    if(!hostedDemo()&&!companyAuthentication()&&!actor&&resource==='bootstrap'&&method==='GET')actor=service.demoActor();
     if(!actor)throw new service.AppError(401,'Open the workspace to start a local demo session.');
     rateLimit(actor,'all',300);
     if(method!=='GET')rateLimit(actor,resource,resource==='chat'?20:resource==='voice'?90:60);

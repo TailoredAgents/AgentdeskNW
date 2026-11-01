@@ -46,6 +46,7 @@ function noticeText(actor:Actor,id:string){
   const task=taskForReminder(actor,id);if(!task)return null;
   return `Reminder: ${task.title}\nReply “done”, “snooze 2 hours”, or “move it to tomorrow at 9am”. If several reminders are active, include the task name.`;
  }
+ if((row.dedupe_key.startsWith('research-done:')||row.dedupe_key.startsWith('research-stopped:'))&&getDb().prepare('SELECT 1 FROM metered_research_hosts WHERE job_id=? AND parent_request_id IS NOT NULL').get(row.dedupe_key.split(':')[1]))return null;
  if(row.dedupe_key.startsWith('research-done:')){const job=scopedGet<ResearchJob>(actor,'research_jobs',row.dedupe_key.slice(14),true);if(job.status==='completed')return 'Your research is ready. Open AgentDesk NW to review the saved results and evidence.';}
  if(row.dedupe_key.startsWith('research-stopped:')){const job=scopedGet<ResearchJob>(actor,'research_jobs',row.dedupe_key.slice(17).split(':')[0],true);if(job.status==='failed')return 'Your research needs attention. Open AgentDesk NW to review its status and saved work.';}
  return null;

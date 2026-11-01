@@ -32,7 +32,7 @@ describe('company identity binding preparation, not sign-in',()=>{
 });
 describe('worker and deployment readiness',()=>{
  it('distinguishes missing, running, successful, failed and stale lanes',()=>{const id=randomUUID();expect(workerHealth()[0].state).toBe('not_seen');recordWorkerHealth(id,'business','running');expect(workerHealth()[0].state).toBe('busy');recordWorkerHealth(id,'business','idle');expect(workerHealth()[0].state).toBe('healthy');recordWorkerHealth(id,'business','failed');expect(workerHealth()[0].state).toBe('failed');getDb().prepare("UPDATE worker_health SET heartbeat_at='2020-01-01T00:00:00.000Z'").run();expect(workerHealth()[0].state).toBe('stale');});
- it('never calls preparation company-ready or reveals identity mappings',()=>{bindCompanyIdentity(demoActor(),{issuer:'https://example.com',subject:'private-subject'});prepare();const state=workspaceReadiness(demoActor());expect(state.companyDataReady).toBe(false);expect(state.gates.find(gate=>gate.id==='identity')?.status).toBe('required');expect(JSON.stringify(state)).not.toContain('private-subject');});
+ it('never calls preparation company-ready or reveals identity mappings',()=>{bindCompanyIdentity(demoActor(),{issuer:'https://example.com',subject:'private-subject'});prepare();const state=workspaceReadiness(demoActor());expect(state.companyDataReady).toBe(false);expect(state.gates.find(gate=>gate.id==='identity')?.status).toBe('prepared');expect(JSON.stringify(state)).not.toContain('private-subject');});
 });
 
 it('fails closed on company-data or multi-host storage configuration',()=>{

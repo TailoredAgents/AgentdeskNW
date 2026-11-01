@@ -1,3 +1,4 @@
+import {isAuthorizedActor} from './db';
 import {createHash} from 'node:crypto';
 import {z} from 'zod';
 import type {Actor,Role} from '../lib/contracts';
@@ -69,6 +70,6 @@ export function resolveAutoTopUp(actor:Actor,raw:z.input<typeof autoTopUpResolve
 }
 export function processAutoTopUps():number {
  assertBillingDemo();const rows=getDb().prepare('SELECT s.organization_id,s.office_id,s.user_id,m.role,u.name FROM auto_topup_settings s JOIN memberships m ON m.organization_id=s.organization_id AND m.office_id=s.office_id AND m.user_id=s.user_id JOIN users u ON u.id=s.user_id').all() as {organization_id:string;office_id:string;user_id:string;role:Role;name:string}[];
- for(const row of rows){const actor:Actor={organizationId:row.organization_id,officeId:row.office_id,id:row.user_id,role:row.role,name:row.name};checkAutoTopUp(actor);for(const purchase of purchases(actor))if(['succeeded','failed','unknown'].includes(purchase.status))notify(actor,`auto-topup:${purchase.id}:${purchase.status}`,purchase.status==='succeeded'?'Simulated automatic top-up completed':purchase.status==='failed'?'Simulated automatic top-up failed':'Automatic top-up needs reconciliation',purchase.status==='succeeded'?`$${(purchase.amountCents/100).toFixed(2)} in demonstration credits added. No payment collected.`:'Review the recorded purchase outcome in Credits & billing. No automatic retry or spendable credit was created.','billing');}
+ for(const row of rows){const actor:Actor={organizationId:row.organization_id,officeId:row.office_id,id:row.user_id,role:row.role,name:row.name};if(!isAuthorizedActor(actor))continue;checkAutoTopUp(actor);for(const purchase of purchases(actor))if(['succeeded','failed','unknown'].includes(purchase.status))notify(actor,`auto-topup:${purchase.id}:${purchase.status}`,purchase.status==='succeeded'?'Simulated automatic top-up completed':purchase.status==='failed'?'Simulated automatic top-up failed':'Automatic top-up needs reconciliation',purchase.status==='succeeded'?`$${(purchase.amountCents/100).toFixed(2)} in demonstration credits added. No payment collected.`:'Review the recorded purchase outcome in Credits & billing. No automatic retry or spendable credit was created.','billing');}
  return rows.length;
 }

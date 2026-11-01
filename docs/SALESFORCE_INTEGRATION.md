@@ -59,7 +59,7 @@ Expected production operations:
 
 `src/server/crm.ts` includes `CrmAdapter` and `DemoCrmAdapter`. A separately defined, unselected `SalesforceReadAdapter` validates administrator-supplied object/field identifiers, HTTPS Salesforce instance host, API version and bound employee/office/organization. It issues an assigned-owner query limited to 100 records through a server token callback, with timeout and safe error handling. It is not connected to the UI and does not write remote records.
 
-`prepareSalesforceOAuth` creates state, PKCE verifier/challenge and an authorization URL. Callback/state persistence, token exchange, encrypted token storage, refresh and actual connection setup remain unimplemented. Adding a credential alone does not activate Salesforce. The source code and [PROGRESS](PROGRESS.md) identify the current subset.
+The legacy `prepareSalesforceOAuth` helper remains a standalone URL helper. The normal connection flow in `oauth-connections.ts` now implements persisted single-use browser-bound PKCE, callback exchange, exact remote organization/user/instance verification, encrypted token storage, rotating refresh and revocation. It is exposed only to authenticated company sessions for a trusted prepared source/profile. Adding a credential does not select a live application CRM/email adapter; mapping, synchronization and business-write execution remain unfinished.
 
 ## Implemented qualification update proposal
 
@@ -75,7 +75,7 @@ For an employee-facing application, use Authorization Code/Web Server flow with 
 
 These are integration design choices, not a claim that an OAuth connector is already active.
 
-## Proposed OAuth sequence
+## Implemented OAuth protocol and remaining activation
 
 1. An authorized tenant administrator enables the integration and confirms allowed Salesforce organization/domain.
 2. The server creates an expiring, single-use state record bound to the tenant, user, redirect URI and PKCE verifier.
@@ -127,6 +127,16 @@ Property releases currently use explicit local acquisition/manager entry with ve
 
 Migration 051 adds employee/office/organization-bound connection preparations. One provider/source identity owns separate CRM read/write, email activity/body/draft/send and SMS read/send capabilities. Preparing a live source never enables execution; the runtime rejects it until a real approved adapter exists. No credentials are accepted by this contract, and there is no employee/model activation endpoint. These preparations do not switch the existing demo CRM or Inbox to another provider.
 
-`stageConnectionBatch` is a tested **fictional normalized staging seam**, not a Salesforce downloader. It checks original connection revision, exact previous/next cursor, immutable batch identity, unique external IDs and monotonic record revisions. A conflicting row rolls back the whole batch and cursor. Withdrawal removes readable current fields. Disconnect invalidates reads and even old exact batch replay. Staged fields remain private, synthetic and unreviewed; they never overwrite local CRM facts or establish message delivery. Real OAuth exchange/storage/refresh, incremental provider fetch, verified company mapping, conflict review and application source selection remain implementation work.
+`stageConnectionBatch` is a tested **fictional normalized staging seam**, not a Salesforce downloader. It checks original connection revision, exact previous/next cursor, immutable batch identity, unique external IDs and monotonic record revisions. A conflicting row rolls back the whole batch and cursor. Withdrawal removes readable current fields. Disconnect invalidates reads and even old exact batch replay. Staged fields remain private, synthetic and unreviewed; they never overwrite local CRM facts or establish message delivery. OAuth exchange/storage/refresh/revocation now has isolated transport acceptance below. Incremental provider fetch, verified company mapping, conflict review and application source selection remain implementation work.
 
-Settings → Preparing company connections reports this distinction, along with the remaining identity, storage and company approvals. The authenticated readiness endpoint is read-only and also available to the paired native client. No interface can turn these preparations into a live connection.
+Settings → Preparing company connections reports this distinction, along with the remaining identity, storage and company approvals. The authenticated readiness endpoint is read-only and also available to the paired native client. The employee may authorize a prepared Salesforce source through company sign-in, but no interface activates live CRM data or delivery.
+
+## Salesforce credential configuration — implemented, not enabled by default
+
+The trusted operator prepares an exact `salesforce` source for the employee with approved remote organization/user IDs, `mode: "live"` and independent capabilities. No model or employee route creates that source or chooses its permissions. `AGENTDESK_OAUTH_PROFILES` contains approved profiles. Each profile selects either a `connectionId` or a shared `remoteTenant` (not both); the latter lets employees share the company application configuration while retaining separate source permissions and encrypted grants. A connection-specific profile takes precedence.
+
+Required profile fields: `provider: "salesforce"`, `authorizationEndpoint`, `tokenEndpoint`, `revocationEndpoint`, `userinfoEndpoint`, `instanceOrigin`, `clientId`, `clientSecretEnv`, `redirectUri`, and `scopes`. URLs must use approved HTTPS Salesforce/Force domains; `instanceOrigin` is an origin with no path. The secret environment-variable name must match `AGENTDESK_OAUTH_*_SECRET`. The callback is exactly `<AGENTDESK_APP_ORIGIN>/api/connection-auth/callback`. Allowed scopes are `api`, `openid`, `refresh_token`, with `api` and `openid` required. Profiles are operator configuration, never client/model input. The normal route requires company authentication.
+
+Settings can authorize, reconnect or remove credentials. Only the expected Salesforce organization/user is accepted. Access tokens stay server-side; AES-256-GCM ciphertext is bound to connection/version using `AGENTDESK_CREDENTIAL_KEY`. Refresh claims are durable and exclusive. Uncertain refresh is not retried automatically. Local disconnect always erases credentials, even after profile/key loss; remote revocation is separately reported and a changed profile never receives an old token. Source withdrawal by the operator is distinct from employee credential disconnect. The existing `SalesforceReadAdapter` passes a mock-transport integration test using this encrypted token callback; it remains unselected by normal application CRM operations.
+
+The protocol follows Salesforce's [Web Server flow](https://help.salesforce.com/s/articleView?id=sf.remoteaccess_oauth_web_server_flow.htm&language=en_US&type=5) and [UserInfo identity endpoint](https://help.salesforce.com/s/articleView?id=xcloud.remoteaccess_using_userinfo_endpoint.htm&language=en_US&type=5). No company authorization, actual provider receipt, real data synchronization or email delivery was performed. Gmail/Outlook actual OAuth adapters remain future engineering.

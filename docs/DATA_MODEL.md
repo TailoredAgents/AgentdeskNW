@@ -2,6 +2,16 @@
 
 [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) is the sole authority for completion status and development order. This document records schema contracts and historical preservation evidence, not permission to apply migrations to the active database.
 
+## Paid research and company sessions — migrations 052–054
+
+`metered_research_hosts` binds a private job to its immutable input/root/parent and saved rate/configuration/source context. `research_conversation_events` uniquely links each review/result to a saved conversation message, allowing atomic original-target outbox publication.
+
+`company_login_transactions` stores hashed browser/state identity, encrypted PKCE/nonce, expiry and single-use exchange state. `company_sessions` stores only hashed opaque tokens, exact issuer/subject/binding/configuration versions, expiry/idle/revocation timestamps. `company_pairing_bindings` and `company_device_bindings` prevent old demo or older company authority from surviving an identity change. Subject ownership is immutable; trusted role/departure changes require increasing binding versions.
+
+`oauth_grants` stores encrypted identity-bound tokens, source/profile versions, expiry and active/refreshing/unknown/revoked states. `oauth_transactions` binds expiring single-use PKCE state to the original source/profile/browser. Unknown refresh never automatically reclaims old credentials; disconnect erases local secret material independently of remote revocation.
+
+The disposable 051→054 upgrade test preserves every prior table row (including an existing subject binding) and passes integrity/foreign-key checks. The active workspace database was not opened or migrated during this work.
+
 ## Chosen update delivery — migration 031
 
 `proactive_deliveries` binds one saved update to one channel and target. App attempts retain dispatch state and provider ticket/receipt separately; SMS/Slack use the existing `messaging_outbox` and SMS allowance ledger. The update ID is unique, so changed preferences, uncertain delivery or retries cannot create a second destination. Push transitions also enter append-only proactive events without private content or tokens. Exact update reads remain employee-scoped. Migration 031 preserved 316 prior rows across 104 tables on a disposable schema-030 copy, with clean integrity/foreign keys and no active database use.

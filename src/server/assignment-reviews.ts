@@ -1,3 +1,4 @@
+import {cancelMeteredResearch,researchControlState,researchSourceVisible} from './research-spending';
 import {assignmentActivity} from './assignment-activity';
 import {textPauseState} from './text-pause';
 import {z} from 'zod';
@@ -38,19 +39,21 @@ function current(actor:Actor,row:Row){
 }
 function projection(actor:Actor,row:Row):AssignmentReview {
  const assignment=current(actor,row),data=JSON.parse(row.data) as ReviewData,budget=assignment.budget;
- const contentRestricted=!historyReferencesVisible(actor,data.references);
+ const source=binding(actor,row).host;
+ const contentRestricted=!historyReferencesVisible(actor,data.references)||(source.kind==='research'&&!researchSourceVisible(actor,source.id));
  const same=assignment.revision===row.revision&&budget.quoteId===row.quote_id&&assignment.scopeHash===row.scope_hash;
  const closed=!!assignment.stopRequested||['completed','canceled','paused','reconciling'].includes(assignment.status);
  const employeeStopped=!!getDb().prepare('SELECT 1 FROM assignment_cancellations WHERE review_id=? LIMIT 1').get(row.id);
  const pendingLocal=localAssignmentHasPendingWork(actor,assignment.id);
  const renewableHost=getDb().prepare("SELECT 1 FROM text_executions WHERE binding_id=? AND phase='ready' AND json_extract(data,'$.metering.reviewId')=?").get(row.binding_id,row.id);
- const pauseState=textPauseState(row.id);
+ const research=researchControlState(actor,row.id);
+ const pauseState=textPauseState(row.id)??research?.pause;
  const paused=pauseState==='requested'||pauseState==='paused';
  const execution=getDb().prepare("SELECT e.phase,e.conversation_id FROM text_executions e WHERE e.binding_id=? AND json_extract(e.data,'$.metering.reviewId')=?").get(row.binding_id,row.id) as {phase:string;conversation_id:string}|undefined;
- const canPause=same&&!paused&&!assignment.stopRequested&&['quoted','active'].includes(assignment.status)&&!!execution&&['ready','received','dispatching'].includes(execution.phase)&&row.state!=='denied';
+ const canPause=same&&!paused&&!assignment.stopRequested&&['quoted','active'].includes(assignment.status)&&(!!execution&&['ready','received','dispatching'].includes(execution.phase)||!!research&&['queued','running'].includes(research.jobStatus))&&row.state!=='denied';
  const canRecover=same&&pauseState==='paused'&&!assignment.stopRequested&&!!execution&&['ready','received'].includes(execution.phase)&&['ready','waiting','continued'].includes(row.state)&&!getDb().prepare("SELECT 1 FROM assistant_turns WHERE conversation_id=? AND status='running'").get(execution.conversation_id);
- const canContinue=canRecover&&!contentRestricted;
- const canRenew=!paused&&same&&!contentRestricted&&!assignment.stopRequested&&['quoted','active'].includes(assignment.status)&&['waiting','ready'].includes(row.state)&&!!renewableHost&&assignment.attempts.length===0&&assignment.parts.length===1;
+ const canContinue=(canRecover||same&&pauseState==='paused'&&!assignment.stopRequested&&!!research&&['queued','running'].includes(research.jobStatus)&&!assignment.attempts.some(a=>['dispatched','unknown'].includes(a.status)||a.discrepancy))&&!contentRestricted;
+ const canRenew=!paused&&same&&!contentRestricted&&!assignment.stopRequested&&['quoted','active'].includes(assignment.status)&&['waiting','ready'].includes(row.state)&&(!!renewableHost&&assignment.attempts.length===0&&assignment.parts.length===1||!!research&&['queued','running'].includes(research.jobStatus)&&!assignment.attempts.some(a=>a.partKey===research.partKey));
  const expired=Date.parse(budget.expiresAt)<=Date.now()&&['approved','awaiting_approval'].includes(budget.status);
  const state:AssignmentReview['state']=!same||contentRestricted||expired?'obsolete':closed?'closed':row.state;
  return {id:row.id,conversationReference:`S${fingerprint(row.id).slice(0,16).toUpperCase()}`,title:contentRestricted?'Assignment context changed':data.quote.title,summary:contentRestricted?'The original sources changed or are no longer available. Ask the Agent to prepare a current review.':data.summary,revision:row.revision,quoteId:row.quote_id,
@@ -147,7 +150,7 @@ export function cancelAssignmentReview(actor:Actor,reviewId:string,raw:Assignmen
   if(prior){if(prior.payload_hash!==digest)throw new AppError(409,'This command already represents a different cancellation.');return projection(actor,row);}
   if(input.quoteId!==row.quote_id||input.revision!==row.revision||assignment.revision!==row.revision||assignment.budget.quoteId!==row.quote_id)throw new AppError(409,'This assignment scope changed. Select its current review before canceling.');
   finishMeteredAssignment(actor,row.assignment_id,'canceled');
-  cancelIncludedAssignmentWork(actor,row.assignment_id);cancelIncludedResearch(actor,row.assignment_id);
+  cancelIncludedAssignmentWork(actor,row.assignment_id);cancelIncludedResearch(actor,row.assignment_id);cancelMeteredResearch(actor,row.assignment_id);
   getDb().prepare('INSERT INTO assignment_cancellations VALUES(?,?,?,?,?,?,?)').run(...owner(actor),input.eventKey,row.id,digest,now());
   return projection(actor,row);
  }).immediate();

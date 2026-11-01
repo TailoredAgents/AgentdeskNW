@@ -1,4 +1,5 @@
 import type {TextRecoveryPreview} from '../lib/assignment-review-contracts';
+import {controlResearchAssignment} from './research-controls';
 import {prepareTextRecovery} from './text-recovery';
 import {collectHistoryReferences} from './history';
 import {z} from 'zod';
@@ -21,6 +22,7 @@ const sum=(units:UsageUnits[])=>{const value:UsageUnits={};for(const row of unit
 /** Employee control, never a tool. A fresh review resumes only a cooperatively paused original host. */
 export function controlTextAssignment(actor:Actor,reviewId:string,raw:z.input<typeof textControlSchema>,recovery?:{token:string}){
  const input=textControlSchema.parse(raw);if(recovery&&input.action!=='revise')throw new AppError(400,'Source recovery requires restated remaining instructions.');if(input.action!=='pause')requireFeature(actor,'core');
+ if(!recovery&&originalAssignmentReview(actor,reviewId).host.kind==='research')return controlResearchAssignment(actor,reviewId,input);
  return getDb().transaction(()=>{
   const original=originalAssignmentReview(actor,reviewId),hash=fingerprint({reviewId,...input,...(recovery?{recoveryToken:recovery.token}:{})}),owner=[actor.organizationId,actor.officeId,actor.id];
   const retry=getDb().prepare('SELECT payload_hash,replacement_review_id FROM assignment_text_control_events WHERE organization_id=? AND office_id=? AND user_id=? AND event_key=?').get(...owner,input.eventKey) as {payload_hash:string;replacement_review_id:string|null}|undefined;

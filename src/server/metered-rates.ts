@@ -37,7 +37,7 @@ function configured():MeteredRate[]{
 function active(rate:MeteredRate){return !rate.validFrom||!rate.validUntil||Date.parse(rate.validFrom)<=Date.now()&&Date.now()<Date.parse(rate.validUntil);}
 export function meteredRate(id:string):MeteredRate {
  const fixture=fixtures.find(rate=>rate.id===id);if(fixture)return structuredClone(fixture);
- const rate=configured().find(rate=>rate.id===id&&active(rate));
+ const rate=[...configured(),...configuredResearch()].find(rate=>rate.id===id&&active(rate));
  if(!rate)throw new AppError(409,'No supported current versioned rate is available. Paid dispatch is unavailable.');
  return structuredClone(rate);
 }
@@ -50,3 +50,13 @@ export function customerTextTariff(model:string):MeteredRate {
 export function assertMeteredRateCurrent(snapshot:MeteredRate){
  if(fingerprint(meteredRate(snapshot.id))!==fingerprint(snapshot))throw new AppError(409,'The assignment tariff changed. Review a new whole-assignment quote before continuing.');
 }
+
+const researchTariff=tariff.extend({customerNanosPerUnit:z.object({input_tokens:nano.positive(),cached_input_tokens:nano,output_tokens:nano.positive(),web_search_calls:nano.positive()}).strict()});
+function configuredResearch():MeteredRate[]{
+ const raw=process.env.AGENTDESK_RESEARCH_CUSTOMER_TARIFF;if(!raw)return [];
+ try{if(raw.length>4000)throw new Error('too large');const value=researchTariff.parse(JSON.parse(raw));
+  if(Date.parse(value.validUntil)<=Date.parse(value.validFrom)||value.customerNanosPerUnit.cached_input_tokens>value.customerNanosPerUnit.input_tokens)throw new Error('invalid tariff');
+  return [{...value,id:`customer-research-${fingerprint(value)}`,provider:'openai',basis:'configured_customer_tariff',customerMicrosPerUnit:Object.fromEntries(Object.entries(value.customerNanosPerUnit).map(([k,v])=>[k,v/1000]))}];
+ }catch{throw new AppError(503,'The configured customer research tariff is invalid.');}
+}
+export function customerResearchTariff(model:string){const value=configuredResearch().find(rate=>rate.model===model&&active(rate));if(!value)throw new AppError(503,'No current customer research tariff is configured.');return structuredClone(value);}

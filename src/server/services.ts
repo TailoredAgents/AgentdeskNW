@@ -1,4 +1,6 @@
-import {textProviderConfig} from './provider-config';
+import {researchSourceVisible} from './research-spending';
+import {isAuthorizedActor,researchOwnerEligibility} from './db';
+import {registerResearchSpending,assertResearchSpendingRetry,researchSpendingFinished} from './research-spending';
 import {researchAssignmentParent,bindIncludedResearch,includedResearchAdmission,assertIncludedResearchRetry,finishIncludedResearch} from './local-assignment-work';
 import {buildBuyerShortlist} from './buyer-shortlist';
 import {bindAssignment,withAssignment} from './assignment-roots';
@@ -37,7 +39,8 @@ function refreshDuplicateStatus(actor:Actor,job:ResearchJob):ResearchJob {
  const prospects=job.prospects.map(prospect=>({...prospect,...classifyAuthorizedDuplicate(actor,prospect)}));
  return {...job,prospects,stage:job.provider===syntheticResearchProvider.id&&job.status==='completed'?`Completed: ${prospects.length} synthetic candidates (${prospects.filter(item=>item.duplicateStatus==='net_new').length} currently eligible as new after privacy-preserving CRM duplicate checks). Dataset contains 12 candidates.`:job.stage};
 }
-export function listJobs(actor:Actor) { return scopedRows<ResearchJob>(actor,'research_jobs').map(job=>refreshDuplicateStatus(actor,job)); }
+function visibleResearch(actor:Actor,job:ResearchJob){const owner=actorForMember(actor.organizationId,actor.officeId,job.ownerId);if(!isAuthorizedActor(owner)||!researchSourceVisible(owner,job.id))return {...job,prospects:[],input:{...job.input,address:'Source context unavailable',county:'Unavailable',price:0,strategy:'Unavailable',propertyType:undefined},stage:'Original sources changed; saved results are withheld. Review current context before preparing replacement work.'};return refreshDuplicateStatus(actor,job);}
+export function listJobs(actor:Actor) { return scopedRows<ResearchJob>(actor,'research_jobs').map(job=>visibleResearch(actor,job)); }
 export function listTasks(actor:Actor) { return scopedRows<Task>(actor,'tasks'); }
 function checkApprovalReferences(actor:Actor,action:ProposedAction):ProposedAction {
  if(typeof action.payload.investorId==='string')getInvestor(actor,action.payload.investorId);
@@ -82,8 +85,8 @@ export function notify(actor:Actor,dedupeKey:string,title:string,body:string,lin
 export function processNotifications(actor:Actor) {
  assertActor(actor);
  if(!proactiveOwnsTopic(actor,'tasks')&&hasFeature(actor,'core')&&hasFeature(actor,'daily-coordinator'))for(const task of listPersonalTasks(actor))if(task.status==='open'&&task.dueAt&&Date.parse(task.dueAt)<=Date.now())notify(actor,taskReminderKey(task),'Follow-up is due',task.title,'queue');
- for(const job of scopedRows<ResearchJob>(actor,'research_jobs',true))if(job.status==='completed')notify(actor,`research-done:${job.id}`,'Your research is ready',`${job.prospects.length} ${job.provider===syntheticResearchProvider.id?'synthetic prospects':'public-source candidates; identities and purchases unverified'} for ${job.input.address}. Review evidence and duplicates before importing.`,'hunter');
- for(const job of scopedRows<ResearchJob>(actor,'research_jobs',true))if(job.status==='failed'&&job.provider===externalResearchProviderId)notify(actor,`research-stopped:${job.id}:${job.attempt}`,'External research stopped',`${job.prospects.length} saved candidates remain available. Review the job for its stop reason and remaining scope.`,'hunter');
+ for(const job of scopedRows<ResearchJob>(actor,'research_jobs',true))if(job.status==='completed'&&researchSourceVisible(actor,job.id))notify(actor,`research-done:${job.id}`,'Your research is ready',`${job.prospects.length} ${job.provider===syntheticResearchProvider.id?'synthetic prospects':'public-source candidates; identities and purchases unverified'} for ${job.input.address}. Review evidence and duplicates before importing.`,'hunter');
+ for(const job of scopedRows<ResearchJob>(actor,'research_jobs',true))if(job.status==='failed'&&job.provider===externalResearchProviderId&&researchSourceVisible(actor,job.id))notify(actor,`research-stopped:${job.id}:${job.attempt}`,'External research stopped',`${job.prospects.length} saved candidates remain available. Review the job for its stop reason and remaining scope.`,'hunter');
  if(!notificationsAllowed(actor))return;
  // Retry from durable current records after quiet hours; stale/withdrawn releases are not replayed.
  const releases=getDb().prepare('SELECT id,data FROM property_releases WHERE organization_id=? AND office_id=?').all(actor.organizationId,actor.officeId) as {id:string;data:string}[];
@@ -101,8 +104,8 @@ export function processNotifications(actor:Actor) {
 /** Scheduler entry point: reminders do not depend on an active research job or open browser. */
 export function processAllNotifications():number {
  const members=getDb().prepare('SELECT m.organization_id,m.office_id,m.user_id,u.name,m.role FROM memberships m JOIN users u ON u.id=m.user_id').all() as {organization_id:string;office_id:string;user_id:string;name:string;role:Role}[];
- for(const member of members)processNotifications({id:member.user_id,name:member.name,organizationId:member.organization_id,officeId:member.office_id,role:member.role});
- return members.length;
+ let processed=0;for(const member of members){const actor:Actor={id:member.user_id,name:member.name,organizationId:member.organization_id,officeId:member.office_id,role:member.role};if(isAuthorizedActor(actor)){processNotifications(actor);processed++;}}
+ return processed;
 }
 export function readNotification(actor:Actor,id:string) {
  const item=scopedGet<Notification>(actor,'notifications',idSchema.parse(id),true);
@@ -145,27 +148,27 @@ export function createResearchJob(actor:Actor,input:ResearchInput):ResearchJob {
  if(active.length>=5)throw new AppError(429,'Finish or cancel an active research job before starting another.');
  const provider=parsed.provider??syntheticResearchProvider.id;
  const assignmentParent=researchAssignmentParent(actor);
- if((assignmentParent||textProviderConfig().spendingMode==='admitted_demo')&&provider!==syntheticResearchProvider.id)throw new AppError(409,'Paid external research needs a shared approved allocation. This assignment currently supports fictional local research only.');
  const external=provider===externalResearchProviderId?prepareExternalResearch(parsed):undefined;
  const missing=!parsed.county||!parsed.price||!parsed.strategy;
  const job:ResearchJob={id:newId('research'),input:parsed,status:missing?'awaiting_input':'queued',progress:0,stage:missing?'Add county, price and investment strategy to continue.':external?'Waiting for bounded external research':'Waiting for the local research worker',provider,prospects:[],error:null,createdAt:now(),updatedAt:now(),ownerId:actor.id,attempt:0,...(external?{external}:{})};
- return getDb().transaction(()=>{if(!missing)reserveUsage(actor,{category:'research_credits',operationId:job.id,quantity:researchCredits(actor,parsed.limit),source:external?'External research target reservation':'Synthetic research target reservation'});insertRecord(actor,'research_jobs',job);bindAssignment(actor,{kind:'research',id:job.id});if(assignmentParent)bindIncludedResearch(actor,job,assignmentParent); audit(actor,'research.queued',job.id,{provider:job.provider,target:parsed.limit,maxEstimatedCostCents:external?.maxCostCents??null});return job;}).immediate();
+ return getDb().transaction(()=>{if(!missing)reserveUsage(actor,{category:'research_credits',operationId:job.id,quantity:researchCredits(actor,parsed.limit),source:external?'External research target reservation':'Synthetic research target reservation'});insertRecord(actor,'research_jobs',job);bindAssignment(actor,{kind:'research',id:job.id});if(assignmentParent&&provider===syntheticResearchProvider.id)bindIncludedResearch(actor,job,assignmentParent);if(external)registerResearchSpending(actor,job,assignmentParent?.requestId); audit(actor,'research.queued',job.id,{provider:job.provider,target:parsed.limit,maxEstimatedCostCents:external?.maxCostCents??null});return job;}).immediate();
 }
-export function getResearchJob(actor:Actor,id:string) { return refreshDuplicateStatus(actor,scopedGet<ResearchJob>(actor,'research_jobs',idSchema.parse(id))); }
+export function getResearchJob(actor:Actor,id:string) { return visibleResearch(actor,scopedGet<ResearchJob>(actor,'research_jobs',idSchema.parse(id))); }
 export function cancelJob(actor:Actor,id:string):ResearchJob {
- const job=getResearchJob(actor,id);
- if(job.status==='canceled')return job;
+ const job=scopedGet<ResearchJob>(actor,'research_jobs',idSchema.parse(id));
+ if(job.status==='canceled')return visibleResearch(actor,job);
  if(job.status==='completed'||job.status==='failed')throw new AppError(409,'Only queued, running or awaiting-input jobs can be canceled.');
  return getDb().transaction(()=>{
   const value=updateRecord(actor,'research_jobs',{...job,status:'canceled' as const,stage:job.external?'Canceled by employee; in-flight provider usage will still be reconciled':'Canceled by employee',updatedAt:now()});
   getDb().prepare('UPDATE research_jobs SET worker_token=NULL,lease_until=NULL WHERE id=? AND organization_id=? AND office_id=?').run(id,actor.organizationId,actor.officeId);
-  releaseUsage(actorForMember(actor.organizationId,actor.officeId,job.ownerId),'research_credits',id);audit(actor,'research.canceled',id);finishIncludedResearch(actorForMember(actor.organizationId,actor.officeId,job.ownerId),id);return value;
+  releaseUsage(actorForMember(actor.organizationId,actor.officeId,job.ownerId),'research_credits',id);audit(actor,'research.canceled',id);finishIncludedResearch(actorForMember(actor.organizationId,actor.officeId,job.ownerId),id);researchSpendingFinished(actorForMember(actor.organizationId,actor.officeId,job.ownerId),id);return visibleResearch(actor,value);
  }).immediate();
 }
 export function retryJob(actor:Actor,id:string,input?:ResearchInput):ResearchJob {
- requireRole(actor,researchRoles);requireFeature(actor,'investor-hunter'); const job=getResearchJob(actor,id);
+ requireRole(actor,researchRoles);requireFeature(actor,'investor-hunter'); const job=scopedGet<ResearchJob>(actor,'research_jobs',idSchema.parse(id));
  if(!['failed','canceled','awaiting_input'].includes(job.status))throw new AppError(409,'Only failed, canceled or awaiting-input jobs can be retried.');
  const parsed=input?researchInputSchema.parse(input):job.input;
+ assertResearchSpendingRetry(actorForMember(actor.organizationId,actor.officeId,job.ownerId),{...job,input:parsed});
  assertIncludedResearchRetry(actorForMember(actor.organizationId,actor.officeId,job.ownerId),{...job,input:parsed});
  if(!parsed.county||!parsed.price||!parsed.strategy)throw new AppError(422,'Provide county, price and strategy before resuming research.');
  const external=job.provider===externalResearchProviderId;
@@ -191,12 +194,12 @@ export function actorForMember(organizationId:string,officeId:string,userId:stri
 /** One transaction per stage makes multiple local workers safe; providers currently run locally. */
 export function processQueuedJobs(actor?:Actor):number {
  if(actor)assertActor(actor);
- const stamp=now();
- const rows=getDb().prepare(`SELECT id,organization_id,office_id,owner_id FROM research_jobs WHERE json_extract(data,'$.provider')='synthetic-fixtures-v1' AND status IN ('queued','running') AND (lease_until IS NULL OR lease_until<=?) AND (next_attempt_at IS NULL OR next_attempt_at<=?)${actor?' AND organization_id=? AND office_id=? AND owner_id=?':''} ORDER BY rowid LIMIT 20`)
-  .all(...(actor?[stamp,stamp,actor.organizationId,actor.officeId,actor.id]:[stamp,stamp])) as {id:string;organization_id:string;office_id:string;owner_id:string}[];
+ const stamp=now(),eligible=researchOwnerEligibility();
+ const rows=getDb().prepare(`SELECT id,organization_id,office_id,owner_id FROM research_jobs WHERE ${eligible.sql} AND json_extract(data,'$.provider')='synthetic-fixtures-v1' AND status IN ('queued','running') AND (lease_until IS NULL OR lease_until<=?) AND (next_attempt_at IS NULL OR next_attempt_at<=?)${actor?' AND organization_id=? AND office_id=? AND owner_id=?':''} ORDER BY rowid LIMIT 20`)
+  .all(...eligible.args,...(actor?[stamp,stamp,actor.organizationId,actor.officeId,actor.id]:[stamp,stamp])) as {id:string;organization_id:string;office_id:string;owner_id:string}[];
  let processed=0;
  for(const row of rows){
-  const owner=actorForMember(row.organization_id,row.office_id,row.owner_id);
+  const owner=actorForMember(row.organization_id,row.office_id,row.owner_id);if(!isAuthorizedActor(owner))continue;
   getDb().transaction(()=>{
    const claim=getDb().prepare("UPDATE research_jobs SET lease_until=? WHERE id=? AND status IN ('queued','running') AND (lease_until IS NULL OR lease_until<=?) AND (next_attempt_at IS NULL OR next_attempt_at<=?)").run(new Date(Date.now()+30000).toISOString(),row.id,stamp,stamp);
    if(!claim.changes)return;
@@ -357,5 +360,5 @@ export function getBootstrap(actor:Actor):Bootstrap {
  assertActor(actor);processNotifications(actor);
  const organization=getDb().prepare('SELECT o.name,f.name AS office FROM organizations o JOIN offices f ON f.organization_id=o.id WHERE o.id=? AND f.id=?').get(actor.organizationId,actor.officeId) as {name:string;office:string};
  const usage=getDb().prepare('SELECT kind,SUM(quantity) AS quantity FROM usage_events WHERE organization_id=? AND office_id=? AND owner_id=? GROUP BY kind').all(actor.organizationId,actor.officeId,actor.id) as {kind:string;quantity:number}[];
- return {actor,organization,investors:listInvestors(actor),properties:listProperties(actor),tasks:listTasks(actor),jobs:listJobs(actor),approvals:listApprovals(actor),notifications:scopedRows<Notification>(actor,'notifications',true).slice(0,100),conversations:listConversations(actor),specialists,settings:getSettings(actor),integrations:{openai:!!process.env.OPENAI_API_KEY,voice:!!process.env.OPENAI_API_KEY,crm:'demo',research:researchConfig().selected&&researchConfig().configured&&researchConfig().estimatedRequestCents>0?'external_configured':'synthetic',researchLimits:{maxCostCents:researchConfig().maxCostCents,estimatedRequestCents:researchConfig().estimatedRequestCents},auth:'local_demo'},usage};
+ return {actor,organization,investors:listInvestors(actor),properties:listProperties(actor),tasks:listTasks(actor),jobs:listJobs(actor),approvals:listApprovals(actor),notifications:scopedRows<Notification>(actor,'notifications',true).slice(0,100),conversations:listConversations(actor),specialists,settings:getSettings(actor),integrations:{openai:!!process.env.OPENAI_API_KEY,voice:!!process.env.OPENAI_API_KEY,crm:'demo',research:researchConfig().selected&&researchConfig().configured&&researchConfig().estimatedRequestCents>0?'external_configured':'synthetic',researchLimits:{maxCostCents:researchConfig().maxCostCents,estimatedRequestCents:researchConfig().estimatedRequestCents},auth:process.env.AGENTDESK_AUTH_MODE==='company_oidc'?'company_oidc':'local_demo'},usage};
 }

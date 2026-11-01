@@ -1,3 +1,5 @@
+import {companyAuthentication,companyAuthConfig} from './company-auth';
+import {resolveVerifiedCompanySubject} from './company-identity';
 import {createHash,randomBytes,randomInt} from 'node:crypto';
 import type {NextRequest} from 'next/server';
 import {z} from 'zod';
@@ -12,6 +14,7 @@ interface SessionRow {id:string;organization_id:string;office_id:string;user_id:
 const hash=(value:string)=>createHash('sha256').update(value).digest('hex');
 const scope=(actor:Actor)=>[actor.organizationId,actor.officeId,actor.id];
 const toSession=(row:SessionRow):MobileSession=>({id:row.id,organizationId:row.organization_id,officeId:row.office_id,userId:row.user_id,role:row.role,deviceName:row.device_name,createdAt:row.created_at,expiresAt:row.expires_at,revokedAt:row.revoked_at});
+const bindingIdentity=(value:{issuer:string;subject:string})=>({issuer:value.issuer,subject:value.subject});
 const localhost=(hostname:string)=>['localhost','127.0.0.1','[::1]','10.0.2.2'].includes(hostname);
 const privateHost=(hostname:string)=>localhost(hostname)||/^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname)||/^192\.168\.\d{1,3}\.\d{1,3}$/.test(hostname)||/^172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}$/.test(hostname);
 /** Separate native transport admission. Browser cookie/origin behavior is not relaxed. */
@@ -20,7 +23,7 @@ export function assertMobileRequest(request:NextRequest):void {
  try{requested=new URL(`${request.nextUrl.protocol}//${host??''}`);}catch{throw new AppError(403,'This mobile request address is invalid.');}
  if(!host||requested.host!==host||requested.username||requested.password||requested.pathname!=='/'||requested.search||requested.hash||!['http:','https:'].includes(requested.protocol))throw new AppError(403,'This mobile request address is invalid.');
  let expected:string;
- if(hostedDemo()){
+ if(companyAuthentication()){expected=companyAuthConfig().origin;}else if(hostedDemo()){
   try{validateHostedDemo();expected=demoOrigin();}catch{throw new AppError(503,'The private mobile demonstration is not configured.');}
  }else{
   if(process.env.AGENTDESK_DEMO!=='true'||process.env.NODE_ENV==='production'&&process.env.AGENTDESK_ALLOW_PRODUCTION_DEMO!=='true')throw new AppError(403,'Mobile demonstration access is disabled.');
@@ -43,7 +46,9 @@ function actorFor(row:{organization_id:string;office_id:string;user_id:string;ro
 export function requireMobileSession(sessionId:string):{actor:Actor;session:MobileSession} {
  const row=getDb().prepare('SELECT * FROM mobile_sessions WHERE id=?').get(sessionId) as SessionRow|undefined;
  if(!row||row.revoked_at||Date.parse(row.expires_at)<=Date.now())throw new AppError(401,'This phone connection expired or was disconnected. Connect it again from your workspace.');
- return {actor:actorFor(row),session:toSession(row)};
+ const actor=actorFor(row);
+ if(companyAuthentication()){const binding=getDb().prepare('SELECT issuer,subject,binding_version FROM company_device_bindings WHERE session_id=?').get(row.id) as {issuer:string;subject:string;binding_version:number}|undefined;if(!binding||binding.issuer!==companyAuthConfig().issuer)throw new AppError(401,'Connect this phone from your current company workspace.');const current=resolveVerifiedCompanySubject(bindingIdentity(binding),binding.binding_version).actor;if(current.id!==actor.id||current.organizationId!==actor.organizationId||current.officeId!==actor.officeId)throw new AppError(401,'This phone identity changed.');}
+ return {actor,session:toSession(row)};
 }
 export function getMobileAuthentication(request:NextRequest):{actor:Actor;session:MobileSession}|null {
  const auth=request.headers.get('authorization');if(!auth)return null;
@@ -58,6 +63,7 @@ export function createMobilePairing(actor:Actor):MobilePairing {
   let code='';for(let tries=0;tries<8;tries++){code=String(randomInt(100_000_000)).padStart(8,'0');if(!db.prepare('SELECT 1 FROM mobile_pairings WHERE code_hash=?').get(hash(code)))break;}
   const expiresAt=new Date(Date.now()+10*60_000).toISOString(),id=newId('mobile_pair');
   db.prepare('INSERT INTO mobile_pairings VALUES(?,?,?,?,?,?,?,?,NULL)').run(id,...scope(actor),actor.role,hash(code),now(),expiresAt);
+  if(companyAuthentication()){const matches=db.prepare('SELECT issuer,subject,version FROM company_identity_bindings WHERE issuer=? AND organization_id=? AND office_id=? AND user_id=? AND role=? AND revoked_at IS NULL').all(companyAuthConfig().issuer,...scope(actor),actor.role) as {issuer:string;subject:string;version:number}[];if(matches.length!==1)throw new AppError(409,'Resolve this employee’s company identity before pairing.');db.prepare('INSERT INTO company_pairing_bindings VALUES(?,?,?,?)').run(id,matches[0].issuer,matches[0].subject,matches[0].version);}
   audit(actor,'mobile.pairing_created',id);return {code,expiresAt};
  }).immediate();
 }
@@ -75,10 +81,13 @@ export function pairMobileDevice(input:unknown):MobilePairResult {
   const db=getDb(),pair=db.prepare('SELECT * FROM mobile_pairings WHERE code_hash=?').get(hash(parsed.code)) as {id:string;organization_id:string;office_id:string;user_id:string;role:Role;expires_at:string;consumed_at:string|null}|undefined;
   if(!pair||pair.consumed_at||Date.parse(pair.expires_at)<=Date.now())throw new AppError(401,'That connection code is invalid or expired. Create a new code in your workspace.');
   const actor=actorFor(pair);requireFeature(actor,'core');
+  const identity=companyAuthentication()?db.prepare('SELECT issuer,subject,binding_version FROM company_pairing_bindings WHERE pairing_id=?').get(pair.id) as {issuer:string;subject:string;binding_version:number}|undefined:undefined;
+  if(companyAuthentication()){if(!identity||identity.issuer!==companyAuthConfig().issuer)throw new AppError(401,'Create a new code from your company workspace.');const current=resolveVerifiedCompanySubject(bindingIdentity(identity),identity.binding_version).actor;if(current.id!==actor.id||current.organizationId!==actor.organizationId||current.officeId!==actor.officeId)throw new AppError(401,'Pairing identity changed.');}
   const active=(db.prepare('SELECT count(*) AS n FROM mobile_sessions WHERE organization_id=? AND office_id=? AND user_id=? AND revoked_at IS NULL AND expires_at>?').get(...scope(actor),now()) as {n:number}).n;
   if(active>=10)throw new AppError(409,'Disconnect an unused phone before adding another.');
   const id=newId('mobile'),token=`adnw_${randomBytes(32).toString('base64url')}`,expiresAt=new Date(Date.now()+30*24*60*60_000).toISOString();
   db.prepare('INSERT INTO mobile_sessions VALUES(?,?,?,?,?,?,?,?,?,NULL)').run(id,...scope(actor),actor.role,parsed.deviceName,hash(token),now(),expiresAt);
+  if(identity)db.prepare('INSERT INTO company_device_bindings VALUES(?,?,?,?)').run(id,identity.issuer,identity.subject,identity.binding_version);
   db.prepare('UPDATE mobile_pairings SET consumed_at=? WHERE id=?').run(now(),pair.id);
   const conversationId=messagingConversation(actor);audit(actor,'mobile.connected',id);
   return {token,expiresAt,actor,conversationId,sessionId:id};

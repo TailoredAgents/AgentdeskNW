@@ -1,3 +1,4 @@
+import {meteredResearchPending} from './research-spending';
 import type {Actor} from '../lib/contracts';
 import {AppError,assertActor,getDb,now} from './db';
 import {activeAssignment,getAssignmentBinding} from './assignment-roots';
@@ -44,12 +45,13 @@ export function localWorkAdmission(actor:Actor,runId:string):'ordinary'|'wait'|'
  return 'ready';
 }
 export function localAssignmentHasPendingWork(actor:Actor,assignmentId:string){
- return !!getDb().prepare("SELECT 1 FROM local_assignment_work l JOIN work_runs w ON w.id=l.run_id WHERE l.assignment_id=? AND l.organization_id=? AND l.office_id=? AND l.user_id=? AND w.status NOT IN ('completed','canceled') LIMIT 1").get(assignmentId,...owner(actor))||!!getDb().prepare("SELECT 1 FROM local_assignment_research l JOIN research_jobs j ON j.id=l.job_id WHERE l.assignment_id=? AND l.organization_id=? AND l.office_id=? AND l.user_id=? AND j.status NOT IN ('completed','canceled') LIMIT 1").get(assignmentId,...owner(actor));
+ return meteredResearchPending(actor,assignmentId)||!!getDb().prepare("SELECT 1 FROM local_assignment_work l JOIN work_runs w ON w.id=l.run_id WHERE l.assignment_id=? AND l.organization_id=? AND l.office_id=? AND l.user_id=? AND w.status NOT IN ('completed','canceled') LIMIT 1").get(assignmentId,...owner(actor))||!!getDb().prepare("SELECT 1 FROM local_assignment_research l JOIN research_jobs j ON j.id=l.job_id WHERE l.assignment_id=? AND l.organization_id=? AND l.office_id=? AND l.user_id=? AND j.status NOT IN ('completed','canceled') LIMIT 1").get(assignmentId,...owner(actor));
 }
 export function localAssignmentOutcome(actor:Actor,assignmentId:string):'completed'|'canceled' {
  const canceled=!!getDb().prepare("SELECT 1 FROM local_assignment_work l JOIN work_runs w ON w.id=l.run_id WHERE l.assignment_id=? AND l.organization_id=? AND l.office_id=? AND l.user_id=? AND w.status='canceled' LIMIT 1").get(assignmentId,...owner(actor));
  const researchCanceled=!!getDb().prepare("SELECT 1 FROM local_assignment_research l JOIN research_jobs j ON j.id=l.job_id WHERE l.assignment_id=? AND l.organization_id=? AND l.office_id=? AND l.user_id=? AND j.status='canceled' LIMIT 1").get(assignmentId,...owner(actor));
- return canceled||researchCanceled?'canceled':'completed';
+ const paidCanceled=!!getDb().prepare("SELECT 1 FROM metered_research_hosts h JOIN research_jobs j ON j.id=h.job_id WHERE h.assignment_id=? AND h.organization_id=? AND h.office_id=? AND h.user_id=? AND j.status='canceled' LIMIT 1").get(assignmentId,...owner(actor));
+ return canceled||researchCanceled||paidCanceled?'canceled':'completed';
 }
 /** Only the paid hosts implemented here can establish completion. An extra allocation
  * or a newer unbound quote must never be closed by an older local child. */
@@ -57,7 +59,10 @@ export function textAllocationsFinished(actor:Actor,assignmentId:string){
  const assignment=getMeteredAssignment(actor,assignmentId);
  const rows=getDb().prepare("SELECT phase,data FROM text_executions WHERE organization_id=? AND office_id=? AND user_id=? AND json_extract(data,'$.metering.assignmentId')=?").all(...owner(actor),assignmentId) as {phase:TextPhase;data:string}[];
  const hosts=rows.map(row=>({phase:row.phase,metering:(JSON.parse(row.data) as TextState).metering!,retired:(JSON.parse(row.data) as TextState).retiredMeteredParts??[]}));
- return hosts.some(host=>host.metering.revision===assignment.revision)&&assignment.parts.every(part=>hosts.some(host=>host.phase==='completed'&&(host.metering.partKey===part.key||host.retired.includes(part.key))));
+ const research=getDb().prepare("SELECT h.data,j.status FROM metered_research_hosts h JOIN research_jobs j ON j.id=h.job_id WHERE h.assignment_id=? AND h.organization_id=? AND h.office_id=? AND h.user_id=?").all(assignmentId,...owner(actor)) as {data:string;status:string}[];
+ const paid=research.map(row=>({...JSON.parse(row.data) as {revision?:number;partKey:string},finished:['completed','canceled'].includes(row.status)}));
+ const current=hosts.some(host=>host.metering.revision===assignment.revision)||paid.some(host=>host.revision===assignment.revision);
+ return current&&assignment.parts.every(part=>hosts.some(host=>host.phase==='completed'&&(host.metering.partKey===part.key||host.retired.includes(part.key)))||paid.some(host=>host.finished&&host.partKey===part.key));
 }
 /** Called only after local results/cancellation are durably written in the same transaction. */
 export function finishLocalAssignment(actor:Actor,runId:string){

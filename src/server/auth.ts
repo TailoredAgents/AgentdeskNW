@@ -1,4 +1,5 @@
 import {getMobileAuthentication,assertMobileRequest} from './mobile-auth';
+import {companyAuthentication,companyAuthConfig,companySessionActor} from './company-auth';
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import type { NextRequest, NextResponse } from 'next/server';
 import type { Actor, Role } from '@/lib/contracts';
@@ -14,7 +15,10 @@ const loopback = (host: string) => ['localhost', '127.0.0.1', '[::1]'].includes(
 export function assertLocalDemo(request: NextRequest) {
   if(request.headers.has('authorization')){assertMobileRequest(request);return;}
   let expectedOrigin: string;
-  if (hostedDemo()) {
+  if(companyAuthentication()){
+    expectedOrigin=companyAuthConfig().origin;
+    if(request.headers.get('host')!==new URL(expectedOrigin).host)throw new AppError(403,'This workspace address is not authorized.');
+  } else if (hostedDemo()) {
     try { validateHostedDemo(); expectedOrigin = demoOrigin(); } catch { throw new AppError(503, 'The private demonstration is being prepared. Please try again shortly.'); }
     if (request.headers.get('host') !== new URL(expectedOrigin).host) throw new AppError(403, 'This demo address is not authorized.');
   } else {
@@ -33,6 +37,7 @@ export function assertLocalDemo(request: NextRequest) {
 export function getActor(request: NextRequest): Actor | null {
   assertLocalDemo(request);
   if(request.headers.has('authorization'))return getMobileAuthentication(request)?.actor??null;
+  if(companyAuthentication())return companySessionActor(request.cookies.get('__Host-agentdesk_company')?.value);
   const token = request.cookies.get(COOKIE)?.value;
   if (!token) return null;
   const [data, signature, extra] = token.split('.');
@@ -49,6 +54,7 @@ export function getActor(request: NextRequest): Actor | null {
 }
 
 export function setSession(response: NextResponse, role: Role) {
+  if(companyAuthentication())throw new AppError(403,'Company membership controls your workspace identity.');
   const data = Buffer.from(JSON.stringify({role, ...(hostedDemo() ? {aud:demoOrigin()} : {}), exp: Date.now()+8*60*60*1000})).toString('base64url');
   response.cookies.set(COOKIE, `${data}.${sign(data)}`, {httpOnly:true,sameSite:'strict',secure:hostedDemo(),path:'/',maxAge:8*60*60});
 }

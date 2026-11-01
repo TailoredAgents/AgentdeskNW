@@ -1,3 +1,4 @@
+import {revokeSavedConnectionCredentials,connectionAuthorizationStatus,oauthProfile} from './oauth-connections';
 import {z} from 'zod';
 import type {Actor} from '../lib/contracts';
 import type {ConnectionCapability,ConnectionPreparation} from '../lib/connection-contracts';
@@ -16,8 +17,10 @@ function read(actor:Actor,id:string):Row {
 }
 function view(row:Row):ConnectionPreparation {
  const data=JSON.parse(row.data) as Data;
+ let canAuthorize=false;try{canAuthorize=process.env.AGENTDESK_AUTH_MODE==='company_oidc'&&row.mode==='live'&&row.state==='prepared'&&!!oauthProfile(row.id);}catch{}
+ const authorization=connectionAuthorizationStatus(row.id);
  const count=row.state==='prepared'?(getDb().prepare('SELECT COUNT(*) n FROM connection_sync_records WHERE connection_id=? AND connection_version=? AND deleted=0').get(row.id,row.version) as {n:number}).n:0;
- return {id:row.id,provider:row.provider,version:row.version,state:row.state,mode:row.mode,capabilities:data.capabilities,liveReady:false,stagedRecords:count,notice:row.mode==='demo'?'Fictional adapter rehearsal. Staged records do not replace CRM facts.':'Preparation only. Company identity, approved mapping and provider acceptance are required; live execution is unavailable.'};
+ return {id:row.id,provider:row.provider,version:row.version,state:row.state,mode:row.mode,capabilities:data.capabilities,liveReady:false,authorization,canAuthorize,canDisconnect:process.env.AGENTDESK_AUTH_MODE==='company_oidc'&&row.mode==='live'&&row.state==='prepared'&&!['not_connected','revoked'].includes(authorization),stagedRecords:count,notice:row.mode==='demo'?'Fictional adapter rehearsal. Staged records do not replace CRM facts.':authorization==='connected'?'Salesforce identity authorized. Credentials are encrypted. CRM mapping and application data activation remain separate.':'Company authorization is required. Connecting credentials alone does not activate CRM data or email delivery.'};
 }
 export function listConnectionPreparations(actor:Actor){
  assertActor(actor);return (getDb().prepare('SELECT * FROM capability_connections WHERE organization_id=? AND office_id=? AND user_id=? ORDER BY rowid').all(...owner(actor)) as Row[]).map(view);
@@ -37,7 +40,7 @@ export function disconnectCapabilityConnection(actor:Actor,id:string,expectedVer
  return getDb().transaction(()=>{const row=read(actor,id);if(row.state==='disconnected'&&row.version===expectedVersion+1)return view(row);
   if(row.version!==expectedVersion)throw new AppError(409,'This connection preparation changed.');
   getDb().prepare("UPDATE capability_connections SET state='disconnected',version=version+1 WHERE id=?").run(id);
-  audit(actor,'connection.disconnected',id);return view(read(actor,id));
+  revokeSavedConnectionCredentials(actor,id);audit(actor,'connection.disconnected',id);return view(read(actor,id));
  }).immediate();
 }
 /** Read authority never implies write/draft/delivery authority. Live activation is not implemented. */
