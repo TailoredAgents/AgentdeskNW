@@ -2,6 +2,16 @@
 
 **Operational acceptance reference, not a development roadmap.** Follow [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) for scope and sequence, [CONVERSATION_WORKFLOWS.md](CONVERSATION_WORKFLOWS.md) and [WORK_EXECUTION.md](WORK_EXECUTION.md) for execution contracts, and [PROGRESS.md](PROGRESS.md) for completed evidence. Authored cases remain **not run** unless the observed-run record below says otherwise. Earlier read-only role reviews do not automatically pass these multi-turn cases.
 
+## Latest observed status — November 1, 2026
+
+The owner approved one additional 250,000-token operational demo grant for Alex. The UI confirmed the included total changed from 1,000,000 to 1,250,000 with prior usage unchanged. No payment, dollar-wallet top-up or provider setting changed.
+
+- **C-02 draft-continuity check passed at `5e30685`:** in a fresh conversation, company email → next-step journey review → “Draft a reply to that” produced a complete saved/unsent confirmation. Inbox verified the same grounded body, intended recipient and 11:16 a.m. saved time. The earlier casual-rewrite/accurate-unsaved-preview evidence remains valid; arbitrary conversational draft-body persistence is still incomplete, and the whole three-turn style script was not repeated in this latest run.
+- **C-03 passed_observed_run at `33915ae`:** the live compound request first exposed an authorization-parser gap and created nothing. After the reviewed fix auto-deployed, the same wording in a fresh chat listed five old tasks and saved one David funding reminder for Nov 2, 10 a.m. Eastern. The immediate “Actually, make that 2 p.m.” selected the newly saved task without a choice. “What did you set?” confirmed the same title and Nov 2, 2 p.m. Work showed exactly six tasks with the five prior tasks unchanged. This tests the actual list-plus-create artifact path. Existing automated tests supply exact-version/retry coverage; the browser run is not a full request-ID/source-version export.
+- **C-01/C-04/C-05 retain their earlier observed passes. C-06–C-09 remain not_run.** No general specialist, physical-device or real-message acceptance is inferred.
+
+The final operational balance was 1,182,916/1,250,000 consumed, zero reserved and 67,084 remaining. No additional grant was needed. Local proof: `/tmp/agentdesk-live-reminder-rehearsal-33915ae.txt`, `/tmp/agentdesk-live-reminder-work-33915ae.txt`, `/tmp/agentdesk-live-reminder-rehearsal-33915ae.png` and `/tmp/agentdesk-after-allowance-saved-draft.txt`. Earlier observations below are historical, including the resolved allowance stop and failures.
+
 ## Observed hosted run — November 1, 2026
 
 Revision `08667ed`, Alex/dispositions, desktop-browser Copilot, existing configured model and spending mode unchanged. The UI showed AI configured; the provider model identifier was not exposed or independently exported. All business records were fictional. This is bounded browser-observed evidence, not a complete source-version/request-ID export, repeated reliability test or specialist benchmark.
