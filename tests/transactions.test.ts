@@ -1,6 +1,6 @@
 import {prepareTransactionEmail,transactionEmailAccounts} from '../src/server/transaction-correspondence';
 import {getInboxState,getInboxThread,saveInboxDraft,composeCommunication,discardInboxDraft} from '../src/server/communications';
-import {reviewInboxSend,simulateInboxSend} from '../src/server/communications-workflow';
+import {getInboxDraftRevisionContext,reviseInboxDraft,reviewInboxSend,simulateInboxSend} from '../src/server/communications-workflow';
 import {inboxAccessReference,inboxAccessReferenceCurrent,inboxContextFingerprint} from '../src/server/communications-context';
 import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest';
 import type {Actor} from '../src/lib/contracts';
@@ -56,3 +56,10 @@ describe('transaction preparation into reviewed private Inbox',()=>{
  it('preserves history after subscription ends while rejecting new preparation and sending',()=>{const tx=saveTransaction(actor,request(readyInput())),req=titleRequest(tx),thread=prepareTransactionEmail(actor,tx.record.id,req);simulateLifecycle(demoActor('manager'),{userId:actor.id,action:'cancel_now',expectedVersion:subscription(actor).version,eventKey:key()});const current=getInboxThread(actor,thread.thread.id);expect(current.draft?.transactionSource?.current).toBe(true);expect(current.draft?.body).toBe(thread.draft?.body);expect(()=>prepareTransactionEmail(actor,tx.record.id,req)).toThrow('subscription');expect(()=>reviewTitle(current)).toThrow('subscription');});
 });
 it('returns current next-action guidance through the shared transaction detail and refreshes it after reports change',()=>{const input=readyInput(),first=saveTransaction(actor,request(input));expect(first.review?.nextAction).toContain('title-opening');input.milestones.title_opened={date:'2026-10-31',source:'Employee report',note:'Fictional title opening reported',document:null};const next=saveTransaction(actor,edit(first,input));expect(next.review?.nextAction).toContain('attorney');expect(next.preparation.reference).not.toBe(first.preparation.reference);expect(next.history[1].input.milestones.title_opened).toBeNull();});
+
+it('refuses ordinary Copilot rewrites for transaction correspondence without changing its exact parties or files',()=>{
+ const tx=saveTransaction(actor,request(readyInput())),detail=prepareTransactionEmail(actor,tx.record.id,titleRequest(tx)),before=getDb().prepare('SELECT COUNT(*) n FROM communication_draft_revisions').get();
+ expect(getInboxDraftRevisionContext(actor,detail.thread.id)).toMatchObject({eligible:false,sourceReference:null,reason:expect.stringContaining('Property packages and transaction drafts')});
+ expect(()=>reviseInboxDraft(actor,detail.thread.id,{expectedVersion:detail.thread.version,eventKey:key(),draftId:detail.draft!.id,draftVersion:detail.draft!.version,sourceReference:'0'.repeat(64),body:'Arbitrary title copy.'})).toThrow('source-bound preparation');
+ expect(getInboxThread(actor,detail.thread.id).draft).toEqual(detail.draft);expect(getDb().prepare('SELECT COUNT(*) n FROM communication_draft_revisions').get()).toEqual(before);expect(getTransaction(actor,tx.record.id).record).toEqual(tx.record);
+});

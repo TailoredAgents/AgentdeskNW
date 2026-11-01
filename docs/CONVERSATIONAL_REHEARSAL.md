@@ -4,11 +4,21 @@
 
 ## Latest observed status — November 1, 2026
 
+### Current development follow-up
+
+**C-08 preparation path observed on `9b35ef3`, 12:12–12:15 p.m. Eastern:** Taylor’s fresh browser conversation identified the blocked Preview Lane and unassigned Example Street handoffs, prioritized Preview Lane, asked for a future deadline, and accepted “Tomorrow at 10 a.m. Eastern” as the short continuation. Work showed one pending preparation for Jordan, opportunity v1/follow-up v3, exact next action and Nov 2 at 10 a.m. Existing follow-up v3 remained acknowledged/blocked at its original 9:04 a.m. deadline. The review was inspected but not applied. The first priorities result incorrectly included Alex’s personal-task cards; the model noticed and distinguished them, but this is still a product defect. The personal feed is now owner-scoped in code with an actual chat/tool regression; explicit office overview retains authorized team scope. Hosted verification of the correction remains separate. Evidence: `/tmp/agentdesk-management-conversation-9b35ef3.txt`, `/tmp/agentdesk-management-preparation-9b35ef3.txt` and corresponding PNG.
+
+
+Saved ordinary draft rewrites are now implemented with exact source/draft checks, current shown-thread continuity, truthful Copilot authorship and unchanged recipients. Automated mocked-provider tests exercise read → rewrite → saved response → exact retry; domain/history tests cover obsolete context, access restoration, previews and unsupported complex drafts. These are engineering checks, not a live-model saved-edit pass. Alex’s remaining allowance was not increased.
+
+**C-07 passed_observed_run on `9b35ef3`, November 1 at 12:09–12:11 p.m. Eastern:** Jordan’s fresh browser conversation identified the repair-scope/walkthrough blocker, proposed a concise wholesaler question, and treated Friday access as conditional on occupant agreement. The linked Work view retained opportunity v1 and follow-up v3, acknowledged/blocked with the original Nov 2 deadline; no milestone or assignment changed. Settings showed the configured `gpt-6-astra` receipt. Evidence: `/tmp/agentdesk-acquisition-conversation-9b35ef3.txt`, corresponding PNG, and `/tmp/agentdesk-acquisition-source-9b35ef3.txt`. This is one bounded model conversation; no repeated reliability, external messaging or practitioner acceptance is inferred.
+
+
 The owner approved one additional 250,000-token operational demo grant for Alex. The UI confirmed the included total changed from 1,000,000 to 1,250,000 with prior usage unchanged. No payment, dollar-wallet top-up or provider setting changed.
 
-- **C-02 draft-continuity check passed at `5e30685`:** in a fresh conversation, company email → next-step journey review → “Draft a reply to that” produced a complete saved/unsent confirmation. Inbox verified the same grounded body, intended recipient and 11:16 a.m. saved time. The earlier casual-rewrite/accurate-unsaved-preview evidence remains valid; arbitrary conversational draft-body persistence is still incomplete, and the whole three-turn style script was not repeated in this latest run.
+- **C-02 draft-continuity check passed at `5e30685`:** in a fresh conversation, company email → next-step journey review → “Draft a reply to that” produced a complete saved/unsent confirmation. Inbox verified the same grounded body, intended recipient and 11:16 a.m. saved time. The earlier casual-rewrite/accurate-unsaved-preview evidence remains valid; the whole three-turn style script was not repeated in that run. Saved ordinary rewriting is now implemented as described above; its live-model acceptance remains separate.
 - **C-03 passed_observed_run at `33915ae`:** the live compound request first exposed an authorization-parser gap and created nothing. After the reviewed fix auto-deployed, the same wording in a fresh chat listed five old tasks and saved one David funding reminder for Nov 2, 10 a.m. Eastern. The immediate “Actually, make that 2 p.m.” selected the newly saved task without a choice. “What did you set?” confirmed the same title and Nov 2, 2 p.m. Work showed exactly six tasks with the five prior tasks unchanged. This tests the actual list-plus-create artifact path. Existing automated tests supply exact-version/retry coverage; the browser run is not a full request-ID/source-version export.
-- **C-01/C-04/C-05 retain their earlier observed passes. C-06–C-09 remain not_run.** No general specialist, physical-device or real-message acceptance is inferred.
+- **C-01/C-04/C-05 retain their earlier observed passes. C-06/C-09 remain not_run; C-07 and the C-08 partial/preparation evidence are recorded above.** No general specialist, physical-device or real-message acceptance is inferred.
 
 The final operational balance was 1,182,916/1,250,000 consumed, zero reserved and 67,084 remaining. No additional grant was needed. Local proof: `/tmp/agentdesk-live-reminder-rehearsal-33915ae.txt`, `/tmp/agentdesk-live-reminder-work-33915ae.txt`, `/tmp/agentdesk-live-reminder-rehearsal-33915ae.png` and `/tmp/agentdesk-after-allowance-saved-draft.txt`. Earlier observations below are historical, including the resolved allowance stop and failures.
 
@@ -64,7 +74,7 @@ Use the current fictional records rather than memorized expected facts. Before e
 
 **Pass:** draft preparation uses the selected thread and current source, saves at most one intended draft, and reports it as unsent. The style correction preserves facts and uncertainty. The final answer accurately distinguishes a changed saved draft from revised wording shown only in conversation. A turn-local style correction must not silently become a permanent preference.
 
-**Known capability distinction:** the grounded reply tool is not a general arbitrary-body editor. If the current implementation cannot save the revised wording, say that plainly and provide the usable revision for the existing Inbox editor. This is a truthful bounded result, **not full conversational draft-edit acceptance**. Do not mark the saved-edit portion passed because the chat wording sounds better.
+**Current capability distinction:** ordinary saved reply bodies can now be revised with the exact `revise_inbox_draft` tool. Package/title/CC/file drafts and recipient/subject changes remain in their own preparation or Inbox editing path. If a rewrite cannot be saved, label any preview unsaved. Do not mark the saved-edit portion passed because chat wording sounds better; inspect the persisted version and source context.
 
 **Evidence:** before/after thread and draft versions, exact saved body, recipients, unsent state and current preference version; all three responses. **Observed status: see the hosted-run table above.**
 
@@ -126,7 +136,7 @@ Use the current fictional records rather than memorized expected facts. Before e
 
 **Pass:** gives the most relevant saved blocker and a practical next question rather than the entire intake checklist. The third turn preserves conditional access and attribution; it does not mark access confirmed, resolve the handoff or invent a Friday appointment. Already supplied facts are not requested again without a source conflict.
 
-**Evidence:** current opportunity/assignment references, exact blocker, three responses and unchanged milestone/resolution state. **Status: not run.**
+**Evidence:** current opportunity/assignment references, exact blocker, three responses and unchanged milestone/resolution state. **Status: passed_observed_run; see current follow-up above.**
 
 ### C-08 — Management can discuss a decision without silently applying it
 
@@ -138,7 +148,7 @@ Use the current fictional records rather than memorized expected facts. Before e
 
 **Pass:** identifies current owners and decision needs, separates blocked work from completed outcomes awaiting review, and explains prioritization briefly. The third turn uses the current uniquely selected source and supported preparation path; missing assignee or instructions trigger one useful clarification. Any prepared proposal remains distinct from an applied assignment or resolution. Private employee mailboxes are not accessed through manager CRM authority.
 
-**Evidence:** current board counts and source versions, selected target, any preparation ID and pending status, unchanged applied assignment until separate employee review. **Status: not run.**
+**Evidence:** current board counts and source versions, selected target, any preparation ID and pending status, unchanged applied assignment until separate employee review. **Status: partial; preparation path passed, personal-feed correction awaits hosted check. See current follow-up above.**
 
 ### C-09 — Natural language must still resolve consequential ambiguity
 

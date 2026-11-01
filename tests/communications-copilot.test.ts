@@ -20,7 +20,7 @@ afterEach(()=>{closeDb();vi.unstubAllEnvs();vi.unstubAllGlobals();vi.restoreAllM
 describe('private communications through typed Copilot',()=>{
  it('offers bounded strict retrieval and draft tools without approval or delivery authority',async()=>{
   const tools=toolDefinitions().filter(item=>/inbox/.test(item.name));
-  expect(tools.map(item=>item.name)).toEqual(['inbox_search','inbox_thread','prepare_inbox_reply','propose_inbox_followup']);
+  expect(tools.map(item=>item.name)).toEqual(['inbox_search','inbox_thread','prepare_inbox_reply','revise_inbox_draft','propose_inbox_followup']);
   for(const item of tools){expect(item.strict).toBe(true);expect(item.parameters.additionalProperties).toBe(false);expect(item.parameters.required).toEqual(Object.keys(item.parameters.properties as object));}
   await expect(dispatchTool(actor,'simulate_inbox_send',{reviewId:'invented'})).rejects.toThrow('Unknown');
   await expect(dispatchTool(actor,'inbox_search',{query:'',channel:null,limit:99})).rejects.toThrow();

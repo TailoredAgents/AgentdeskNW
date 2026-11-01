@@ -341,18 +341,23 @@ export function matchBuyers(actor:Actor,propertyId?:string) {
  if(!property)throw new AppError(404,'No authorized property is available to match.');
  return buildBuyerShortlist(actor,property.id);
 }
-export function getDailyBrief(actor:Actor) {
- const tasks=listTasks(actor).filter(task=>task.status==='open');
+function dailyBrief(actor:Actor,personal:boolean) {
+ const tasks=(personal?listPersonalTasks(actor):listTasks(actor)).filter(task=>task.status==='open');
  const overdue=tasks.filter(task=>task.dueAt&&Date.parse(task.dueAt)<Date.now());
- const pendingApprovals=listApprovals(actor).filter(action=>action.status==='pending');
- const activeJobs=listJobs(actor).filter(job=>['queued','running','awaiting_input'].includes(job.status));
- const dormantInvestors=listInvestors(actor).filter(investor=>!investor.lastContactAt||Date.now()-new Date(investor.lastContactAt).getTime()>14*86400000);
- return {tasks,overdue,pendingApprovals,activeJobs,dormantInvestors,summary:`You have ${tasks.length} open task${tasks.length===1?'':'s'}, ${overdue.length} overdue, ${pendingApprovals.length} pending approval${pendingApprovals.length===1?'':'s'} and ${activeJobs.length} active research job${activeJobs.length===1?'':'s'}.`};
+ const pendingApprovals=(personal?scopedRows<ProposedAction>(actor,'proposed_actions',true):listApprovals(actor)).filter(action=>{
+  if(action.status!=='pending')return false;
+  try{checkApprovalReferences(actor,action);return true;}catch(error){if(error instanceof AppError&&[403,404].includes(error.status))return false;throw error;}
+ });
+ const activeJobs=(personal?scopedRows<ResearchJob>(actor,'research_jobs',true).map(job=>visibleResearch(actor,job)):listJobs(actor)).filter(job=>['queued','running','awaiting_input'].includes(job.status));
+ const dormantInvestors=listInvestors(actor).filter(investor=>(!personal||investor.ownerId===actor.id)&&(!investor.lastContactAt||Date.now()-new Date(investor.lastContactAt).getTime()>14*86400000));
+ return {tasks,overdue,pendingApprovals,activeJobs,dormantInvestors,summary:`${personal?'You have':'Your office has'} ${tasks.length} open task${tasks.length===1?'':'s'}, ${overdue.length} overdue, ${pendingApprovals.length} pending approval${pendingApprovals.length===1?'':'s'} and ${activeJobs.length} active research job${activeJobs.length===1?'':'s'}.`};
 }
+/** Personal priorities stay owned by this employee even when they manage an office. */
+export function getDailyBrief(actor:Actor) {return dailyBrief(actor,true);}
 export function getManagementOverview(actor:Actor) {
  requireFeature(actor,'team-performance');
  requireRole(actor,['manager']);
- const brief=getDailyBrief(actor);
+ const brief=dailyBrief(actor,false);
  const usage=getDb().prepare('SELECT kind,SUM(quantity) AS quantity FROM usage_events WHERE organization_id=? AND office_id=? GROUP BY kind').all(actor.organizationId,actor.officeId) as {kind:string;quantity:number}[];
  return {...brief,usage,handoffs:getHandoffBoard(actor),scope:'Authorized office only',synthetic:true};
 }

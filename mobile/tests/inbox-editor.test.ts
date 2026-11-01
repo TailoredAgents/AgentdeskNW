@@ -49,3 +49,18 @@ test('file correction, withdrawal or selection changes invalidate the phone send
  assert.equal(reviewMatches(review,stale,editor,at),false);assert.deepEqual(reconcileEditor(editor,detail({bodyAccess:'revoked',draft:null})).documents,[]);
 });
 test('obsolete title preparation clears unsaved derived text and cannot retain a send review',()=>{const first=detail(),local={...editorFor(first),body:'Old title instructions with my edits'},stale=detail({draft:{...first.draft!,body:'Prepare the current transaction again.',transactionSource:{transactionId:'deal',reference:'old',version:1,current:false}}});assert.equal(reconcileEditor(local,stale).body,stale.draft!.body);assert.throws(()=>keepReviewedEdits(local,stale));const review={threadId:'thread-one',threadVersion:1,accountId:'account-one',accountContext:{accessVersion:1},draftId:'draft-one',draftVersion:1,body:stale.draft!.body,subject:stale.draft!.subject,expiresAt:'2099-01-01T00:00:00Z'} as InboxSendReview;assert.equal(reviewMatches(review,stale,editorFor(stale)),false);});
+
+
+test('Copilot rewrites stay Copilot-authored and lose send eligibility when source context changes',()=>{
+ const first=detail();first.draft={...first.draft!,authorship:'copilot',copilotRevision:{sourceReference:'source-one',baseDraftVersion:1,current:true,reason:null}};
+ const editor=editorFor(first),review={scope:'copilot_revision',threadId:'thread-one',threadVersion:1,accountId:'account-one',accountContext:{accessVersion:1},draftId:'draft-one',draftVersion:1,body:'Saved text',subject:'Following up',authorship:'copilot',expiresAt:'2099-01-01T00:00:00Z'} as InboxSendReview;
+ assert.equal(reviewMatches(review,first,editor),true);
+ assert.equal(reviewMatches({...review,authorship:'employee'},first,editor),false);
+ const changed=detail({draft:{...first.draft!,copilotRevision:{...first.draft!.copilotRevision!,current:false,reason:'The relationship changed.'}}});
+ assert.equal(reviewMatches(review,changed,editor),false);
+ // A source freshness change is not revoked access: the employee can review the old text and deliberately save their own revision.
+ const local={...editor,body:'My unsaved correction'};
+ assert.equal(reconcileEditor(local,changed).body,local.body);
+ assert.equal(keepReviewedEdits(local,changed).body,local.body);
+ assert.equal(reviewMatches(review,changed,reconcileEditor(local,changed)),false);
+});

@@ -1,6 +1,8 @@
 import type {Actor,Artifact} from '../lib/contracts';
+import type {InboxThread,InboxThreadDetail} from '../lib/communications-contracts';
 import {getDb} from './db';
 import {getInboxState,getInboxThread} from './communications';
+import {inboxDraftRevisionContext} from './communication-draft-revisions';
 import {getConversation} from './services';
 
 export interface InboxReplyCommand {conversationId:string;requestId:string;message:string;receivedAt?:string}
@@ -26,6 +28,9 @@ const continuesInboxDiscussion=(message:string)=>/^(?:(?:and|okay|ok|yeah|please
 /** Only the latest actually shown, still-current source may supply an omitted target. */
 export function focusedInboxReplyThread(actor:Actor,command:InboxReplyCommand):string|null {
  if(!requestsFocusedInboxReply(command.message))return null;
+ return currentInboxFocus(actor,command)?.detail.thread.id??null;
+}
+function currentInboxFocus(actor:Actor,command:InboxReplyCommand):{detail:InboxThreadDetail;saved:Artifact[]}|null {
  return getDb().transaction(()=>{
  const messages=getConversation(actor,command.conversationId).messages;
  let index=messages.findLastIndex(message=>message.role==='assistant'),latest=messages[index];
@@ -67,7 +72,7 @@ export function focusedInboxReplyThread(actor:Actor,command:InboxReplyCommand):s
   .get(latest.id,command.conversationId,actor.organizationId,actor.officeId,actor.id) as {data:string}|undefined;
  const saved=row?(JSON.parse(row.data) as {artifacts:Artifact[]}).artifacts.filter(item=>item.type==='inbox'&&item.id===ids[0]):[];
  const versions=saved.map(item=>(item.data as {threadVersion?:unknown}|undefined)?.threadVersion);
- return versions.length&&versions.every(version=>version===detail.thread.version)?detail.thread.id:null;
+ return versions.length&&versions.every(version=>version===detail.thread.version)?{detail,saved}:null;
  })();
 }
 export function employeeRequestedInboxReply(actor:Actor,message:string,threadId:string,command?:InboxReplyCommand):boolean {
@@ -76,4 +81,73 @@ export function employeeRequestedInboxReply(actor:Actor,message:string,threadId:
  const matches=inboxThreadsForRequest(actor,message).filter(thread=>{const lower=message.toLowerCase(),name=thread.correspondent.name.toLowerCase();return lower.includes(name)||lower.includes(thread.subject.toLowerCase())||new RegExp(`\\b${name.split(' ')[0].replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}\\b`,'i').test(message);});
  if(matches.length)return matches.length===1&&matches[0].id===threadId;
  return !!command&&focusedInboxReplyThread(actor,command)===threadId;
+}
+
+const escapePattern=(value:string)=>value.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+const revisionPrefix='(?:(?:yes|yeah|okay|ok|sure)[,!.]?\\s+)?(?:please\\s+|(?:can|could|would) you (?:please\\s+)?)?';
+const draftNoun='(?:reply|response|draft|email|message)(?: draft)?';
+const focusedDraft=`(?:(?:(?:the|my|this|that) )?(?:current |saved )?${draftNoun}|it|this|that)`;
+const styleAtom='(?:(?:a bit|a little|slightly|much) )?(?:shorter|short|briefer|brief|more concise|concise|more casual|casual|less formal|informal|more direct|direct|less salesy|more natural|natural|friendlier|warmer|more conversational|conversational|simpler|simple|clearer|more polite|polite|more professional|professional|less robotic|more human|more relaxed|casually|more casually|concisely|more concisely|naturally|more naturally)';
+const styleList=`${styleAtom}(?:\\s*(?:,\\s*(?:and\\s+)?|and\\s+)${styleAtom})*`;
+const styleTail=new RegExp(`^(?:(?:to be|to sound|so it (?:is|sounds)|and (?:make|keep) it) )?${styleList}$`,'i');
+const styleMode=new RegExp(`^(?:in|with|using) (?:a |an )?${styleList} (?:tone|style)$`,'i');
+interface DraftRevisionRequest {verb:string;remainder:string}
+/** This is employee intent, not a classifier for quoted mail or model prose. */
+function draftRevisionRequest(message:string):DraftRevisionRequest|null {
+ const value=message.trim();
+ if(value.length>2000||/[\r\n]/.test(value)||/^["'“‘>`]/.test(value))return null;
+ // Saving wording is the only effect here. Larger correspondence work has its own review.
+ if(/\b(?:preview|hypothetical|pretend|suppose|imagine|remember|always|permanently|from now on|default style|writing preferences?)\b/i.test(value)||/\b(?:do not|don['’]t|dont|never|without)\s+(?:save|saving|rewrite|revise|reword|shorten|edit|change|update|send)\b/i.test(value)||/\b(?:only|just)\s+(?:show|suggest|explain|preview)\b/i.test(value)||/\b(?:no saving|no changes|do not change|don['’]t change)\b/i.test(value))return null;
+ if(/\b(?:cc|bcc|recipients?|attachments?|attach|files?|subject(?: line)?|sender|title|escrow|wire|wiring|earnest money|purchase (?:and sale )?agreement|closing instructions)\b/i.test(value)||/\b(?:send|share|market|offer|pitch|distribute)\b.{0,80}\b(?:property|properties|listing|listings|deal|deals)\b/i.test(value)||/\b(?:property|listing|deal) (?:package|distribution|marketing|outreach)\b/i.test(value))return null;
+ if(/\b(?:asking price|purchase price|property address|repair (?:estimate|budget|cost|scope)s?|rehab (?:estimate|budget|cost|scope)s?|seller terms|deposit|signed contract|signed agreement|funds received|title cleared)\b/i.test(value))return null;
+ const matched=value.replace(/[.!?]$/,'').match(new RegExp(`^${revisionPrefix}(rewrite|revise|reword|shorten|edit|make|keep)\\s+(.+)$`,'i'));
+ return matched?{verb:matched[1].toLowerCase(),remainder:matched[2]}:null;
+}
+function targetMatchesRevision(request:DraftRevisionRequest,target:string):boolean {
+ const matched=request.remainder.match(new RegExp(`^(?:${target})(?:\\s+(.+))?$`,'i'));
+ if(!matched)return false;
+ const tail=matched[1]?.trim()??'';
+ if(request.verb==='make'||request.verb==='keep')return styleTail.test(tail)||styleMode.test(tail);
+ if(!tail||styleTail.test(tail)||styleMode.test(tail))return true;
+ // An explicit body instruction remains data for the model, not authority to
+ // change recipients, deliver, remember preferences or perform another action.
+ return /^(?:to say|so it says|to explain|to mention|to ask|to remove|by removing|by replacing|to replace)\s+\S.+$/i.test(tail)&&!/(?:[.!?;,]\s*|\band\s+)(?:please |then )?(?:send|deliver|forward|create|delete|approve|remember|schedule|update|change|add)\b/i.test(tail);
+}
+function namedDraftTargets(thread:InboxThread,source:'company'|'external',provider:string):string {
+ const names=[thread.correspondent.name,...thread.correspondent.name.trim().split(/\s+/).slice(0,1)].filter(Boolean).map(escapePattern);
+ const person=`(?:${[...new Set(names)].join('|')})`,possessive=`${person}(?:['’]s)?`;
+ const sourceWord=source==='company'?'(?:company|salesforce)':`(?:external|${escapePattern(provider)})`;
+ const correspondence=`(?:(?:${sourceWord}) )?(?:email|message|reply|response)(?: draft)?`;
+ const id=escapePattern(thread.id),subject=escapePattern(thread.subject);
+ return `(?:${id}(?: draft)?|(?:the )?${draftNoun} (?:for|to) ${id}|(?:the )?${possessive} ${correspondence}|(?:the )?${draftNoun} (?:for|to) ${possessive}(?: ${correspondence})?|(?:the )?(?:draft|reply|response) (?:for|to) ${subject}|${subject} draft)`;
+}
+function shownDraftIsCurrent(detail:InboxThreadDetail,artifacts:Artifact[]):boolean {
+ const draft=detail.draft;if(!draft||!artifacts.length)return false;
+ return artifacts.every(artifact=>{
+  const data=artifact.data as {draft?:{id?:unknown;version?:unknown}|null;draftId?:unknown;draftVersion?:unknown}|undefined;
+  if(!data)return false;
+  const nested=data.draft,flat=data.draftId!==undefined||data.draftVersion!==undefined;
+  if(nested&&(nested.id!==draft.id||nested.version!==draft.version))return false;
+  if(flat&&(data.draftId!==draft.id||data.draftVersion!==draft.version))return false;
+  return !!nested||flat;
+ });
+}
+/** A current employee request may save wording, never approve sending or model-selected retargeting. */
+export function employeeRequestedInboxRevision(actor:Actor,message:string,threadId:string,command?:InboxReplyCommand):boolean {
+ if(command&&command.message!==message)return false;
+ const request=draftRevisionRequest(message);if(!request)return false;
+ return getDb().transaction(()=>{
+  if(targetMatchesRevision(request,focusedDraft)){
+   if(!command)return false;
+   const focused=currentInboxFocus(actor,command);
+   return !!focused&&focused.detail.thread.id===threadId&&shownDraftIsCurrent(focused.detail,focused.saved)&&inboxDraftRevisionContext(actor,focused.detail).eligible;
+  }
+  const state=getInboxState(actor);
+  const matches=state.threads.filter(thread=>{
+   const account=state.accounts.find(account=>account.id===thread.accountId);
+   return !!account&&targetMatchesRevision(request,namedDraftTargets(thread,account.source.system==='salesforce'?'company':'external',account.provider));
+  });
+  if(matches.length!==1||matches[0].id!==threadId)return false;
+  return inboxDraftRevisionContext(actor,getInboxThread(actor,threadId)).eligible;
+ })();
 }

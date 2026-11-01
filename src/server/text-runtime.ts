@@ -19,6 +19,14 @@ const messageSchema=z.object({type:z.literal('message'),id:z.string().optional()
 const reasoningSchema=z.object({type:z.literal('reasoning'),id:z.string().optional(),summary:z.array(z.unknown()).optional(),content:z.array(z.unknown()).optional(),encrypted_content:z.string().nullable().optional(),status:z.string().optional()});
 const outputSchema=z.array(z.union([callSchema,messageSchema,reasoningSchema])).max(100);
 
+/** The current-turn result must point at the newest saved draft, not its pre-edit read.
+ * Immutable tool receipts retain both versions; only superseded display artifacts retire. */
+function appendToolArtifacts(artifacts:Artifact[],incoming:Artifact[]){
+ const replaced=new Set(incoming.filter(item=>item.type==='inbox'&&item.id&&typeof (item.data as {inboxAccessReference?:unknown}|undefined)?.inboxAccessReference==='string'&&((item.data as {inboxAccessReference:string}).inboxAccessReference.startsWith(`${item.id}|draft-v1|`))).map(item=>item.id));
+ for(let i=artifacts.length-1;i>=0;i--)if(artifacts[i].type==='inbox'&&replaced.has(artifacts[i].id))artifacts.splice(i,1);
+ artifacts.push(...incoming);
+}
+
 export function executeRecordedTool(actor:Actor,conversationId:string,callId:string,name:string,args:unknown,dispatch:()=>ToolResult,requestKey:string):ToolResult{
  requireFeature(actor,'core');scopedGet(actor,'conversations',conversationId,true);
  return getDb().transaction(()=>{
@@ -170,7 +178,7 @@ async function executeLiveText(input:{actor:Actor;conversationId:string;requestI
       }
      }
      const result=executeRecordedTool(actor,conversationId,call.call_id,call.name,JSON.parse(call.arguments),()=>input.dispatch(call.name,JSON.parse(call.arguments)),requestId);
-     if(!handled.has(call.call_id)){result.specialistIds.forEach(id=>nextSpecialists.add(id));nextArtifacts.push(...result.artifacts);handled.add(call.call_id);evidenceScopes[call.call_id]=fingerprint(input.currentScope());}
+     if(!handled.has(call.call_id)){result.specialistIds.forEach(id=>nextSpecialists.add(id));appendToolArtifacts(nextArtifacts,result.artifacts);handled.add(call.call_id);evidenceScopes[call.call_id]=fingerprint(input.currentScope());}
      nextItems.push({type:'function_call_output',call_id:call.call_id,output:JSON.stringify(result)});
     }catch(error){if(error instanceof EntitlementError)nextArtifacts.push({type:'marketplace',id:error.featureId,title:'Review AI Employee Marketplace'});nextItems.push({type:'function_call_output',call_id:call.call_id,output:JSON.stringify({error:error instanceof AppError?error.message:'Tool input was invalid or the operation could not complete.',completed:false})});}
    }

@@ -24,7 +24,7 @@ export function keepReviewedEdits(value:InboxEditor,detail:InboxThreadDetail):In
  return {...current,documents:value.documents,body:value.body,subject:value.subject,cc:value.cc};
 }
 export function reviewMatches(review:InboxSendReview,detail:InboxThreadDetail,editor:InboxEditor|null,at=Date.now()):boolean {
- return detail.draft?.transactionSource?.current!==false&&!editorDirty(editor)&&detail.canEdit&&detail.bodyAccess==='full'&&detail.account.capabilities.simulateSend&&
+ return detail.draft?.copilotRevision?.current!==false&&detail.draft?.transactionSource?.current!==false&&!editorDirty(editor)&&detail.canEdit&&detail.bodyAccess==='full'&&detail.account.capabilities.simulateSend&&
  review.threadId===detail.thread.id&&review.threadVersion===detail.thread.version&&review.accountId===detail.account.id&&
  review.accountContext?.accessVersion===detail.account.accessVersion&&review.draftId===detail.draft?.id&&review.draftVersion===detail.draft?.version&&
  JSON.stringify(review.documents??[])===JSON.stringify(detail.draft?.documents??[])&&(detail.draft?.documentFiles??[]).every(file=>file.current===true)&&JSON.stringify(review.cc??[])===JSON.stringify(detail.draft?.cc??[])&&(review.authorship??'copilot')===(detail.draft?.authorship??'copilot')&&review.body===detail.draft?.body&&review.subject===detail.draft?.subject&&Date.parse(review.expiresAt)>at;

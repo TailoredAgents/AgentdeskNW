@@ -3,6 +3,8 @@ import {transactionThreadContext} from './transaction-draft-context';
 import {createHash} from 'node:crypto';
 import type {Actor,Conversation} from '../lib/contracts';
 import {AppError,assertActor,getDb} from './db';
+import {getInboxThread} from './communications';
+import {inboxDraftRevisionContext} from './communication-draft-revisions';
 
 function accountForThread(actor:Actor,threadId:string){
  assertActor(actor);
@@ -18,10 +20,30 @@ export function inboxAccessReference(actor:Actor,threadId:string):string {
  return `${threadId}|${createHash('sha256').update(accessData(actor,account)).digest('hex')}`;
 }
 
+/** Exact current ordinary reply, including its reviewed source context; never action authority. */
+export function inboxDraftReference(actor:Actor,threadId:string):string|null {
+ const detail=getInboxThread(actor,threadId),draft=detail.draft;
+ if(!draft||draft.copilotRevision?.current===false)return null;
+ const context=inboxDraftRevisionContext(actor,detail);
+ if(!context.eligible||!context.sourceReference)return null;
+ const binding={version:1,access:inboxAccessReference(actor,threadId),sourceReference:context.sourceReference,draft:{id:draft.id,version:draft.version,body:draft.body,subject:draft.subject,authorship:draft.authorship,copilotRevision:draft.copilotRevision??null}};
+ return `${threadId}|draft-v1|${createHash('sha256').update(JSON.stringify(binding)).digest('hex')}`;
+}
+
 export function inboxAccessReferenceCurrent(actor:Actor,threadId:string,references:string[]):boolean {
  let account;try{account=accountForThread(actor,threadId);if(account)accessData(actor,account);}catch(error){if(error instanceof AppError&&[403,404].includes(error.status))return false;throw error;}if(!account)return false;
  const saved=references.filter(reference=>reference.startsWith(`${threadId}|`));
- if(saved.length)return saved.every(reference=>reference===`${threadId}|${createHash('sha256').update(accessData(actor,account)).digest('hex')}`);
+ if(saved.length){
+  const ordinary=`${threadId}|${createHash('sha256').update(accessData(actor,account)).digest('hex')}`;
+  let currentDraft:string|null|undefined;
+  return saved.every(reference=>{
+   if(reference.startsWith(`${threadId}|draft-v1|`)){
+    if(currentDraft===undefined)try{currentDraft=inboxDraftReference(actor,threadId);}catch(error){if(error instanceof AppError&&[403,404].includes(error.status))return false;throw error;}
+    return currentDraft!==null&&reference===currentDraft;
+   }
+   return reference===ordinary;
+  });
+ }
  // Historical Phase 3 results predate capability snapshots and only used full demo mailboxes.
  const value=JSON.parse(account.data) as {provider?:string;access?:string;accessVersion?:number;capabilities?:{readBody?:boolean};source?:{coverage?:string}};
  return !JSON.parse(account.thread).packageId&&!JSON.parse(account.thread).transactionId&&value.provider!=='salesforce'&&value.access!=='revoked'&&(value.accessVersion??1)===1&&value.capabilities?.readBody!==false&&value.source?.coverage!=='headers_only';
