@@ -49,6 +49,15 @@ export function inboxAccessReferenceCurrent(actor:Actor,threadId:string,referenc
  return !JSON.parse(account.thread).packageId&&!JSON.parse(account.thread).transactionId&&value.provider!=='salesforce'&&value.access!=='revoked'&&(value.accessVersion??1)===1&&value.capabilities?.readBody!==false&&value.source?.coverage!=='headers_only';
 }
 
+/** Presentation only: a current readable source cannot revive an earlier draft binding. */
+export function inboxReadableHistoryReference(actor:Actor,threadId:string):string|null {
+ try {
+  const detail=getInboxThread(actor,threadId);
+  if(detail.bodyAccess!=='full'||detail.account.access!=='available'||detail.thread.association.status==='unavailable')return null;
+  return inboxAccessReference(actor,threadId);
+ }catch(error){if(error instanceof AppError&&[403,404].includes(error.status))return null;throw error;}
+}
+
 /** Hash private correspondence without supplying an entire mailbox to the model. */
 export function inboxContextFingerprint(actor:Actor):string {
  assertActor(actor);

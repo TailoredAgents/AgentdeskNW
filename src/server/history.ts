@@ -20,7 +20,7 @@ import { AppError, getDb } from './db';
 import { featureAccess } from './billing';
 import { readInvestor, readProperty } from './access';
 import { getDisclosure, isDisclosureReady, listBuyBoxes } from './intelligence';
-import { inboxAccessReferenceCurrent } from './communications-context';
+import { inboxAccessReferenceCurrent, inboxReadableHistoryReference } from './communications-context';
 
 export interface HistoryReferences {qualificationReviews?:string[];rolePreparations?:string[];buyerShortlists?:string[];assignmentReviews?:string[];documentAccess?:string[];transactionTeamAccess?:string[];transactionAccess?:string[];investors:string[];properties:string[];releases:string[];packages:string[];debriefs:string[];inboxThreads:string[];inboxAccess:string[];workRuns?:string[];handoffAccess?:string[];workQuestions?:string[];knowledgeAccess?:string[];updatesAccess?:string[];analysisAccess?:string[];opportunityAccess?:string[]}
 export type StoredMessage=Message & {references?:HistoryReferences};
@@ -127,8 +127,27 @@ export function historyReferencesVisible(actor:Actor,refs:HistoryReferences) {
   return true;
  }catch(error){if(error instanceof AppError&&(error.status===403||error.status===404))return false;throw error;}
 }
+function withheldHistoryNotice(actor:Actor,refs:HistoryReferences):NonNullable<Message['historyNotice']> {
+ const remaining:string[]=[],draftThreads=new Set<string>();
+ for(const reference of refs.inboxAccess??[]){
+  const threadId=(refs.inboxThreads??[]).find(id=>reference.startsWith(`${id}|draft-v1|`)&&/^[a-f0-9]{64}$/.test(reference.slice(`${id}|draft-v1|`.length)));
+  if(threadId)draftThreads.add(threadId);else remaining.push(reference);
+ }
+ if(draftThreads.size){
+  let readable=true;
+  for(const threadId of draftThreads){
+   const current=inboxReadableHistoryReference(actor,threadId);
+   if(!current){readable=false;break;}
+   remaining.push(current);
+  }
+  // Only the wording changes. Keep every other original source binding and
+  // current access check; never use this projection to restore content or tools.
+  if(readable&&historyReferencesVisible(actor,{...refs,inboxAccess:remaining}))return {reason:'draft_context_changed',message:'The draft or its source details have changed, so this earlier message is out of date. Open Inbox for the current conversation.'};
+ }
+ return {reason:'source_unavailable',message:'This earlier message is no longer available because its source information or access has changed.'};
+}
 export function readHistoryMessage(actor:Actor,message:StoredMessage):Message {
- if(message.references&&!historyReferencesVisible(actor,message.references))return {id:message.id,role:message.role,content:'This historical message is withheld because access or sharing eligibility for a referenced record has changed.',createdAt:message.createdAt,specialistIds:[],artifacts:[]};
+ if(message.references&&!historyReferencesVisible(actor,message.references))return {id:message.id,role:message.role,content:'This historical message is withheld because access or sharing eligibility for a referenced record has changed.',historyNotice:withheldHistoryNotice(actor,message.references),createdAt:message.createdAt,specialistIds:[],artifacts:[]};
  // Navigation opens current scoped services. CRM snapshots are never reissued as current facts from chat storage.
  return {id:message.id,role:message.role,content:message.content,createdAt:message.createdAt,specialistIds:message.specialistIds,artifacts:message.artifacts.map(artifact=>{const {data,...link}=artifact;return artifact.type==='notes'?{...link,data}:isRolePreparationArtifact(artifact)?{...link,data:{preparationId:(data as {preparationId:string}).preparationId}}:link;})};
 }

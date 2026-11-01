@@ -74,6 +74,11 @@ export function extractExplicitPreference(input:string):Partial<EmployeePreferen
  if(/^(?:["“'‘>]|if\b|suppose\b|imagine\b|don't\b|do not\b|never\b|forget\b)/i.test(value)||/\b(?:said|says|told me|quote|quoted|quotation|transcript|hypothetical|ignore|instead of)\b/i.test(value)||/\b(?:don't|do not|never) (?:remember|save|store|learn)\b/i.test(value))return null;
  const priorities=/^my (?:work )?priorities (?:are|should be)\s+(.+?)\.?$/i.exec(value);
  if(priorities&&persistent){const items=priorities[1].split(/\s*,\s*|\s+and\s+/i).filter(Boolean);const valid=preferenceSchema.shape.priorities.safeParse(items);return valid.success?{priorities:unique(valid.data)}:null;}
+ // A request about one answer/conversation is not permission to change future style defaults.
+ // Explicit work priorities above may contain dates; they remain saved context, not task authority.
+ // Ignore the literal contents of a supported phrase-avoidance instruction here.
+ const scopeText=value.replace(/\b(?:avoid|don't use|do not use|never use)\s+(?:the (?:phrase|words?)\s+)?(?:"[^"]+"|“[^”]+”|'[^']+')/ig,'');
+ if(/\b(?:if|unless|when|whenever|while|until|suppose|supposing|imagine|hypothetically)\b/i.test(scopeText)||/\b(?:just (?:for )?(?:now|this once)|for now|today|tonight|tomorrow|(?:this|that|the current|(?:the )?next|(?:the )?following) (?:one|time|reply|answer|response|message|draft|email|conversation|chat|task|week|month))\b/i.test(scopeText))return null;
  // Require first-person preference language, or a clearly persistent direct style command.
  if(!/^i prefer\b/i.test(value)&&!/^keep my (?:drafts|messages|replies|writing)\b/i.test(value)&&!(persistent&&/^(?:keep|make|use|avoid|don't use|do not use)\b/i.test(value)))return null;
  if(/\b(?:he|she|they|investor|customer|client)\b/i.test(value))return null;

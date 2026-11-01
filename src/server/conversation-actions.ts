@@ -139,11 +139,25 @@ function namedTasks(actor:Actor,tasks:Task[],target:string):Task[] {
   const investors=listInvestors(actor);
   return tasks.filter(task=>normalize(`${task.title} ${investors.find(item=>item.id===task.investorId)?.name??''}`).includes(query));
 }
+/** A pending choice accepts a displayed title, never a quoted statement or vague assent. */
+function pendingTaskTitles(message:string):{literal:string[];wrapped:string[]}|null {
+  const text=withoutPunctuation(message).replaceAll('’',"'");
+  if(!text||/[\r\n]/.test(text)||/^(?:["“'‘>]|if\b|suppose\b|imagine\b|don't\b|do not\b|never\b)/i.test(text)||/\b(?:said|says|told me|quoted|transcript)\b/i.test(text))return null;
+  const target=text.replace(/^(?:i (?:mean|meant)|choose|select)\s+/i,'');
+  if(/^["“'‘>]/.test(target)||/^(?:(?:yes|yeah|yep|okay|ok)(?: that one)?|that one|this one|it|that|this)$/i.test(normalize(target)))return null;
+  // Literal displayed titles take priority; stripping “task” from a title can name
+  // a different task. If wrapper interpretations name different records, ask.
+  return {literal:[normalize(text),normalize(target)],wrapped:[
+    target.replace(/^(?:(?:the|my|a)\s+)?(?:task|reminder)(?:\s+(?:to|for|about))?\s+/i,''),
+    target.replace(/^(?:the|my|a) (.+?) (?:task|reminder)$/i,'$1'),
+    target.replace(/\s+(?:task|reminder)$/i,''),
+  ].map(normalize)};
+}
 function choices(actor:Actor,conversationId:string,tasks:Task[],intent:TaskIntent,requestId:string,lead='Which task did you mean?',deliveryRequestId?:string):PreparedConversationAction {
   if(!tasks.length)return clear('I couldn’t identify an open personal task for that request. Give its exact title or ask me to list your tasks. Nothing was changed.');
   const selected=tasks.slice(0,8);
   saveConversationChoices(actor,conversationId,{...(deliveryRequestId?{deliveryRequestId}:{}),tasks:selected.map(task=>({id:task.id,version:task.version??0})),intent:{action:intent.action,...(intent.dateText!==undefined?{dateText:intent.dateText}:{}),...(intent.minutes!==undefined?{minutes:intent.minutes}:{}),...(intent.referenceAt?{referenceAt:intent.referenceAt}:{}),requestId}});
-  return {kind:'clarification',result:{message:`${lead}\n${selected.map((task,index)=>`${index+1}. ${task.title}${task.dueAt?` — ${new Date(task.dueAt).toLocaleString('en-US',{timeZone:timezone,dateStyle:'medium',timeStyle:'short'})} Eastern`:''}`).join('\n')}\nReply with the number${tasks.length>8?' or the exact title':''}. Nothing has changed yet.`,specialistIds:[],artifacts:selected.map(task=>({type:'task',id:task.id,title:task.title,data:{taskId:task.id,investorId:task.investorId}}))}};
+  return {kind:'clarification',result:{message:`${lead}\n${selected.map((task,index)=>`${index+1}. ${task.title}${task.dueAt?` — ${new Date(task.dueAt).toLocaleString('en-US',{timeZone:timezone,dateStyle:'medium',timeStyle:'short'})} Eastern`:''}`).join('\n')}\nReply with the number or exact title. Nothing has changed yet.`,specialistIds:[],artifacts:selected.map(task=>({type:'task',id:task.id,title:task.title,data:{taskId:task.id,investorId:task.investorId}}))}};
 }
 
 const shortTaskCorrection=(message:string)=>/^(?:actually\s*,?\s*)?make\s+(?:it|that|this)(?: task| reminder)?\s+/i.test(commandPrefix(withoutPunctuation(message)));
@@ -222,14 +236,26 @@ export function prepareConversationAction(actor:Actor,message:string,conversatio
   const text=withoutPunctuation(message),number=/^(?:number\s+)?([1-8])$/i.exec(text);
   let intent=taskActionIntent(message),selected:Task|undefined;
   const tasks=listPersonalTasks(actor).filter(task=>task.status==='open');
-  if(!intent&&focus.pending&&focus.candidates.length){
-    if(number){const candidate=focus.candidates[Number(number[1])-1];if(!candidate)return clear('Choose one of the listed task numbers. Nothing has changed.');selected=tasks.find(task=>task.id===candidate.id&&(task.version??0)===candidate.version);intent={...focus.pending,target:''};}
-    else if(focus.pending.action==='reschedule'&&focus.candidates.length===1&&clock(text)){
+  if(focus.pending&&focus.candidates.length){
+    if(!intent&&number){const candidate=focus.candidates[Number(number[1])-1];if(!candidate)return clear('Choose one of the listed task numbers. Nothing has changed.');selected=tasks.find(task=>task.id===candidate.id&&(task.version??0)===candidate.version);intent={...focus.pending,target:''};}
+    else if(!intent&&focus.pending.action==='reschedule'&&focus.candidates.length===1&&clock(text)){
       const candidate=focus.candidates[0];selected=tasks.find(task=>task.id===candidate.id&&(task.version??0)===candidate.version);
       const previousDate=focus.pending.dateText;
       // A clock correction replaces either “tomorrow at 9” or “tomorrow 9”.
       const day=previousDate?.trim().match(/^(today|tomorrow|(?:(?:this|next)\s+)?(?:sunday|monday|tuesday|wednesday|thursday|friday|saturday)|\d{4}-\d{2}-\d{2})(?:\s|$)/i)?.[1];
       intent={...focus.pending,target:'',dateText:previousDate?`${day??previousDate.replace(/\s+at\s+.*$/i,'')} at ${text}`:text};
+    }
+    else {
+      const titles=pendingTaskTitles(message);
+      let matching:typeof focus.candidates=[];
+      for(const literal of titles?.literal??[]){matching=focus.candidates.filter(candidate=>normalize(candidate.title)===literal);if(matching.length)break;}
+      if(!matching.length&&titles)matching=focus.candidates.filter(candidate=>titles.wrapped.includes(normalize(candidate.title)));
+      if(matching.length>1)return clear('More than one listed task matches that title. Reply with its number. Nothing has changed.');
+      if(matching.length===1){
+        const candidate=matching[0];selected=tasks.find(task=>task.id===candidate.id&&(task.version??0)===candidate.version);
+        if(!selected)return clear('That task changed while you were choosing it. Name the task again so I can use its current details. Nothing has changed.');
+        intent={...focus.pending,target:''};
+      }
     }
   }
   if(!intent)return null;

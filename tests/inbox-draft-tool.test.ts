@@ -1,5 +1,5 @@
 import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest';
-import {closeDb,demoActor} from '../src/server/db';
+import {closeDb,demoActor,getDb} from '../src/server/db';
 import {chat,dispatchTool} from '../src/server/orchestrator';
 import {getInboxState,getInboxThread,receiveDemoCommunication} from '../src/server/communications';
 import {getInboxDraftRevisionContext} from '../src/server/communications-workflow';
@@ -33,6 +33,23 @@ describe('saved conversational Inbox rewrites',()=>{
   expect(JSON.parse(output.output).data).toMatchObject({draft:{id:before.draft!.id,version:before.draft!.version,body:before.draft!.body},revisionContext:{eligible:true,sourceReference:revision(body).sourceReference}});
   await chat(actor(),'Keep it casual and shorter.',first.conversation.id,requestId);
   expect(getInboxThread(actor(),item.id).draft).toEqual(after.draft);expect(mock).toHaveBeenCalledTimes(3);
+  const retired=saved.conversation.messages.filter(entry=>entry.historyNotice);
+  expect(retired).toHaveLength(2);
+  expect(retired.every(entry=>entry.historyNotice?.reason==='draft_context_changed'&&entry.content.startsWith('This historical message is withheld')&&entry.artifacts.length===0)).toBe(true);
+  expect(getDb().prepare('SELECT 1 FROM assistant_context WHERE conversation_id=?').get(first.conversation.id)).toBeUndefined();
+  const receipt=getDb().prepare('SELECT result FROM assistant_tool_receipts WHERE conversation_id=? AND call_id=?').get(first.conversation.id,'read-draft') as {result:string};
+  expect(JSON.parse(receipt.result).data.draft.body).toBe(before.draft!.body);
+  // A cache written before this safeguard must also be retired when read.
+  const obsoleteItems=JSON.parse(mock.mock.calls[2][1].body as string).input.filter((entry:{role?:string})=>entry.role!=='developer');
+  const execution=getDb().prepare('SELECT scope_hash FROM text_executions WHERE request_id=?').get(requestId) as {scope_hash:string};
+  getDb().prepare('INSERT INTO assistant_context VALUES(?,?,?,?)').run(first.conversation.id,execution.scope_hash,JSON.stringify(obsoleteItems),new Date().toISOString());
+  mock.mockResolvedValueOnce(answer([message('The latest saved reply is ready for review in Inbox.')]));
+  await chat(actor(),'What should I review next?',first.conversation.id,key());
+  const nextRequest=JSON.parse(mock.mock.calls[3][1].body as string),history=JSON.stringify(nextRequest.input);
+  expect(history.includes('This historical message is withheld')).toBe(true);
+  expect(history.includes(JSON.stringify(before.draft!.body).slice(1,-1))).toBe(false);
+  expect(history.includes('Keep it casual and shorter.')).toBe(false);
+  expect(history.includes('historyNotice')).toBe(false);
  });
  it('refuses model attempts to save a preview-only request or change a different draft',async()=>{
   const first=await prepared(),before=getInboxThread(actor(),thread().id),input=revision('Unrequested rewrite');

@@ -1,6 +1,6 @@
 import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest';
 import type {Actor,ToolResult} from '../src/lib/contracts';
-import {closeDb,demoActor} from '../src/server/db';
+import {closeDb,demoActor,getDb} from '../src/server/db';
 import {getInboxState,getInboxThread,saveInboxDraft,discardInboxDraft,receiveDemoCommunication,updateInboxThread} from '../src/server/communications';
 import {getInboxDraftRevisionContext,prepareInboxReply,reviseInboxDraft,reviewInboxSend,simulateInboxSend} from '../src/server/communications-workflow';
 import {inboxAccessReference,inboxAccessReferenceCurrent,inboxDraftReference} from '../src/server/communications-context';
@@ -61,10 +61,49 @@ describe('exact source-aware Inbox draft history and cached tool replay',()=>{
   expect(historyReferencesVisible(actor,refs)).toBe(false);
   const current=getConversation(actor,conversation.id).messages.at(-1)!;
   expect(current.content).toMatch(/^This historical message is withheld/);
+  expect(current.historyNotice).toMatchObject({reason:'draft_context_changed'});
+  expect(current.historyNotice!.message).not.toContain('access');
   expect(current.artifacts).toEqual([]);
   expect(()=>executeRecordedTool(actor,conversation.id,callId,'revise_inbox_draft',args,dispatch,requestId)).toThrow('source context changed');
   expect(dispatch).toHaveBeenCalledTimes(1);
   expect(fetch).not.toHaveBeenCalled();
+ });
+
+ it('explains a superseded draft for both the old answer and its inherited employee instruction without restoring either',()=>{
+  const saved=savedRewrite(),id=saved.thread.id,result=resultFor(id),conversation=createConversation(actor,'Private earlier wording');
+  addMessage(actor,conversation.id,{role:'assistant',content:result.message,artifacts:result.artifacts});
+  addMessage(actor,conversation.id,{role:'user',content:'Keep this private earlier draft shorter.'});
+  saveInboxDraft(actor,id,{...mutation(id),body:'The latest saved wording.'});
+  const current=getConversation(actor,conversation.id);
+  expect(current.title).toBe('Conversation with earlier drafts');
+  expect(current.messages).toHaveLength(2);
+  for(const message of current.messages){
+   expect(message.historyNotice?.reason).toBe('draft_context_changed');
+   expect(message.content).toMatch(/^This historical message is withheld/);
+   expect(message.artifacts).toEqual([]);
+  }
+  expect(JSON.stringify(current)).not.toContain(draftBody);
+  expect(JSON.stringify(current)).not.toContain('Keep this private earlier draft shorter.');
+  const next=addMessage(actor,conversation.id,{role:'assistant',content:'Here is the current saved reply.',artifacts:resultFor(id).artifacts});
+  expect(getConversation(actor,conversation.id).messages.at(-1)).toMatchObject({id:next.id,content:'Here is the current saved reply.'});
+  expect(getConversation(actor,conversation.id).messages.at(-1)!.historyNotice).toBeUndefined();
+ });
+
+ it.each(['revoked','headers_only','linked_investor','other_source'] as const)('does not attribute %s access loss to an ordinary draft change',change=>{
+  const saved=savedRewrite(),id=saved.thread.id,result=resultFor(id),conversation=createConversation(actor);
+  const artifacts=change==='other_source'?[...result.artifacts,{type:'briefing' as const,id:'investor-sarah',title:'A separate relationship'}]:result.artifacts;
+  addMessage(actor,conversation.id,{role:'assistant',content:result.message,artifacts});
+  saveInboxDraft(actor,id,{...mutation(id),body:'A later saved reply.'});
+  if(change==='revoked'||change==='headers_only'){
+   const account={...saved.account,accessVersion:saved.account.accessVersion+1,...(change==='revoked'?{access:'revoked'}:{source:{...saved.account.source,coverage:'headers_only'}})};
+   getDb().prepare('UPDATE communication_accounts SET data=? WHERE id=?').run(JSON.stringify(account),saved.account.id);
+  }else getDb().prepare('UPDATE investors SET owner_id=? WHERE id=?').run('user-jordan',change==='linked_investor'?'investor-mike':'investor-sarah');
+  const current=getConversation(actor,conversation.id),message=current.messages.at(-1)!;
+  expect(current.title).toBe('Conversation with restricted history');
+  expect(message.historyNotice?.reason).toBe('source_unavailable');
+  expect(message.content).toMatch(/^This historical message is withheld/);
+  expect(message.artifacts).toEqual([]);
+  expect(JSON.stringify(current)).not.toContain(draftBody);
  });
 
  it('does not mint a current reference for an obsolete rewrite but permits a newly source-bound correction',()=>{

@@ -122,7 +122,8 @@ export function getConversation(actor:Actor,id:string):Conversation {
  return withHistoryReadSnapshot(()=>{const conversation=scopedGet<Conversation>(actor,'conversations',idSchema.parse(id),true);
  const rows=getDb().prepare('SELECT data FROM messages WHERE conversation_id=? AND organization_id=? AND office_id=? AND owner_id=? ORDER BY sequence ASC').all(conversation.id,actor.organizationId,actor.officeId,actor.id) as {data:string}[];
  const messages=rows.map(row=>readHistoryMessage(actor,JSON.parse(row.data) as StoredMessage));
- return {...conversation,title:messages.some(message=>message.content.startsWith('This historical message is withheld'))?'Conversation with restricted history':conversation.title,messages};});
+ const withheld=messages.filter(message=>message.content.startsWith('This historical message is withheld'));
+ return {...conversation,title:withheld.length?withheld.every(message=>message.historyNotice?.reason==='draft_context_changed')?'Conversation with earlier drafts':'Conversation with restricted history':conversation.title,messages};});
 }
 export function listConversations(actor:Actor):Conversation[] {
  return scopedRows<Conversation>(actor,'conversations',true).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt)).slice(0,50).map(item=>getConversation(actor,item.id));

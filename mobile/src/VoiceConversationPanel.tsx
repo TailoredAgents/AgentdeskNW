@@ -4,6 +4,7 @@ import type {Artifact,ToolResult} from '../../src/lib/contracts';
 import {VoiceConversation,initialVoiceView} from '../../src/lib/voice-conversation';
 import {nativeSpeech} from './native-speech';
 import {Button} from './Button';
+import {AgentAnswer} from './AgentAnswer';
 import {styles as s} from './styles';
 interface Props {blocked:boolean;onRequest:(text:string)=>Promise<ToolResult>;onArtifact:(artifact:Artifact)=>void;onOpenChange:(open:boolean)=>void}
 const labels={idle:'Let’s talk it through.',starting:'Opening your microphone…',listening:'I’m listening.',thinking:'Your Agent is working…',speaking:'Here’s what I found.',paused:'Voice is paused.',review:'Check your spoken decision.',error:'Let’s check the connection.'};
@@ -25,7 +26,7 @@ function VoiceDialog(props:Props&{onClose:()=>void}){
   {view.phase==='review'&&<View style={s.card}><Text style={s.label}>Review the exact words</Text><TextInput accessibilityLabel="Review spoken decision" multiline maxLength={12000} value={view.reviewText} onChangeText={text=>controller.current?.editReview(text)} style={s.input}/><Button label="Send reviewed words" disabled={props.blocked||!view.reviewText.trim()} onPress={()=>controller.current?.confirm(view.reviewText)}/><Button secondary label="Discard" onPress={()=>controller.current?.pause('Decision discarded. Nothing was sent.')}/></View>}
   {view.phase==='speaking'&&<Button label="Interrupt and speak" onPress={()=>controller.current?.interrupt()}/>}
   {active?<Button secondary label="Pause voice" onPress={()=>controller.current?.pause()}/>:view.phase!=='review'&&<Button label={view.pending?'Waiting for saved request…':'Start voice'} disabled={props.blocked||view.pending} onPress={()=>void controller.current?.start()}/>}
-  {!!view.answer&&<View style={s.card}><Text style={s.cardTitle}>Saved answer</Text><Text selectable style={s.copy}>{view.answer}</Text>{view.artifacts.map((artifact,index)=><Button secondary key={`${artifact.type}:${artifact.id??index}`} label={`${artifact.title} →`} onPress={()=>{close();props.onArtifact(artifact);}}/>)}</View>}
+  {!!view.answer&&<View style={s.card}><Text style={s.cardTitle}>Saved answer</Text><AgentAnswer text={view.answer}/>{view.artifacts.map((artifact,index)=><Button secondary key={`${artifact.type}:${artifact.id??index}`} label={`${artifact.title} →`} onPress={()=>{close();props.onArtifact(artifact);}}/>)}</View>}
   <Text style={s.help}>Keep this screen open. Listening pauses during replies; tap Interrupt to speak sooner. On iPhone, turn off silent mode to hear replies. Pausing voice stops audio; saved jobs keep their own controls.</Text><Button secondary label="Close and return to Agent" onPress={close}/>
  </ScrollView></View></View></Modal>;
 }

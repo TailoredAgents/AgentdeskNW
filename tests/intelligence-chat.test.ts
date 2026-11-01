@@ -40,13 +40,45 @@ describe('employee memory through Copilot turns',()=>{
   for(const [index,text] of ['Mike said "I prefer short, direct messages".','Remember: I do not prefer short replies.','I prefer short messages, but do not save this.'].entries())await chat(actor,text,undefined,`not-my-preference-${index}`);
   expect(getEmployeeMemory(actor)).toMatchObject({tone:null,length:null,avoidPhrases:['amazing opportunity','act now'],version:2});
  });
- it('passes the employee’s current preferences into a new conversation without sharing them with a manager',async()=>{
-  const actor=demoActor();await chat(actor,'Remember: I prefer short, direct messages.',undefined,'remember-before-new-chat');
+ it('supports conversational memory readback and a later conversation without sharing preferences with a manager',async()=>{
+  const actor=demoActor(),correction='Remember: keep my replies short and friendly.';
+  const remembered=await chat(actor,correction,undefined,'remember-before-new-chat');
+  expect(getEmployeeMemory(actor)).toMatchObject({tone:'warm',length:'concise',version:1,sources:{tone:{text:correction},length:{text:correction}}});
   const mock=vi.fn().mockImplementation(()=>Promise.resolve(answer([outputMessage('Current preferences are available.')])));live(mock);
+  await chat(actor,'What do you remember about how I like to communicate?',remembered.conversation.id,'memory-readback');
   await chat(actor,'Help me plan my work.',undefined,'fresh-memory-context');await chat(demoActor('manager'),'Help me plan my work.',undefined,'manager-memory-context');
-  expect(context(mock,0).employeeMemory).toMatchObject({tone:'direct',length:'concise',version:1});expect(context(mock,1).employeeMemory).toMatchObject({tone:null,length:null,version:0});
+  expect(context(mock,0).employeeMemory).toEqual(getEmployeeMemory(actor));
+  expect(context(mock,1).employeeMemory).toEqual(getEmployeeMemory(actor));expect(context(mock,2).employeeMemory).toMatchObject({tone:null,length:null,version:0});
   expect(body(mock,0).tools.map(tool=>tool.name)).toEqual(expect.arrayContaining(['investor_journey','relationship_recommendation']));
   const recommendation=toolDefinitions().find(tool=>tool.name==='relationship_recommendation')!;expect(recommendation.parameters).toMatchObject({properties:{investorId:expect.any(Object)},additionalProperties:false});expect(Object.keys(recommendation.parameters.properties as Record<string,unknown>)).toEqual(['investorId']);
+ });
+ it.each([
+  'Keep my replies detailed and direct for this answer.',
+  'Remember: keep my replies detailed and direct for this answer.',
+  'I prefer detailed explanations for this reply only.',
+  'Keep my replies detailed and direct just this once.',
+  'Keep my replies detailed in this conversation.',
+  'Keep my replies detailed for the next answer.',
+  'Keep my replies detailed until tomorrow.',
+  'I prefer detailed explanations when we are brainstorming.',
+  'I prefer detailed answers if we are only brainstorming.',
+  'I prefer detailed explanations, hypothetically.',
+  'Remember: Mike said "I prefer detailed and direct messages".'
+ ])('passes a temporary or quoted style request to conversation without changing saved memory: %s',async text=>{
+  const actor=demoActor();await chat(actor,'Remember: keep my replies short and friendly.',undefined,'saved-defaults');
+  const before=getEmployeeMemory(actor),mock=vi.fn().mockResolvedValueOnce(answer([outputMessage('I can use that wording for this answer.')]));live(mock);
+  await chat(actor,text,undefined,'one-answer-style');
+  expect(mock).toHaveBeenCalledTimes(1);expect(context(mock,0).employeeMemory).toEqual(before);
+  expect(body(mock,0).input.at(-1)).toEqual({role:'user',content:text});
+  expect(getEmployeeMemory(actor)).toEqual(before);
+  expect(getDb().prepare("SELECT COUNT(*) n FROM audit_logs WHERE event='memory.preferences_saved'").get()).toEqual({n:1});
+ });
+ it('preserves an explicitly saved dated work priority as context without creating work',async()=>{
+  const actor=demoActor(),before=listTasks(actor),command='Remember: my work priorities are finish the acquisition review today';
+  const result=await chat(actor,command,undefined,'dated-work-priority');
+  expect(result.result.message).toContain('Remembered');
+  expect(getEmployeeMemory(actor)).toMatchObject({tone:null,length:null,priorities:['finish the acquisition review today'],version:1,sources:{priorities:{text:command}}});
+  expect(listTasks(actor)).toEqual(before);expect(fetch).not.toHaveBeenCalled();
  });
  it('uses a correction received through Slack when the linked employee continues through SMS',async()=>{
   const actor=demoActor(),account=`AC${'a'.repeat(32)}`,personal='+15555550102';
@@ -69,7 +101,11 @@ describe('employee memory through Copilot turns',()=>{
   const first=await chat(actor,oldCorrection,undefined,'old-memory-input');vi.setSystemTime(new Date('2026-10-29T16:01:00Z'));
   const reasoning={type:'reasoning',id:'memory-reasoning',summary:[],encrypted_content:'opaque-forgotten-preferences'};
   const mock=vi.fn().mockResolvedValueOnce(answer([reasoning,outputMessage('An earlier response reflecting old-style-marker.')])).mockResolvedValueOnce(answer([outputMessage('I will use the current preferences.')])) ;live(mock);
-  await chat(actor,'Review my communication preferences.',first.conversation.id,'old-memory-response');vi.setSystemTime(new Date('2026-10-29T16:02:00Z'));forgetEmployeeMemory(actor,1);vi.setSystemTime(new Date('2026-10-29T16:03:00Z'));
+  await chat(actor,'Review my communication preferences.',first.conversation.id,'old-memory-response');vi.setSystemTime(new Date('2026-10-29T16:02:00Z'));
+  const forgotten=await chat(actor,'Forget my saved writing preferences.',first.conversation.id,'forget-through-chat');
+  expect(forgotten.result.message).toContain('forgotten');expect(mock).toHaveBeenCalledTimes(1);
+  await chat(actor,'Forget my saved writing preferences.',first.conversation.id,'forget-through-chat');
+  expect(getEmployeeMemory(actor).version).toBe(2);vi.setSystemTime(new Date('2026-10-29T16:03:00Z'));
   await chat(actor,'Help with the next message.',first.conversation.id,'after-forget');
   expect(context(mock,1).employeeMemory).toMatchObject({tone:null,length:null,avoidPhrases:[],sources:{},version:2});
   const transmitted=JSON.stringify(body(mock,1).input);expect(transmitted).not.toContain('old-style-marker');expect(transmitted).not.toContain('opaque-forgotten-preferences');expect(JSON.stringify(getConversation(actor,first.conversation.id))).toContain('old-style-marker');
