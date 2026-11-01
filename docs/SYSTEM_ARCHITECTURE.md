@@ -1,5 +1,7 @@
 # System architecture
 
+The current Salesforce source-inspection seam uses `salesforce-sync.ts` for trusted mapped pagination and `salesforce-source.ts` for a fixed fictional source lifecycle. Desktop/native Settings call the same authenticated `/api/salesforce-source` endpoints. Existing migration-051 staging stores the validated refresh atomically; there is no new schema, network transport, live-source activation or automatic CRM merge. See [the Salesforce contract](SALESFORCE_INTEGRATION.md).
+
 
 **Document role:** architecture specification; [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) alone controls delivery status and sequencing. The October 30 new-opportunity intake slice extends saved-question checkpoint `2555172` and has local integrated acceptance. Installed-phone and live-provider acceptance remain pending.
 

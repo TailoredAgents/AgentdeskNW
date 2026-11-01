@@ -1,3 +1,4 @@
+import {readSalesforceSource,prepareSalesforceSourceDemo,refreshSalesforceSource,disconnectSalesforceSource} from '@/server/salesforce-source';
 import {companyAuthentication} from '@/server/company-auth';
 import {workspaceReadiness} from '@/server/workspace-readiness';
 import {getChatRequest} from '@/server/chat-requests';
@@ -85,6 +86,16 @@ async function route(request:NextRequest,{params}:{params:Promise<{path:string[]
       if(path.length===1)return json(getRecordBoard(actor));
       if(path.length===3&&(id==='investor'||id==='property'))return json(getRecordDetail(actor,{kind:id,id:idSchema.parse(operation)}));
       throw new service.AppError(404,'This record link is not available.');
+    }
+    if(resource==='salesforce-source'){
+      if(path.length===1&&method==='GET')return json(readSalesforceSource(actor));
+      if(path.length===2&&method==='POST'){
+        const input=await body(request);
+        if(id==='prepare'){z.object({}).strict().parse(input);return json(prepareSalesforceSourceDemo(actor));}
+        if(id==='refresh')return json(await refreshSalesforceSource(actor,input));
+        if(id==='disconnect')return json(disconnectSalesforceSource(actor,input));
+      }
+      throw new service.AppError(404,'This source action is unavailable.');
     }
     if(resource==='workspace-readiness'&&path.length===1&&method==='GET')return json(workspaceReadiness(actor));
     if(resource==='providers'&&method==='GET')return json(providerStatus(actor));
