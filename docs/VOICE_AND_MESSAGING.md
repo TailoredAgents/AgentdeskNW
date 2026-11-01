@@ -8,7 +8,22 @@ The confirmed product direction makes the native iPhone/Android app the primary 
 
 The verified committed baseline through `2d16665` is the web application and its server workflows/adapters. Conversations, tasks and research jobs live on the server. Responsive navigation and installable metadata do not establish native distribution or offline execution. The October 30 native/shared-controls foundation has local HTTP and connected browser acceptance for device pairing, shared history, job controls and mock notification services; reviewed dictation source is prepared. Their existence does not close physical-device or live-provider acceptance.
 
-## Live voice integration
+## Shared spoken conversation — current primary voice entry
+
+Desktop “Talk to Copilot” and native Agent “Talk to your Agent” now use a shared foreground speech controller. After explicit Start, a completed spoken request goes through the **same authenticated chat sender, saved request identity, conversation and tools as typing**. The client speaks the returned answer and listens for the next request. It does not create a separate model session, choose an assignment root or bypass ordinary permissions/spending. The existing reviewed dictation composer remains available separately.
+
+Browser input uses supported Web Speech recognition and speech synthesis; browser recognition may process audio online and the UI discloses this. Native input requires supported on-device recognition and an installed speech language, with Expo Speech for playback. Neither path sends audio to AgentDesk/OpenAI or adds an AgentDesk audio charge. AI reasoning/research still follows the configured text host: cumulative customer protection requires the existing explicitly configured `admitted_demo` mode; default operational mode is not silently upgraded. References: [browser recognition](https://developer.mozilla.org/en-US/docs/Web/API/SpeechRecognition), [native recognition](https://github.com/jamsch/expo-speech-recognition), [Expo playback](https://docs.expo.dev/versions/latest/sdk/speech/).
+
+This is turn-based conversation: the microphone stops during processing/playback; **Interrupt and speak** stops playback and opens a new listen cycle. It is not simultaneous listening/speaking or provider Realtime barge-in. Possible spoken approval/payment decisions pause for editable exact-word review and an explicit Send reviewed words button. This is an extra transcription check; only existing authenticated server decisions establish authority. Review/work artifacts pause the loop and open their existing review surfaces. Long answers have abridged playback with an explicit saved-answer notice; the full text and links remain available.
+
+Only one request may be in flight. Silence/errors, background/offline/close and identity loss stop audio; delayed microphone permission, recognition and playback callbacks cannot revive an abandoned loop. Pausing voice does not cancel saved work. An uncertain request stays with the parent chat recovery controls and is never automatically retried. Worker completions remain in the conversation/Work; this loop does not automatically read later background results aloud. Foreground listening is limited to 60 seconds per turn, 20 submitted turns or ten minutes before an explicit restart; these are interaction limits, not provider billing bounds.
+
+Acceptance uses 25 controller cases and four actual shared-chat/assignment cases with fictional transports, plus native typechecking/exports and browser layout inspection. Shared tests cover persistence, exact recovery, no preapproval dispatch above $1, explicit decision review, same-root settlement and spoken control of a typed job. Physical microphone, recognition quality, playback/autoplay, iPhone silent mode, Android language support, interruption and installed-phone/background behavior remain unverified. No real speech or live provider was used in this pass.
+
+## Legacy OpenAI Realtime integration — separate, retained option
+
+The primary UI now uses the shared spoken conversation above. The original Realtime component/server routes remain in source, with their narrower tool set and unfinished aggregate audio spending described below. Replacing the primary entry does **not** complete this paid-audio integration or close Phase 4/C6.
+
 
 The committed browser integration, originally delivered under the historical Phase 4 label, implements the OpenAI Realtime WebRTC flow with a server-owned control connection. The server mints a 60-second credential, keeps it in memory, and exchanges the browser's SDP with OpenAI. Neither the permanent key nor the ephemeral credential is returned by the application API. The browser carries microphone and generated audio over WebRTC. [OpenAI WebRTC guide](https://developers.openai.com/api/docs/guides/voice-webrtc).
 
@@ -18,7 +33,7 @@ The checked guide also describes GPT-Live. AgentDesk does not silently mix those
 
 ### Connection lifecycle
 
-1. User selects live voice; if no server credential is configured, show the precise setup requirement.
+1. In the retained legacy component, the user selects Realtime voice; if no server credential is configured, show the precise setup requirement.
 2. Request microphone permission after a user action and show connection progress.
 3. `POST /api/voice/session` authenticates, checks Core entitlement and remaining voice allowance, reserves at most the configured session limit, and prepares a single-use credential. Its response contains only the session/conversation identifiers, expiry and time limit. Only one unfinished session per employee/office is allowed.
 4. The browser creates a peer connection, adds microphone tracks and a data channel, then sends its SDP to `POST /api/voice/connect`. The server uses the ephemeral credential, obtains the call ID from the provider's `Location` response header and attaches an authenticated WebSocket sideband. It returns the SDP answer only after the control connection opens. A client-supplied call ID is never accepted. [OpenAI server controls](https://developers.openai.com/api/docs/guides/voice-server-controls).

@@ -19,7 +19,7 @@ import { DemoAccess } from '@/components/DemoAccess';
 import { ResearchPanel } from '@/components/ResearchPanel';
 import { InboxPanel } from '@/components/InboxPanel';
 import { QueuePanel, SettingsPanel, RecordsPanel } from '@/components/WorkPanels';
-import { VoicePanel } from '@/components/VoicePanel';
+import { SharedVoicePanel } from '@/components/SharedVoicePanel';
 import type { BillingState } from '@/lib/billing-contracts';
 import { Marketplace,Workforce,BillingPanel } from '@/components/CommercePanels';
 import type { PhaseTwoState } from '@/lib/intelligence-contracts';
@@ -55,6 +55,7 @@ export default function Workspace() {
   const [pendingChat,setPendingChat]=useState<PendingChatRequest|null>(null);
   const activeActor=useRef<string|null>(null);
   const pendingChatRef=useRef<{actorId:string;request:PendingChatRequest}|null>(null);
+  const sendLock=useRef(false);
   const [needsAccess, setNeedsAccess] = useState(false);
   const [demoGuide, setDemoGuide] = useState(false);
   const [billing,setBilling]=useState<BillingState|null>(null);
@@ -160,8 +161,9 @@ export default function Workspace() {
     try { const result=await api<{conversationId:string}>('/messaging/conversation',{});setSeparateChat(false);setConversationId(result.conversationId);await refresh();navigate('assistant'); }
     catch(e){report(e);}
   };
-  const send = async (text: string) => {
-    if (!text.trim() || sending) return;
+  const send = async (text: string,spoken=false):Promise<ToolResult|undefined> => {
+    if (!text.trim() || sending||sendLock.current){if(spoken)throw new Error('Wait for the outstanding request before speaking again.');return;}
+    sendLock.current=true;
     setView('assistant'); setChat(''); setSending(true); setOptimisticMessage(text.trim()); setError('');
     const storageKey=`agentdesk-pending-turn:${data?.actor.id}`;
     try {
@@ -173,12 +175,14 @@ export default function Workspace() {
       pendingChatRef.current={actorId:data!.actor.id,request:pending};setPendingChat(pending);
       try{sessionStorage.setItem(storageKey,JSON.stringify(pending));}catch{}
       const result=await api<{conversation:Conversation;result:ToolResult}>('/chat',pending);
-      if(activeActor.current!==data?.actor.id)return;
+      if(activeActor.current!==data?.actor.id){if(spoken)throw new Error('Workspace access changed. Reopen your conversation.');return;}
       try {sessionStorage.removeItem(storageKey);}catch{/* Completed work remains saved. */}
       pendingChatRef.current=null;setPendingChat(null);
       setConversationId(result.conversation.id);await refresh();
-    } catch(e){if(e instanceof ApiError&&[400,401,402,403,404,422].includes(e.status)){pendingChatRef.current=null;setPendingChat(null);try{sessionStorage.removeItem(storageKey);}catch{}}report(e);setChat(text);}
-    finally{setSending(false);setOptimisticMessage(undefined);}
+      if(spoken&&activeActor.current!==data?.actor.id)throw new Error('Workspace access changed. Reopen your conversation.');
+      return result.result;
+    } catch(e){if(e instanceof ApiError&&[400,401,402,403,404,422].includes(e.status)){pendingChatRef.current=null;setPendingChat(null);try{sessionStorage.removeItem(storageKey);}catch{}}report(e);setChat(text);if(spoken)throw e;}
+    finally{sendLock.current=false;setSending(false);setOptimisticMessage(undefined);}
   };
   const useSpecialist=(id:string)=>{if(id==='onboarding-coaching'||id==='workflow-navigator')navigate('knowledge');else if(id==='investor-hunter')navigate('hunter');else if(id==='deal-marketing')navigate('packages');else if(id==='call-notetaker')captureDebrief();else if(id==='acquisition-disposition')navigate('releases');else if(id==='team-performance')void send('Show team workload');else if(id==='transaction-coordinator')navigate('transactions');else if(id==='investor-qualification')void send('Qualification review for Mike');else if(id==='investor-relationship')void send('Get me ready to call Mike');else if(id==='buyer-matchmaker')void send(`Match buyers to ${data?.properties[0]?.address}`);else if(id==='salesforce-assistant')void send('Show my CRM investors');else void send('What should I focus on today?');};
   const openJob = (job: ResearchJob) => { setActiveJobId(job.id); navigate('hunter'); };
@@ -254,7 +258,7 @@ export default function Workspace() {
     {pendingNavigation && <Modal title={view==='transactions'?"Keep your transaction changes?":view==='documents'?"Keep your document changes?":view==='knowledge'?"Keep your guidance changes?":view==='updates'?"Keep your update preferences?":inboxBusy?"Finishing your inbox update":inboxDirty?"Keep your draft?":"Leave the inbox?"} onClose={()=>setPendingNavigation(null)}><p className="panel-description">{view==='transactions'?(inboxBusy?'Finish or retry this transaction update before leaving.':'Your transaction reports are unsaved. Keep editing or leave without saving.'):view==='documents'?(inboxBusy?'Finish or retry your document action before leaving.':'Your document edits are unsaved. Keep editing or leave without saving.'):view==='knowledge'?(inboxBusy?'Finish or retry the current guidance request before leaving.':'Your guidance changes have not been saved. Keep editing or leave without saving.'):view==='updates'?(inboxBusy?"Finish or retry the current settings request before leaving.":"Your update preferences have not been saved. Keep editing or leave without saving."):inboxBusy?"Please wait for the current inbox update to finish before leaving.":inboxDirty?"Your latest reply edits have not been saved. Keep editing to save them before leaving the inbox.":"Your inbox changes are saved. You can continue to the selected workspace."}</p><div className="employee-actions"><button className="button secondary" onClick={()=>setPendingNavigation(null)}>Keep editing</button><button className="button primary" disabled={inboxBusy} onClick={()=>{setInboxDirty(false);finishNavigation(pendingNavigation);}}>{inboxDirty?"Leave without saving":"Continue"}</button></div></Modal>}
     {historyOpen && <Modal title="Your conversations" onClose={() => setHistoryOpen(false)}><button className="button secondary full-width" onClick={() => { setSeparateChat(true); setConversationId(undefined); setChat(''); setHistoryOpen(false); }}><Plus size={16}/>New conversation</button>{data.conversations.map(item => <button className="conversation-item" key={item.id} onClick={() => { setConversationId(item.id); setHistoryOpen(false); }}><MessageSquare size={16}/><div><strong>{item.title}</strong><small>{day(item.updatedAt)}</small></div></button>)}{!data.conversations.length && <p className="panel-description">Your saved conversations will appear here.</p>}</Modal>}
     {briefing && <BriefingModal key={`${data.actor.id}-${briefing.investorId}-${briefing.propertyId || ''}`} actor={data.actor} onChange={refresh} investorId={briefing.investorId} propertyId={briefing.propertyId} onClose={() => setBriefing(null)} onPackage={preparePackage} onDebrief={captureDebrief}/>}
-    {voice && <VoicePanel conversationId={conversationId} configured={data.integrations.voice} onClose={() => setVoice(false)} onUpdate={() => void refresh()}/>}
+    {voice && <SharedVoicePanel key={`${data.actor.id}:${data.actor.role}`} blocked={sending||!!pendingChat||!!chat.trim()} onRequest={async text=>{const result=await send(text,true);if(!result)throw new Error('Check your saved request before continuing.');return result;}} onClose={()=>setVoice(false)} onConversation={()=>navigate('assistant')} onArtifact={artifact=>{const target=destinationFromArtifact(artifact);if(target)openDestination(target);else if(artifact.type==='work_run'||isRolePreparationArtifact(artifact))openWorkRun(artifact.id);else if(artifact.type==='approval')reviewActions();else navigate('assistant');}}/>}
   </div>;
 }
 function Stat({ label, value, icon, detail, onClick }: { label: string; value: number; icon: React.ReactNode; detail: string; onClick: () => void }) { return <button className="stat-card" onClick={onClick}><div className="stat-top"><span>{label}</span>{icon}</div><strong>{String(value).padStart(2, '0')}</strong><p>{detail}<ArrowUpRight size={14}/></p></button>; }

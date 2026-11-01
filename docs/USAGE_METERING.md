@@ -1,5 +1,7 @@
 # Usage metering and credit-wallet demonstration
 
+The primary desktop/native spoken interface now uses device/browser recognition and playback around the existing typed request. It creates no AgentDesk audio allocation or Realtime receipt; reasoning/research uses the configured text mode exactly as before. Its session/listening limits are interaction limits, not provider invoice bounds. References to unfinished live-voice spending below concern the retained paid OpenAI Realtime host, which this UI increment does not complete. See [voice boundaries](VOICE_AND_MESSAGING.md#shared-spoken-conversation--current-primary-voice-entry).
+
 **Current host coverage:** opt-in admitted text (including focused specialist assessments) and normal paid public-source research share one cumulative customer-credit cap, exact employee review and receipt settlement. Included deterministic delegation/research adds no AI charge. Broader paid delegated hosts and continuous Realtime voice are unfinished; default operational calls remain separate. All wallet/payment outcomes remain simulated. Historical contract evidence below records earlier boundaries; it does not override the current roadmap.
 
 

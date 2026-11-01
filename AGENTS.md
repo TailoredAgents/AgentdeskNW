@@ -40,6 +40,8 @@ Read `docs/IMPLEMENTATION_ROADMAP.md`, `MASTER_PLAN.md`, and the latest `docs/PR
 
 - Focused `consult_specialist` reviews run only inside admitted text. Preserve the original root/rate/round allowance and a final master round; require current same-request scoped tool receipts and a role-permitted method. Specialist output is advisory strict JSON with no tools or action authority. Keep queue/receipt commits atomic, retire pending reviews on instruction/source recovery and never retry unknown requests. Separate model-quality acceptance from transport/control tests.
 
+- Primary browser/native voice is turn-based device speech over the ordinary chat sender. Preserve one pending request, exact recovery identity, explicit decision-word review and epoch/permission cleanup on background/close. Audio pause never means job cancellation. No new audio host/receipt or customer charge is implied; the retained Realtime host still needs its separate admission. Native exports and simulated recognition callbacks do not establish physical audio acceptance.
+
 ## Communications inbox rules
 
 - Follow `docs/COMMUNICATIONS_INBOX.md` for the private fictional email/investor-text inbox. Keep correspondence separate from employee Copilot conversations and channel inbox/outbox.

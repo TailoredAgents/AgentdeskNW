@@ -35,7 +35,7 @@ Live Phase 4B remains subject to administrator discovery in [SALESFORCE_INTEGRAT
 
 ## Unified inbox and Copilot — communications Phases 2–3
 
-The private correspondence domain uses `communications.ts`, `communications-workflow.ts`, `communications-api.ts`, additive inbox/workflow migrations and `communications-contracts.ts`. Fictional Gmail, Outlook and business-text sources normalize to private accounts/threads/messages/drafts, independent of assistant chat and employee channel delivery. Typed Copilot tools call the same scoped assistance and draft services as the UI. Exact review, simulated delivery, reviewed journey observations and follow-ups use explicit employee API actions. The model cannot approve them. Private inbox fingerprints and history references invalidate stale assistant context; voice excludes inbox tools and inbox-derived history. There are no live adapters or background mailbox analysis. See COMMUNICATIONS_WORKFLOW.md and COMMUNICATIONS_INBOX.md.
+The private correspondence domain uses `communications.ts`, `communications-workflow.ts`, `communications-api.ts`, additive inbox/workflow migrations and `communications-contracts.ts`. Fictional Gmail, Outlook and business-text sources normalize to private accounts/threads/messages/drafts, independent of assistant chat and employee channel delivery. Typed Copilot tools call the same scoped assistance and draft services as the UI. Exact review, simulated delivery, reviewed journey observations and follow-ups use explicit employee API actions. The model cannot approve them. Private inbox fingerprints and history references invalidate stale assistant context; the retained OpenAI Realtime host excludes inbox tools and inbox-derived history; the current device/browser spoken interface uses the ordinary full typed path. There are no live adapters or background mailbox analysis. See COMMUNICATIONS_WORKFLOW.md and COMMUNICATIONS_INBOX.md.
 
 ## Communications and credits update — October 29, 2026
 
@@ -47,7 +47,8 @@ The workforce subscription and wallet simulator extend the same monolith. All im
 ```mermaid
 flowchart LR
   Web[Responsive web application] --> API[Authenticated HTTP boundary]
-  Voice[WebRTC voice client] --> API
+  Speech[Device/browser spoken conversation] --> API
+  Voice[Retained Realtime voice client] --> API
   API --> Copilot[Manager orchestrator]
   API --> Services[Scoped domain services]
   Copilot --> Tools[Typed tool registry]
@@ -111,7 +112,7 @@ Property release commands carry a source, explicit audience, unique event key an
 | CRM adapter | Authorized fictional buyer lookup and approved note/import mutations | Salesforce delegated OAuth, schema mappings, field access, replay protection |
 | Research provider | Separate fictional provider and explicitly selected OpenAI web-search adapter; no live source run verified | Live evidence evaluation, licensed transactions, independent contact verification and source-rights review |
 | Model provider | Bounded Responses manager, durable replay and provider/token receipts; limited live fictional rehearsals recorded in PROGRESS | Broader quality evaluation, job-wide cost admission, operational reconciliation and retention |
-| Voice | WebRTC setup, trusted server sideband and receipt-driven tools/lifecycle; live audio unverified | Real microphone/audio trials, cost evaluation, multi-instance operation and production metering policy |
+| Voice | Primary turn-based device/browser speech reuses the complete typed sender/tools/recovery; retained WebRTC host has a separate server sideband | Physical speech/playback acceptance; full-duplex Realtime parity, aggregate paid-audio admission and production lifecycle |
 | Employee channels | Shared Copilot with implemented Slack/SMS identity linking, replay-safe ingress/outbox and mocked delivery acceptance | Actual account setup and verified real round-trips |
 | Investor correspondence | Private fictional Salesforce/Gmail/Outlook/text inbox, typed Copilot search/read/assistance, exact generated-reply simulation and reviewed relationship association | General edited sends, files/CC, approved live sync/transport, dedicated investor numbers and delivery reconciliation |
 | Knowledge | Baseline fixture guidance | Approved document revisions and permission-aware retrieval |

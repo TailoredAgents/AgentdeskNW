@@ -1,5 +1,11 @@
 # Architecture decisions
 
+## October 31, 2026 — Shared turn-based speech before separate paid Realtime expansion
+
+Implement the primary desktop/native voice experience as recognition → existing authenticated text Copilot → device/browser playback. This reuses the complete tools, durable request recovery, role scope and current spending host rather than maintaining another limited assistant. Native requires on-device recognition; browser speech may use its provider online, disclosed before Start. The employee explicitly starts automatic completed-turn submission; possible spending decisions pause for exact-word review. The microphone is off while thinking/speaking, with manual interruption and foreground-only operation.
+
+This is a bounded implementation choice within the authorized voice milestone, not a cancellation of richer voice. Keep the older OpenAI Realtime component/routes and its uncompleted provider-wide allocation/receipts/lifecycle visible in the canonical roadmap. No new audio charge is introduced; text reasoning follows existing configuration and simulated-credit boundaries. Real audio/device acceptance is deferred, and exports do not substitute for it. The next independently developable slice is Salesforce-first application integration with fictional transport.
+
 
 ## October 30, 2026 — Resume the bounded mobile/shared-controls checkpoint
 

@@ -49,7 +49,7 @@ For a compiled local demo, run `npm run build`, then `AGENTDESK_ALLOW_PRODUCTION
 
 ## Optional AI and voice
 
-Set `OPENAI_API_KEY` server-side in `.env.local` and restart. `OPENAI_MODEL` and `OPENAI_REALTIME_MODEL` select configured models. Without a key, deterministic tools and dedicated workflows remain usable and labeled as local demonstration behavior; voice shows its configuration state. Configuration is not live acceptance. Existing browser voice has narrower tool coverage than typed Copilot; native dictation is a separate integration awaiting device acceptance. See [voice and messaging](docs/VOICE_AND_MESSAGING.md).
+Set `OPENAI_API_KEY` server-side in `.env.local` and restart. `OPENAI_MODEL` and `OPENAI_REALTIME_MODEL` select configured models. Without a key, deterministic tools and dedicated workflows remain usable and labeled as local demonstration behavior. The primary browser/native spoken conversation uses device speech and the same typed Copilot tools; full AI reasoning still needs the configured text provider. Reviewed dictation remains a separate option. Physical audio acceptance is pending. The retained OpenAI Realtime host is a separate, narrower integration with unfinished aggregate audio spending. Configuration is not live acceptance. See [voice and messaging](docs/VOICE_AND_MESSAGING.md).
 
 ## Engineering verification
 
