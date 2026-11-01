@@ -1,0 +1,90 @@
+{
+  "kind": "observed_local_browser_rehearsal",
+  "modelQualityAcceptance": false,
+  "observedAt": "2026-11-01",
+  "sourceCommit": "815f4aac1d629b9f0c66d4ed257e9e4851ae270d",
+  "scope": "Isolated fictional browser rehearsal; no model or external delivery",
+  "providerOperations": 0,
+  "sendReceipts": 1,
+  "opportunity": {
+    "id": "opportunity_4e2c11a1-9210-4271-8ab9-de7a26920d70",
+    "version": 2,
+    "status": "reviewing"
+  },
+  "handoff": {
+    "id": "handoff_0539b89f-5dd4-4ef1-b983-c4ba456b5e99",
+    "version": 7,
+    "assignedTo": "user-jordan",
+    "resolution": {
+      "note": "Reviewed Jordan’s fictional source check. This assigned review is complete; a structural assessment remains missing and the opportunity is not approved or listed.",
+      "reviewedBy": "user-taylor",
+      "reviewedAt": "2026-11-01T23:29:58.869Z"
+    }
+  },
+  "handoffEvents": [
+    {
+      "action": "assign",
+      "actor": "user-taylor"
+    },
+    {
+      "action": "acknowledge",
+      "actor": "user-jordan"
+    },
+    {
+      "action": "report",
+      "actor": "user-jordan"
+    },
+    {
+      "action": "assign",
+      "actor": "user-taylor"
+    },
+    {
+      "action": "acknowledge",
+      "actor": "user-jordan"
+    },
+    {
+      "action": "report",
+      "actor": "user-jordan"
+    },
+    {
+      "action": "resolve",
+      "actor": "user-taylor"
+    }
+  ],
+  "savedFollowUps": [
+    {
+      "id": "task_e9460eb8-486a-4bb4-9968-61a5d229a762",
+      "title": "Verify repair-scope information and contractor-review availability",
+      "status": "open",
+      "investorId": "investor-mike"
+    }
+  ],
+  "authoredSeedHandoffEvents": 3,
+  "employeeUiHandoffActions": 4,
+  "postRepair": {
+    "changes": [
+      "Home labels identify task/CRM counts without implying all work is complete",
+      "Property presentation removes caveats already displayed verbatim in its question/reasons"
+    ],
+    "reloadPreservedSavedOutreach": true,
+    "phoneWidth": {
+      "width": 390,
+      "height": 844,
+      "surface": "Responsive website",
+      "physicalDeviceAcceptance": false
+    }
+  },
+  "checks": {
+    "roleTests": 28,
+    "httpChecks": 325,
+    "rootTypecheck": "passed",
+    "mobileTypecheck": "passed",
+    "lint": "passed; one pre-existing DemoAccess navigation warning",
+    "productionBuild": "passed"
+  },
+  "limits": [
+    "AI key blank; deterministic Copilot transport only",
+    "No actual provider, investor delivery, payment, SMS, audio or push acceptance",
+    "Hosted exact-revision publication is verified separately in the delivery report"
+  ]
+}

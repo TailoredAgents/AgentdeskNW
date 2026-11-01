@@ -35,7 +35,7 @@ Updated November 1, 2026. This index assigns each document a purpose; it is not 
 | [ORIGINAL_BRIEF](ORIGINAL_BRIEF.md), [PHASE_2_DIRECTIVE](PHASE_2_DIRECTIVE.md), [PHASE_3_DIRECTIVE](PHASE_3_DIRECTIVE.md), [PHASE_4_DIRECTIVE](PHASE_4_DIRECTIVE.md) | Original supplied requests, preserved verbatim below a historical banner. Later decisions supersede pricing, priorities, role assumptions and sequencing |
 | [PHASE_2_REPORT](PHASE_2_REPORT.md), [PHASE_3_REPORT](PHASE_3_REPORT.md), [PHASE_4_REPORT](PHASE_4_REPORT.md), [PHASE_4_AUDIT](PHASE_4_AUDIT.md), [LIVE_PROVIDER_CHECK](LIVE_PROVIDER_CHECK.md) | Dated checkpoint evidence; not proof of the current working tree or deployed version |
 | [CONVERSATIONAL_REHEARSAL](CONVERSATIONAL_REHEARSAL.md) | Cross-turn natural-language acceptance scenarios and inspected evidence; authored cases do not establish model quality |
-| [DEMO_RUNBOOK](DEMO_RUNBOOK.md), [MONDAY_DEMO](MONDAY_DEMO.md) | Presentation recipes for earlier verified slices. Reconcile with current capabilities and rehearse the actual deployed version |
+| [DEMO_RUNBOOK](DEMO_RUNBOOK.md), [MONDAY_DEMO](MONDAY_DEMO.md) | DEMO_RUNBOOK begins with the current all-role presentation recipe and transport limits; its later preserved sections and MONDAY_DEMO are historical. Verify the deployed revision and use PROGRESS for actual rehearsal evidence |
 | [RENDER_DEMO](RENDER_DEMO.md) | Hosted fictional-demo configuration. It does not establish the deployed revision or production identity |
 | [PROGRESS](PROGRESS.md), [DECISIONS](DECISIONS.md) | Append-only chronology; newest summary/supersession guides interpretation of older entries |
 

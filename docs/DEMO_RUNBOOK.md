@@ -4,6 +4,16 @@
 
 Use a fictional connected business workspace before seeking New Western access. The Salesforce source preview is supporting engineering; it is **not the meeting's main story or a prerequisite**. Existing CRM, Inbox, tasks and property releases are the simulated backend. Actions must save actual fictional results. No real investor delivery, company connection or live-research setup is needed for this rehearsal. Older provider preflight sections below are optional historical reference, not required meeting preparation.
 
+### Current presentation preparation
+
+- Verify the exact Render **Live** commit, then open the hosted workspace and confirm its saved records load. A pushed commit or successful build alone is insufficient. Use the existing invitation entrance; local role selection is not a production identity demonstration.
+- Start with the role's home shortcuts: **Find the right buyer** for Alex, **Review new opportunities** for Jordan, and **See what needs attention** for Taylor. Each opens current records, not a scripted completion animation. All sixteen specialists remain registered; their individual demo/readiness labels are not proof of expert effectiveness.
+- Lead with one useful result and open its saved record. Then change a fact and show what changes. Use the two connected stories below, letting the audience investigate their own questions within the supported scope.
+- Home task counts cover saved tasks; the CRM review count covers proposed record changes. Neither counts every shared assignment, private reply or saved job. An empty task list does not mean the employee has no work.
+- State which transport is being shown. The local no-key rehearsal uses deterministic tools; it does not demonstrate model conversation quality. Hosted typed AI uses the configured model. SMS, installed-app speech and push remain unaccepted until actual account/device tests. The website at phone width is a responsive layout check, not an installed app.
+- Do not reset the hosted database to recreate the story. Read existing drafts, reports and decisions first; use fresh explicitly fictional records or the disposable rehearsal workspace for destructive scenario variations. Simulation controls save real fictional effects; no investor receives them.
+- Developer-paid AI checks must use the existing admitted testing campaign. Do not submit a hosted AI prompt merely to rehearse a screen outside that campaign. The latest observations and remaining limits are in [CONVERSATIONAL_REHEARSAL](CONVERSATIONAL_REHEARSAL.md) and [PROGRESS](PROGRESS.md).
+
 ### Existing buyers → appropriate outreach → reply → follow-through
 
 1. As dispositions, open **Explore the demo → Find the right buyer**. This opens the current `123 Example Street` property, rather than a scripted completion screen. It shows existing buyer fit, concerns and the next action, followed by current outreach and follow-up links. Phone users open **Work → Deals & investors → the same property**. Property views without buyer-role access retain their normal fact view.
@@ -30,14 +40,14 @@ The home shortcuts, demonstration guide and desktop/native Agent starters follow
 
 # AgentDesk NW — detailed demonstration reference
 
-Use the [Monday walkthrough](MONDAY_DEMO.md), [communications/credits plan](COMMUNICATIONS_AND_CREDITS_PLAN.md), and [progress log](PROGRESS.md) for current scope. All seeded accounts and records are fictional. Subscription and wallet actions are demonstrations, with no payment collection or investor delivery. The new workforce offer supersedes historical per-specialist purchase examples.
+Use the current stories above, [communications/credits plan](COMMUNICATIONS_AND_CREDITS_PLAN.md), and [progress log](PROGRESS.md) for this demonstration. The [Monday walkthrough](MONDAY_DEMO.md) is historical reference. All seeded accounts and records are fictional. Subscription and wallet actions are demonstrations, with no payment collection or investor delivery. The workforce offer supersedes historical per-specialist purchase examples.
 
 ## Start
 
 1. Double-click `Start AgentDesk.command`, or run `npm run start` after `npm run build`.
 2. Open `http://127.0.0.1:3000`. Select Alex Morgan / Dispositions in Settings if needed.
 3. Preserve the active database and saved history. Forward migrations retain prior records, original subscription snapshots and invoices; do not restore an old backup over current work for a presentation.
-4. Open **AI workforce**. Show the $50 retail offer, role-available capabilities and four planned specialists. All available specialists coordinate through the same Copilot.
+4. Open **AI workforce**. Show the provisional $50 retail offer, all sixteen registered specialists and their current role/readiness labels. The current registry contains two locally ready and fourteen demo entries, with none planned. This does not establish full specialist depth or company acceptance. Available specialists coordinate through the same Copilot.
 
 ## Workforce and wallet story
 
@@ -46,12 +56,12 @@ Use the [Monday walkthrough](MONDAY_DEMO.md), [communications/credits plan](COMM
 3. Simulate success and show that the unused portion of the reservation returns to available credit. Optionally reserve/mark unknown, then resolve the saved operation to illustrate uncertainty and replay-safe accounting.
 4. Add a simulated $10 top-up. Show purchased credit separately and inspect the recorded activity. No card or payment is involved.
 5. Change the monthly sample-spending limit and show that a new estimate cannot exceed the remaining limit. This limit applies to the wallet simulator; live provider usage remains in the operational-usage section.
-6. Show that ordinary task completion and navigation do not consume the wallet. Current real AI/provider usage is not yet debited from it.
+6. Show that ordinary task completion and navigation do not consume the wallet. Default operational AI usage is separate from this simulator; optional admitted text/research use their separately configured assignment review and simulated settlement. Do not switch spending modes or imply complete provider-wide billing protection during the walkthrough.
 7. Show the fictional company-email preview and planned Business Line card. They do not imply a connected company mailbox, purchased number or live investor sending capability.
 
 ## Company-email demonstration story — Phase 4A
 
-Open **Inbox** as Alex. The default **Company email · Salesforce** account contains fictional correspondence and shows its source capabilities. Open Mike’s repair-cost question, inspect its source and permitted relationship context, and prepare a grounded reply in the saved writing style. Review sender, recipient and exact text before confirming **simulated sending**. Use **Explore examples → Company-email follow-up**, then separately review and save a journey observation and personal follow-up. No provider delivery, automatic CRM approval or wallet charge occurs. Custom edits remain saved drafts; only current generated relationship replies use this simulator.
+Open **Inbox** as Alex. The default **Company email · Salesforce** account contains fictional correspondence and shows its source capabilities. Open Mike’s repair-cost question, inspect its source and permitted relationship context, and prepare a grounded reply in the saved writing style. Review sender, recipient and exact text before confirming **simulated sending**. Use **Explore inbox examples → Company-email follow-up**, then separately review and save a journey observation and personal follow-up. No provider delivery, automatic CRM approval or wallet charge occurs. Employee edits can be saved and separately reviewed for exact simulation; source-bound package/title drafts retain their own eligibility requirements. An edited draft is never automatically sent.
 
 Expand **Other inboxes & source examples** to inspect captured activity with local drafts but no sending route, and headers-only records without subject/body analysis or sourced actions. Optional Gmail, Outlook and investor-text accounts retain their prior identities, messages and drafts. In **Explore examples**, choose **Same email, second source** and expand the message’s source details: two references belong to one message. Pause company-email access to demonstrate redacted content and blocked actions, then restore access and obtain a fresh review before continuing.
 
