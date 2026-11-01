@@ -1,5 +1,17 @@
 # AgentDesk progress log
 
+## November 1, 2026 — Hosted three-role model rehearsal and answer readability
+
+**Hosted evidence:** commit `5c35e14` automatically deployed and Render reported Live; the browser health endpoint returned `{"status":"ok"}`. There was a brief 502 during deployment cutover; a reload after promotion opened the workspace normally. The owner-supplied invitation authenticated the fictional workspace. Three ordinary read-only requests used the configured live model, with no company source, live research or investor sending enabled.
+
+- **Dispositions:** `123 Example Street` review identified Mike/David criteria fits and Sarah's strategy/location/rehab mismatch; distinguished Mike's unreviewed recap and foundation exclusion from confirmed criteria; identified saved follow-ups and missing private analysis. It returned a substantive answer instead of the previously observed step-limit notice.
+- **Acquisitions:** `456 Preview Lane` review separated supplied price/repair numbers from absent supporting scope, access, comparables and closing target. It identified Jordan's acknowledged blocked assignment without claiming completed diligence, a release or delivery. Its exact opportunity link showed the same owner, missing facts and blocker.
+- **Management:** the current board and answer agreed: two accessible handoff sources, one blocked Jordan assignment, one unassigned source, zero overdue assignments, zero outstanding acknowledgments and zero employee outcomes awaiting manager review. The model distinguished a blocker from a completion awaiting acceptance and preserved pre-inventory status.
+
+**Presentation issues found and addressed:** web Copilot had displayed raw Markdown markers/tables. Assistant answers now render headings, lists, emphasis and horizontally scrollable tables; employee text remains literal. Raw HTML and remote images are not rendered, default URL sanitization is retained, and links open separately. Generic opportunity/handoff artifacts now expand the correct board rather than leaving it collapsed. Native chat text formatting remains a separate polish item; this renderer is for desktop and mobile browsers.
+
+**Limits:** three successful bounded read-only rehearsals establish useful task evidence, not all-specialist expertise, mutation/task-planning acceptance, a paired generic-model comparison, SMS/phone acceptance or production readiness. Final formatting verification passed **1,614 tests across 89 files**, root typecheck/lint/build and all **22 isolated HTTP suites**. Two new display-boundary tests cover semantic tables and withheld executable HTML, remote images and unsafe links. Browser inspection confirmed readable headings, lists and a scrollable table. The earlier native checks remain valid; this final change does not alter native code. The formatting revision’s hosted deployment is checked after publication, separately from the `5c35e14` model evidence. No credentials, company connections, external delivery, rates or spending modes changed.
+
 ## November 1, 2026 — Role navigation polish and a live Copilot rehearsal fix
 
 **Observed on the hosted demo:** an actual read-only request about `123 Example Street` retrieved buyer matching and relationship evidence but ended with a step-limit notice instead of an explanation. The response was not accepted as a successful demonstration. This is live-model evidence of a runtime gap, not a fictional test result.
