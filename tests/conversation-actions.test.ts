@@ -98,7 +98,7 @@ describe('conversational task lifecycle',()=>{
   });
 
   it('prioritizes the one actually saved task in the latest completed turn over preceding duplicate-check results',async()=>{
-    const other=task('Existing callback','2026-10-30T13:00:00Z'),requestId='list-then-save',command={conversationId,requestId,message:'Remind me tomorrow at 10am to check the repair breakdown.'};
+    const other=task('Existing callback','2026-10-30T13:00:00Z'),requestId='list-then-save',command={conversationId,requestId,message:'Show my open reminders, then remind me tomorrow at 10am to check the repair breakdown.'};
     const list=await dispatchTool(actor,'list_my_tasks',{status:'open',query:null},command);
     const saved=await dispatchTool(actor,'create_task',{title:'Repair breakdown check',dueAt:'2026-10-30T14:00:00Z',investorId:'investor-mike'},command);
     const answer=addMessage(actor,conversationId,{role:'assistant',content:'Saved the repair breakdown reminder for tomorrow at 10am.',artifacts:[...list.artifacts,...saved.artifacts]});

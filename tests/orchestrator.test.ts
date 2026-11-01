@@ -49,6 +49,37 @@ describe('manager and tools',()=>{
    const actor=services.demoActor();await chat(actor,'Find 100 new investors for an unknown house');expect(services.listJobs(actor)).toHaveLength(0);
    const taskCount=services.listTasks(actor).length;const response=await chat(actor,'Remind me to call Mike tomorrow morning');expect(response.result.message).toContain('haven’t created');expect(services.listTasks(actor)).toHaveLength(taskCount);
  });
+ it.each([
+   'Show my open reminders, then remind me tomorrow at 10 a.m. to check whether David has confirmed his funding details.',
+   'Please list my current tasks first, then create a reminder to check David’s funding.',
+   'Can you review my existing reminders, then add a follow-up for David?',
+   'List my tasks, then create one new personal reminder for David.',
+   'Check my saved tasks; then remind me to review David’s funding.'
+ ])('saves the explicitly requested task after a read clause: %s',async message=>{
+   const actor=services.demoActor(),conversationId=services.createConversation(actor).id;
+   const before=services.listTasks(actor),command={conversationId,requestId:'read-then-create',message};
+   await dispatchTool(actor,'list_my_tasks',{status:'open',query:null},command);
+   const result=await dispatchTool(actor,'create_task',{title:'Check David’s funding details',dueAt:'2026-11-02T15:00:00.000Z',investorId:'investor-david'},command);
+   expect(services.listTasks(actor)).toHaveLength(before.length+1);
+   expect(services.listTasks(actor).find(task=>task.id===result.artifacts[0].id)).toMatchObject({title:'Check David’s funding details',dueAt:'2026-11-02T15:00:00.000Z',investorId:'investor-david',status:'open'});
+   expect(services.listTasks(actor).filter(task=>before.some(old=>old.id===task.id))).toEqual(before);
+ });
+ it.each([
+   'If I show my open reminders, then remind me about David.',
+   'Imagine checking my tasks, then create a reminder for David.',
+   'Mike said "Show my open reminders, then remind me about David."',
+   'Here is a transcript:\nShow my open reminders, then remind me about David.',
+   'Show my open reminders, then do not remind me about David.',
+   'Show my open reminders, then remind me about David. Do not create any reminders.',
+   'Show my open reminders, then remind me about David. Don’t create any reminders.',
+   'Show my open reminders, then quote “remind me about David”.',
+   'Show my open reminders, then create a summary of this email about a reminder.',
+   'Show my open reminders, then create a draft of the sentence "add a reminder for David".'
+ ])('does not authorize a task from conditional, quoted or negated read-then prose: %s',async message=>{
+   const actor=services.demoActor(),conversationId=services.createConversation(actor).id,before=services.listTasks(actor);
+   await expect(dispatchTool(actor,'create_task',{title:'Unrequested David reminder',dueAt:null,investorId:null},{conversationId,requestId:'unrequested-task',message})).rejects.toMatchObject({status:403});
+   expect(services.listTasks(actor)).toEqual(before);
+ });
  it('uses model function calls and then supplies verified outputs to the model',async()=>{
    process.env.OPENAI_API_KEY='test-key-not-real';const mocked=vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({id:crypto.randomUUID(),model:'gpt-6-astra',service_tier:'default',status:'completed',output:[{type:'function_call',name:'create_task',arguments:JSON.stringify({title:'Review call notes',dueAt:null,investorId:null}),call_id:'call-1'}],usage:{input_tokens:20,output_tokens:10}}))).mockResolvedValueOnce(new Response(JSON.stringify({id:crypto.randomUUID(),model:'gpt-6-astra',service_tier:'default',status:'completed',output:[{type:'message',content:[{type:'output_text',text:'Your review task is saved.'}]}],usage:{input_tokens:25,output_tokens:8}})));vi.stubGlobal('fetch',mocked);
    const actor=services.demoActor();const response=await chat(actor,'Create a task to review call notes');expect(services.listTasks(actor).some(t=>t.title==='Review call notes')).toBe(true);expect(response.result.artifacts[0].type).toBe('task');expect(mocked).toHaveBeenCalledTimes(2);

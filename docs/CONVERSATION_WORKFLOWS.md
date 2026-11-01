@@ -41,6 +41,7 @@ This is local/browser acceptance, not installed-phone lifecycle or offline recov
 | Say this | What happens |
 | --- | --- |
 | `Show my open reminders.` | Lists the employee's current personal tasks. |
+| `Show my open reminders, then remind me tomorrow at 10am to check David’s funding.` | A clear task-list request followed by an explicit reminder instruction can save the requested task in the same turn. Quoted/conditional read-then text and negative creation instructions do not authorize it. |
 | `Complete Call Mike about repair scope.` | Completes one uniquely matching open task. |
 | `Can you mark that reminder as done?` | Uses a current, unambiguous task reference; otherwise asks which task. |
 | `I finished the task Call Mike about repair scope.` | Records completion of that task, without inventing an investor response. |

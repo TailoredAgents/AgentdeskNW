@@ -1,5 +1,15 @@
 # AgentDesk progress log
 
+## November 1, 2026 — Approved rehearsal allowance and compound reminder requests
+
+**Owner-approved allowance:** exactly 250,000 operational demo text tokens were granted to Alex through the existing manager billing controls. The employee view verified 886,784 consumed, zero reserved and an included total rising from 1,000,000 to 1,250,000 (363,216 remaining before further checks). This is separate from the sample dollar wallet; no payment, auto-top-up, provider configuration or broader spending policy changed.
+
+**Hosted draft acceptance at `5e30685`:** in a fresh chat, current company email → next-step journey review → “Draft a reply to that” produced a complete natural confirmation and the correct unsent Inbox reply. Inspection verified the recipient, unchanged grounded body and 11:16 a.m. saved time. This closes the previously allowance-blocked draft-continuity check; custom wording persistence remains unsupported, with the earlier honest-preview evidence retained.
+
+**New observed gap:** “Show my open reminders, then remind me tomorrow at 10 a.m. to check whether David has confirmed his funding details” listed the five existing reminders, but the action-intent check rejected the explicit second clause. Copilot correctly reported no saved task. The action check now accepts a clear task-list/read instruction followed by an explicit reminder/create instruction. The new branch requires a direct task/reminder/follow-up object; asking for a summary or draft that merely mentions reminders does not authorize task creation. Negated requests include straight and curly apostrophes. Existing scope, date, receipt and short-correction checks remain unchanged.
+
+**Verification:** all **1,664 tests across 91 files**, **82 focused checks**, root typecheck/lint/build and all **22 isolated HTTP suites** passed on the final reviewed code. Independent review caught and closed the new branch’s summary/draft false-positive cases before publication. Lint retains the existing DemoAccess navigation warning. The hosted post-fix reminder retest is recorded after deployment; the approved allowance has not been expanded again.
+
 ## November 1, 2026 — Hosted conversational rehearsal and focused follow-up fixes
 
 **Published follow-up:** `a4d84dd` was committed/pushed and Render automatically reported Live. The app reloaded successfully with saved work intact. On the hosted retest, email → next-step journey review → “Draft a reply to that” reached the correct saved Inbox reply without demanding the name. Inbox verified the current unsent body and updated 10:40 a.m. saved time. However, the final model answer stopped at the operational text-token allowance; this is **partial**, not a clean end-to-end pass. Billing showed 886,784 consumed of 1,000,000 text tokens, 113,216 remaining and zero reserved—insufficient for the next conservative model reservation, not a provider payment error. No allowance, payment or provider configuration was changed.

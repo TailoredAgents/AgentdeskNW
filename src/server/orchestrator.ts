@@ -346,7 +346,10 @@ function dispatchToolSync(actor: Actor,name: string,raw:unknown,command?:TurnCom
 }
 
 function employeeRequestedTaskCreation(message:string):boolean {
- return /(?:^|[.!?]\s+|\band\s+)(?:(?:please|can you|could you|would you)\s+)?(?:remind me|(?:create|add|save|set|schedule)\b[^.!?\n]{0,80}\b(?:tasks?|reminders?|follow[ -]?up))\b/i.test(message)&&! /\b(?:do not|don't|never)\s+(?:create|add|save|set|schedule|remind)/i.test(message);
+ // Permit an explicit read-then-create request, not arbitrary "then" inside a
+ // hypothetical or quoted source. Both clauses must be employee imperatives.
+ const readThenCreate=/^(?:(?:please|can you|could you|would you)\s+)?(?:show|list|review|check)\s+(?:me\s+)?(?:my|the)\s+(?:(?:current|open|existing|saved)\s+)*(?:tasks?|reminders?)(?:\s+first)?\s*[,;]?\s+(?:and\s+)?then\s+(?:(?:please|can you|could you|would you)\s+)?(?:remind me|(?:create|add|save|set|schedule)\s+(?:me\s+)?(?:(?:a|an|the|another|one|two|three|\d{1,2})\s+)?(?:(?:new|personal|internal)\s+)*(?:tasks?|reminders?|follow[ -]?ups?))\b/i.test(message.trim());
+ return (readThenCreate||/(?:^|[.!?]\s+|\band\s+)(?:(?:please|can you|could you|would you)\s+)?(?:remind me|(?:create|add|save|set|schedule)\b[^.!?\n]{0,80}\b(?:tasks?|reminders?|follow[ -]?up))\b/i.test(message))&&! /\b(?:do not|don['’]t|never)\s+(?:create|add|save|set|schedule|remind)/i.test(message);
 }
 
 export function assistantInstructions(actor:Actor):string {
