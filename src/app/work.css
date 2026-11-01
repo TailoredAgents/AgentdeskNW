@@ -192,3 +192,14 @@
 .conversation-resources summary:focus-visible{outline:2px solid #267452;outline-offset:4px;border-radius:3px;}
 .conversation-resources .chat-artifact{margin-top:10px;}
 .conversation-specialists{margin:12px 0 0;color:#74877b;font-size:11px;line-height:1.8;}
+
+/* Recovery remains beside the original request without replacing saved work. */
+.chat-recovery{align-items:flex-start;border:1px solid #ead9a7;color:#5c4a1d;line-height:1.6;}
+.chat-recovery strong,.chat-recovery details,.chat-recovery .recovery-actions{flex-basis:100%;}
+.chat-recovery summary{cursor:pointer;font-weight:500;}
+.chat-recovery .pending-request-text{white-space:pre-wrap;overflow-wrap:anywhere;max-height:120px;overflow:auto;margin-top:8px;padding:10px;background:#ffffff80;border-radius:8px;}
+.recovery-actions{display:flex;flex-wrap:wrap;gap:8px;}
+.chat-load-state{max-width:520px;margin:32px auto;padding:24px;text-align:center;border:1px solid var(--border);border-radius:14px;background:var(--panel);color:var(--muted);}
+.chat-load-state h2{font-size:20px;color:var(--text);margin:12px 0;}
+.chat-load-state p{line-height:1.7;margin:0 0 18px;}
+.chat-load-state .text-link{display:block;margin:16px auto 0;}

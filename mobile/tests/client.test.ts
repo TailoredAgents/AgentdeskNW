@@ -1,6 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {ApiError,createApi,normalizeOrigin,RequestIdentity,SessionEpoch,workIdFromUrl,updateIdFromUrl} from '../src/client';
+import {parseChatResponse,parseChatRequestLookup} from '../../src/lib/chat-response';
 
 test('workspace address permits HTTPS and rejects embedded credential/path tricks',()=>{
  assert.equal(normalizeOrigin(' https://agent.example.com/ '),'https://agent.example.com');
@@ -24,6 +25,29 @@ test('server errors preserve status without automatically repeating a mutation',
 });
 test('unreadable server responses produce a bounded error',async()=>{
  const api=createApi('https://workspace.example','token',async()=>new Response('<private html>',{status:502}));await assert.rejects(api('/work'),error=>error instanceof ApiError&&error.status===502&&!error.message.includes('private html'));
+});
+test('an unreadable successful save retains its original identity without an automatic retry',async()=>{
+ let calls=0;const identity=new RequestIdentity(()=> 'original-request'),signature='saved job',requestId=identity.for(signature);
+ const api=createApi('https://workspace.example','token',async()=>{calls++;return new Response('<private html>',{status:200});});
+ await assert.rejects(api('/work',{requestId}).then(result=>{identity.complete(requestId);return result;}),error=>error instanceof Error&&!(error instanceof ApiError)&&!error.message.includes('private html'));
+ assert.equal(calls,1);assert.equal(identity.outstanding,true);assert.equal(identity.for(signature),requestId);assert.throws(()=>identity.for('different job'));
+});
+test('a network failure stays uncertain and does not expose transport details or repeat work',async()=>{
+ let calls=0;const api=createApi('https://workspace.example','token',async()=>{calls++;throw new TypeError('Failed with private transport details');});
+ await assert.rejects(api('/chat',{message:'Save a reminder',requestId:'original'}),error=>error instanceof ApiError&&error.status===0&&error.message.includes('Check your connection')&&!error.message.includes('private transport'));
+ assert.equal(calls,1);
+});
+test('malformed chat success and unrelated saved-result checks cannot clear the pending request',async()=>{
+ const identity=new RequestIdentity(()=> 'original-request'),requestId=identity.for('original message');
+ const conversation={id:'conversation-original',title:'Agent',createdAt:'2026-11-01T12:00:00Z',updatedAt:'2026-11-01T12:00:00Z',messages:[]};
+ const api=createApi('https://workspace.example','token',async()=>new Response(JSON.stringify({conversation,result:{}}),{status:200}));
+ await assert.rejects(api<unknown>('/chat',{requestId,message:'original message'}).then(value=>{const answer=parseChatResponse(value);identity.complete(requestId);return answer;}));
+ for(const value of [
+  {requestId:'another-request',status:'not_found',conversation,messageId:null,notice:'Not found'},
+  {requestId,status:'not_found',conversation:{...conversation,id:'another-conversation'},messageId:null,notice:'Not found'},
+  {requestId,status:'completed',conversation,messageId:'missing-answer',notice:'Completed'},
+ ])assert.throws(()=>{parseChatRequestLookup(value,{requestId,conversationId:conversation.id});identity.complete(requestId);});
+ assert.equal(identity.id,requestId);assert.equal(identity.outstanding,true);
 });
 test('uncertain retries retain their identity and cannot silently become different work',()=>{
  let count=0;const identity=new RequestIdentity(()=>`request-${++count}`);assert.equal(identity.for('first'),'request-1');assert.equal(identity.for('first'),'request-1');assert.throws(()=>identity.for('second'));identity.complete('other');assert.equal(identity.outstanding,true);identity.complete('request-1');assert.equal(identity.for('second'),'request-2');identity.clear();assert.equal(identity.outstanding,false);

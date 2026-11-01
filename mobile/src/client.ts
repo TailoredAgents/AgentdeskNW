@@ -1,3 +1,4 @@
+import {ApiResponseError,readApiResponse,transportFailureMessage} from '../../src/lib/api-response';
 import {parseWorkspaceLink} from '../../src/lib/workspace-links';
 import type {Actor,Conversation,ToolResult} from '../../src/lib/contracts';
 export interface MobileConnection {origin:string;token:string;expiresAt:string;actor:Actor;conversationId:string;sessionId:string}
@@ -22,11 +23,12 @@ export function createApi(origin:string,token:string,fetcher:FetchLike=fetch){
   if(!/^\/[a-z][a-z0-9_/?=&%.-]*$/i.test(path)||path.includes('..')||path.includes('//'))throw new Error('Unsupported application request.');
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),100_000);
   try{
-   const response=await fetcher(`${origin}/api${path}`,{method:body===undefined?'GET':method,headers:{Accept:'application/json','Content-Type':'application/json','X-AgentDesk-Request':'1',...(token?{Authorization:`Bearer ${token}`}:{})},body:body===undefined?undefined:JSON.stringify(body),signal:controller.signal,redirect:'error',credentials:'omit',cache:'no-store'});
-   let value:unknown;try{value=await response.json();}catch{throw new ApiError('The workspace returned an unreadable response. Check the connection and try again.',response.status);}
-   if(!response.ok)throw new ApiError(typeof value==='object'&&value!==null&&'error' in value&&typeof value.error==='string'?value.error:'The request could not be completed.',response.status);
-   return value as T;
-  }catch(error){if(error instanceof ApiError)throw error;if(error instanceof Error&&error.name==='AbortError')throw new ApiError('The request timed out. Check saved work before retrying; retrying this same request will keep its original identity.',0);throw error;}
+   let response:Response;
+   try{response=await fetcher(`${origin}/api${path}`,{method:body===undefined?'GET':method,headers:{Accept:'application/json','Content-Type':'application/json','X-AgentDesk-Request':'1',...(token?{Authorization:`Bearer ${token}`}:{})},body:body===undefined?undefined:JSON.stringify(body),signal:controller.signal,redirect:'error',credentials:'omit',cache:'no-store'});}
+   catch(error){throw new ApiError(transportFailureMessage(error),0);}
+   try{return await readApiResponse<T>(response);}
+   catch(error){if(error instanceof ApiResponseError)throw new ApiError(error.message,error.status);throw error;}
+  }
   finally{clearTimeout(timer);}
  };
 }

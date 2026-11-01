@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { ArrowUpRight, LoaderCircle, Sparkles, X } from 'lucide-react';
+import {ApiResponseError,readApiResponse,transportFailureMessage} from '@/lib/api-response';
 
 export function Badge({ children, tone = 'neutral' }: { children: ReactNode; tone?: 'neutral' | 'green' | 'amber' | 'cyan' | 'red' }) {
   return <span className={`badge badge-${tone}`}>{children}</span>;
@@ -48,8 +49,9 @@ export const day = (value: string | null) => value ? new Date(value).toLocaleDat
 export const readable = (value: string) => value.replace(/([a-z])([A-Z])/g, '$1 $2').replaceAll('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
 export class ApiError extends Error { constructor(message:string, public status:number) { super(message); } }
 export async function api<T>(path: string, body?: unknown, method?: string): Promise<T> {
-  const response = await fetch(`/api${path}`, { method: method || (body === undefined ? 'GET' : 'POST'), headers: { 'Content-Type': 'application/json', 'X-AgentDesk-Request': '1' }, credentials: 'same-origin', ...(body !== undefined ? { body: JSON.stringify(body) } : {}) });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new ApiError(data.error || `Request failed (${response.status})`, response.status);
-  return data as T;
+  const response = await fetch(`/api${path}`, { method: method || (body === undefined ? 'GET' : 'POST'), headers: { 'Content-Type': 'application/json', 'X-AgentDesk-Request': '1' }, credentials: 'same-origin', ...(body !== undefined ? { body: JSON.stringify(body) } : {}) }).catch(error=>{throw new Error(transportFailureMessage(error));});
+  try{return await readApiResponse<T>(response);}catch(error){
+    if(error instanceof ApiResponseError)throw new ApiError(error.message,error.status);
+    throw error;
+  }
 }

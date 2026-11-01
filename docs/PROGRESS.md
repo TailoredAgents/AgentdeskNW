@@ -1,5 +1,18 @@
 # AgentDesk progress log
 
+## November 1, 2026 — Clear recovery states and fair specialist comparisons
+
+**Conversation recovery:** malformed success responses and mismatched conversation identities no longer clear pending requests. Browser and native clients publish a validated saved answer immediately and invalidate older refreshes. Read-only request lookup can find the current employee's first separate conversation without its ID; checking never repeats work or rewrites the original request. Browser recovery keeps a persistent explanation and original request, while missing/older linked conversations use a scoped read instead of presenting a new-chat welcome. Old linked conversations are reread rather than copied from protected cache; definitive access loss retires them even if another workspace read fails.
+
+**Phone clarity:** Inbox, follow-ups and saved jobs distinguish loading/read failures from true empty states and offer explicit read-only retry. Unknown counts stay blank until loaded. Cached data survives temporary failures, access loss clears it, and accepted Agent results clear refresh indicators. Existing editors, actor/epoch boundaries and uncertain action identities remain intact.
+
+**Observed recovery:** an isolated production browser with fictional data and live AI/delivery disabled recovered an unreadable first-turn response and a saved named task completion. Three chat POSTs and two lookup GETs produced three saved turns and exactly one `task.completed` audit event for the selected task. A valid answer survived a deliberately failed bootstrap refresh. Phone-width browser failures/recovery passed for follow-ups, jobs and Inbox; the Inbox retry restored the seeded company thread. Evidence and limits are in CONVERSATIONAL_REHEARSAL C-10/C-11. No hosted fault injection, extra allowance, payment or provider settings were used.
+
+**Specialist review preparation:** 35 authored cases now cover all sixteen specialists, with new two-turn disposition/acquisition/management corrections reserved from runtime examples. Randomized model packets, blinded review sheets and arm keys are separate; gold answers and runtime teaching examples stay out of model payloads. The report excludes unequal model/revision/context/tool/configuration/budget pairs, retains exclusion reasons and shows missing role/specialist coverage. CLI export→review and two distinct sample preparations passed. All 35 cases remain **not run against actual models**; this is evaluation infrastructure and authored coverage, not demonstrated expertise or superiority.
+
+**Verification:** 1,806 root tests across 99 files; 95 native tests; 22 isolated HTTP suites with 1,842 checks; mock-transport real-process restart; root types/lint/build; native types and iOS/Android/production-web/development-web exports. Existing DemoAccess navigation lint warning and Expo Node-version advisory remain nonfatal. No installed-phone/audio/push/SMS or independent practitioner acceptance is implied. Publication verification follows below.
+
+
 ## November 1, 2026 — Memory, ambiguity and readable conversations
 
 **Natural follow-through:** explicitly temporary or conditional writing instructions stay local to the request, including a contradictory “remember … for this answer.” Permanent preferences retain source provenance and exact versioned save/forget behavior. Reminder clarification now accepts a displayed title or a bounded ordinary-language selection while preserving the pending action, original date and current candidate version. Numeric choices and missing-time answers retain priority; literal title collisions, command-like names, duplicate/stale titles, quotes and vague assent cannot silently select another task.

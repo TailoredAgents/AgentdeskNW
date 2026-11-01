@@ -3,12 +3,13 @@ import {InboxComposer} from './InboxComposer';
 import {DocumentAttachmentPicker} from './DocumentAttachmentPicker';
 import {ccText,parseCc} from '../../src/lib/communication-recipients';
 import {useEffect,useRef,useState,type ReactNode} from 'react';
-import {ActivityIndicator,KeyboardAvoidingView,Modal,Platform,Pressable,RefreshControl,ScrollView,Text,TextInput,View} from 'react-native';
+import {KeyboardAvoidingView,Modal,Platform,Pressable,RefreshControl,ScrollView,Text,TextInput,View} from 'react-native';
 import * as Crypto from 'expo-crypto';
 import type {InboxAssistance,InboxFilter,InboxFollowUpResult,InboxObservationResult,InboxSendResult,InboxSendReview,InboxState,InboxThreadDetail} from '../../src/lib/communications-contracts';
 import {ApiError,createApi} from './client';
 import {editorDirty,editorFor,inboxContextKey,keepReviewedEdits,reconcileEditor,reviewMatches,type InboxEditor} from './inbox-editor';
 import {Button} from './Button';
+import {ReadStatus} from './ReadStatus';
 import {colors,styles as s} from './styles';
 
 type Guard=(leave:()=>void)=>void;
@@ -25,7 +26,7 @@ export function InboxScreen({api,initialId,onAuthError,onGuard,onTask}:{api:Retu
  const [list,setList]=useState<InboxState|null>(null),[selected,setSelected]=useState(initialId),[detail,setDetail]=useState<InboxThreadDetail|null>(null);
  const [filter,setFilter]=useState<InboxFilter>('all'),[account,setAccount]=useState<string|undefined>(undefined),[query,setQuery]=useState(''),[search,setSearch]=useState('');
  const [editor,setEditor]=useState<InboxEditor|null>(null),[assistance,setAssistance]=useState<InboxAssistance|null>(null),[review,setReview]=useState<InboxSendReview|null>(null),[actionReview,setActionReview]=useState<ActionReview|null>(null);
- const [busy,setBusy]=useState(false),[loading,setLoading]=useState(true),[error,setError]=useState(''),[notice,setNotice]=useState(''),[showContext,setShowContext]=useState(false),[compare,setCompare]=useState(false);
+ const [busy,setBusy]=useState(false),[loading,setLoading]=useState(true),[error,setError]=useState(''),[readError,setReadError]=useState(''),[notice,setNotice]=useState(''),[showContext,setShowContext]=useState(false),[compare,setCompare]=useState(false);
  const [composing,setComposing]=useState(false);
  const [showSources,setShowSources]=useState(false),[savedTask,setSavedTask]=useState<string|null>(null);
  const [dialog,setDialog]=useState<{title:string;text:string;confirmLabel:string;confirm:()=>void}|null>(null),[pending,setPending]=useState<Operation|null>(null),[clock,setClock]=useState(Date.now());
@@ -38,8 +39,8 @@ export function InboxScreen({api,initialId,onAuthError,onGuard,onTask}:{api:Retu
   detailRef.current=next;setDetail(next);setEditor(old=>reset?editorFor(next):reconcileEditor(old,next));
   if(next.bodyAccess!=='full'||next.draft?.packageSource?.current===false||next.draft?.transactionSource?.current===false){setDialog(null);setCompare(false);setShowContext(false);setNotice('');}
  }
- function fail(failure:unknown){
-  setError(failure instanceof Error?failure.message:'Could not open your inbox.');onAuthError(failure);
+ function fail(failure:unknown,reading=false){
+  (reading?setReadError:setError)(failure instanceof Error?failure.message:'Could not open your inbox.');onAuthError(failure);
   if(failure instanceof ApiError&&[401,403,404].includes(failure.status)){detailRef.current=null;setDetail(null);setEditor(null);setList(null);clearReviews();setDialog(null);setCompare(false);setNotice('');}
  }
  async function refresh(){
@@ -50,7 +51,8 @@ export function InboxScreen({api,initialId,onAuthError,onGuard,onTask}:{api:Retu
    if(account===undefined){setAccount(state.preferredAccountId??'');if(state.preferredAccountId)return;}
    setList(state);
    if(selected){const next=await api<InboxThreadDetail>(`/inbox/${encodeURIComponent(selected)}`);if(!alive.current||epoch!==generation.current)return;accept(next);}
-  }catch(e){if(alive.current&&epoch===generation.current){clearReviews();fail(e);}}
+   setReadError('');
+  }catch(e){if(alive.current&&epoch===generation.current){clearReviews();fail(e,true);}}
   finally{if(alive.current&&epoch===generation.current)setLoading(false);}
  }
  useEffect(()=>{alive.current=true;return()=>{alive.current=false;generation.current++;onGuard(null);};},[]);
@@ -63,7 +65,7 @@ export function InboxScreen({api,initialId,onAuthError,onGuard,onTask}:{api:Retu
   leave();
  }
  useEffect(()=>{onGuard(guard);return()=>onGuard(null);},[dirty,locked,detail,composing]);
- function open(id:string|null){guard(()=>{generation.current++;detailRef.current=null;setSelected(id);setDetail(null);setEditor(null);clearReviews();setShowContext(false);setError('');setNotice('');setSavedTask(null);});}
+ function open(id:string|null){guard(()=>{generation.current++;detailRef.current=null;setSelected(id);setDetail(null);setReadError('');setLoading(true);setEditor(null);clearReviews();setShowContext(false);setError('');setNotice('');setSavedTask(null);});}
  async function run(operation:Operation){
   if(mutating.current)return;mutating.current=true;generation.current++;setPending(operation);setBusy(true);setError('');setNotice('');
   try{
@@ -94,24 +96,25 @@ export function InboxScreen({api,initialId,onAuthError,onGuard,onTask}:{api:Retu
  function prepare(){
   if(dirty||detail?.draft){setDialog({title:'Replace the reply draft?',text:'This prepares the current relationship reply and clears CC recipients. Your saved draft remains in history. Unsaved edits will be discarded only after preparation succeeds.',confirmLabel:'Prepare current reply',confirm:()=>{setDialog(null);mutate('prepare-reply');}});}else mutate('prepare-reply');
  }
+ function retryRead(){if(mutating.current||composing)return;setLoading(true);void refresh();}
  const reviewValid=!!review&&!!detail&&reviewMatches(review,detail,editor,clock);
  const savedReplyEligible=detail?.draft?.copilotRevision?.current!==false&&detail?.draft?.packageSource?.current!==false&&detail?.draft?.transactionSource?.current!==false&&!!detail?.draft&&(detail.draft.documentFiles??[]).every(file=>file.current===true)&&(detail.draft.copilotRevision?.current===true||detail.draft.packageSource?.current===true||detail.draft.authorship==='employee'||!!assistance?.suggestedReply.eligible&&assistance.suggestedReply.body===detail.draft.body&&assistance.suggestedReply.subject===detail.draft.subject);
  const errorView=Boolean(error)&&<View style={s.error}><Text accessibilityRole="alert" style={s.errorText}>{error}</Text></View>;
  return <KeyboardAvoidingView style={s.grow} behavior={Platform.OS==='ios'?'padding':undefined}>
-  <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={s.body} refreshControl={<RefreshControl refreshing={loading} onRefresh={()=>void refresh()}/>}>
+  <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={s.body} refreshControl={<RefreshControl refreshing={loading} onRefresh={retryRead}/>}>
    <View style={s.demo}><Text style={s.demoText}>Fictional email & investor texts · No live delivery</Text></View>
    {errorView}{Boolean(notice)&&<Text accessibilityLiveRegion="polite" style={s.copy}>{notice}</Text>}
    {savedTask&&<Button secondary label="Open saved follow-up" disabled={locked} onPress={()=>onTask(savedTask)}/>}
    {pending&&!busy&&<View style={s.card}><Text style={s.cardTitle}>Outcome needs checking</Text><Text style={s.copy}>Retry the same action to recover its saved result. It keeps the original request identity.</Text><Button label="Retry the same inbox action" onPress={()=>void run(pending)}/></View>}
    <Button label="New message" disabled={locked||!list?.canEdit} onPress={()=>guard(()=>setComposing(true))}/>
+   <ReadStatus loading={loading} error={readError} subject={selected?'this conversation':'your inbox'} hasContent={selected?!!detail:!!list} disabled={locked||composing} onRetry={retryRead}/>
    {!detail?<>
     {selected&&<Button secondary label="Back to inbox" disabled={locked} onPress={()=>open(null)}/>}
-    <View style={s.row}><TextInput accessibilityLabel="Search inbox" placeholder="Search your conversations" value={search} onChangeText={setSearch} style={[s.input,s.grow]} onSubmitEditing={()=>setQuery(search.trim())}/><Button label="Search" onPress={()=>setQuery(search.trim())}/></View>
+    {!selected&&<><View style={s.row}><TextInput accessibilityLabel="Search inbox" placeholder="Search your conversations" value={search} onChangeText={setSearch} style={[s.input,s.grow]} onSubmitEditing={()=>setQuery(search.trim())}/><Button label="Search" onPress={()=>setQuery(search.trim())}/></View>
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.wrap}><Button label="All inboxes" secondary={account!==''} onPress={()=>setAccount('')}/>{list?.accounts.map(item=><Button key={item.id} label={item.label} secondary={account!==item.id} onPress={()=>setAccount(item.id)}/>)}</ScrollView>
     <View style={s.wrap}>{filters.map(item=><Pressable accessibilityRole="button" accessibilityState={{selected:filter===item.id}} key={item.id} onPress={()=>setFilter(item.id)} style={[s.pill,filter===item.id&&{backgroundColor:colors.ink}]}><Text style={[s.pillText,filter===item.id&&s.employeeText]}>{item.label} {list?.counts[item.id]??''}</Text></Pressable>)}</View>
-    {loading&&<ActivityIndicator color={colors.green}/>}
     {list?.threads.map(thread=><Pressable accessibilityRole="button" accessibilityLabel={`Open conversation: ${thread.subject}`} key={thread.id} style={s.card} onPress={()=>open(thread.id)}><View style={s.between}><Text style={[s.status,s.grow]}>{thread.messageCount===0&&thread.hasDraft?'Draft only':statusLabel[thread.status]}{thread.unread?' · Unread':''}{thread.hasDraft?' · Draft':''}</Text><Text style={s.help}>{thread.channel==='sms'?'Text':'Email'}</Text></View><Text style={s.cardTitle}>{thread.correspondent.name}</Text><Text style={s.copy}>{thread.subject}</Text><Text numberOfLines={3} style={s.help}>{thread.preview}</Text><Text style={s.help}>{list.accounts.find(item=>item.id===thread.accountId)?.label}</Text></Pressable>)}
-    {list&&!loading&&!list.threads.length&&<View style={s.empty}><Text style={s.cardTitle}>Nothing here yet</Text><Text style={s.help}>Try another inbox, filter or search.</Text></View>}
+    {list&&!loading&&!readError&&!list.threads.length&&<View style={s.empty}><Text style={s.cardTitle}>Nothing here yet</Text><Text style={s.help}>Try another inbox, filter or search.</Text></View>}</>}
    </>:<>
     <Button label="Back to inbox" secondary disabled={locked} onPress={()=>open(null)}/>
     <View style={s.card}><Text style={s.status}>{detail.account.label}</Text><Text style={s.cardTitle}>{detail.thread.subject}</Text><Text style={s.copy}>{detail.thread.correspondent.name}</Text><Text selectable style={s.help}>{detail.thread.correspondent.address}</Text><Text style={s.help}>{detail.capabilityNotice}</Text><View style={s.wrap}>{(['needs_reply','waiting','done'] as const).map(status=><Button key={status} label={statusLabel[status]} secondary={detail.thread.status!==status} disabled={!detail.canEdit||locked||dirty} onPress={()=>mutate('',{status},'detail','Inbox status updated. Nothing was sent.')}/>)}</View><Button secondary label={detail.thread.unread?'Mark as read':'Mark as unread'} disabled={!detail.canEdit||locked||dirty} onPress={()=>mutate('',{unread:!detail.thread.unread},'detail','Read status updated.')}/></View>

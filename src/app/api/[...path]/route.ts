@@ -1,7 +1,7 @@
 import {readSalesforceSource,prepareSalesforceSourceDemo,refreshSalesforceSource,disconnectSalesforceSource} from '@/server/salesforce-source';
 import {companyAuthentication} from '@/server/company-auth';
 import {workspaceReadiness} from '@/server/workspace-readiness';
-import {getChatRequest} from '@/server/chat-requests';
+import {findChatRequest,getChatRequest} from '@/server/chat-requests';
 import {getRecordBoard,getRecordDetail} from '@/server/records';
 import {decideRolePreparation,listRolePreparations} from '@/server/role-preparations';
 import {reviewOpportunityJourney} from '@/server/opportunity-journey';
@@ -115,7 +115,10 @@ async function route(request:NextRequest,{params}:{params:Promise<{path:string[]
     const work=await workRoute(request,actor,path,()=>body(request));if(work)return work;
     const memoryJourney=await memoryJourneyRoute(request,actor,path,()=>body(request));if(memoryJourney)return memoryJourney;
     const phaseTwo=await phaseTwoRoute(request,actor,path,()=>body(request));if(phaseTwo)return phaseTwo;
-    if(resource==='chat'&&id==='requests'&&path.length===3&&method==='GET')return json(getChatRequest(actor,idSchema.parse(request.nextUrl.searchParams.get('conversationId')),idSchema.parse(operation)));
+    if(resource==='chat'&&id==='requests'&&path.length===3&&method==='GET'){
+      const requestId=idSchema.parse(operation),conversationId=request.nextUrl.searchParams.get('conversationId');
+      return json(conversationId===null?findChatRequest(actor,requestId):getChatRequest(actor,idSchema.parse(conversationId),requestId));
+    }
     if(resource==='chat'&&path.length===1&&method==='POST'){
       const input=z.object({conversationId:idSchema.optional(),requestId:idSchema.optional(),message:z.string().trim().min(1).max(12000)}).strict().parse(await body(request));
       return json(await chat(actor,input.message,input.conversationId,input.requestId,mobile?'mobile':'web'));
