@@ -13,9 +13,10 @@ beforeEach(()=>{
 afterEach(()=>{closeDb();vi.unstubAllEnvs();});
 
 describe('provider configuration',()=>{
- it('selects the documented Astra model and a bounded high-effort request',()=>{
-  expect(textProviderConfig()).toMatchObject({model:'gpt-6-astra',reasoning:'high',maxRounds:5,maxToolCalls:8,maxOutputTokens:8000,requestTimeoutMs:90000});
+ it('selects the evaluated Sol default and a bounded high-effort request',()=>{
+  expect(textProviderConfig()).toMatchObject({model:'gpt-6.1-sol',reasoning:'high',maxRounds:5,maxToolCalls:8,maxOutputTokens:8000,requestTimeoutMs:90000});
   for(const effort of ['low','medium','high','xhigh','max']){vi.stubEnv('OPENAI_REASONING_EFFORT',effort);expect(textProviderConfig().reasoning).toBe(effort);}
+  vi.stubEnv('OPENAI_MODEL','gpt-6-astra');expect(textProviderConfig().model).toBe('gpt-6-astra');
  });
  it('rejects undocumented effort names and unbounded spending controls',()=>{
   for(const effort of ['ultra','none','minimal']){vi.stubEnv('OPENAI_REASONING_EFFORT',effort);expect(()=>textProviderConfig()).toThrow();}
