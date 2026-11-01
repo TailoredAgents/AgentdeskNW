@@ -5,6 +5,7 @@ import type {Actor,Conversation} from '../lib/contracts';
 import {AppError,assertActor,getDb} from './db';
 import {getInboxThread} from './communications';
 import {inboxDraftRevisionContext} from './communication-draft-revisions';
+import {correspondenceMethodVersion} from './correspondence-intent';
 
 function accountForThread(actor:Actor,threadId:string){
  assertActor(actor);
@@ -64,7 +65,7 @@ export function inboxContextFingerprint(actor:Actor):string {
  const scope=[actor.organizationId,actor.officeId,actor.id];
  const state=['communication_accounts','communication_threads','communication_messages','communication_drafts'].map(table=>getDb().prepare(`SELECT id,data FROM ${table} WHERE organization_id=? AND office_id=? AND owner_id=? ORDER BY id`).all(...scope));
  const sources=(state[1] as {id:string;data:string}[]).map(row=>{try{return [transactionThreadContext(actor,JSON.parse(row.data)),packageThreadContext(actor,JSON.parse(row.data))];}catch(error){if(error instanceof AppError&&[403,404].includes(error.status))return 'unavailable';throw error;}});
- return createHash('sha256').update(JSON.stringify([state,sources])).digest('hex');
+ return createHash('sha256').update(JSON.stringify([correspondenceMethodVersion,state,sources])).digest('hex');
 }
 
 /** Inbox tools are typed-only until Realtime has authenticated employee command binding. */
