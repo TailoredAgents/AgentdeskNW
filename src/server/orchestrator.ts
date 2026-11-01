@@ -270,11 +270,12 @@ function dispatchToolSync(actor: Actor,name: string,raw:unknown,command?:TurnCom
     case 'team_overview':{const overview=service.getManagementOverview(actor);result.specialistIds=['team-performance'];result.data=overview;result.artifacts=[{type:'handoff',title:'Review office handoffs',data:{handoffAccessReference:overview.handoffs.handoffAccessReference}}];result.message=`Authorized office workload: ${JSON.stringify(overview)}. Fictional local demo data.`;break;}
     case 'daily_priorities': {
       const data=service.getDailyBrief(actor);
-      const priorities=[...data.tasks].sort((a,b)=>(a.dueAt?Date.parse(a.dueAt):Infinity)-(b.dueAt?Date.parse(b.dueAt):Infinity)).slice(0,8);
+      const priorities=data.priorities;
       result.specialistIds=['daily-coordinator'];
-      result.message=`${data.summary}${priorities.length?'\n\nStart here:\n'+priorities.map((task,index)=>`${index+1}. ${task.title}${task.dueAt&&Date.parse(task.dueAt)<Date.now()?' — overdue':task.dueAt?' — '+new Date(task.dueAt).toLocaleString('en-US',{timeZone:'America/New_York',dateStyle:'medium',timeStyle:'short'})+' Eastern':' — no deadline set'}`).join('\n'): '\n\nNo open tasks. Review your investor relationships or start property research.'}${data.pendingApprovals.length?'\n\nReview your pending CRM changes before they can be applied.':''}`;
-      result.artifacts=priorities.map(task=>({type:'task',id:task.id,title:task.title}));result.data=data;break;
+      result.message=`${data.summary}${priorities.length?'\n\nStart here:\n'+priorities.map((item,index)=>`${index+1}. ${item.title} — ${item.reason}`).join('\n'):'\n\nNo open personal task or review needs attention. Check your existing investor relationships when useful; external research is an optional separate request.'}`;
+      result.artifacts=priorities.map(item=>({type:item.kind,id:item.id,title:item.title}));result.data=data;break;
     }
+
     case 'search_crm':{
       const {query}=toolSchemas.search_crm.parse(raw);
       const investors=service.listInvestors(actor).filter(x=>`${x.name} ${x.company} ${x.counties.join(' ')}`.toLowerCase().includes(query.toLowerCase()));

@@ -111,7 +111,7 @@ describe('reviewed post-call debrief',()=>{
  });
  it('requires ambiguous investor linking and creates requested reminders only once',()=>{
   const debrief=createDebrief(actor,{recap:'I spoke with the buyer. They want cash purchases under $250,000 and a follow up tomorrow.'});expect(debrief.status).toBe('needs_linking');expect(()=>proposeDebrief(actor,debrief.id,{})).toThrow('Select the correct investor');
-  const result=proposeDebrief(actor,debrief.id,{investorId:'investor-mike',createFollowUp:true});expect(result.tasks).toHaveLength(1);expect(result.tasks[0].dueAt).toBe(debrief.suggestedFollowUpAt);expect(proposeDebrief(actor,debrief.id,{createFollowUp:true}).tasks[0].id).toBe(result.tasks[0].id);expect(listDebriefs(other)).toEqual([]);
+  const result=proposeDebrief(actor,debrief.id,{investorId:'investor-mike',createFollowUp:true});expect(result.tasks).toHaveLength(1);expect(debrief.suggestedFollowUpAt).toBeNull();expect(result.tasks[0].dueAt).toBe(result.debrief.suggestedFollowUpAt);expect(result.tasks[0].dueAt).toBeTruthy();expect(proposeDebrief(actor,debrief.id,{createFollowUp:true}).tasks[0].id).toBe(result.tasks[0].id);expect(listDebriefs(other)).toEqual([]);
  });
  it('does not promote negated criteria or employee speech to investor facts',()=>{
   const debrief=createDebrief(actor,{investorId:'investor-mike',recap:'Agent: I offered cash and cosmetic rehabs under $200k in Cobb County.\nMike: I am not buying cash or cosmetic rehabs under $250k.\nMike: I prefer rental properties.'});expect(debrief.extractedChanges).toEqual({strategy:'Buy & hold'});expect(debrief.sourceExcerpts.strategy).toContain('Mike:');

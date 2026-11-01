@@ -55,7 +55,7 @@ try{
  const qualificationRecord=getRelationshipRecord(demoActor(),'investor-mike'),box=getInvestorIntelligence(demoActor(),'investor-mike').buyBoxes[0];
  recordRelationshipReport(demoActor(),{investorId:'investor-mike',buyBoxId:box.id,topic:'financing',value:['Seller financing only'],statement:'Fictional employee correction to funding plans.',statedAt:new Date().toISOString(),supersedesId:null,expectedVersion:qualificationRecord.version,expectedContext:qualificationRecord.contextVersion,eventKey:randomUUID()});
  const changedQualification=await request<{conversation:Conversation;result:ToolResult}>('chat','POST',{conversationId:qualification.conversation.id,requestId:randomUUID(),message:'Qualify Mike'},200,true);
- check(changedQualification.result.message.includes('sources disagree'),'Desktop Agent asks about corrected funding evidence');
+ check(['Recorded:', 'Reported:', 'Seller financing only', 'Current values disagree'].every(text=>changedQualification.result.message.includes(text)),'Desktop Agent contrasts recorded and corrected funding values and asks for clarification');
  const qualificationHistory=await request<Conversation>(`conversations/${qualification.conversation.id}`);
  check(qualificationHistory.messages.some(m=>m.content.startsWith('This historical message is withheld')),'Phone withholds earlier qualification advice after correction');
  check(getDb().prepare('SELECT COUNT(*) n FROM provider_operations').get()&&!(getDb().prepare('SELECT COUNT(*) n FROM provider_operations').get() as {n:number}).n,'No paid provider call was made');

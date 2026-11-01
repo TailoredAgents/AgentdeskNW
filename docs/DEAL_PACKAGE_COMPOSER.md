@@ -34,6 +34,14 @@ The parser is deliberately limited: nuanced budgets, nonlocal geography, ambiguo
 
 When another authorized investor is mentioned, only statements explicitly naming the selected investor are extracted; ambiguous pronouns are omitted with an attribution warning. Qualification guidance is derived from the conservative extracted fields so it does not ask for an already captured strategy merely because the legacy transcript parser used different wording.
 
+## Recap attribution and corrections
+
+Callback and package candidates now use the selected investor's attributed affirmative statements. A different investor's speaker turn, including a continued sentence, cannot create a reminder for the selected person. A mixed-investor recap requires the target's name or own speaker turn; the employee saying “call me” is not an investor callback. Unlinked recaps retain their source but do not yet propose a callback time; selecting the correct investor re-evaluates the request before preparing work. The existing explicit Create reminder choice and exact retry still control saving.
+
+Package requests also retain their property target. If the recap discusses multiple properties, the request must identify the selected address; a generic photo request concerning a different property cannot be reassigned through the selector. Once proposals have been prepared, changing the investor/property on a replay is rejected and requires a corrected recap. Existing notes, tasks and proposal receipts are not relabeled or duplicated.
+
+Recognized repair/rehab, deposit/down-payment and rent expense limits do not become purchase-budget ceilings. Competing cash/hard-money choices remain a financing question while independently supported criteria may be retained. These are bounded language cues, not general multi-party financial interpretation. The original recap/excerpts and unresolved questions remain reviewable; no CRM field or investor delivery follows without its separate authority.
+
 ## Current inventory and package corrections
 
 Package composition and every later eligibility read compare the release snapshot with current scoped inventory: address, city, county, asking price, bedroom/bathroom counts, size, strategy, rehab, inventory status and demo designation. A mismatch names the changed fields without publishing either stale or unreviewed replacement facts. The employee must ask the acquisition owner or manager to review and refresh the release, then compose a new package. Refreshing the release never silently rewrites an existing package or employee-edited Inbox draft.

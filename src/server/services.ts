@@ -1,4 +1,5 @@
 import {researchSourceVisible} from './research-spending';
+import {dailyPriorities} from './daily-priorities';
 import {isAuthorizedActor,researchOwnerEligibility} from './db';
 import {registerResearchSpending,assertResearchSpendingRetry,researchSpendingFinished} from './research-spending';
 import {researchAssignmentParent,bindIncludedResearch,includedResearchAdmission,assertIncludedResearchRetry,finishIncludedResearch} from './local-assignment-work';
@@ -258,13 +259,19 @@ export function proposeImport(actor:Actor,jobId:string,prospectIds:string[]):Pro
  insertRecord(actor,'proposed_actions',action);audit(actor,'approval.proposed',action.id,{kind:action.kind,count:ids.length});return action;
 }
 const investorChangesSchema=z.object({counties:z.array(z.string().trim().min(1).max(100)).min(1).max(20).optional(),strategy:z.string().trim().min(1).max(100).optional(),budgetMin:z.number().finite().min(0).max(100000000).optional(),budgetMax:z.number().finite().min(0).max(100000000).optional(),financing:z.string().trim().min(1).max(300).optional(),rehab:z.string().trim().min(1).max(300).optional(),timeframe:z.string().trim().min(1).max(300).optional()}).strict();
+function qualificationContext(actor:Actor,investor:Investor){
+ const primary=listBuyBoxes(actor,investor.id).find(box=>box.id===`buybox-primary-${investor.id}`);
+ return {fields:Object.fromEntries(Object.keys(investorChangesSchema.shape).map(key=>[key,investor[key as keyof Investor]])),primaryVersion:primary?.version??null};
+}
 export function proposeInvestorUpdate(actor:Actor,investorId:string,changes:Record<string,unknown>):ProposedAction {
  requireFeature(actor,'salesforce-assistant');
- const investor=writableInvestor(actor,investorId);const parsed=investorChangesSchema.parse(changes);listBuyBoxes(actor,investorId);
+ return getDb().transaction(()=>{
+ const investor=writableInvestor(actor,investorId);const parsed=investorChangesSchema.parse(changes),context=qualificationContext(actor,investor);
  if(!Object.keys(parsed).length)throw new AppError(422,'Supply at least one qualification field.');
  const merged={...investor,...parsed};if(merged.budgetMin>merged.budgetMax)throw new AppError(422,'Minimum budget cannot exceed maximum budget.');
- const action:ProposedAction={id:newId('action'),kind:'crm_update',title:`Update ${investor.name}’s qualification details`,status:'pending',payload:{investorId,changes:parsed,before:Object.fromEntries(Object.keys(parsed).map(key=>[key,investor[key as keyof Investor]]))},createdAt:now(),executedAt:null,ownerId:actor.id,error:null};
+ const action:ProposedAction={id:newId('action'),kind:'crm_update',title:`Update ${investor.name}’s qualification details`,status:'pending',payload:{investorId,changes:parsed,before:Object.fromEntries(Object.keys(parsed).map(key=>[key,investor[key as keyof Investor]])),qualificationContext:context},createdAt:now(),executedAt:null,ownerId:actor.id,error:null};
  insertRecord(actor,'proposed_actions',action);audit(actor,'approval.proposed',action.id,{kind:action.kind});return action;
+ }).immediate();
 }
 /** Only the authenticated approval route calls this function. It is intentionally absent from AI tool registries. */
 export function decideAction(actor:Actor,id:string,decision:'approve'|'reject'):ProposedAction {
@@ -290,6 +297,8 @@ export function decideAction(actor:Actor,id:string,decision:'approve'|'reject'):
    const payload=z.object({investorId:idSchema,changes:investorChangesSchema,before:z.record(z.string(),z.unknown())}).parse(action.payload);
    const investor=writableInvestor(actor,payload.investorId);
    if(Object.entries(payload.before).some(([key,value])=>JSON.stringify(investor[key as keyof Investor])!==JSON.stringify(value)))throw new AppError(409,'The record changed after this proposal. Prepare a new update from the current record.');
+   if(action.payload.qualificationContext&&JSON.stringify(action.payload.qualificationContext)!==JSON.stringify(qualificationContext(actor,investor)))throw new AppError(409,'The record changed: related qualification details or their reviewed primary buy-box source changed after this proposal. Read the current criteria and prepare a fresh update; nothing was applied.');
+   const merged={...investor,...payload.changes};if(merged.budgetMin>merged.budgetMax)throw new AppError(409,'The current budget minimum would exceed the proposed maximum. Review both amounts and prepare a consistent range; nothing was applied.');
    const updated=updateRecord(actor,'investors',{...investor,...payload.changes});
    syncPrimaryBuyBox(actor,updated,payload.changes,action.id,action.payload);
   }else if(action.kind==='buy_box'){
@@ -351,7 +360,7 @@ function dailyBrief(actor:Actor,personal:boolean) {
  });
  const activeJobs=(personal?scopedRows<ResearchJob>(actor,'research_jobs',true).map(job=>visibleResearch(actor,job)):listJobs(actor)).filter(job=>['queued','running','awaiting_input'].includes(job.status));
  const dormantInvestors=listInvestors(actor).filter(investor=>(!personal||investor.ownerId===actor.id)&&(!investor.lastContactAt||Date.now()-new Date(investor.lastContactAt).getTime()>14*86400000));
- return {tasks,overdue,pendingApprovals,activeJobs,dormantInvestors,summary:`${personal?'You have':'Your office has'} ${tasks.length} open task${tasks.length===1?'':'s'}, ${overdue.length} overdue, ${pendingApprovals.length} pending approval${pendingApprovals.length===1?'':'s'} and ${activeJobs.length} active research job${activeJobs.length===1?'':'s'}.`};
+ return {tasks,overdue,pendingApprovals,activeJobs,dormantInvestors,priorities:personal?dailyPriorities(tasks,pendingApprovals,activeJobs,employeeTimeZone(actor)):[],timeZone:employeeTimeZone(actor),summary:`${personal?'You have':'Your office has'} ${tasks.length} open task${tasks.length===1?'':'s'}, ${overdue.length} overdue, ${pendingApprovals.length} pending approval${pendingApprovals.length===1?'':'s'} and ${activeJobs.length} active research job${activeJobs.length===1?'':'s'}.`};
 }
 /** Personal priorities stay owned by this employee even when they manage an office. */
 export function getDailyBrief(actor:Actor) {return dailyBrief(actor,true);}

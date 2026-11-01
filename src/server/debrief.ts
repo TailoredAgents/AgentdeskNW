@@ -17,6 +17,27 @@ function inferProperty(recap:string,properties:Property[]) {
  const exact=properties.filter(property=>recap.toLowerCase().includes(property.address.toLowerCase()));
  return exact.length?exact:properties.filter(property=>new RegExp(`\\b${esc(property.city)}\\b`,'i').test(recap));
 }
+function linkedRequests(actor:Actor,recap:string,investor:Investor|null,property:Property|null){
+ const others=investor?inferInvestor(recap,listInvestors(actor)).filter(other=>other.id!==investor.id):[];
+ const names=(value:Investor)=>[value.name,value.name.split(' ')[0]];
+ const mentions=(text:string,value:Investor)=>names(value).some(name=>new RegExp(`\\b${esc(name)}\\b`,'i').test(text));
+ const statements=transcriptStatements(recap).filter(item=>{
+  if(!investor||item.meaning!=='statement'||others.some(other=>mentions(item.excerpt,other)||item.speaker&&names(other).some(name=>name.toLowerCase()===item.speaker!.toLowerCase())))return false;
+  const selectedSpeaker=!!item.speaker&&names(investor).some(name=>name.toLowerCase()===item.speaker!.toLowerCase());
+  const selectedName=mentions(item.text,investor);
+  if(others.length&&!selectedSpeaker&&!selectedName)return false;
+  if(item.speaker&&!selectedSpeaker&&!selectedName&&!['agent','employee','me',actor.name.toLowerCase(),actor.name.split(' ')[0].toLowerCase(),...(!others.length?['investor','buyer']:[])].includes(item.speaker.toLowerCase()))return false;
+  if(item.speaker&&!selectedSpeaker&&/\bcall me\b/i.test(item.text)&&!['investor','buyer'].includes(item.speaker.toLowerCase()))return false;
+  return true;
+ });
+ const mentioned=inferProperty(recap,listProperties(actor));
+ const requests=statements.filter(item=>/\b(photo|photos|details|send|link)\b/i.test(item.text));
+ const packageRequested=!!property&&requests.some(item=>{
+  if(mentioned.some(other=>other.id!==property.id&&item.text.toLowerCase().includes(other.address.toLowerCase())))return false;
+  return mentioned.every(item=>item.id===property.id)||item.text.toLowerCase().includes(property.address.toLowerCase());
+ });
+ return {followUp:statements.some(item=>/\b(follow[ -]?up|call (?:him|her|them|back|me))\b[^.!?\n]*\btomorrow\b/i.test(item.text)),packageRequested};
+}
 /** Tomorrow is 10am in the office timezone, including DST boundaries. It is a proposed time until requested. */
 export function tomorrowEastern(reference=new Date()):string {
  const pieces=new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(reference);
@@ -51,8 +72,11 @@ function extractCriteria(recap:string,investor:Investor|null,otherInvestors:Inve
  const set=(key:string,value:unknown,line:string)=>{if(key in changes&&JSON.stringify(changes[key])!==JSON.stringify(value)){delete changes[key];delete excerpts[key];ambiguities.push(`Conflicting ${key} statements need review.`);}else if(!ambiguities.some(item=>item.includes(key))){changes[key]=value;excerpts[key]=line;}};
  for(const line of permitted){
   const maximum=line.match(/\b(?:under|up to|maximum|max(?:imum)? budget(?: is)?|less than|budget(?: of| is)?)\s*\$?([\d,]+(?:\.\d+)?)\s*(k|m|thousand|million)?\b/i);
-  if(maximum){const multiplier=/^(k|thousand)$/i.test(maximum[2]??'')?1000:/^(m|million)$/i.test(maximum[2]??'')?1000000:1;const amount=Number(maximum[1].replaceAll(',',''))*multiplier;if(amount>0&&amount<=1e8)set('budgetMax',amount,line);}
-  if(/\b(cash|all.cash)\b/i.test(line))set('financing','Cash',line);
+  if(maximum){const prefix=line.slice(0,maximum.index),expense=/\b(repairs?|rehab|renovation|deposit|earnest money|down payment|monthly rent|rent)(?:\s+(?:budget|costs?|estimate|amount))?\s*(?:is|of|are|must be|should be)?\s*$/i.test(prefix);
+   if(expense)ambiguities.push(`This amount describes an expense, not an established purchase budget: ${line}`);
+   else {const multiplier=/^(k|thousand)$/i.test(maximum[2]??'')?1000:/^(m|million)$/i.test(maximum[2]??'')?1000000:1;const amount=Number(maximum[1].replaceAll(',',''))*multiplier;if(amount>0&&amount<=1e8)set('budgetMax',amount,line);}}
+  if(/\b(cash|all.cash)\b/i.test(line)&&/\bhard.money\b/i.test(line))ambiguities.push(`Clarify the financing alternatives before changing the primary criteria: ${line}`);
+  else if(/\b(cash|all.cash)\b/i.test(line))set('financing','Cash',line);
   else if(/\bhard.money\b/i.test(line))set('financing','Hard money',line);
   if(/\b(cosmetic|light rehabs?|light renovation)\b/i.test(line))set('rehab','Light / cosmetic',line);
   else if(/\bheavy (rehabs?|renovation)\b/i.test(line))set('rehab','Heavy',line);
@@ -80,7 +104,7 @@ function buildDebrief(actor:Actor,recap:string,investorId?:string,propertyId?:st
  if(summary.missingInformation.length)summary.suggestedTasks.push(`Confirm missing qualification details: ${summary.missingInformation.join(', ')}.`);
  // Existing transcript excerpts remain source material. Only the conservative attributed fields are proposed facts.
  summary.criteria=Object.fromEntries(Object.entries(extraction.excerpts));summary.proposedNote=`Employee post-call recap; unverified, pending review.\n\n${recap}\n\nProposed criteria:\n${Object.entries(extraction.excerpts).map(([key,value])=>`${key}: ${value}`).join('\n')||'No unambiguous investor criteria extracted.'}`.slice(0,15000);
- const hasFollowUp=transcriptStatements(recap).some(item=>item.meaning==='statement'&&/\b(follow[ -]?up|call (?:him|her|them|back|me))\b[^.!?\n]*\btomorrow\b/i.test(item.text));
+ const hasFollowUp=linkedRequests(actor,recap,investor,property).followUp;
  const coaching=['Review the original recap and each proposed field before approval.'];
  if(!extraction.changes.financing)coaching.push('Confirm the investor’s funding method if it was not established.');
  if(!extraction.changes.budgetMax)coaching.push('Confirm a complete purchase-price range.');
@@ -105,7 +129,11 @@ export function proposeDebrief(actor:Actor,debriefId:string,input:{investorId?:s
  requireRole(actor,['dispositions','manager']);requireFeature(actor,'call-notetaker');const parsed=z.object({investorId:id.optional(),propertyId:id.optional(),createFollowUp:z.boolean().optional()}).strict().parse(input);
  return getDb().transaction(()=>{
   const row=getDebriefRow(actor,debriefId);
-  if(row.proposal_result){const previous=JSON.parse(row.proposal_result) as DebriefProposal;return {...previous,package:previous.package?listPackages(actor).find(item=>item.id===previous.package!.id)??null:null};}
+  if(row.proposal_result){
+   const previous=JSON.parse(row.proposal_result) as DebriefProposal;
+   if(parsed.investorId&&parsed.investorId!==previous.debrief.investorId||parsed.propertyId&&parsed.propertyId!==previous.debrief.propertyId)throw new AppError(409,'This recap already prepared work for a different investor or property. Create a corrected recap and review its new proposals; the original work was not retargeted.');
+   return {...previous,package:previous.package?listPackages(actor).find(item=>item.id===previous.package!.id)??null:null};
+  }
   const debrief:Debrief={...row.value,...buildDebrief(actor,row.value.recap,parsed.investorId??row.value.investorId??undefined,parsed.propertyId??row.value.propertyId??undefined)};
   if(!debrief.investorId)throw new AppError(422,'Select the correct investor before preparing changes.');
   if(!row.value.investorId)addRelationshipEvent(actor,debrief.investorId,'debrief',`Unreviewed employee recap: ${debrief.summary.summary}`,'Employee-supplied recap linked during review; not independently verified. Capture time is not a phone-call timestamp.');
@@ -117,7 +145,7 @@ export function proposeDebrief(actor:Actor,debriefId:string,input:{investorId?:s
   }
   const tasks=parsed.createFollowUp&&debrief.suggestedFollowUpAt?[createTask(actor,{title:`Follow up with ${getInvestor(actor,debrief.investorId).name} about the reviewed recap`,investorId:debrief.investorId,dueAt:debrief.suggestedFollowUpAt})]:[];
   let prepared:DebriefProposal['package']=null;
-  if(hasFeature(actor,'deal-marketing')&&debrief.propertyId&&transcriptStatements(debrief.recap).some(item=>item.meaning==='statement'&&/\b(photo|details|send|link)\b/i.test(item.text))){
+  if(hasFeature(actor,'deal-marketing')&&debrief.propertyId&&linkedRequests(actor,debrief.recap,getInvestor(actor,debrief.investorId),readProperty(actor,debrief.propertyId)).packageRequested){
    const release=listReleases(actor).find(item=>item.propertyId===debrief.propertyId&&item.status==='released');
    if(release)prepared=composePackage(actor,{investorId:debrief.investorId,releaseId:release.id,channel:'personal_text'});
   }

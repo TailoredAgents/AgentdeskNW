@@ -1,3 +1,5 @@
+import {createDebrief,proposeDebrief} from '../src/server/debrief';
+import {listProperties} from '../src/server/services';
 import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest';
 import {closeDb,demoActor,getDb} from '../src/server/db';
 import {composePackage,getPackage,saveRelease,updatePackage} from '../src/server/workflows';
@@ -64,4 +66,21 @@ it('preserves the original simulated delivery receipt after inventory correction
  getDb().prepare('UPDATE properties SET data=? WHERE id=?').run(JSON.stringify({...property,price:property.price+1000}),property.id);
  const current=getInboxThread(actor(),detail.thread.id);
  expect(current.messages).toEqual(before);expect(current.messages.filter(m=>m.direction==='outbound')).toHaveLength(1);expect(getPackage(actor(),value.id).status).toBe('blocked');
+});
+
+
+it('does not prepare selected Mike’s package from another investor’s photo request',()=>{
+ release();const d=createDebrief(actor(),{investorId:'investor-mike',propertyId:'property-maple',recap:'Mike: I buy rentals.\nSarah: Send me photos for the property.'});
+ expect(proposeDebrief(actor(),d.id,{}).package).toBeNull();
+});
+it('requires an explicit property target when the recap discusses multiple properties',()=>{
+ release();const properties=listProperties(actor()),selected=properties.find(p=>p.id==='property-maple')!,other=properties.find(p=>p.id!==selected.id)!;
+ const recap=`Mike: We discussed ${selected.address} and ${other.address}. Send me photos.`;
+ const ambiguous=createDebrief(actor(),{investorId:'investor-mike',propertyId:selected.id,recap});expect(proposeDebrief(actor(),ambiguous.id,{}).package).toBeNull();
+ const explicit=createDebrief(actor(),{investorId:'investor-mike',propertyId:selected.id,recap:recap.replace('Send me photos.',`Send me photos of ${selected.address}.`)});expect(proposeDebrief(actor(),explicit.id,{}).package?.status).toBe('draft');
+});
+
+it('does not transfer a generic photo request from a different mentioned property to the selected release',()=>{
+ release();const other=listProperties(actor()).find(p=>p.id!=='property-maple')!;
+ const d=createDebrief(actor(),{investorId:'investor-mike',propertyId:'property-maple',recap:`Mike: We discussed ${other.address}. Send me photos.`});expect(proposeDebrief(actor(),d.id,{}).package).toBeNull();
 });

@@ -6,6 +6,7 @@ import {chat} from '../src/server/orchestrator';
 import {fingerprint,providerOperations} from '../src/server/provider-runtime';
 import {assertInboxToolResultVisible} from '../src/server/history';
 import {recordJourneyObservation} from '../src/server/journey';
+import {grantCredits,usageBalances} from '../src/server/metering';
 
 const result=(data:unknown,artifactData:unknown[]):ToolResult=>({specialistIds:['buyer-matchmaker'],message:'Fictional evidence; not permission to act.',data,artifacts:artifactData.map((value,index)=>({type:'briefing',title:`Evidence ${index}`,data:value}))});
 describe('lossless model tool serialization',()=>{
@@ -65,7 +66,10 @@ describe('new model outputs with full durable receipts and authority',()=>{
    payloads.push(payload);return responses.shift()!();
   });vi.stubGlobal('fetch',fetcher);
   const actor=demoActor(),requestId=`projection-${mode}`,message='Compare the existing buyers for 123 Example Street and review Mike’s current relationship. Do not change records.';
-  const answer=await chat(actor,message,undefined,requestId);expect(payloads).toHaveLength(3);
+  // This tests complete multi-round serialization, not the sample allowance boundary.
+  grantCredits(demoActor('manager'),{userId:actor.id,category:'text_tokens',quantity:100000,eventKey:`projection-fixture-${mode}`});
+  const answer=await chat(actor,message,undefined,requestId);expect(payloads,answer.result.message).toHaveLength(3);
+  expect(usageBalances(actor).find(item=>item.category==='text_tokens')).toMatchObject({consumed:360,reserved:0});
   const receipts=savedResults(answer.conversation.id);expect(receipts).toHaveLength(2);
   const savedState=JSON.parse((getDb().prepare('SELECT data FROM text_executions WHERE request_id=?').get(requestId) as {data:string}).data) as {artifacts:ToolResult['artifacts']};
   for(const receipt of receipts){

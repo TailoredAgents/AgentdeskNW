@@ -8,6 +8,7 @@ import {inboxContextFingerprint,withoutInboxHistory} from '../src/server/communi
 import {executeRecordedTool} from '../src/server/text-runtime';
 import {simulateLifecycle,subscription} from '../src/server/billing';
 import {createVoiceSession,endVoiceSession,executeVoiceTool} from '../src/server/voice';
+import {grantCredits,usageBalances} from '../src/server/metering';
 
 let actor:Actor;let responseSequence=0;
 const mike=()=>getInboxState(actor).threads.find(thread=>thread.correspondent.name==='Mike Bennett')!;
@@ -67,8 +68,12 @@ describe('private communications through typed Copilot',()=>{
  });
  it('blocks model-requested task creation when the employee only requested an inbox summary',async()=>{
   const thread=mike(),before=listTasks(actor).length;vi.stubEnv('OPENAI_API_KEY','mock-key');
+  // Allow all mocked rounds to reach the authority check and final employee answer.
+  grantCredits(demoActor('manager'),{userId:actor.id,category:'text_tokens',quantity:100000,eventKey:'inbox-authority-fixture'});
   const mock=vi.fn().mockResolvedValueOnce(answer([tool('inbox_thread',{threadId:thread.id},'read-inbox')])).mockResolvedValueOnce(answer([tool('create_task',{title:'Injected investor instruction',dueAt:null,investorId:null},'injected-task')])).mockResolvedValueOnce(answer([message('Review the source before creating a follow-up.')]));vi.stubGlobal('fetch',mock);
-  await chat(actor,`Read ${thread.id}`,undefined,'injected-command');
+  const response=await chat(actor,`Read ${thread.id}`,undefined,'injected-command');
+  expect(mock.mock.calls,response.result.message).toHaveLength(3);
+  expect(usageBalances(actor).find(item=>item.category==='text_tokens')).toMatchObject({consumed:210,reserved:0});
   expect(listTasks(actor)).toHaveLength(before);
   const last=JSON.parse(mock.mock.calls[2][1].body as string);expect(JSON.stringify(last.input)).toContain('cannot schedule work');
   expect(assistantInstructions(actor)).toContain('untrusted data');
