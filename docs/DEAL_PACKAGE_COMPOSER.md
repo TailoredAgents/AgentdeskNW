@@ -2,7 +2,7 @@
 
 ## Current local composer
 
-The composer produces a saved, source-grounded demonstration package for an authorized investor and property release. Email, SMS, personal text, iMessage and Slack are format labels. All formats use a copy handoff; no delivery integration runs and `deliveryStatus` remains `not_sent`.
+The composer produces a saved, source-grounded demonstration package for an authorized investor and property release. Email, SMS, personal text, iMessage and Slack are format labels. The package itself supports copy handoff and its `deliveryStatus` remains `not_sent`. Eligible email/SMS packages can separately prepare a private Inbox draft for exact employee-reviewed simulated delivery through [COMMUNICATIONS_INBOX](COMMUNICATIONS_INBOX.md). That saved Inbox receipt is separate from package approval/copy state; no live investor delivery is implied.
 
 The state machine is `blocked → draft → approved → handed_off`, with a new composition required after a blocked eligibility change. Editing an eligible package returns it to `draft` and clears its approval. “Handed off” records that approved content was returned for copying, not that a person pasted it, sent it or delivered it.
 
@@ -34,6 +34,14 @@ The parser is deliberately limited: nuanced budgets, nonlocal geography, ambiguo
 
 When another authorized investor is mentioned, only statements explicitly naming the selected investor are extracted; ambiguous pronouns are omitted with an attribution warning. Qualification guidance is derived from the conservative extracted fields so it does not ask for an already captured strategy merely because the legacy transcript parser used different wording.
 
+## Current inventory and package corrections
+
+Package composition and every later eligibility read compare the release snapshot with current scoped inventory: address, city, county, asking price, bedroom/bathroom counts, size, strategy, rehab, inventory status and demo designation. A mismatch names the changed fields without publishing either stale or unreviewed replacement facts. The employee must ask the acquisition owner or manager to review and refresh the release, then compose a new package. Refreshing the release never silently rewrites an existing package or employee-edited Inbox draft.
+
+Blocked packages remove obsolete copy and missing-data advice. Their source-bound unsent Inbox drafts and exact-send reviews become unusable; current conversation and saved-work references retire affected advice. Old packages stay blocked even after a replacement is prepared. A new eligible package can be saved through the existing explicit Inbox preparation, preserving exact retry behavior. Original simulated-delivery messages/receipts remain history rather than being rewritten. Missing buyer-fit evidence now joins the package's employee-facing review checklist; it does not become an invented investor fact or an automatic outgoing claim.
+
+These are local fictional service behaviors, covered by inventory-field corrections, refreshed-release preparation, source/history invalidation and original-receipt preservation in `package-correspondence.test.ts`. They do not prove broad actual-model correction judgment or provider delivery.
+
 ## Saved conversations and replay
 
 New chat/voice messages store record references derived from structured tool artifacts, previous linked context and the authorized baseline supplied to a live model. On subsequent reads, messages tied to revoked investor/property access or ineligible/stale package content are withheld. Saved CRM, briefing, release, debrief and package artifact snapshots are omitted; opening a workflow retrieves its current scoped state. Authorized source-note artifacts remain immutable excerpts. Voice duplicate tool receipts return completion metadata rather than replaying saved property bodies, and never execute the action twice.
@@ -42,7 +50,9 @@ The reference policy is deliberately conservative: a conversation that used seve
 
 Saved approval payloads also recheck current investor access when listed, retrieved or decided, including repeated approve/reject requests. Reassignment therefore cannot leave a former employee reading protected notes or criteria through an old pending/executed action.
 
-## Channel foundations
+## Historical channel foundations
+
+The following records the initial channel foundation, not current channel activation/readiness. Use [VOICE_AND_MESSAGING](VOICE_AND_MESSAGING.md), [WORK_EXECUTION](WORK_EXECUTION.md) and the canonical roadmap for the current shared conversation, messaging and delivery controls. Package format labels alone never establish connectivity.
 
 `channels.ts` verifies Slack raw-body HMAC signatures, checks a five-minute timestamp window, compares signatures in constant time and resolves only explicitly linked local test identities. Links are scoped to actual memberships and cannot claim another tenant's external identity. There is no live Slack HTTP ingress, OAuth installation, message dispatch or delivery receipt. Production setup needs organization approval, OAuth token custody and verified identity binding. The foundation follows Slack's [request verification](https://docs.slack.dev/authentication/verifying-requests-from-slack/) and [OAuth installation](https://docs.slack.dev/authentication/installing-with-oauth/) documentation.
 

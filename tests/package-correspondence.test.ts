@@ -38,3 +38,30 @@ it('refuses ordinary Copilot rewrites for a source-bound property package withou
  expect(()=>reviseInboxDraft(actor(),detail.thread.id,{...mutation(detail.thread.id),draftId:detail.draft!.id,draftVersion:detail.draft!.version,sourceReference:'0'.repeat(64),body:'Arbitrary property copy.'})).toThrow('source-bound preparation');
  expect(getInboxThread(actor(),detail.thread.id).draft).toEqual(detail.draft);expect(getDb().prepare('SELECT COUNT(*) n FROM communication_draft_revisions').get()).toEqual(before);
 });
+
+it.each(['price','address','city','county','beds','baths','sqft','strategy','rehab','status'] as const)('retires package/Inbox advice when current inventory %s changes before the release is refreshed',field=>{
+ const {value,input}=fixture(),detail=preparePackageDraft(actor(),value.id,input),review=reviewInboxSend(actor(),detail.thread.id,mutation(detail.thread.id));
+ const refs=collectHistoryReferences(actor(),[{type:'package',id:value.id,title:'Saved package'}]),inboxRef=inboxAccessReference(actor(),detail.thread.id);
+ const row=getDb().prepare('SELECT data FROM properties WHERE id=?').get('property-maple') as {data:string},old=JSON.parse(row.data);
+ getDb().prepare('UPDATE properties SET data=? WHERE id=?').run(JSON.stringify({...old,[field]:typeof old[field]==='number'?old[field]+1:`Changed ${old[field]}`}),old.id);
+ expect(getPackage(actor(),value.id)).toMatchObject({status:'blocked',body:expect.not.stringContaining('Asking price')});
+ expect(getPackage(actor(),value.id).eligibilityReasons.join(' ')).toContain('Current inventory differs');
+ expect(composePackage(actor(),{investorId:value.investorId,releaseId:value.releaseId,channel:'email'}).status).toBe('blocked');
+ expect(historyReferencesVisible(actor(),refs)).toBe(false);expect(inboxAccessReferenceCurrent(actor(),detail.thread.id,[inboxRef])).toBe(false);
+ expect(getInboxThread(actor(),detail.thread.id).draft?.body).not.toContain('Asking price');
+ expect(()=>simulateInboxSend(actor(),detail.thread.id,{reviewId:review.id,eventKey:key()})).toThrow();
+ const current=release({eventKey:key(),expectedVersion:1});
+ const fresh=composePackage(actor(),{investorId:value.investorId,releaseId:current.id,channel:'email'});
+ expect(fresh.status).toBe('draft');expect(fresh.releaseVersion).toBe(2);expect(getPackage(actor(),value.id).status).toBe('blocked');
+ expect(getInboxThread(actor(),detail.thread.id).draft?.packageSource?.current).toBe(false);
+ expect(preparePropertyOutreachResult(actor(),{packageId:fresh.id,accountId:null}).data).toMatchObject({hasDraft:true,liveDelivery:false});
+});
+
+it('preserves the original simulated delivery receipt after inventory correction without recycling it as current advice',()=>{
+ const {value,input}=fixture(),detail=preparePackageDraft(actor(),value.id,input);send(detail.thread.id);
+ const before=getInboxThread(actor(),detail.thread.id).messages;
+ const row=getDb().prepare('SELECT data FROM properties WHERE id=?').get('property-maple') as {data:string},property=JSON.parse(row.data);
+ getDb().prepare('UPDATE properties SET data=? WHERE id=?').run(JSON.stringify({...property,price:property.price+1000}),property.id);
+ const current=getInboxThread(actor(),detail.thread.id);
+ expect(current.messages).toEqual(before);expect(current.messages.filter(m=>m.direction==='outbound')).toHaveLength(1);expect(getPackage(actor(),value.id).status).toBe('blocked');
+});

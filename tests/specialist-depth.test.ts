@@ -63,3 +63,20 @@ describe('honest comparison reporting',()=>{
  it('compares only paired model samples and fails a critically wrong sample despite high rubric ratings',async()=>{const {summarizeQualityReview}=await import('../evaluations/specialists/review');const sample={caseId:'specialist-01',sample:1,transport:'model',model:'model-fixture-metadata',harnessRevision:'test',response:'Offline report test, no real model run',reviewer:'Test fixture',reviewedAt:'2026-10-31T12:00:00Z',scores:{evidence:2,judgment:2,action:2,clarity:2,correction:2},criticalErrors:[],notes:'Synthetic review used only to test reporting',comparison:{runId:'offline-test',contextHash:'a'.repeat(64),toolAccessHash:'b'.repeat(64),modelConfigHash:'c'.repeat(64),budgetHash:'d'.repeat(64)}};const report=summarizeQualityReview([{...sample,arm:'specialist',criticalErrors:['Invented contacts']},{...sample,arm:'generic'},{...sample,caseId:'specialist-02',arm:'specialist'}]);expect(report).toMatchObject({pairedCases:1,pairedSamples:1,specialistMean:0,genericMean:10,status:'reviewed_samples_only'});expect(report.pendingCases).toHaveLength(34);expect(()=>summarizeQualityReview([{...sample,arm:'generic'},{...sample,arm:'generic'}])).toThrow('Duplicate');});
  it('covers every declared specialist with a correction or difficult alternative beyond runtime teaching examples',async()=>{const {specialistQualityCases}=await import('../evaluations/specialists/cases');for(const method of specialistMethods){const cases=specialistQualityCases.filter(c=>c.specialistId===method.specialistId);expect(cases).toHaveLength(['investor-relationship','acquisition-lead','team-performance'].includes(method.specialistId)?3:2);expect(cases.every(c=>c.context!==method.example.situation&&c.expected.length>=2&&c.criticalErrors.length)).toBe(true);}});
 });
+
+it.each(['agreement','deposit'] as const)('asks only for the missing %s report while retaining the recorded event',missing=>{
+ const input=emptyTransaction();input.milestones[missing==='agreement'?'deposit':'agreement']=report();
+ const review=reviewTransactionReports(input,preparation,'2026-10-31');
+ expect(review.nextAction).toContain(missing==='agreement'?'purchase agreement signed':'earnest money received');
+ expect(review.nextAction).not.toContain(missing==='agreement'?'earnest money received':'purchase agreement signed');expect(review.reports).toHaveLength(1);
+});
+it('explains issue timing against the closing target and does not assign an invented owner',()=>{
+ const input=emptyTransaction();input.closingDate='2026-11-02';input.issues=[{description:'Counsel needs the seller response',source:'Fictional counsel note',dueDate:'2026-11-04',resolved:false}];
+ const review=reviewTransactionReports(input,preparation,'2026-10-31');expect(review.nextAction).toContain('after the proposed closing (2026-11-02)');expect(review.nextAction).toContain('Confirm who owns');expect(review.nextAction).toContain('Fictional counsel note');
+ input.issues[0].dueDate='2026-10-31';input.closingDate='2026-10-31';expect(reviewTransactionReports(input,preparation,'2026-10-31').nextAction).toContain('due today');expect(reviewTransactionReports(input,preparation,'2026-10-31').nextAction).toContain('proposed closing is today');
+ input.issues[0].dueDate=null;expect(reviewTransactionReports(input,preparation,'2026-10-31').nextAction).toContain('No follow-up date');
+});
+it('names the recorded closing contact and requests only clearance after title opening is reported',()=>{
+ const input=emptyTransaction();input.parties.attorney={name:'Fictional Casey Counsel',email:'casey@example.com',source:'Employee contact note'};input.milestones={...input.milestones,agreement:report(),deposit:report(),title_opened:report()};
+ const review=reviewTransactionReports(input,preparation,'2026-10-31');expect(review.nextAction).toContain('Fictional Casey Counsel');expect(review.nextAction).toContain('Employee contact note');expect(review.nextAction).toContain('clearance report');expect(review.nextAction).not.toContain('preparing title');
+});

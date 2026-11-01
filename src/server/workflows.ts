@@ -2,7 +2,7 @@ import {acquisitionSubmissionSchema} from './acquisition-schema';
 import { hasFeature,requireFeature } from './billing';
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
-import type { Actor } from '../lib/contracts';
+import type { Actor, Property } from '../lib/contracts';
 import type { DealPackage, PropertyRelease, ReleaseInput } from '../lib/intelligence-contracts';
 import { AppError, assertActor, audit, getDb, newId, now, requireRole } from './db';
 import { actorForMember, getInvestor, notify } from './services';
@@ -88,7 +88,8 @@ export function saveTemplate(actor:Actor,input:{id?:string;name:string;channel:D
  getDb().prepare('INSERT INTO channel_templates VALUES(?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data').run(value.id,actor.organizationId,actor.officeId,actor.id,JSON.stringify(value));audit(actor,'package.template.saved',value.id,{version:value.version,status:value.status});return value;
 }
 const blockedBody='Property details are withheld. Resolve the eligibility requirements, then compose a new package for review.';
-function blockPackage(value:DealPackage,reasons:string[]):DealPackage {return {...value,status:'blocked',subject:'Property information pending eligibility',body:blockedBody,eligibilityReasons:reasons,approvedAt:null,handedOffAt:null,updatedAt:now(),deliveryStatus:'not_sent'};}
+const publicationFields:ReadonlyArray<readonly [keyof Property,string]>=[['address','address'],['city','city'],['county','county'],['price','asking price'],['beds','bedrooms'],['baths','bathrooms'],['sqft','square footage'],['strategy','strategy'],['rehab','rehab'],['status','inventory status'],['synthetic','demo designation']];
+function blockPackage(value:DealPackage,reasons:string[]):DealPackage {return {...value,status:'blocked',subject:'Property information pending eligibility',body:blockedBody,missing:[],eligibilityReasons:reasons,approvedAt:null,handedOffAt:null,updatedAt:now(),deliveryStatus:'not_sent'};}
 function eligibility(actor:Actor,investorId:string,releaseId:string,version?:number) {
  getInvestor(actor,investorId);
  if(!getDb().prepare('SELECT 1 FROM investors WHERE id=? AND organization_id=? AND office_id=?').get(investorId,actor.organizationId,actor.officeId))throw new AppError(403,'Property packages are restricted to investor records in this office.');
@@ -96,6 +97,8 @@ function eligibility(actor:Actor,investorId:string,releaseId:string,version?:num
  const release=getRelease(actor,releaseId) as StoredRelease;const disclosure=getDisclosure(actor,investorId);const policy=getDisclosurePolicy(actor);const reasons:string[]=[];
  if(release.status!=='released')reasons.push('The property has not been released for distribution.');
  if(version!==undefined&&version!==release.version)reasons.push('The release version changed. Compose a new package.');
+ const property=readProperty(actor,release.propertyId),changed=publicationFields.filter(([field])=>property[field]!==release.property[field]).map(([,label])=>label);
+ if(changed.length)reasons.push(`Current inventory differs from this release: ${changed.join(', ')}. Ask the acquisition owner or manager to review and refresh the release, then compose and review a new package.`);
  if(disclosure.status!=='signed'||!disclosure.signedAt||!Number.isFinite(Date.parse(disclosure.signedAt))||Date.parse(disclosure.signedAt)>Date.now()||!disclosure.documentRef)reasons.push('A verifiable signed disclosure is required.');
  if(disclosure.version!==policy.version)reasons.push('The required disclosure version has not been completed.');
  if(disclosure.expiresAt&&(!Number.isFinite(Date.parse(disclosure.expiresAt))||Date.parse(disclosure.expiresAt)<=Date.now()))reasons.push('The disclosure has expired.');
@@ -131,7 +134,7 @@ export function composePackage(actor:Actor,input:{investorId:string;releaseId:st
    const lines=['DEMONSTRATION ONLY — fictional property; no message has been sent.',`Hi ${investor.name.split(' ')[0]},`,template.intro,`${property.address}, ${property.city} · ${property.county} County`,`Asking price: ${money(property.price)}`,`${property.beds} beds · ${property.baths} baths · ${property.sqft.toLocaleString('en-US')} sq ft`,release.propertyType?`Property type: ${release.propertyType}`:'',`Recorded rehab: ${property.rehab}`,release.description,release.notes?`Deal notes: ${release.notes}`:'',release.arv!==null?`Supplied ARV assumption: ${money(release.arv)}`:'',release.repairEstimate!==null?`Supplied repair assumption: ${money(release.repairEstimate)}`:'',release.economicsSource?`Economics source: ${release.economicsSource}`:'',release.mediaUrl?`Photos: ${release.mediaUrl}`:'',release.mediaUrl?'Media permission was confirmed by an employee; AgentDesk has not tested live access.':'',release.showingInstructions?`Showing / next steps: ${release.showingInstructions}`:'',template.closing,`Source: ${release.source} · release version ${release.version}`].filter(Boolean);
    // Package personalization is shared computation inside Deal Marketing, not a second paid matching operation.
    const comparison=compareProperty(actor,release.propertyId).find(match=>match.investorId===investor.id);
-   if(comparison){const beforeSource=lines.length-1;lines.splice(beforeSource,0,...(comparison.reasons.length?[`Recorded profile comparison: ${comparison.reasons.join(' ')}`]:[]),...(comparison.conflicts.length?[`Fit cautions: ${comparison.conflicts.join(' ')}`]:[]));}
+   if(comparison){missing.push(...comparison.missing);const beforeSource=lines.length-1;lines.splice(beforeSource,0,...(comparison.reasons.length?[`Recorded profile comparison: ${comparison.reasons.join(' ')}`]:[]),...(comparison.conflicts.length?[`Fit cautions: ${comparison.conflicts.join(' ')}`]:[]));}
    const compact=['sms','personal_text','imessage'].includes(parsed.channel);
    value={...value,subject:parsed.channel==='email'?`Demo property details: ${property.address}`:'Property details for review',body:lines.join(compact?'\n':'\n\n'),missing,criteriaFingerprint:criteriaFingerprint(actor,investor.id)};
   }
