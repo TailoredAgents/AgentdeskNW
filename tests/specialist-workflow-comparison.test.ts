@@ -3,7 +3,7 @@ import {randomUUID} from 'node:crypto';
 import {mkdtempSync,readFileSync,rmSync,writeFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
-import {prepareActualWorkflowComparison,prepareActualWorkflowCapacityFollowup,runActualWorkflowComparison,inspectActualWorkflowComparison} from '../scripts/specialist-workflow-comparison';
+import {closeActualWorkflowPreflight,prepareActualWorkflowComparison,prepareActualWorkflowCapacityConfirmation,prepareActualWorkflowCapacityFollowup,runActualWorkflowComparison,inspectActualWorkflowComparison} from '../scripts/specialist-workflow-comparison';
 import type {EvaluationTransport} from '../evaluations/specialists/runner';
 import {closeDb,demoActor} from '../src/server/db';
 import {getOpportunity,getOpportunityBoard} from '../src/server/opportunities';
@@ -98,5 +98,18 @@ describe('actual saved-work comparison orchestration (mocked provider only)',()=
   const result=await runActualWorkflowComparison(root,'capacity',{planHash:followup.planHash,maximumCents:999},provider);expect(result.status).toBe('completed');expect(result.outcomes).toHaveLength(8);expect(result.outcomes.every(outcome=>outcome.status==='completed')).toBe(true);expect(provider.create).toHaveBeenCalledTimes(32);
   const saved=JSON.parse(readFileSync(result.evidenceFile,'utf8'));expect(saved.kind).toBe('workflow_capacity_and_output_representation_followup');expect(saved.results[0].toolNames).toEqual(['match_buyers','investor_journey','compose_deal_package','prepare_property_outreach']);expect(saved.results.find((entry:{slotId:string})=>entry.slotId==='manager-guided-1').toolNames).toEqual(['handoff_overview','opportunity_review','prepare_handoff_action']);
   expect(readFileSync(join(original.directory,'workflow-evidence.json'),'utf8')).toBe(evidenceBefore);expect(readFileSync(join(original.directory,'fixture.sqlite'))).toEqual(fixtureBefore);
+ },120000);
+ it('closes a proven preflight stop without changing evidence and runs the final confirmation with per-turn caps',async()=>{
+  const original=await prepareActualWorkflowComparison(root,'initial');await runActualWorkflowComparison(root,'initial',{planHash:original.planHash,maximumCents:999},transport('no_artifact'));
+  const followup=prepareActualWorkflowCapacityFollowup(root,'input-stop','initial'),stoppedProvider=transport('normal',true);let countCalls=0;
+  stoppedProvider.count.mockImplementation(async()=>({status:200,body:JSON.stringify({object:'response.input_tokens',input_tokens:++countCalls===4?20263:1000})}));
+  await expect(runActualWorkflowComparison(root,'input-stop',{planHash:followup.planHash,maximumCents:999},stoppedProvider)).rejects.toThrow('stopped');expect(stoppedProvider.create).toHaveBeenCalledTimes(3);
+  const previousEvidence=readFileSync(join(followup.directory,'workflow-evidence.json'),'utf8'),previousExecution=readFileSync(join(followup.directory,'execution.json'),'utf8');
+  const closed=closeActualWorkflowPreflight(root,'input-stop',followup.planHash);expect(closed.status).toBe('closed_preflight');expect(readFileSync(join(followup.directory,'workflow-evidence.json'),'utf8')).toBe(previousEvidence);expect(readFileSync(join(followup.directory,'execution.json'),'utf8')).toBe(previousExecution);
+  const final=prepareActualWorkflowCapacityConfirmation(root,'final','initial','input-stop');expect(final.maximumCalls).toBe(36);expect(final.maximumUsd).toBe(5.97456);expect(final.slots.filter(slot=>slot.role==='manager'&&slot.turn===0).every(slot=>slot.maxCalls===3)).toBe(true);expect(final.slots.filter(slot=>!(slot.role==='manager'&&slot.turn===0)).every(slot=>slot.maxCalls===5)).toBe(true);
+  const provider=transport('normal',true),sizes:{case:string;bytes:number;roundCap:number}[]=[];
+  const measured:EvaluationTransport={count:async body=>{const payload=JSON.parse(body),prompt=String(payload.input.filter((item:{role?:string})=>item.role==='user').at(-1).content),label=prompt.startsWith('For 123')?'dispositions-first':prompt.startsWith('Read the latest')?'dispositions-second':prompt.startsWith('I corrected')?'manager-second':'manager-first';sizes.push({case:label,bytes:Buffer.byteLength(body),roundCap:Number(process.env.AGENTDESK_TEXT_MAX_ROUNDS)});expect(process.env.AGENTDESK_TEXT_MAX_INPUT_TOKENS).toBe('25000');expect(process.env.AGENTDESK_TEXT_MAX_TOOL_CALLS).toBe('8');return provider.count();},create:provider.create};
+  const result=await runActualWorkflowComparison(root,'final',{planHash:final.planHash,maximumCents:999},measured);expect(result.outcomes.every(outcome=>outcome.status==='completed')).toBe(true);expect(provider.create).toHaveBeenCalledTimes(32);expect(sizes.filter(size=>size.case==='manager-first').every(size=>size.roundCap===3)).toBe(true);expect(sizes.filter(size=>size.case!=='manager-first').every(size=>size.roundCap===5)).toBe(true);
+  expect(readFileSync(join(followup.directory,'workflow-evidence.json'),'utf8')).toBe(previousEvidence);expect(readFileSync(join(followup.directory,'execution.json'),'utf8')).toBe(previousExecution);expect(inspectActualWorkflowComparison(root,'input-stop').status).toBe('closed_preflight');
  },120000);
 });

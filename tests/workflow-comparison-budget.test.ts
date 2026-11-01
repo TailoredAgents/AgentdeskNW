@@ -1,9 +1,9 @@
 import {afterEach,describe,expect,it,vi} from 'vitest';
-import {mkdtempSync,readFileSync,writeFileSync,rmSync,existsSync} from 'node:fs';
+import {mkdtempSync,readFileSync,writeFileSync,rmSync,existsSync,readdirSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {createHash} from 'node:crypto';
-import {executeWorkflowComparisonRequest,finishWorkflowComparison,inspectEvaluationCampaign,inspectWorkflowComparison,prepareWorkflowComparison,prepareWorkflowCapacityFollowup,recordWorkflowComparisonOutcome,workflowComparisonPolicy,workflowCapacityFollowupPolicy,prepareToolRehearsal,executeToolRehearsalRequest,finishToolRehearsal,prepareEvaluation,runEvaluation,type EvaluationTransport,type WorkflowComparisonSlot,type WorkflowComparisonBindings,type EvaluationLedger} from '../evaluations/specialists/runner';
+import {executeWorkflowComparisonRequest,finishWorkflowComparison,inspectEvaluationCampaign,inspectWorkflowComparison,prepareWorkflowComparison,prepareWorkflowCapacityFollowup,prepareWorkflowCapacityConfirmation,closeWorkflowAfterCountLimit,recordWorkflowComparisonOutcome,workflowComparisonPolicy,workflowCapacityFollowupPolicy,workflowCapacityConfirmationPolicy,prepareToolRehearsal,executeToolRehearsalRequest,finishToolRehearsal,prepareEvaluation,runEvaluation,type EvaluationTransport,type WorkflowComparisonSlot,type WorkflowComparisonBindings,type EvaluationLedger} from '../evaluations/specialists/runner';
 
 const roots:string[]=[];
 const digest=(value:unknown)=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
@@ -154,5 +154,52 @@ describe('fixed capacity and lossless-output follow-up',()=>{
   const state=await completedOriginal(),run=capacityPrepare(state),path=join(run.directory,'plan.json'),plan=read<{original:{name:string;planHash:string};planHash:string}>(path);plan.original={name:'capacity',planHash:run.planHash};const {planHash:ignored,...content}=plan;void ignored;plan.planHash=digest(content);write(path,plan);
   const campaignPath=join(state.root,'campaign.json'),campaign=read<{runs:{name:string;kind:string;planHash:string}[]}>(campaignPath),entry=campaign.runs.find(value=>value.name==='capacity')!;entry.kind='workflow_comparison';entry.planHash=run.planHash;write(campaignPath,campaign);
   expect(()=>inspectWorkflowComparison(state.root,'capacity')).toThrow('cannot serve as its own');
+ });
+});
+
+async function countLimitedCapacity(){
+ const state=await completedOriginal(),capacity=capacityPrepare(state),approval={planHash:capacity.planHash,maximumCents:999},slot=capacitySlots(state)[0],transport=fake({count:20_000});
+ for(let round=0;round<3;round++)await executeWorkflowComparisonRequest(state.root,'capacity',approval,input(slot,round),transport);
+ const exceeded=fake({count:20_263});await expect(executeWorkflowComparisonRequest(state.root,'capacity',approval,input(slot,3),exceeded)).rejects.toThrow('input_count_limit_exceeded');expect(exceeded.create).not.toHaveBeenCalled();
+ const countFile=readdirSync(join(capacity.directory,'counts')).find(file=>(read(join(capacity.directory,'counts',file))).failureCode==='input_count_limit_exceeded')!;
+ return {state,capacity,approval,slot,transport,countFile:join(capacity.directory,'counts',countFile)};
+}
+function confirmationSlots(state:State):WorkflowComparisonSlot[]{return capacitySlots(state).map(slot=>({...slot,id:`final-${slot.id}`,employeeRequestId:`final-${slot.employeeRequestId}`,maxCalls:slot.role==='manager'&&slot.turn===0?3:5}));}
+function prepareConfirmation(state:State,capacity:{planHash:string},name='confirmation',planned=confirmationSlots(state)){return prepareWorkflowCapacityConfirmation(state.root,name,'c'.repeat(40),planned,state.bindings,{name:'workflow',planHash:state.planHash},{name:'capacity',planHash:capacity.planHash});}
+describe('proven preflight closure and final capacity confirmation',()=>{
+ it('releases only unused reservation, preserves raw/operator evidence, and permanently closes generation and outcomes',async()=>{
+  const {state,capacity,approval,slot,transport}=await countLimitedCapacity(),directory=capacity.directory;write(join(directory,'execution.json'),{status:'stopped'});write(join(directory,'workflow-evidence.json'),{unchanged:'original failed run'});
+  const files=['plan.json','execution.json','workflow-evidence.json',...['requests','responses','counts','turns'].flatMap(folder=>readdirSync(join(directory,folder)).map(file=>`${folder}/${file}`))],before=files.map(file=>readFileSync(join(directory,file),'utf8'));
+  expect(inspectEvaluationCampaign(state.root).committedMaximumUsd).toBe(5.6759);const closed=closeWorkflowAfterCountLimit(state.root,'capacity',capacity.planHash);expect(closed).toMatchObject({status:'closed_preflight',attemptedCalls:3,accountedMaximumUsd:0.0075});
+  expect(inspectEvaluationCampaign(state.root)).toMatchObject({accountedUsd:0.045,committedMaximumUsd:0.045,unresolved:[]});expect(files.map(file=>readFileSync(join(directory,file),'utf8'))).toEqual(before);
+  const ledger=readFileSync(join(directory,'ledger.json'),'utf8'),proof=readFileSync(join(directory,'preflight-closure.json'),'utf8');expect(closeWorkflowAfterCountLimit(state.root,'capacity',capacity.planHash)).toEqual(closed);expect(readFileSync(join(directory,'ledger.json'),'utf8')).toBe(ledger);expect(readFileSync(join(directory,'preflight-closure.json'),'utf8')).toBe(proof);
+  const counts=transport.count.mock.calls.length;await expect(executeWorkflowComparisonRequest(state.root,'capacity',approval,input(slot),transport)).rejects.toThrow('preflight-closed');await expect(executeWorkflowComparisonRequest(state.root,'capacity',approval,input(slot,4),transport)).rejects.toThrow('preflight-closed');expect(transport.count.mock.calls.length).toBe(counts);expect(transport.create).toHaveBeenCalledTimes(3);
+  expect(()=>recordWorkflowComparisonOutcome(state.root,'capacity',capacity.planHash,{slotId:slot.id,status:'quality_failed',reason:'Cannot reopen',evidenceHash:'a'.repeat(64)})).toThrow('preflight-closed');expect(()=>finishWorkflowComparison(state.root,'capacity',capacity.planHash)).toThrow('eight terminal');
+  const proofPath=join(directory,'preflight-closure.json');rmSync(proofPath);expect(()=>inspectEvaluationCampaign(state.root)).toThrow('evidence');
+ });
+ it('refuses unknown/incomplete generation, generation files, mismatched or forged count evidence',async()=>{
+  const {state,capacity,countFile}=await countLimitedCapacity(),ledgerPath=join(capacity.directory,'ledger.json'),savedLedger=readFileSync(ledgerPath,'utf8'),savedCount=readFileSync(countFile,'utf8');
+  for(const status of ['unknown','incomplete'] as const){const ledger=JSON.parse(savedLedger) as EvaluationLedger;ledger.attempts[0].status=status;write(ledgerPath,ledger);expect(()=>closeWorkflowAfterCountLimit(state.root,'capacity',capacity.planHash)).toThrow('settled');writeFileSync(ledgerPath,savedLedger);}
+  const failed=read<EvaluationLedger>(ledgerPath).lastCountFailure!.attemptId;for(const folder of ['requests','responses']){const path=join(capacity.directory,folder,`${failed}.json`);write(path,{});expect(()=>closeWorkflowAfterCountLimit(state.root,'capacity',capacity.planHash)).toThrow('dispatch file');rmSync(path);}
+  for(const change of [{httpStatus:500},{responseBody:'{"object":"response.input_tokens","input_tokens":20000}'},{responseBody:'{"object":"other","input_tokens":20263}'},{failureCode:'input_count_invalid_response'},{responseBodyTruncated:true}]){write(countFile,{...JSON.parse(savedCount),...change});expect(()=>closeWorkflowAfterCountLimit(state.root,'capacity',capacity.planHash)).toThrow();writeFileSync(countFile,savedCount);}
+  const forgedLedger=JSON.parse(savedLedger) as EvaluationLedger;forgedLedger.lastCountFailure!.attemptId='workflow-'+ 'f'.repeat(32);write(ledgerPath,forgedLedger);expect(()=>closeWorkflowAfterCountLimit(state.root,'capacity',capacity.planHash)).toThrow('Exactly one');writeFileSync(ledgerPath,savedLedger);
+  expect(existsSync(join(capacity.directory,'preflight-closure.json'))).toBe(false);expect(inspectEvaluationCampaign(state.root).committedMaximumUsd).toBe(5.6759);
+ });
+ it('invalidates released capacity if settled receipts or bound count evidence change',async()=>{
+  const {state,capacity,countFile}=await countLimitedCapacity();closeWorkflowAfterCountLimit(state.root,'capacity',capacity.planHash);const raw=readFileSync(countFile,'utf8');writeFileSync(countFile,raw+' ');expect(()=>inspectEvaluationCampaign(state.root)).toThrow('closure proof changed');writeFileSync(countFile,raw);
+  const ledgerPath=join(capacity.directory,'ledger.json'),ledger=read<EvaluationLedger>(ledgerPath);ledger.attempts[0].accountedNanos=0;write(ledgerPath,ledger);expect(()=>inspectEvaluationCampaign(state.root)).toThrow('completed receipt');
+ });
+ it('admits exactly36 responses at25k with manager3/5 caps only after verified closure',async()=>{
+  const {state,capacity}=await countLimitedCapacity();expect(()=>prepareConfirmation(state,capacity)).toThrow('verified preflight closure');closeWorkflowAfterCountLimit(state.root,'capacity',capacity.planHash);
+  expect(()=>prepareConfirmation(state,capacity,'wrong-caps',confirmationSlots(state).map(slot=>({...slot,maxCalls:5})))).toThrow('call limits');
+  const run=prepareConfirmation(state,capacity),approval={planHash:run.planHash,maximumCents:999},planned=confirmationSlots(state);expect(run).toMatchObject({kind:'workflow_capacity_confirmation',maximumCalls:36,maximumUsd:5.97456,policy:{maxInputTokens:25000,maxOutputTokens:4096},after:{name:'capacity',planHash:capacity.planHash}});expect(run.after?.closureHash).toBe(inspectWorkflowComparison(state.root,'capacity').closure?.hash);expect(workflowCapacityConfirmationPolicy.maximumNanos).toBe(5_974_560_000);expect(inspectEvaluationCampaign(state.root).committedMaximumUsd).toBe(6.01956);
+  const over=fake({count:25_001});await expect(executeWorkflowComparisonRequest(state.root,'confirmation',approval,input(planned[0]),over)).rejects.toThrow('input_count_limit_exceeded');expect(over.create).not.toHaveBeenCalled();
+  const transport=fake({count:25_000});for(const slot of planned){for(let round=0;round<slot.maxCalls;round++)await executeWorkflowComparisonRequest(state.root,'confirmation',approval,input(slot,round),transport);await expect(executeWorkflowComparisonRequest(state.root,'confirmation',approval,input(slot,slot.maxCalls),transport)).rejects.toThrow('round limit');recordWorkflowComparisonOutcome(state.root,'confirmation',run.planHash,{slotId:slot.id,status:'completed',evidenceHash:'b'.repeat(64)});}
+  expect(finishWorkflowComparison(state.root,'confirmation',run.planHash)).toMatchObject({status:'completed',attemptedCalls:36});expect(transport.create).toHaveBeenCalledTimes(36);expect(inspectEvaluationCampaign(state.root)).toMatchObject({accountedUsd:0.135,committedMaximumUsd:0.135,unresolved:[]});
+  const fresh=planned.map(slot=>({...slot,id:`new-${slot.id}`,employeeRequestId:`new-${slot.employeeRequestId}`}));expect(()=>prepareConfirmation(state,capacity,'another-final',fresh)).toThrow('final capacity confirmation is already registered');expect(existsSync(join(state.root,'another-final'))).toBe(false);
+ },30_000);
+ it('retains campaign-wide reservations and closure provenance when preparing the final profile',async()=>{
+  const {state,capacity}=await countLimitedCapacity();closeWorkflowAfterCountLimit(state.root,'capacity',capacity.planHash);prepareEvaluation(state.root,'other-reservation','a'.repeat(40));expect(()=>prepareConfirmation(state,capacity)).toThrow('$9.99');expect(existsSync(join(state.root,'confirmation'))).toBe(false);
+  rmSync(join(capacity.directory,'preflight-closure.json'));expect(()=>prepareConfirmation(state,capacity)).toThrow('evidence');
  });
 });

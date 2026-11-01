@@ -6,6 +6,7 @@ import { forgetEmployeeMemory,getEmployeeMemory,saveEmployeeMemory } from '../sr
 import { acceptMessage,createPairing,messagingConversation,messagingState } from '../src/server/messaging';
 import { processMessagingInbox } from '../src/server/messaging-worker';
 import { getConversation,listTasks } from '../src/server/services';
+import type {ToolResult} from '../src/lib/contracts';
 
 let sequence=0;
 const outputMessage=(text:string)=>({id:`memory-message-${++sequence}`,type:'message',role:'assistant',status:'completed',phase:'final_answer',content:[{type:'output_text',text,annotations:[]}]});
@@ -93,7 +94,9 @@ describe('employee memory through Copilot turns',()=>{
   const mock=vi.fn().mockResolvedValueOnce(answer([outputCall('relationship_recommendation',{investorId:'investor-mike'})])).mockResolvedValueOnce(answer([outputMessage('Your relationship draft is ready for review.')]));live(mock);
   acceptMessage(sms('What should I do next with Mike?','sms-continue'));await processMessagingInbox();
   expect(messagingState(actor).conversationId).toBe(thread);expect(getConversation(actor,thread).messages).toHaveLength(4);expect(context(mock,0).employeeMemory).toMatchObject({tone:'warm',length:'concise',version:1});
-  const tool=body(mock,1).input.filter(item=>item.type==='function_call_output').at(-1)!;expect(JSON.parse(tool.output as string).data).toMatchObject({preferencesUsed:{tone:'warm',length:'concise',version:1},deliveryStatus:'not_sent'});
+  const tool=body(mock,1).input.filter(item=>item.type==='function_call_output').at(-1)!,transmitted=JSON.parse(tool.output as string) as ToolResult;
+  const recommendation=transmitted.artifacts.find(artifact=>artifact.type==='briefing'&&artifact.id==='investor-mike'&&artifact.title==='Investor journey & next step');
+  expect(recommendation?.data).toMatchObject({preferencesUsed:{tone:'warm',length:'concise',version:1},deliveryStatus:'not_sent'});
  });
  it('removes forgotten preferences from replayable model context while preserving the visible conversation',async()=>{
   vi.useFakeTimers({toFake:['Date']});vi.setSystemTime(new Date('2026-10-29T16:00:00Z'));

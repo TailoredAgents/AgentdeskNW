@@ -40,7 +40,7 @@ export interface EvaluationAttempt {
 }
 export interface EvaluationLedger {
  version:number;planHash:string;approval:{planHash:string;maximumCents:number;recordedAt:string;source:'explicit_operator_cli'}|null;
- status:'prepared'|'running'|'paused'|'completed'|'stopped';attempts:EvaluationAttempt[];updatedAt:string;lastCountFailure?:{attemptId:string;code:string;at:string};
+ status:'prepared'|'running'|'paused'|'completed'|'stopped'|'closed_preflight';attempts:EvaluationAttempt[];updatedAt:string;lastCountFailure?:{attemptId:string;code:string;at:string};
 }
 export interface EvaluationTransport {
  count:(body:string)=>Promise<{status:number;body:string;requestId?:string}>;
@@ -103,24 +103,24 @@ function readLedger(directory:string,plan:EvaluationPlan):EvaluationLedger {
  return raw;
 }
 function saveLedger(directory:string,ledger:EvaluationLedger){ledger.updatedAt=now();durableJson(join(directory,'ledger.json'),ledger);}
-interface CampaignRun {name:string;planHash:string;kind:'model_comparison'|'tool_rehearsal'|'workflow_comparison'|'workflow_capacity_followup';maximumNanos:number}
+interface CampaignRun {name:string;planHash:string;kind:'model_comparison'|'tool_rehearsal'|'workflow_comparison'|'workflow_capacity_followup'|'workflow_capacity_confirmation';maximumNanos:number}
 interface Campaign {version:1;id:string;maximumCents:999;createdAt:string;runs:CampaignRun[]}
 function campaignFile(root:string){return join(root,'campaign.json');}
 function readCampaign(root:string):Campaign {
  const value=readJson(campaignFile(root)) as Campaign;
- if(value.version!==1||value.maximumCents!==campaignMaximumCents||!value.id||!Array.isArray(value.runs)||value.runs.some(run=>!['model_comparison','tool_rehearsal','workflow_comparison','workflow_capacity_followup'].includes(run.kind))||new Set(value.runs.map(run=>run.name)).size!==value.runs.length||new Set(value.runs.map(run=>run.planHash)).size!==value.runs.length)throw err('The shared campaign accounting is invalid. No further paid testing is allowed.');return value;
+ if(value.version!==1||value.maximumCents!==campaignMaximumCents||!value.id||!Array.isArray(value.runs)||value.runs.some(run=>!['model_comparison','tool_rehearsal','workflow_comparison','workflow_capacity_followup','workflow_capacity_confirmation'].includes(run.kind))||new Set(value.runs.map(run=>run.name)).size!==value.runs.length||new Set(value.runs.map(run=>run.planHash)).size!==value.runs.length)throw err('The shared campaign accounting is invalid. No further paid testing is allowed.');return value;
 }
 function campaignRuns(root:string,campaign:Campaign,allowNew?:string){
  const unexpected=readdirSync(root,{withFileTypes:true}).filter(entry=>entry.isDirectory()&&existsSync(join(root,entry.name,'plan.json'))&&!campaign.runs.some(run=>run.name===entry.name)&&entry.name!==allowNew);
  if(unexpected.length)throw err('Unregistered evaluation evidence exists. Reconcile the shared campaign before any further paid test.');
  return campaign.runs.map(run=>{const directory=runDirectory(root,run.name);let plan:EvaluationPlan|ToolRehearsalPlan|WorkflowComparisonPlan,ledger:EvaluationLedger;
-  switch(run.kind){case 'model_comparison':plan=readPlan(directory);ledger=readLedger(directory,plan);break;case 'tool_rehearsal':plan=readToolPlan(directory);ledger=readToolLedger(directory,plan);break;case 'workflow_comparison':case 'workflow_capacity_followup':plan=readWorkflowPlan(directory);if(plan.kind!==run.kind||plan.bindings.campaignId!==campaign.id)throw err('The workflow campaign identity changed.');ledger=readWorkflowLedger(directory,plan);break;default:throw err('Unknown campaign evidence kind.');}
+  switch(run.kind){case 'model_comparison':plan=readPlan(directory);ledger=readLedger(directory,plan);break;case 'tool_rehearsal':plan=readToolPlan(directory);ledger=readToolLedger(directory,plan);break;case 'workflow_comparison':case 'workflow_capacity_followup':case 'workflow_capacity_confirmation':plan=readWorkflowPlan(directory);if(plan.kind!==run.kind||plan.bindings.campaignId!==campaign.id)throw err('The workflow campaign identity changed.');ledger=readWorkflowLedger(directory,plan);break;default:throw err('Unknown campaign evidence kind.');}
   if(plan.planHash!==run.planHash||plan.policy.maximumNanos!==run.maximumNanos)throw err('A registered campaign plan changed or is missing. Its cost cannot be reset.');
   return {run,ledger};});
 }
 export function inspectEvaluationCampaign(root:string){
  root=resolve(root);if(!existsSync(campaignFile(root)))return {maximumUsd:9.99,accountedUsd:0,committedMaximumUsd:0,remainingReservableUsd:9.99,runs:[],unresolved:[] as string[]};
- const campaign=readCampaign(root),runs=campaignRuns(root,campaign),accountedNanos=runs.reduce((sum,{ledger})=>sum+accounted(ledger),0),committedNanos=runs.reduce((sum,{run,ledger})=>sum+(ledger.status==='completed'?accounted(ledger):Math.max(run.maximumNanos,accounted(ledger))),0);
+ const campaign=readCampaign(root),runs=campaignRuns(root,campaign),accountedNanos=runs.reduce((sum,{ledger})=>sum+accounted(ledger),0),committedNanos=runs.reduce((sum,{run,ledger})=>sum+committedRun(run,ledger),0);
  return {maximumUsd:9.99,accountedUsd:accountedNanos/1e9,committedMaximumUsd:committedNanos/1e9,remainingReservableUsd:Math.max(0,(campaign.maximumCents*10_000_000-committedNanos)/1e9),runs:runs.map(({run,ledger})=>({name:run.name,kind:run.kind,planHash:run.planHash,status:ledger.status,attemptedCalls:ledger.attempts.length,accountedUsd:accounted(ledger)/1e9})),unresolved:runs.flatMap(({run,ledger})=>ledger.attempts.filter(attempt=>['dispatching','unknown'].includes(attempt.status)).map(attempt=>`${run.name}:${attempt.id}`))};
 }
 function registerCampaignRun(root:string,run:CampaignRun){
@@ -128,7 +128,7 @@ function registerCampaignRun(root:string,run:CampaignRun){
  const campaign=readCampaign(root),existing=campaignRuns(root,campaign,run.name);
  if(campaign.runs.some(item=>item.name===run.name||item.planHash===run.planHash))throw err('This evaluation identity is already registered.');
  if(existing.some(({ledger})=>ledger.attempts.some(attempt=>['dispatching','unknown'].includes(attempt.status))))throw err('An unresolved provider outcome blocks further campaign work.');
- const committed=existing.reduce((sum,{run,ledger})=>sum+(ledger.status==='completed'?accounted(ledger):Math.max(run.maximumNanos,accounted(ledger))),0);
+ const committed=existing.reduce((sum,{run,ledger})=>sum+committedRun(run,ledger),0);
  if(committed+run.maximumNanos>campaign.maximumCents*10_000_000)throw err('The complete new test would exceed the shared $9.99 campaign cap. No provider request was sent.');
  campaign.runs.push(run);durableJson(campaignFile(root),campaign);
 }
@@ -145,9 +145,11 @@ function assertCampaignAdmission(root:string,name:string,additionalNanos=0){
 }
 function assertCampaignCapacity(root:string,maximumNanos:number){
  if(!existsSync(campaignFile(root)))return;
- const campaign=readCampaign(root),runs=campaignRuns(root,campaign),committed=runs.reduce((sum,{run,ledger})=>sum+(ledger.status==='completed'?accounted(ledger):Math.max(run.maximumNanos,accounted(ledger))),0);
+ const campaign=readCampaign(root),runs=campaignRuns(root,campaign),committed=runs.reduce((sum,{run,ledger})=>sum+committedRun(run,ledger),0);
  if(committed+maximumNanos>campaign.maximumCents*10_000_000)throw err('The complete new test would exceed the shared $9.99 campaign cap. No provider request was sent.');
 }
+/** Called only after the relevant ledger reader has verified every terminal receipt/closure proof. */
+function committedRun(run:CampaignRun,ledger:EvaluationLedger){return ledger.status==='completed'||ledger.status==='closed_preflight'?accounted(ledger):Math.max(run.maximumNanos,accounted(ledger));}
 export function prepareEvaluation(root:string,name:string,applicationRevision:string){
  if(!/^[a-f0-9]{40}$/.test(applicationRevision))throw err('Freeze the exact 40-character application commit before preparing an evaluation.');
  root=resolve(root);return withLock(root,()=>{
@@ -321,19 +323,22 @@ export function finishToolRehearsal(root:string,name:string,planHash:string){ret
 /** One fixed, operator-owned comparison; its mutable bodies come only from the frozen application harness. */
 export const workflowComparisonPolicy={model:'gpt-6.1-sol',reasoning:'high',serviceTier:'default',maxInputTokens:30_000,maxOutputTokens:4096,maximumCalls:40,maximumNanos:40*(30_000*5_000+4096*10_000),prerequisitePolicy:'skip_second_turn_only_when_required_first_turn_artifact_is_unavailable'} as const;
 export const workflowCapacityFollowupPolicy={model:'gpt-6.1-sol',reasoning:'high',serviceTier:'default',maxInputTokens:20_000,maxOutputTokens:4096,maximumCalls:40,maximumNanos:40*(20_000*5_000+4096*10_000),prerequisitePolicy:'skip_second_turn_only_when_required_first_turn_artifact_is_unavailable',correction:'capacity_and_lossless_tool_output_correction'} as const;
+export const workflowCapacityConfirmationPolicy={model:'gpt-6.1-sol',reasoning:'high',serviceTier:'default',maxInputTokens:25_000,maxOutputTokens:4096,maximumCalls:36,maximumNanos:36*(25_000*5_000+4096*10_000),prerequisitePolicy:'skip_second_turn_only_when_required_first_turn_artifact_is_unavailable',correction:'final_capacity_confirmation_after_count_limit'} as const;
 export interface WorkflowComparisonSlot {id:string;role:'dispositions'|'acquisitions'|'manager';arm:'guided'|'generic';turn:0|1;conversationId:string;employeeRequestId:string;request:string;maxCalls:3|4|5}
 export interface WorkflowComparisonBindings {campaignId:string;fixtureHash:string;sourceHash:string;runtimeHash:string}
 export interface WorkflowComparisonOriginal {name:string;planHash:string}
-type WorkflowPlanKind='workflow_comparison'|'workflow_capacity_followup';
-interface WorkflowComparisonPlan {version:number;kind:WorkflowPlanKind;runId:string;createdAt:string;applicationRevision:string;runnerSourceHash:string;policy:typeof workflowComparisonPolicy|typeof workflowCapacityFollowupPolicy;bindings:WorkflowComparisonBindings;slots:WorkflowComparisonSlot[];original?:WorkflowComparisonOriginal;planHash:string}
+type WorkflowPlanKind='workflow_comparison'|'workflow_capacity_followup'|'workflow_capacity_confirmation';
+interface WorkflowComparisonPlan {version:number;kind:WorkflowPlanKind;runId:string;createdAt:string;applicationRevision:string;runnerSourceHash:string;policy:typeof workflowComparisonPolicy|typeof workflowCapacityFollowupPolicy|typeof workflowCapacityConfirmationPolicy;bindings:WorkflowComparisonBindings;slots:WorkflowComparisonSlot[];original?:WorkflowComparisonOriginal;after?:WorkflowComparisonOriginal&{closureHash:string};planHash:string}
 export interface WorkflowComparisonOutcome {slotId:string;status:'completed'|'quality_failed'|'prerequisite_skipped';evidenceHash:string;reason?:string}
-interface WorkflowComparisonLedger extends EvaluationLedger {outcomes:(WorkflowComparisonOutcome&{recordedAt:string})[]}
+interface WorkflowComparisonLedger extends EvaluationLedger {outcomes:(WorkflowComparisonOutcome&{recordedAt:string})[];closure?:{file:'preflight-closure.json';hash:string}}
 const identity=z.string().regex(/^[A-Za-z0-9_.:-]{1,240}$/),digestSchema=z.string().regex(/^[a-f0-9]{64}$/);
 const workflowBindingsSchema=z.object({campaignId:z.string().uuid(),fixtureHash:digestSchema,sourceHash:digestSchema,runtimeHash:digestSchema}).strict();
 const workflowSlotSchema=z.object({id:z.string().regex(/^[A-Za-z0-9_-]{1,80}$/),role:z.enum(['dispositions','acquisitions','manager']),arm:z.enum(['guided','generic']),turn:z.union([z.literal(0),z.literal(1)]),conversationId:identity,employeeRequestId:identity,request:z.string().trim().min(1).max(12000),maxCalls:z.union([z.literal(3),z.literal(4),z.literal(5)])}).strict();
 const workflowOriginalSchema=z.object({name:z.string().regex(/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,99}$/),planHash:digestSchema}).strict();
+const workflowAfterSchema=workflowOriginalSchema.extend({closureHash:digestSchema}).strict();
 const workflowOutcomeSchema=z.object({slotId:workflowSlotSchema.shape.id,status:z.enum(['completed','quality_failed','prerequisite_skipped']),evidenceHash:digestSchema,reason:z.string().trim().min(1).max(1000).optional()}).strict();
 const workflowRequestSchema=z.object({planHash:digestSchema,slotId:workflowSlotSchema.shape.id,conversationId:identity,employeeRequestId:identity,renderedRequest:z.string().min(1).max(20000),renderedRequestHash:digestSchema}).strict();
+const workflowClosureSchema=z.object({version:z.literal(1),kind:z.literal('input_limit_before_generation'),planHash:digestSchema,closedAt:z.iso.datetime(),failedAttemptId:z.string().regex(/^workflow-[a-f0-9]{32}$/),countEvidenceFile:z.string().regex(/^counts\/workflow-[a-f0-9]{32}-[a-f0-9-]{36}\.json$/),countEvidenceHash:digestSchema,countRequestHash:digestSchema,countedInputTokens:safeCount,inputLimit:safeCount,attemptsHash:digestSchema,outcomesHash:digestSchema,approvalHash:digestSchema,lastCountFailureHash:digestSchema}).strict();
 function readWorkflowRequest(directory:string,plan:WorkflowComparisonPlan,slot:WorkflowComparisonSlot){
  const saved=workflowRequestSchema.parse(readJson(join(directory,'turns',`${slot.id}.json`)));
  if(saved.planHash!==plan.planHash||saved.slotId!==slot.id||saved.conversationId!==slot.conversationId||saved.employeeRequestId!==slot.employeeRequestId||saved.renderedRequestHash!==fileHash(saved.renderedRequest))throw err('The rendered employee request binding changed.');return saved;
@@ -346,7 +351,7 @@ function latestUserRequest(payload:ReturnType<typeof toolPayload>){
 function workflowSlots(value:unknown,kind:WorkflowPlanKind='workflow_comparison'):WorkflowComparisonSlot[]{
  const total=kind==='workflow_comparison'?12:8,slots=z.array(workflowSlotSchema).length(total).parse(value),seen=new Set<string>();
  if(new Set(slots.map(s=>s.id)).size!==total||new Set(slots.map(s=>s.employeeRequestId)).size!==total)throw err('Workflow slots and original employee requests must be globally distinct across both arms.');
- for(const slot of slots){const key=`${slot.role}:${slot.arm}:${slot.turn}`;if(seen.has(key)||slot.maxCalls!==(kind==='workflow_comparison'?(slot.role==='dispositions'?4:3):5)||kind==='workflow_capacity_followup'&&slot.role==='acquisitions')throw err('The fixed role/arm/turn call limits changed.');seen.add(key);
+ for(const slot of slots){const key=`${slot.role}:${slot.arm}:${slot.turn}`,cap=kind==='workflow_comparison'?(slot.role==='dispositions'?4:3):kind==='workflow_capacity_confirmation'&&slot.role==='manager'&&slot.turn===0?3:5;if(seen.has(key)||slot.maxCalls!==cap||kind!=='workflow_comparison'&&slot.role==='acquisitions')throw err('The fixed role/arm/turn call limits changed.');seen.add(key);
   const own=slots.find(s=>s.role===slot.role&&s.arm===slot.arm&&s.turn!==slot.turn),paired=slots.find(s=>s.role===slot.role&&s.arm!==slot.arm&&s.turn===slot.turn);
   if(!own||own.conversationId!==slot.conversationId||!paired||paired.request!==slot.request||slots.some(s=>s.arm===slot.arm&&s.role!==slot.role&&s.conversationId===slot.conversationId))throw err('Each arm must retain its own role conversation and equal employee request templates.');
  }
@@ -354,9 +359,15 @@ function workflowSlots(value:unknown,kind:WorkflowPlanKind='workflow_comparison'
 }
 function readWorkflowPlan(directory:string,dispatch=false):WorkflowComparisonPlan {
  const raw=readJson(join(directory,'plan.json')) as WorkflowComparisonPlan;if(!raw||typeof raw!=='object')throw err('Workflow comparison plan is missing.');const {planHash,...value}=raw;
- const policy=raw.kind==='workflow_comparison'?workflowComparisonPolicy:raw.kind==='workflow_capacity_followup'?workflowCapacityFollowupPolicy:undefined;
+ const policy=raw.kind==='workflow_comparison'?workflowComparisonPolicy:raw.kind==='workflow_capacity_followup'?workflowCapacityFollowupPolicy:raw.kind==='workflow_capacity_confirmation'?workflowCapacityConfirmationPolicy:undefined;
  if(raw.version!==schemaVersion||!policy||hash(value)!==planHash||hash(raw.policy)!==hash(policy)||!/^[a-f0-9]{40}$/.test(raw.applicationRevision)||dispatch&&raw.runnerSourceHash!==runnerSourceHash())throw err('The workflow comparison plan changed or is invalid.');
- workflowBindingsSchema.parse(raw.bindings);workflowSlots(raw.slots,raw.kind);if(raw.kind==='workflow_capacity_followup')validateWorkflowOriginal(dirname(directory),raw);else if(raw.original!==undefined)throw err('The original workflow plan cannot acquire follow-up provenance.');return raw;
+ workflowBindingsSchema.parse(raw.bindings);workflowSlots(raw.slots,raw.kind);if(raw.kind!=='workflow_comparison')validateWorkflowOriginal(dirname(directory),raw);else if(raw.original!==undefined)throw err('The original workflow plan cannot acquire follow-up provenance.');if(raw.kind==='workflow_capacity_confirmation')validateWorkflowAfter(dirname(directory),raw);else if(raw.after!==undefined)throw err('Only the final capacity confirmation may reference a closed follow-up.');return raw;
+}
+function validateWorkflowAfter(root:string,plan:WorkflowComparisonPlan){
+ const after=workflowAfterSchema.parse(plan.after),campaign=workflowCampaign(root,plan.bindings.campaignId),registered=campaign.runs.find(run=>run.name===after.name);
+ if(registered?.kind!=='workflow_capacity_followup'||registered.planHash!==after.planHash)throw err('The confirmation requires the original registered capacity follow-up.');
+ const directory=runDirectory(root,after.name);if((readJson(join(directory,'plan.json')) as {kind?:string})?.kind!=='workflow_capacity_followup')throw err('A confirmation cannot replace or recursively reference its predecessor.');const source=readWorkflowPlan(directory),ledger=readWorkflowLedger(directory,source);
+ if(source.planHash!==after.planHash||ledger.status!=='closed_preflight'||ledger.closure?.hash!==after.closureHash||hash(source.original)!==hash(plan.original)||source.bindings.campaignId!==plan.bindings.campaignId||source.bindings.fixtureHash!==plan.bindings.fixtureHash)throw err('The confirmation needs the proven closed count-limit follow-up and unchanged original fixture.');
 }
 function validateWorkflowOriginal(root:string,plan:WorkflowComparisonPlan){
  const original=workflowOriginalSchema.parse(plan.original),campaign=workflowCampaign(root,plan.bindings.campaignId),registered=campaign.runs.find(run=>run.name===original.name);
@@ -376,9 +387,26 @@ function validateWorkflowOutcome(plan:WorkflowComparisonPlan,ledger:WorkflowComp
  if(outcome.status!=='completed'&&!outcome.reason)throw err('A failed or skipped quality outcome requires its evidence reason.');
  if(outcome.status==='prerequisite_skipped'&&(slot.turn!==1||previous?.status!=='quality_failed'||attempts.length))throw err('Only an unattempted second turn with a failed first-turn prerequisite may be skipped.');
 }
+function countLimitEvidence(directory:string,plan:WorkflowComparisonPlan,ledger:WorkflowComparisonLedger,countEvidenceFile:string){
+ const failure=ledger.lastCountFailure;if(failure?.code!=='input_count_limit_exceeded'||!/^workflow-[a-f0-9]{32}$/.test(failure.attemptId)||!Number.isFinite(Date.parse(failure.at)))throw err('Only the saved input-count-limit rejection can close preflight work.');
+ if(!new RegExp(`^counts/${failure.attemptId}-[a-f0-9-]{36}\\.json$`).test(countEvidenceFile))throw err('The count-limit evidence does not match the failed attempt.');
+ if(ledger.attempts.some(attempt=>attempt.status!=='completed'||attempt.id===failure.attemptId)||existsSync(join(directory,'requests',`${failure.attemptId}.json`))||existsSync(join(directory,'responses',`${failure.attemptId}.json`)))throw err('A generation claim, unsettled receipt or dispatch file prevents count-limit closure.');
+ const path=join(directory,countEvidenceFile),evidence=readJson(path) as {requestBody?:unknown;httpStatus?:unknown;responseBody?:unknown;responseBodyTruncated?:unknown;recordedAt?:unknown;failureCode?:unknown;inputCount?:unknown};
+ if(evidence.httpStatus!==200||evidence.failureCode!=='input_count_limit_exceeded'||evidence.responseBodyTruncated!==false||typeof evidence.requestBody!=='string'||typeof evidence.responseBody!=='string'||typeof evidence.recordedAt!=='string'||!Number.isFinite(Date.parse(evidence.recordedAt))||Date.parse(evidence.recordedAt)>Date.parse(failure.at)||evidence.inputCount!==undefined)throw err('The successful count-limit evidence is incomplete or inconsistent.');
+ const counted=z.object({object:z.literal('response.input_tokens'),input_tokens:safeCount}).parse(parseBoundedJson(evidence.responseBody,2000));if(counted.input_tokens<=plan.policy.maxInputTokens)throw err('The saved count does not exceed this immutable plan\'s input limit.');
+ const countedPayload=z.record(z.string(),z.unknown()).parse(parseBoundedJson(evidence.requestBody,300000));if(['max_output_tokens','service_tier','store','include'].some(key=>Object.hasOwn(countedPayload,key)))throw err('The saved count request contains uncounted generation fields.');const payload=toolPayload(JSON.stringify({...countedPayload,max_output_tokens:4096,service_tier:'default',store:false,include:['reasoning.encrypted_content']}));
+ const rendered=latestUserRequest(payload);if(!plan.slots.some(slot=>existsSync(join(directory,'turns',`${slot.id}.json`))&&readWorkflowRequest(directory,plan,slot).renderedRequest===rendered))throw err('The failed count is not bound to a saved employee turn.');
+ return {countEvidenceHash:fileHash(readFileSync(path,'utf8')),countRequestHash:fileHash(evidence.requestBody),countedInputTokens:counted.input_tokens,inputLimit:plan.policy.maxInputTokens,failedAttemptId:failure.attemptId};
+}
+function validateWorkflowClosure(directory:string,plan:WorkflowComparisonPlan,ledger:WorkflowComparisonLedger){
+ if(ledger.closure?.file!=='preflight-closure.json'||!digestSchema.safeParse(ledger.closure.hash).success)throw err('The terminal preflight ledger lacks immutable closure provenance.');
+ const proof=workflowClosureSchema.parse(readJson(join(directory,ledger.closure.file))),counted=countLimitEvidence(directory,plan,ledger,proof.countEvidenceFile);
+ if(hash(proof)!==ledger.closure.hash||proof.planHash!==plan.planHash||Object.entries(counted).some(([key,value])=>proof[key as keyof typeof proof]!==value)||proof.attemptsHash!==hash(ledger.attempts)||proof.outcomesHash!==hash(ledger.outcomes)||proof.approvalHash!==hash(ledger.approval)||proof.lastCountFailureHash!==hash(ledger.lastCountFailure)||Date.parse(proof.closedAt)<Date.parse(ledger.lastCountFailure!.at))throw err('The preflight closure proof changed; its unused reservation cannot be released.');
+ return proof;
+}
 function readWorkflowLedger(directory:string,plan:WorkflowComparisonPlan):WorkflowComparisonLedger {
  const raw=readJson(join(directory,'ledger.json')) as WorkflowComparisonLedger;
- if(!raw||raw.version!==schemaVersion||raw.planHash!==plan.planHash||!Array.isArray(raw.attempts)||raw.attempts.length>plan.policy.maximumCalls||!Array.isArray(raw.outcomes)||raw.outcomes.length>plan.slots.length||!['prepared','running','paused','completed','stopped'].includes(raw.status)||new Set(raw.attempts.map(a=>a.id)).size!==raw.attempts.length||new Set(raw.outcomes.map(o=>o.slotId)).size!==raw.outcomes.length)throw err('Workflow comparison accounting is invalid.');
+ if(!raw||raw.version!==schemaVersion||raw.planHash!==plan.planHash||!Array.isArray(raw.attempts)||raw.attempts.length>plan.policy.maximumCalls||!Array.isArray(raw.outcomes)||raw.outcomes.length>plan.slots.length||!['prepared','running','paused','completed','stopped','closed_preflight'].includes(raw.status)||new Set(raw.attempts.map(a=>a.id)).size!==raw.attempts.length||new Set(raw.outcomes.map(o=>o.slotId)).size!==raw.outcomes.length)throw err('Workflow comparison accounting is invalid.');
  const counts=Array<number>(plan.slots.length).fill(0),responseIds=new Set<string>();
  for(const attempt of raw.attempts){const slot=plan.slots[attempt.packetIndex];
   if(!slot||!Number.isInteger(attempt.packetIndex)||!/^workflow-[a-f0-9]{32}$/.test(attempt.id)||attempt.turn!==counts[attempt.packetIndex]++||attempt.turn>=slot.maxCalls||attempt.model!=='gpt-6.1-sol'||!safeCount.safeParse(attempt.inputCount).success||attempt.inputCount>plan.policy.maxInputTokens||attempt.reservedNanos!==price(attempt.model,attempt.inputCount,4096)||!['dispatching','completed','incomplete','rejected','unknown','invalid_output','usage_overrun'].includes(attempt.status)||attempt.accountedNanos!==undefined&&(!Number.isSafeInteger(attempt.accountedNanos)||attempt.accountedNanos<0))throw err('A saved workflow dispatch claim is invalid.');
@@ -391,7 +419,21 @@ function readWorkflowLedger(directory:string,plan:WorkflowComparisonPlan):Workfl
   if(!identity.safeParse(saved.clientRequestId).success||attempt.id!==`workflow-${fileHash(saved.clientRequestId).slice(0,32)}`||saved.planHash!==plan.planHash||saved.slotId!==slot.id||saved.conversationId!==slot.conversationId||saved.employeeRequestId!==slot.employeeRequestId||saved.inputCount!==attempt.inputCount)throw err('The saved workflow request binding changed.');
   const binding=readWorkflowRequest(directory,plan,slot),payload=toolPayload(JSON.stringify(readSavedRequest(directory,attempt)));if(latestUserRequest(payload)!==binding.renderedRequest)throw err('The saved provider body no longer matches this turn\'s rendered employee request.');if(attempt.status==='completed')verifiedCompletedReceipt(directory,attempt);
  }
+ if(raw.status==='closed_preflight')validateWorkflowClosure(directory,plan,raw);else if(raw.closure!==undefined)throw err('Only a terminal preflight ledger may carry closure provenance.');
  return raw;
+}
+/** Trusted operator-only finalization of a proven pre-dispatch input-limit failure. It never resumes work. */
+export function closeWorkflowAfterCountLimit(root:string,name:string,planHash:string){
+ root=resolve(root);return withLock(root,()=>{const directory=runDirectory(root,name),plan=readWorkflowPlan(directory),campaign=workflowCampaign(root,plan.bindings.campaignId),ledger=readWorkflowLedger(directory,plan);
+  if(plan.planHash!==planHash||!campaign.runs.some(run=>run.name===name&&run.planHash===planHash&&run.kind===plan.kind))throw err('Close only the exact registered workflow plan.');
+  if(ledger.status==='closed_preflight')return inspectWorkflowComparison(root,name);
+  if(ledger.status!=='paused'||ledger.lastCountFailure?.code!=='input_count_limit_exceeded'||ledger.attempts.some(attempt=>attempt.status!=='completed'))throw err('Only paused count-limit work with all generation receipts settled can close.');
+  const failed=ledger.lastCountFailure.attemptId,files=readdirSync(join(directory,'counts')).filter(file=>file.startsWith(`${failed}-`));if(files.length!==1)throw err('Exactly one saved rejection must identify the failed preflight count.');
+  const countEvidenceFile=`counts/${files[0]}`,counted=countLimitEvidence(directory,plan,ledger,countEvidenceFile),path=join(directory,'preflight-closure.json');
+  let proof:z.infer<typeof workflowClosureSchema>;
+  if(existsSync(path))proof=workflowClosureSchema.parse(readJson(path));else{proof=workflowClosureSchema.parse({version:1,kind:'input_limit_before_generation',planHash,closedAt:now(),countEvidenceFile,...counted,attemptsHash:hash(ledger.attempts),outcomesHash:hash(ledger.outcomes),approvalHash:hash(ledger.approval),lastCountFailureHash:hash(ledger.lastCountFailure)});durableJson(path,proof,true);}
+  const closed:WorkflowComparisonLedger={...ledger,status:'closed_preflight',closure:{file:'preflight-closure.json',hash:hash(proof)}};validateWorkflowClosure(directory,plan,closed);saveLedger(directory,closed);return inspectWorkflowComparison(root,name);
+ });
 }
 function workflowCampaign(root:string,campaignId:string){
  if(!existsSync(campaignFile(root)))throw err('The original shared campaign is required; missing evidence is not a new budget.');
@@ -409,19 +451,33 @@ export function prepareWorkflowCapacityFollowup(root:string,name:string,applicat
  if(!/^[a-f0-9]{40}$/.test(applicationRevision))throw err('Freeze the exact application commit.');slots=workflowSlots(slots,'workflow_capacity_followup');bindings=workflowBindingsSchema.parse(bindings);original=workflowOriginalSchema.parse(original);
  root=resolve(root);return withLock(root,()=>{const campaign=workflowCampaign(root,bindings.campaignId);assertNoUncertainty(root);const directory=runDirectory(root,name);if(existsSync(directory))throw err('That run already exists. Evidence cannot be overwritten.');
   const value={version:schemaVersion,kind:'workflow_capacity_followup' as const,runId:randomUUID(),createdAt:now(),applicationRevision,runnerSourceHash:runnerSourceHash(),policy:structuredClone(workflowCapacityFollowupPolicy),bindings,slots,original},plan:WorkflowComparisonPlan={...value,planHash:hash(value)};validateWorkflowOriginal(root,plan);
-  const priorRequestIds=new Set(campaign.runs.filter(run=>run.kind==='workflow_comparison'||run.kind==='workflow_capacity_followup').flatMap(run=>readWorkflowPlan(runDirectory(root,run.name)).slots.map(slot=>slot.employeeRequestId)));
+  const priorRequestIds=new Set(campaign.runs.filter(run=>run.kind==='workflow_comparison'||run.kind==='workflow_capacity_followup'||run.kind==='workflow_capacity_confirmation').flatMap(run=>readWorkflowPlan(runDirectory(root,run.name)).slots.map(slot=>slot.employeeRequestId)));
   if(slots.some(slot=>priorRequestIds.has(slot.employeeRequestId)))throw err('Follow-up employee request identities must be fresh across the original campaign.');assertCampaignCapacity(root,plan.policy.maximumNanos);
   mkdirSync(directory,{mode:0o700});mkdirSync(join(directory,'requests'),{mode:0o700});mkdirSync(join(directory,'responses'),{mode:0o700});mkdirSync(join(directory,'turns'),{mode:0o700});durableJson(join(directory,'plan.json'),plan,true);
   durableJson(join(directory,'ledger.json'),{version:schemaVersion,planHash:plan.planHash,approval:null,status:'prepared',attempts:[],outcomes:[],updatedAt:now()},true);registerCampaignRun(root,{name,planHash:plan.planHash,kind:'workflow_capacity_followup',maximumNanos:plan.policy.maximumNanos});return inspectWorkflowComparison(root,name);
  });
 }
+export function prepareWorkflowCapacityConfirmation(root:string,name:string,applicationRevision:string,slots:WorkflowComparisonSlot[],bindings:WorkflowComparisonBindings,original:WorkflowComparisonOriginal,after:WorkflowComparisonOriginal){
+ if(!/^[a-f0-9]{40}$/.test(applicationRevision))throw err('Freeze the exact application commit.');slots=workflowSlots(slots,'workflow_capacity_confirmation');bindings=workflowBindingsSchema.parse(bindings);original=workflowOriginalSchema.parse(original);after=workflowOriginalSchema.parse(after);
+ root=resolve(root);return withLock(root,()=>{const campaign=workflowCampaign(root,bindings.campaignId);assertNoUncertainty(root);const directory=runDirectory(root,name);if(existsSync(directory))throw err('That run already exists. Evidence cannot be overwritten.');
+  if(campaign.runs.some(run=>run.kind==='workflow_capacity_confirmation'))throw err('The final capacity confirmation is already registered and cannot be repeated within this campaign.');
+  const previous=campaign.runs.find(run=>run.name===after.name);if(previous?.kind!=='workflow_capacity_followup'||previous.planHash!==after.planHash)throw err('Choose the exact registered capacity follow-up.');const priorDirectory=runDirectory(root,after.name);if((readJson(join(priorDirectory,'plan.json')) as {kind?:string})?.kind!=='workflow_capacity_followup')throw err('The capacity confirmation predecessor changed.');const priorPlan=readWorkflowPlan(priorDirectory),priorLedger=readWorkflowLedger(priorDirectory,priorPlan);
+  if(priorLedger.status!=='closed_preflight'||!priorLedger.closure)throw err('The earlier capacity follow-up must have a verified preflight closure.');
+  const value={version:schemaVersion,kind:'workflow_capacity_confirmation' as const,runId:randomUUID(),createdAt:now(),applicationRevision,runnerSourceHash:runnerSourceHash(),policy:structuredClone(workflowCapacityConfirmationPolicy),bindings,slots,original,after:{...after,closureHash:priorLedger.closure.hash}},plan:WorkflowComparisonPlan={...value,planHash:hash(value)};validateWorkflowOriginal(root,plan);validateWorkflowAfter(root,plan);
+  const priorRequestIds=new Set(campaign.runs.filter(run=>run.kind==='workflow_comparison'||run.kind==='workflow_capacity_followup'||run.kind==='workflow_capacity_confirmation').flatMap(run=>readWorkflowPlan(runDirectory(root,run.name)).slots.map(slot=>slot.employeeRequestId)));
+  if(slots.some(slot=>priorRequestIds.has(slot.employeeRequestId)))throw err('Confirmation employee request identities must be fresh across the original campaign.');assertCampaignCapacity(root,plan.policy.maximumNanos);
+  mkdirSync(directory,{mode:0o700});mkdirSync(join(directory,'requests'),{mode:0o700});mkdirSync(join(directory,'responses'),{mode:0o700});mkdirSync(join(directory,'turns'),{mode:0o700});durableJson(join(directory,'plan.json'),plan,true);
+  durableJson(join(directory,'ledger.json'),{version:schemaVersion,planHash:plan.planHash,approval:null,status:'prepared',attempts:[],outcomes:[],updatedAt:now()},true);registerCampaignRun(root,{name,planHash:plan.planHash,kind:'workflow_capacity_confirmation',maximumNanos:plan.policy.maximumNanos});return inspectWorkflowComparison(root,name);
+ });
+}
 export function inspectWorkflowComparison(root:string,name:string){
  const directory=runDirectory(root,name),plan=readWorkflowPlan(directory);workflowCampaign(resolve(root),plan.bindings.campaignId);const ledger=readWorkflowLedger(directory,plan);
- return {directory,kind:plan.kind,policy:plan.policy,original:plan.original,planHash:plan.planHash,applicationRevision:plan.applicationRevision,bindings:plan.bindings,model:plan.policy.model,maximumUsd:plan.policy.maximumNanos/1e9,maximumCalls:plan.policy.maximumCalls,status:ledger.status,attemptedCalls:ledger.attempts.length,accountedMaximumUsd:accounted(ledger)/1e9,outcomes:ledger.outcomes,slots:plan.slots.map((slot,index)=>({...slot,attempts:ledger.attempts.filter(a=>a.packetIndex===index).length})),unresolved:ledger.attempts.filter(a=>['dispatching','unknown'].includes(a.status)).map(a=>a.id)};
+ return {directory,kind:plan.kind,policy:plan.policy,original:plan.original,after:plan.after,closure:ledger.closure,planHash:plan.planHash,applicationRevision:plan.applicationRevision,bindings:plan.bindings,model:plan.policy.model,maximumUsd:plan.policy.maximumNanos/1e9,maximumCalls:plan.policy.maximumCalls,status:ledger.status,attemptedCalls:ledger.attempts.length,accountedMaximumUsd:accounted(ledger)/1e9,outcomes:ledger.outcomes,slots:plan.slots.map((slot,index)=>({...slot,attempts:ledger.attempts.filter(a=>a.packetIndex===index).length})),unresolved:ledger.attempts.filter(a=>['dispatching','unknown'].includes(a.status)).map(a=>a.id)};
 }
 /** Application bodies vary with real local tool results; identities, limits and the frozen harness do not. */
 export async function executeWorkflowComparisonRequest(root:string,name:string,approval:{planHash:string;maximumCents:number},input:{slotId:string;conversationId:string;employeeRequestId:string;renderedRequest:string;requestId:string;body:string},transport:EvaluationTransport):Promise<JsonItem>{
  root=resolve(root);return withLock(root,async()=>{const directory=runDirectory(root,name),plan=readWorkflowPlan(directory,true);workflowCampaign(root,plan.bindings.campaignId);assertNoUncertainty(root,name);const ledger=readWorkflowLedger(directory,plan);
+  if(ledger.status==='closed_preflight')throw err('This preflight-closed workflow can never dispatch or replay a provider request.');
   if(approval.planHash!==plan.planHash||approval.maximumCents!==999)throw err('Use the exact workflow plan and original 999-cent campaign authorization.');
   const packetIndex=plan.slots.findIndex(s=>s.id===input.slotId),slot=plan.slots[packetIndex];if(!slot||input.conversationId!==slot.conversationId||input.employeeRequestId!==slot.employeeRequestId||!identity.safeParse(input.requestId).success)throw err('The request is outside its frozen role, arm, turn or conversation.');
   const payload=toolPayload(input.body),binding=workflowRequestSchema.parse({planHash:plan.planHash,slotId:slot.id,conversationId:slot.conversationId,employeeRequestId:slot.employeeRequestId,renderedRequest:input.renderedRequest,renderedRequestHash:fileHash(input.renderedRequest)});if(latestUserRequest(payload)!==binding.renderedRequest)throw err('The current employee message differs from the rendered workflow request.');
@@ -452,13 +508,14 @@ export async function executeWorkflowComparisonRequest(root:string,name:string,a
 }
 export function recordWorkflowComparisonOutcome(root:string,name:string,planHash:string,input:WorkflowComparisonOutcome){
  return withLock(resolve(root),()=>{const directory=runDirectory(root,name),plan=readWorkflowPlan(directory);workflowCampaign(resolve(root),plan.bindings.campaignId);const ledger=readWorkflowLedger(directory,plan),outcome=workflowOutcomeSchema.parse(input);if(planHash!==plan.planHash)throw err('The workflow outcome belongs to a different plan.');
+  if(ledger.status==='closed_preflight')throw err('A preflight-closed workflow cannot accept or replay outcomes.');
   const prior=ledger.outcomes.find(o=>o.slotId===outcome.slotId);if(prior){const {recordedAt,...saved}=prior;void recordedAt;if(hash(saved)!==hash(outcome))throw err('The immutable workflow outcome changed.');return inspectWorkflowComparison(root,name);}
   if(ledger.status==='completed'||ledger.status==='stopped'||ledger.attempts.some(a=>a.status!=='completed'))throw err('An outcome cannot close stopped or unresolved provider work.');validateWorkflowOutcome(plan,ledger,outcome);ledger.outcomes.push({...outcome,recordedAt:now()});saveLedger(directory,ledger);return inspectWorkflowComparison(root,name);
  });
 }
 export function finishWorkflowComparison(root:string,name:string,planHash:string){
  return withLock(resolve(root),()=>{const directory=runDirectory(root,name),plan=readWorkflowPlan(directory);workflowCampaign(resolve(root),plan.bindings.campaignId);const ledger=readWorkflowLedger(directory,plan);
-  if(plan.planHash!==planHash||ledger.status==='stopped'||ledger.outcomes.length!==plan.slots.length||ledger.attempts.some(a=>a.status!=='completed'))throw err(`Only ${plan.kind==='workflow_comparison'?'twelve':'eight'} terminal workflow outcomes with settled provider receipts can close this plan.`);ledger.status='completed';saveLedger(directory,ledger);return inspectWorkflowComparison(root,name);
+  if(plan.planHash!==planHash||ledger.status==='stopped'||ledger.status==='closed_preflight'||ledger.outcomes.length!==plan.slots.length||ledger.attempts.some(a=>a.status!=='completed'))throw err(`Only ${plan.kind==='workflow_comparison'?'twelve':'eight'} terminal workflow outcomes with settled provider receipts can close this plan.`);ledger.status='completed';saveLedger(directory,ledger);return inspectWorkflowComparison(root,name);
  });
 }
 export async function runEvaluation(root:string,name:string,approval:{planHash:string;maximumCents:number;throughSample?:1|2},transport:EvaluationTransport){
