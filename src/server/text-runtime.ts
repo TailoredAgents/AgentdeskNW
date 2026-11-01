@@ -11,6 +11,7 @@ import {prepareTextSpending,textSpendingWait,countTextInput,admitTextSpending,se
 import {captureTextReplyTarget} from './text-delivery';
 import {responsesReceipt} from './responses-receipt';
 import {openTextExecution,advanceTextExecution,readTextExecution,textContextManifest,type TextState} from './text-execution';
+import {prepareSpecialistReview,assertSpecialistReviewCurrent,specialistResponseFormat,specialistReviewResult,type PendingSpecialistReview} from './specialist-reviews';
 
 type Item=Record<string,unknown>;
 const callSchema=z.object({type:z.literal('function_call'),name:z.string().min(1).max(100),arguments:z.string().max(100000),call_id:z.string().min(1).max(200),id:z.string().optional(),status:z.string().optional()});
@@ -72,8 +73,11 @@ async function executeLiveText(input:{actor:Actor;conversationId:string;requestI
   checkTextPause(actor,execution);
   requireFeature(actor,'core');restore();
   const state=execution.data,round=state.round,requestScope=execution.scopeHash;
+  const specialist=state.specialistQueue?.[0];
+  if(specialist&&specialist.scopeHash!==requestScope)throw new AppError(409,'The specialist evidence changed before review. Retrieve current evidence before continuing.');
+  if(specialist)assertSpecialistReviewCurrent(actor,specialist);
   if(execution.phase==='ready'){
-   const payload={model:config.model,reasoning:{effort:config.reasoning},input:[...state.prefix,...state.items],tools:input.tools,max_output_tokens:config.maxOutputTokens,service_tier:'default',store:false,include:['reasoning.encrypted_content'],parallel_tool_calls:false};
+   const payload={model:config.model,reasoning:{effort:config.reasoning},input:specialist?specialist.input:[...state.prefix,...state.items],tools:specialist||state.toolCount>=(state.toolLimit??config.maxToolCalls)?[]:input.tools,...(specialist?{text:specialistResponseFormat}:{}),max_output_tokens:config.maxOutputTokens,service_tier:'default',store:false,include:['reasoning.encrypted_content'],parallel_tool_calls:false};
    const body=JSON.stringify(payload),size=Buffer.byteLength(body);
    if(size>config.maxContextBytes)throw new AppError(413,'This conversation is too large for the configured AI request budget. Start a new conversation with the relevant details.');
    const operationId=`text:${requestId}:${round}`;
@@ -84,8 +88,9 @@ async function executeLiveText(input:{actor:Actor;conversationId:string;requestI
     if(fingerprint(input.currentScope())!==execution.scopeHash)throw new AppError(409,'Protected context changed before AI dispatch.');
     checkTextPause(actor,execution);
     admitTextSpending(actor,execution,payload,inputCount);
-    reserveUsage(actor,{category:'text_tokens',operationId,quantity:size+config.maxOutputTokens,source:'Conservative Responses request token reservation, including tool schemas'});
-    beginProviderOperation(actor,{operationId,provider:'openai',feature:'core',kind:'text_response',model:config.model,requestHash:fingerprint(payload)});
+    reserveUsage(actor,{category:'text_tokens',operationId,quantity:(inputCount??size)+config.maxOutputTokens,source:inputCount===null?'Conservative Responses request token reservation, including tool schemas':'Counted Responses input plus bounded output reservation, including tool schemas'});
+    if(specialist)assertSpecialistReviewCurrent(actor,specialist);
+    beginProviderOperation(actor,{operationId,provider:'openai',feature:specialist?.request.specialistId??'core',kind:'text_response',model:config.model,requestHash:fingerprint(payload)});
     return advanceTextExecution(actor,execution,'dispatching',inputCount===null?state:{...state,metering:{...state.metering!,inputCount}});
    }).immediate();
    let recorded=false,responseId:string|undefined;
@@ -119,8 +124,22 @@ async function executeLiveText(input:{actor:Actor;conversationId:string;requestI
    if(raw.status!=='completed')throw new AppError(502,`The model response was ${raw.status}. No partial tool calls were executed. Completed work from earlier steps remains saved.`);
    output=outputSchema.parse(raw.output);
    if(output.some(item=>(item.type==='function_call'||item.type==='message')&&item.status!==undefined&&item.status!=='completed'))throw new AppError(502,'The model returned an unfinished output item. No tool from this response was executed.');
+   const ids=output.filter(item=>item.type==='function_call').map(item=>item.call_id);
+   if(new Set(ids).size!==ids.length)throw new AppError(502,'The response reused a tool identity. No tool from this response was executed.');
+   if(specialist&&ids.length)throw new AppError(502,'A specialist assessment cannot execute tools. Its returned actions were withheld.');
   }catch(error){execution=db.transaction(()=>{finishTextSpending(actor,execution,'canceled');return advanceTextExecution(actor,execution,'failed',execution.data);}).immediate();throw error;}
   const nextItems=[...execution.data.items,...output as Item[]],calls=output.filter(item=>item.type==='function_call');
+  if(specialist){
+   const text=output.flatMap(item=>item.type==='message'&&item.phase!=='commentary'?item.content:[]).map(part=>part.type==='output_text'?part.text:part.refusal).join('\n');
+   execution=db.transaction(()=>{
+    checkTextPause(actor,execution);assertTextAssignmentRunning(actor,execution);
+    if(fingerprint(input.currentScope())!==requestScope)throw new AppError(409,'Protected context changed before the specialist result was saved.');
+    const result=executeRecordedTool(actor,conversationId,specialist.callId,'consult_specialist',specialist.originalArguments,()=>specialistReviewResult(actor,specialist,text),requestId);
+    const current=execution.data;
+    return advanceTextExecution(actor,execution,'ready',{...current,specialistQueue:current.specialistQueue!.slice(1),items:[...current.items,{type:'function_call_output',call_id:specialist.callId,output:JSON.stringify(result)}],round:round+1,response:null,handled:[...new Set([...current.handled,specialist.callId])],artifacts:[...current.artifacts,...result.artifacts],specialistIds:[...new Set([...current.specialistIds,...result.specialistIds])]});
+   }).immediate();
+   restore();continue;
+  }
   if(!calls.length){
    const finals=output.filter(item=>item.type==='message'&&item.phase!=='commentary');
    const text=finals.flatMap(item=>item.type==='message'?item.content:[]).map(part=>part.type==='output_text'?part.text:part.refusal).filter(Boolean).join('\n');
@@ -131,19 +150,31 @@ async function executeLiveText(input:{actor:Actor;conversationId:string;requestI
    checkTextPause(actor,execution);
    assertTextAssignmentRunning(actor,execution);
    if(fingerprint(input.currentScope())!==requestScope)throw new AppError(409,'Workspace permissions changed before tool execution. Retrieve current context.');
-   let count=execution.data.toolCount;const handled=new Set(execution.data.handled),nextArtifacts=[...execution.data.artifacts],nextSpecialists=new Set(execution.data.specialistIds);
+   let count=execution.data.toolCount;const handled=new Set(execution.data.handled),nextArtifacts=[...execution.data.artifacts],nextSpecialists=new Set(execution.data.specialistIds),pending:PendingSpecialistReview[]=[],evidenceScopes={...execution.data.evidenceScopes};
    for(const call of calls){
     if(++count>(execution.data.toolLimit??config.maxToolCalls)){nextItems.push({type:'function_call_output',call_id:call.call_id,output:JSON.stringify({error:'Tool budget exhausted.',completed:false})});continue;}
     try{
+     if(call.name==='consult_specialist'){
+      if(!input.tools.some(tool=>(tool as {name?:string}).name===call.name)||!execution.data.metering)throw new AppError(409,'Specialist reasoning is unavailable outside cost-reviewed execution.');
+      const prior=db.prepare('SELECT 1 FROM assistant_tool_receipts WHERE organization_id=? AND office_id=? AND user_id=? AND conversation_id=? AND call_id=?').get(actor.organizationId,actor.officeId,actor.id,conversationId,call.call_id);
+      if(!prior){
+       // Keep one model round available for the master to explain the assessments.
+       if(round+pending.length+2>=(execution.data.roundLimit??config.maxRounds))throw new AppError(409,'The remaining approved request allowance cannot fit another specialist review and final answer. No extra request was dispatched.');
+       pending.push(prepareSpecialistReview(actor,conversationId,requestId,execution.data,call.call_id,JSON.parse(call.arguments),fingerprint(input.currentScope())));
+       continue;
+      }
+     }
      const result=executeRecordedTool(actor,conversationId,call.call_id,call.name,JSON.parse(call.arguments),()=>input.dispatch(call.name,JSON.parse(call.arguments)),requestId);
-     if(!handled.has(call.call_id)){result.specialistIds.forEach(id=>nextSpecialists.add(id));nextArtifacts.push(...result.artifacts);handled.add(call.call_id);}
+     if(!handled.has(call.call_id)){result.specialistIds.forEach(id=>nextSpecialists.add(id));nextArtifacts.push(...result.artifacts);handled.add(call.call_id);evidenceScopes[call.call_id]=fingerprint(input.currentScope());}
      nextItems.push({type:'function_call_output',call_id:call.call_id,output:JSON.stringify(result)});
     }catch(error){if(error instanceof EntitlementError)nextArtifacts.push({type:'marketplace',id:error.featureId,title:'Review AI Employee Marketplace'});nextItems.push({type:'function_call_output',call_id:call.call_id,output:JSON.stringify({error:error instanceof AppError?error.message:'Tool input was invalid or the operation could not complete.',completed:false})});}
    }
    // Local effects, tool receipts, changed scope and next-round position commit together.
-   return advanceTextExecution(actor,execution,'ready',{...execution.data,contextManifest:textContextManifest(input.currentScope()),items:nextItems,round:round+1,toolCount:count,handled:[...handled],artifacts:nextArtifacts,specialistIds:[...nextSpecialists],response:null},fingerprint(input.currentScope()));
+   const nextScope=fingerprint(input.currentScope());
+   const currentPending=pending.filter(review=>{if(review.scopeHash===nextScope)return true;nextItems.push({type:'function_call_output',call_id:review.callId,output:JSON.stringify({completed:false,error:'The workspace changed while preparing this specialist review. Retrieve current evidence before requesting it again.'})});return false;});
+   return advanceTextExecution(actor,execution,'ready',{...execution.data,specialistQueue:currentPending,evidenceScopes,contextManifest:textContextManifest(input.currentScope()),items:nextItems,round:round+1,toolCount:count,handled:[...handled],artifacts:nextArtifacts,specialistIds:[...nextSpecialists],response:null},nextScope);
   }).immediate();
-  restore();if(execution.data.toolCount>=(execution.data.toolLimit??config.maxToolCalls))break;
+  restore();if(execution.data.toolCount>=(execution.data.toolLimit??config.maxToolCalls)&&!execution.data.specialistQueue?.length)break;
  }
  return finish('The assistant reached its step limit. Review completed items below before requesting further work.');
 }

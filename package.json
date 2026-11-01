@@ -35,6 +35,7 @@
     "test:assignment-execution": "vitest run tests/assignment-operations.test.ts",
     "test:metered": "node --import tsx scripts/metered-smoke.ts",
     "test:text-restart": "node --import tsx scripts/text-execution-smoke.ts",
+    "test:specialist-review": "node --import tsx scripts/specialist-review-smoke.ts",
     "test:text-spending": "node --import tsx scripts/text-spending-smoke.ts",
     "test:local-delegation": "node --import tsx scripts/local-delegation-smoke.ts",
     "test:phase-one": "node scripts/smoke-runner.mjs phase-one",

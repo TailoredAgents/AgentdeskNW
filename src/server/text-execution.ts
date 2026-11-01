@@ -1,5 +1,6 @@
 import {fingerprint} from './provider-runtime';
 import type {TextReplyTarget} from './text-delivery';
+import type {PendingSpecialistReview} from './specialist-reviews';
 import type {Actor,Artifact,ToolResult} from '../lib/contracts';
 import {AppError,getDb,now} from './db';
 import {currentAssignment} from './assignment-roots';
@@ -11,6 +12,8 @@ export interface TextState {
  config:ReturnType<typeof textProviderConfig>;prefix:Record<string,unknown>[];items:Record<string,unknown>[];
  contextManifest?:Record<string,string>;round:number;roundLimit?:number;toolLimit?:number;retiredMeteredParts?:string[];revisedInstructions?:string;toolCount:number;handled:string[];artifacts:Artifact[];specialistIds:string[];
  response:Record<string,unknown>|null;result:ToolResult|null;
+ specialistQueue?:PendingSpecialistReview[];
+ evidenceScopes?:Record<string,string>;
  request?:{message:string;instructions:string;channel:'web'|'mobile'|'sms'|'slack';receivedAt?:string;replyTarget?:TextReplyTarget};
  metering?:{assignmentId:string;revision:number;scopeHash:string;partKey:string;reviewId:string;continuationToken?:string;inputCount?:number};
 }
