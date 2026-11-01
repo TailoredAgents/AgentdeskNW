@@ -9,6 +9,7 @@ import {opportunityPreviewSchema} from './opportunities';
 import {preparePropertyOutreachResult} from './package-correspondence';
 import {reviewOpportunityJourney,opportunityJourneyMessage} from './opportunity-journey';
 import {buyerShortlistMessage} from './buyer-shortlist';
+import {buyerGeographyMethod} from './buyer-geography';
 import {executeAssignmentConversationAction,assignmentConversationIntent} from './assignment-conversation';
 import {queueTextContinuationReply} from './text-delivery';
 import {bindAssignment,withAssignment} from './assignment-roots';
@@ -579,7 +580,7 @@ export function currentTextScope(actor:Actor,conversationId:string){
         const visibleInvestorIds=new Set(current.investors.map(investor=>investor.id));
         const relationshipReports=(db.prepare('SELECT investor_id,data FROM relationship_reports WHERE organization_id=? ORDER BY rowid').all(actor.organizationId) as {investor_id:string;data:string}[]).filter(report=>visibleInvestorIds.has(report.investor_id));
         const protectedState=['investor_intelligence','buy_boxes','property_releases','deal_packages','channel_templates','journey_observations','debriefs','tasks'].map(table=>db.prepare(`SELECT data FROM ${table} WHERE organization_id=? AND office_id=? ORDER BY rowid`).all(actor.organizationId,actor.officeId));
-        return {actor,knowledge,updates,rolePreparations:rolePreparationContextFingerprint(actor),documents:documentContextReference(actor),transactionTeams:transactionTeamContextReference(actor),transactions:transactionContextReference(actor),analyses:analysisContextReference(actor),opportunities:opportunityContextReference(actor),handoffs:getHandoffBoard(actor).handoffAccessReference,workingMethods:relationshipMethodFingerprint(),specialistMethods:evaluation?fingerprint({catalog:specialistMethodFingerprint(),evaluation}):specialistMethodFingerprint(),qualificationMethod,workAccess:workContextSnapshot(actor),employeeMemory:getEmployeeMemory(actor),investors:current.investors,properties:current.properties,protectedState,relationshipReports,inbox:inboxContextFingerprint(actor),access:service.specialists.map(s=>featureAccess(actor,s.id)),withheld:service.getConversation(actor,conversationId).messages.filter(m=>m.content.startsWith('This historical message is withheld')).map(m=>m.id)};
+        return {actor,knowledge,updates,rolePreparations:rolePreparationContextFingerprint(actor),documents:documentContextReference(actor),transactionTeams:transactionTeamContextReference(actor),transactions:transactionContextReference(actor),analyses:analysisContextReference(actor),opportunities:opportunityContextReference(actor),handoffs:getHandoffBoard(actor).handoffAccessReference,workingMethods:relationshipMethodFingerprint(),specialistMethods:evaluation?fingerprint({catalog:specialistMethodFingerprint(),evaluation}):specialistMethodFingerprint(),qualificationMethod,buyerGeographyMethod,workAccess:workContextSnapshot(actor),employeeMemory:getEmployeeMemory(actor),investors:current.investors,properties:current.properties,protectedState,relationshipReports,inbox:inboxContextFingerprint(actor),access:service.specialists.map(s=>featureAccess(actor,s.id)),withheld:service.getConversation(actor,conversationId).messages.filter(m=>m.content.startsWith('This historical message is withheld')).map(m=>m.id)};
 
 }
 

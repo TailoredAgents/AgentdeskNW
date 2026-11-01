@@ -9,6 +9,7 @@ import {getOpportunity,getOpportunityBoard} from './opportunities';
 import {listReleases} from './workflows';
 import {analysisPreviewSchema,analysisSaveSchema} from './analysis-schema';
 import {analysisMethod,calculateAnalysis} from './analysis-calculator';
+import {opportunityScreeningMethod} from './opportunity-screening-questions';
 
 const hash=(value:unknown)=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const feature=(lens:AnalysisLens)=>lens==='investment'?'deal-analyst':'valuation-diligence';
@@ -34,14 +35,14 @@ export function getAnalysisBoard(actor:Actor):AnalysisBoard {
  const lenses=availableLenses(actor),records=visibleRecords(actor),subjects:AnalysisSubject[]=readProperties(actor).map(item=>subjectFor(actor,{sourceKind:'property',sourceId:item.id,investorId:null}));
  if(actor.role!=='dispositions'&&!billingPolicy(actor).restricted.includes('acquisition-lead'))for(const item of getOpportunityBoard(actor).items)subjects.push(subjectFor(actor,{sourceKind:'opportunity',sourceId:item.id,investorId:null}));
  const items=records.map(item=>({id:item.id,label:item.input.label,version:item.version,strategy:item.input.strategy,lens:item.input.lens,address:item.subject.address}));
- return {items,subjects,lenses,canCreate:featureAccess(actor,'core').allowed&&lenses.some(lens=>featureAccess(actor,feature(lens)).allowed),analysisAccessReference:`board@${hash({scope:scope(actor),method:analysisMethod,items,subjects,day:now().slice(0,10)})}`};
+ return {items,subjects,lenses,canCreate:featureAccess(actor,'core').allowed&&lenses.some(lens=>featureAccess(actor,feature(lens)).allowed),analysisAccessReference:`board@${hash({scope:scope(actor),method:analysisMethod,screeningMethod:opportunityScreeningMethod,items,subjects,day:now().slice(0,10)})}`};
 }
 export function getAnalysis(actor:Actor,id:string):AnalysisDetail {
  const value=stored(actor,id),current=subjectFor(actor,value.input),sourceChanged=current.sourceFingerprint!==value.subject.sourceFingerprint||value.result.method!==analysisMethod;
  const history=(getDb().prepare('SELECT data FROM deal_analysis_events WHERE organization_id=? AND office_id=? AND analysis_id=? ORDER BY rowid DESC LIMIT 20').all(actor.organizationId,actor.officeId,id) as {data:string}[]).map(row=>JSON.parse(row.data) as SavedAnalysis);
  const {result,...record}=value;
  // A new day can change evidence-age warnings, so a saved calculation is explicitly dated.
- return {record,result:sourceChanged?null:result,sourceChanged,canEdit:featureAccess(actor,'core').allowed&&featureAccess(actor,feature(value.input.lens)).allowed,history:history.map(item=>({version:item.version,recordedAt:item.updatedAt,label:item.input.label,input:item.input})),analysisAccessReference:`${id}@${hash({scope:scope(actor),record,sourceChanged,current,method:analysisMethod,day:now().slice(0,10)})}`};
+ return {record,result:sourceChanged?null:result,sourceChanged,canEdit:featureAccess(actor,'core').allowed&&featureAccess(actor,feature(value.input.lens)).allowed,history:history.map(item=>({version:item.version,recordedAt:item.updatedAt,label:item.input.label,input:item.input})),analysisAccessReference:`${id}@${hash({scope:scope(actor),record,sourceChanged,current,method:analysisMethod,screeningMethod:opportunityScreeningMethod,day:now().slice(0,10)})}`};
 }
 export function analysisReferenceCurrent(actor:Actor,reference:string):boolean {try{const id=reference.split('@')[0];const current=id==='board'?getAnalysisBoard(actor):getAnalysis(actor,id);return current.analysisAccessReference===reference&&(!('sourceChanged' in current)||!current.sourceChanged);}catch(error){if(error instanceof AppError&&[403,404].includes(error.status))return false;throw error;}}
 export function analysisContextReference(actor:Actor){return getAnalysisBoard(actor).analysisAccessReference;}

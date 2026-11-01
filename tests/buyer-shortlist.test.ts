@@ -3,10 +3,10 @@ import type {Actor} from '../src/lib/contracts';
 import type {BuyBox} from '../src/lib/intelligence-contracts';
 import {closeDb,demoActor,getDb} from '../src/server/db';
 import {buildBuyerShortlist,buyerShortlistReferenceCurrent,buyerShortlistMessage} from '../src/server/buyer-shortlist';
-import {compareProperty,getInvestorIntelligence,recordCallOutcome} from '../src/server/intelligence';
+import {compareProperty,getInvestorIntelligence,recordCallOutcome,proposeBuyBox} from '../src/server/intelligence';
 import {getRelationshipRecord,recordRelationshipReport} from '../src/server/relationship-record';
 import {recordJourneyObservation} from '../src/server/journey';
-import {completeTask,createTask,getConversation,matchBuyers} from '../src/server/services';
+import {completeTask,createTask,getConversation,matchBuyers,decideAction} from '../src/server/services';
 import {chat,dispatchTool} from '../src/server/orchestrator';
 import {collectHistoryReferences,historyReferencesVisible} from '../src/server/history';
 import {createWorkRun,getWorkRun,processWorkRuns} from '../src/server/work-runs';
@@ -31,6 +31,32 @@ describe('relationship-aware existing-buyer shortlist',()=>{
  it('explicit corrections remove superseded criteria from the current decision',()=>{const before=report('budget',{min:150000,max:200000}).reports[0];expect(mike().nextAction.title).toBe('Clarify purchase budget');report('budget',{min:150000,max:320000},before.id);expect(mike().readiness).toBe('follow_through');expect(mike().evidence.some(e=>e.id===before.id)).toBe(false);});
  it('prefers a compatible buy box over a higher numerical score with a known conflict',()=>{box({priceMax:100000});const alternate=box({id:'buybox-compatible',label:'Separate compatible strategy',priceMax:320000,propertyTypes:[],rehabLevels:[]});expect(compareProperty(actor,'property-maple').find(m=>m.investorId==='investor-mike')?.buyBoxId).toBe(alternate.id);expect(mike().conflicts).toEqual([]);expect(mike().missing).toContain('Confirmed rehab capacity');});
  it('excludes unapproved criteria and never merges independent strategies',()=>{box({active:false});box({id:'pending-box',provenance:{...getInvestorIntelligence(actor,'investor-mike').buyBoxes[0].provenance,reviewStatus:'pending'},active:true});expect(mike()).toMatchObject({buyBoxId:null,readiness:'not_fit'});});
+ it('keeps geographic flexibility separate from fit and uses a property-specific clarification',()=>{
+  box({counties:['Fulton'],geographicFlexibility:true});const item=mike();
+  expect(item.score).toBe(80);expect(item.readiness).toBe('clarify');expect(item.nextAction.title).toContain('geography');
+  expect(item.nextAction.question).toContain('Marietta');expect(item.evidence.some(e=>e.text.includes('flexibility'))).toBe(true);
+ });
+ it('retires an exclusion-only shortlist when reviewed source provenance changes without changing its value',()=>{
+  const selected=box({counties:[],cities:[],states:[],zipCodes:[],propertyTypes:[],strategies:[],rehabLevels:[],financing:[],priceMin:null,priceMax:null,excludedAreas:['South Cobb'],geographicFlexibility:true});
+  const before=buildBuyerShortlist(actor,'property-maple');
+  const correction=proposeBuyBox(actor,'investor-mike',{excludedAreas:['South Cobb'],sourceStatement:'Fictional correction: the restriction was supplied in the updated call recap.',expectedVersion:selected.version},selected.id);
+  decideAction(actor,correction.id,'approve');
+  expect(mike().evidence.find(e=>e.label.includes('exclusions'))?.text).toBe('Excluded areas: South Cobb');
+  expect(buyerShortlistReferenceCurrent(actor,before.buyerShortlistReference)).toBe(false);
+ });
+ it('makes a corrected excluded area change recommendations, while retiring old tool and work evidence',async()=>{
+  const original=getInvestorIntelligence(actor,'investor-mike').buyBoxes[0];
+  const first=proposeBuyBox(actor,'investor-mike',{excludedAreas:['South Cobb'],sourceStatement:'Fictional reviewed restriction: avoid South Cobb.',expectedVersion:original.version},original.id);decideAction(actor,first.id,'approve');
+  const before=buildBuyerShortlist(actor,'property-maple');expect(mike().nextAction.question).toContain('South Cobb');
+  const tool=await dispatchTool(actor,'match_buyers',{propertyId:'property-maple'}),refs=collectHistoryReferences(actor,tool.artifacts);
+  const run=createWorkRun(actor,{requestId:next(),title:'Review existing buyers',instructions:'Check geography before property outreach.',steps:[{key:'buyers',capabilityId:'match_existing_buyers',input:{propertyId:'property-maple'},dependsOn:[]}]});processWorkRuns(actor,5);
+  expect(getWorkRun(actor,run.id).steps[0].result?.message).toContain('South Cobb');
+  const current=getInvestorIntelligence(actor,'investor-mike').buyBoxes[0];
+  const corrected=proposeBuyBox(actor,'investor-mike',{excludedAreas:['County: Fulton'],sourceStatement:'Fictional correction: the excluded area is Fulton County, not South Cobb.',expectedVersion:current.version},current.id);decideAction(actor,corrected.id,'approve');
+  expect(mike().readiness).toBe('follow_through');expect(mike().score).toBe(100);
+  expect(buyerShortlistReferenceCurrent(actor,before.buyerShortlistReference)).toBe(false);expect(historyReferencesVisible(actor,refs)).toBe(false);expect(getWorkRun(actor,run.id).contentRestricted).toBe(true);
+  expect(fetch).not.toHaveBeenCalled();
+ });
  it('does not let a conflict in an inactive or different buy box dominate the selected strategy',()=>{const other=box({id:'other-box',label:'Different strategy',priceMin:500000,priceMax:600000});const record=getRelationshipRecord(actor,'investor-mike');recordRelationshipReport(actor,{investorId:'investor-mike',topic:'budget',buyBoxId:other.id,value:{min:600000,max:700000},statement:'Separate strategy has a different reported range.',statedAt:null,supersedesId:null,expectedVersion:record.version,expectedContext:record.contextVersion,eventKey:next()});expect(mike().buyBoxId).toBe('buybox-primary-investor-mike');expect(mike().readiness).toBe('follow_through');});
  it('selects existing personal work rather than inventing or duplicating a commitment',()=>{const task=createTask(actor,{investorId:'investor-mike',title:'Provide the requested repair scope',dueAt:'2026-01-01T00:00:00Z'});expect(mike().nextAction.sourceIds).toEqual([task.id]);completeTask(actor,task.id);expect(mike().nextAction.sourceIds).not.toContain(task.id);expect(fetch).not.toHaveBeenCalled();});
  it('invalidates saved references when concerns, criteria, sources or employee authority change',()=>{const list=buildBuyerShortlist(actor,'property-maple');expect(buyerShortlistReferenceCurrent(actor,list.buyerShortlistReference)).toBe(true);expect(buyerShortlistReferenceCurrent(demoActor('manager'),list.buyerShortlistReference)).toBe(false);expect(buyerShortlistReferenceCurrent(actor,list.buyerShortlistReference+'@extra')).toBe(false);concern();expect(buyerShortlistReferenceCurrent(actor,list.buyerShortlistReference)).toBe(false);const current=buildBuyerShortlist(actor,'property-maple');box({priceMax:100000});expect(buyerShortlistReferenceCurrent(actor,current.buyerShortlistReference)).toBe(false);});

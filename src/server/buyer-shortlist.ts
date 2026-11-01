@@ -5,9 +5,10 @@ import type {BuyerMatch} from '../lib/intelligence-contracts';
 import {AppError,requireRole} from './db';
 import {requireFeature} from './billing';
 import {readInvestor,readProperty} from './access';
-import {compareProperty} from './intelligence';
+import {compareProperty,getInvestorIntelligence} from './intelligence';
 import {getInvestorJourney} from './journey';
 import {listReleases} from './workflows';
+import {buyerGeographyMethod,reviewBuyerGeography} from './buyer-geography';
 
 export interface BuyerShortlistEntry extends BuyerMatch {
  investor:Investor;
@@ -37,6 +38,8 @@ function evaluate(actor:Actor,propertyId:string):Omit<BuyerShortlist,'buyerShort
  const property=inventory;
  const matches=compareProperty(actor,propertyId).map((match):BuyerShortlistEntry=>{
   const investor=readInvestor(actor,match.investorId),journey=getInvestorJourney(actor,investor.id);
+  const selectedBox=journey.buyBoxes.find(box=>box.id===match.buyBoxId);
+  const geography=selectedBox?reviewBuyerGeography(selectedBox,property):null;
   const facts=journey.record.facts.filter(f=>f.buyBoxId===null||f.buyBoxId===match.buyBoxId);
   const conflicts=facts.filter(f=>f.status==='needs_clarification');
   const concern=journey.openIssues.find(o=>o.kind==='property_pass'&&o.propertyId===propertyId)
@@ -45,6 +48,8 @@ function evaluate(actor:Actor,propertyId:string):Omit<BuyerShortlist,'buyerShort
   const conditional=facts.filter(f=>['financing','timing','budget'].includes(f.topic)).flatMap(f=>[...(f.recorded?[f.recorded]:[]),...f.reports].map(source=>({fact:f,source}))).find(({source})=>transcriptStatements(source.statement+' '+source.displayValue).some(s=>['conditional','uncertain'].includes(s.meaning)));
   const cautions=[...match.conflicts,...match.missing.map(value=>'Missing: '+value)];
   const evidence:BuyerShortlistEntry['evidence']=[];
+  if(selectedBox?.excludedAreas.length)evidence.push({id:selectedBox.id,label:selectedBox.label+' · Recorded geography exclusions',text:'Excluded areas: '+selectedBox.excludedAreas.join('; '),verification:(selectedBox.fieldProvenance?.excludedAreas??selectedBox.provenance).verification});
+  if(selectedBox?.geographicFlexibility)evidence.push({id:selectedBox.id,label:selectedBox.label+' · Recorded geography flexibility',text:'Geographic flexibility is recorded; individual location acceptance is unconfirmed.',verification:(selectedBox.fieldProvenance?.geographicFlexibility??selectedBox.provenance).verification});
   for(const fact of facts)for(const source of [...(fact.recorded?[fact.recorded]:[]),...fact.reports]){
    evidence.push({id:source.id,label:fact.scopeLabel+' · '+fact.label,text:source.displayValue,verification:source.verification});
    if(source.freshness==='review_due')cautions.push(fact.label+' needs reconfirmation under the provisional freshness policy.');
@@ -71,6 +76,8 @@ function evaluate(actor:Actor,propertyId:string):Omit<BuyerShortlist,'buyerShort
   }else if(concern){
    const repair=/repair|rehab|renovat|contractor/i.test(concern.text);
    readiness='clarify';nextAction={title:concern.kind==='property_pass'?'Review the pass on this property':repair?'Resolve the repair concern first':'Address the recorded concern first',question:repair?'Which repair assumptions remain unresolved? Obtain a sourced scope and cost breakdown before another pitch; walkthrough availability is not established.':'What evidence would resolve the recorded concern before this property would be useful?',sourceIds:[concern.id]};
+  }else if(geography?.question){
+   readiness='clarify';nextAction={title:'Clarify this property’s geography',question:geography.question,sourceIds:match.buyBoxId?[match.buyBoxId]:[]};
   }else if(task){
    readiness='follow_through';nextAction={title:'Handle your existing follow-up',question:'Review “'+task.title+'” before creating another commitment. Completing a task does not prove an investor response.',sourceIds:[task.id]};
   }else if(!match.disclosureReady||release?.status!=='released'){
@@ -83,7 +90,10 @@ function evaluate(actor:Actor,propertyId:string):Omit<BuyerShortlist,'buyerShort
  return {property,releaseId:release?.id??null,releaseVersion:release?.version??null,releaseStatus:release?.status??'unreleased',matches,notice};
 }
 function reference(actor:Actor,value:Omit<BuyerShortlist,'buyerShortlistReference'>){
- return value.property.id+'@'+createHash('sha256').update(JSON.stringify({scope:[actor.organizationId,actor.officeId,actor.id,actor.role],value,method:'buyer-shortlist-v2'})).digest('hex');
+ // A reviewed source correction can retain the same criterion value. Bind the
+ // authorized selected box, including its version/provenance, without expanding UI output.
+ const criteria=value.matches.map(match=>match.buyBoxId?getInvestorIntelligence(actor,match.investorId).buyBoxes.find(box=>box.id===match.buyBoxId)??null:null);
+ return value.property.id+'@'+createHash('sha256').update(JSON.stringify({scope:[actor.organizationId,actor.officeId,actor.id,actor.role],value,criteria,method:'buyer-shortlist-v3',geography:buyerGeographyMethod})).digest('hex');
 }
 export function buildBuyerShortlist(actor:Actor,propertyId:string):BuyerShortlist {
  const value=evaluate(actor,propertyId);return {...value,buyerShortlistReference:reference(actor,value)};

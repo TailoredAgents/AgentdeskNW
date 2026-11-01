@@ -5,6 +5,7 @@ import type {Actor,Role} from '../lib/contracts';
 import type {HandoffBoard,HandoffItem,HandoffMutation,HandoffRecord} from '../lib/handoff-contracts';
 import {AppError,assertActor,audit,getDb,newId,now,requireRole} from './db';
 import {featureAccess,requireFeature} from './billing';
+import {earliestHandoffDeadline,explainHandoffPriority} from './handoff-priority';
 
 const hash=(value:unknown)=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const id=z.string().trim().min(1).max(150),text=z.string().trim().min(6).max(1500);
@@ -15,7 +16,7 @@ export const handoffMutationSchema=z.discriminatedUnion('action',[
  z.object({...base,action:z.literal('report'),kind:z.enum(['blocked','resolved']),note:text,evidence:text}).strict(),
  z.object({...base,action:z.literal('resolve'),note:text}).strict(),
 ]);
-export const handoffMethod={id:'handoff-follow-through',version:3,source:'AgentDesk provisional management method · 2026-10-31.2',notice:'Fictional operational records. Seven days is a provisional review window, not company policy. No tracked acknowledgment means no acknowledgment recorded here. An outcome report is not verified deal progress.'};
+export const handoffMethod={id:'handoff-follow-through',version:4,source:'AgentDesk provisional management method · 2026-11-01.1',notice:'Fictional operational records. Seven days is a provisional review window, not company policy. No tracked acknowledgment means no acknowledgment recorded here. An outcome report is not verified deal progress. Priority explanations use current source and assignment evidence; they do not authorize an action.'};
 function members(actor:Actor){return getDb().prepare('SELECT m.user_id AS id,u.name,m.role FROM memberships m JOIN users u ON u.id=m.user_id WHERE m.organization_id=? AND m.office_id=? ORDER BY m.user_id').all(actor.organizationId,actor.officeId) as {id:string;name:string;role:Role}[];}
 function rowFor(actor:Actor,sourceId:string){return handoffSource(actor,id.parse(sourceId));}
 function stored(actor:Actor,source:HandoffSource){const table=handoffTables(source).coordination;const row=getDb().prepare(`SELECT data FROM ${table} WHERE organization_id=? AND office_id=? AND release_id=?`).get(actor.organizationId,actor.officeId,source.id) as {data:string}|undefined;return row?JSON.parse(row.data) as HandoffRecord:null;}
@@ -32,7 +33,9 @@ function project(actor:Actor,row:HandoffSource):HandoffItem {
  const evidence=[`${sourceLabel} v${release.version} · ${release.status} · ${release.source}`,`${sourceLabel} owner: ${people.find(p=>p.id===row.owner_id)?.name??'Unavailable member'}`,release.closingAt?`Recorded closing target: ${release.closingAt}. This does not establish an agreed or completed closing.`:'No closing target recorded.'];
  if(!record)evidence.push('No coordination assignment or acknowledgment is recorded here.');
  else {evidence.push(`Follow-up v${record.version} applies to ${sourceLabel.toLowerCase()} v${record.releaseVersion}; due ${record.dueAt}.`,record.acknowledgedAt?`Assigned employee acknowledged at ${record.acknowledgedAt}.`:'The assigned employee has not recorded an acknowledgment here.');if(record.outcome)evidence.push(`Employee-reported ${record.outcome.kind}: ${record.outcome.note}`,`Supplied evidence reference: ${record.outcome.evidence}`);if(sourceChanged)evidence.push('The source changed after this assignment. Earlier acknowledgment and outcomes do not resolve the new version.');if(!assigneeEligible)evidence.push('The assigned employee no longer has current source access. Review the assignment.');}
- const nextStep=attention==='source_changed'?'Review the current source and create a fresh assignment if it is still active.':attention==='resolved'?'This follow-up is resolved; assess transaction progress separately.':attention==='review'?'Review the reported outcome and its evidence before resolving this follow-up.':attention==='blocked'?'Clarify the blocker with the responsible employee and agree the next step.':!record?'Assign a specific next step to an employee who already has access.':!record.acknowledgedAt?'Ask the assigned employee to acknowledge this version and report what is missing.':'Obtain an outcome with a source reference; a completed personal reminder is not sufficient.';
+ const priority=explainHandoffPriority({source:row,record,assigneeName:assignee?.name??null,sourceChanged,assigneeEligible,checkedAt:Date.now()});
+ evidence.push(...priority.evidence);
+ const nextStep=priority.nextStep;
  const actions:HandoffItem['actions']=[];
  if(active&&featureAccess(actor,'core').allowed){if(actor.role==='manager'&&featureAccess(actor,'team-performance').allowed){actions.push('assign');if(!sourceChanged&&assigneeEligible&&record?.state==='reported'&&record.outcome?.kind==='resolved')actions.push('resolve');}if(record?.assignedTo===actor.id&&!sourceChanged&&assigneeEligible&&record.state!=='resolved'){if(!record.acknowledgedAt)actions.push('acknowledge');else actions.push('report');}}
  const history=record?(getDb().prepare(`SELECT e.data,e.action,u.name AS actorName FROM ${handoffTables(row).events} e JOIN users u ON u.id=e.actor_id WHERE e.organization_id=? AND e.office_id=? AND e.handoff_id=? ORDER BY e.rowid DESC LIMIT 30`).all(actor.organizationId,actor.officeId,record.id) as {data:string;action:string;actorName:string}[]).map(e=>({actorName:e.actorName,action:e.action,record:JSON.parse(e.data) as HandoffRecord})):[];
@@ -42,7 +45,7 @@ export function getHandoff(actor:Actor,releaseId:string){assertActor(actor);retu
 export function getHandoffBoard(actor:Actor):HandoffBoard {
  assertActor(actor);const rows=handoffSources(actor);
  const items=rows.filter(row=>{const record=stored(actor,row);return visible(actor,row,record)&&(['released','reviewing'].includes(row.value.status)||!!record);}).map(row=>project(actor,row));
- const ranks={source_changed:0,blocked:1,overdue:2,review:3,closing_soon:4,untracked:5,waiting:6,resolved:7};items.sort((a,b)=>ranks[a.attention]-ranks[b.attention]||Date.parse(a.record?.dueAt??a.closingAt??'9999-12-31')-Date.parse(b.record?.dueAt??b.closingAt??'9999-12-31')||a.address.localeCompare(b.address));
+ const ranks={source_changed:0,blocked:1,overdue:2,review:3,closing_soon:4,untracked:5,waiting:6,resolved:7};items.sort((a,b)=>ranks[a.attention]-ranks[b.attention]||earliestHandoffDeadline(a)-earliestHandoffDeadline(b)||a.address.localeCompare(b.address));
  const active=items.filter(i=>['released','reviewing'].includes(i.releaseStatus));
  const unresolved=active.filter(i=>i.record&&i.record.state!=='resolved'&&i.attention!=='source_changed');
  const metrics={visible:items.length,active:active.length,unassigned:active.filter(i=>!i.record).length,unresolvedAssigned:unresolved.length,

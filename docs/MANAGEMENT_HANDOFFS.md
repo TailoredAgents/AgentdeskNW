@@ -1,6 +1,6 @@
 # Shared handoff coordination
 
-Updated October 31, 2026. This C4 specification supports [the canonical roadmap](IMPLEMENTATION_ROADMAP.md); it is not a competing schedule. The bounded workflow uses fictional operational records. Management practitioner acceptance and company procedure approval remain pending.
+Updated November 1, 2026. This C4 specification supports [the canonical roadmap](IMPLEMENTATION_ROADMAP.md); it is not a competing schedule. The bounded workflow uses fictional operational records. Management practitioner acceptance and company procedure approval remain pending.
 
 ## Purpose and supported workflow
 
@@ -35,7 +35,7 @@ Assignment, acknowledgment, reporting and resolution remain explicit reviewed sc
 
 Additive migration **025** creates `handoff_coordination` (one current record per scoped release) and `handoff_events` (immutable actor/action/version snapshots and scoped idempotency). Composite foreign keys bind the release and actor membership. Mutations and safe audit metadata commit in one transaction. Existing tasks, releases, correspondence, wallet and job records are not migrated or repurposed.
 
-The provisional code-owned method is `handoff-follow-through`, version 1, source `2026-10-30.1`. Its approach is to inspect current operational evidence, identify the missing acknowledgment/outcome, assign the smallest useful next step and require an explicit outcome review. This deepens the demo Team Performance Assistant; registry readiness remains unchanged. It does not establish official company policy, expert judgment or competitive superiority.
+The initial provisional code-owned method was `handoff-follow-through`, version 1, source `2026-10-30.1`; subsequent revisions are recorded below. Its approach is to inspect current operational evidence, identify the missing acknowledgment/outcome, assign the smallest useful next step and require an explicit outcome review. This deepens the demo Team Performance Assistant; registry readiness remains unchanged. It does not establish official company policy, expert judgment or competitive superiority.
 
 ## Acceptance and unfinished scope
 
@@ -66,3 +66,13 @@ Excellent-output example: “One of one current unresolved assignments is overdu
 The presentation-only `opportunity-journey.ts` joins current intake/screening with accessible shared follow-through. It never changes base opportunity identity or derives source fingerprints from coordination, avoiding circular invalidation. The ordinary API, Copilot and saved `review_opportunity` capability carry the handoff reference, so assignment/report/source changes retire old advice. Current-source summaries distinguish employee reports from manager resolution; obsolete assignment evidence stays in history rather than appearing as current completion. Desktop/native exact links connect opportunity and handoff without granting access. Managers can act from Team overview.
 
 Explicit presentation setup adds one fictional opportunity and an authored assignment/acknowledgment/blocker through existing services, once under its own marker. It preserves existing work, does not renew expired access and never contacts a provider. This is sample history, not evidence of a conversation with a real wholesaler. See DEMO_RUNBOOK for the cross-role rehearsal and PROGRESS for verification.
+
+## Current-source priority explanations — November 1
+
+Method v4 (`2026-11-01.1`) adds explicit reasons and a responsible next step to the same scoped handoff projection. A blocker remains an employee report for manager/employee review. A reported completion directs the next step to independent manager review, including when its follow-up deadline has passed; the overdue date alone does not establish employee failure. Missing acknowledgment names the assigned employee without claiming the assignment was never received elsewhere. A reviewed resolution remains closed even after an old target passes.
+
+The existing attention-category precedence is unchanged. Within an equal category, the earliest **current** follow-up deadline or recorded closing target sorts first. When the closing target precedes the assigned deadline, the explanation identifies the timing conflict and asks for review; it changes neither date. Upcoming targets retain the provisional seven-day window. A past closing target calls for status reconfirmation, not an inferred successful or failed deal. These are operational signals, not a sales-performance assessment or official company urgency policy.
+
+Changed-source assignments explain their old versus current version and keep old acknowledgment/outcome reports historical. Their old assignment deadlines cannot drive current sorting. Withdrawn, draft or not-pursuing sources recommend keeping follow-through stopped, not creating an active assignment. Lost employee access calls for a manager to select an already-authorized employee; assignment still cannot grant source access. Terminal sources and reviewed resolutions do not gain active deadline advice.
+
+Desktop/native handoff views, Copilot and saved `office_priorities` work receive the same `evidence` and `nextStep` fields. No action/tool/contract expansion is needed. The method and explanations remain in the board fingerprint: a source correction, reassignment or a closing target passing retires old saved advice even if the primary attention label does not change. Historical receipts and employee records remain intact. Free service cases cover these changes, current result replay and pre-inventory/withdrawal boundaries; actual-model prioritization and practitioner acceptance remain separate unproven gates.

@@ -4,7 +4,8 @@ import type { Actor, Investor, ProposedAction, Task } from '../lib/contracts';
 import type { BuyBox, BuyerMatch, CallBriefing, CallPriority, Disclosure, InvestorIntelligence, PropertyRelease, RelationshipEvent } from '../lib/intelligence-contracts';
 import { AppError, assertActor, audit, getDb, insertRecord, newId, now, requireRole, scopedRows, updateRecord } from './db';
 import { defaultAccess, getOwnershipPolicy, readInvestor, readInvestorRow, readInvestors, readProperty, writableInvestor } from './access';
-import { normalizeCounty, normalizePropertyType, strategiesMatch } from './research';
+import { normalizePropertyType, strategiesMatch } from './research';
+import {reviewBuyerGeography} from './buyer-geography';
 
 export const DISCLOSURE_VERSION='demo-disclosure-v1';
 export function getDisclosurePolicy(actor:Actor) {assertActor(actor);return {disclosureRequired:true,version:DISCLOSURE_VERSION,source:'Conservative local demo policy; company policy and approved disclosure document require confirmation.'} as const;}
@@ -151,12 +152,8 @@ function rehabLevel(value:string):number {const key=value.toLowerCase();return /
 function scoreBox(investor:Investor,box:BuyBox,context:ReturnType<typeof propertyContext>,data:StoredIntelligence,disclosure:Disclosure):BuyerMatch {
  const {property,propertyType,arv}=context;let score=0;const reasons:string[]=[],conflicts:string[]=[],missing:string[]=[];
  if(context.release&&JSON.stringify(context.release.property)!==JSON.stringify(property))missing.push('Current inventory differs from the saved release; refresh publication facts before sharing.');
- const geo=[...box.counties.map(normalizeCounty),...box.cities.map(normalizeCounty)];
- const location=[property.county,property.city,property.address].map(normalizeCounty);
- if(box.excludedAreas.some(area=>location.some(place=>place.includes(normalizeCounty(area)))))conflicts.push('Property is in an explicitly excluded area.');
- else if(geo.some(area=>location.includes(area))||box.geographicFlexibility){score+=20;reasons.push('Target geography matches.');}
- else if(geo.length)conflicts.push('Outside the recorded target counties and cities.');else missing.push('Target geography');
- if(box.states.length||box.zipCodes.length)missing.push('Property state / ZIP evidence for precise geography review');
+ const geography=reviewBuyerGeography(box,property);
+ score+=geography.points;reasons.push(...geography.reasons);conflicts.push(...geography.conflicts);missing.push(...geography.missing);
  if(box.priceMin===null&&box.priceMax===null)missing.push('Confirmed purchase-price range');else if((box.priceMin===null||property.price>=box.priceMin)&&(box.priceMax===null||property.price<=box.priceMax)){score+=25;reasons.push('Asking price is within the recorded purchase range.');}else conflicts.push('Asking price is outside the recorded purchase range.');
  if(!box.propertyTypes.length||!propertyType)missing.push('Property-type preference or property type');else if(box.propertyTypes.some(type=>normalizePropertyType(type)===normalizePropertyType(propertyType))){score+=20;reasons.push('Property type matches the buy box.');}else conflicts.push('Property type conflicts with the buy box.');
  const capacity=Math.max(0,...box.rehabLevels.map(rehabLevel)),required=rehabLevel(property.rehab);
