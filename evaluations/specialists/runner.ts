@@ -103,17 +103,18 @@ function readLedger(directory:string,plan:EvaluationPlan):EvaluationLedger {
  return raw;
 }
 function saveLedger(directory:string,ledger:EvaluationLedger){ledger.updatedAt=now();durableJson(join(directory,'ledger.json'),ledger);}
-interface CampaignRun {name:string;planHash:string;kind:'model_comparison'|'tool_rehearsal';maximumNanos:number}
+interface CampaignRun {name:string;planHash:string;kind:'model_comparison'|'tool_rehearsal'|'workflow_comparison';maximumNanos:number}
 interface Campaign {version:1;id:string;maximumCents:999;createdAt:string;runs:CampaignRun[]}
 function campaignFile(root:string){return join(root,'campaign.json');}
 function readCampaign(root:string):Campaign {
  const value=readJson(campaignFile(root)) as Campaign;
- if(value.version!==1||value.maximumCents!==campaignMaximumCents||!value.id||!Array.isArray(value.runs)||new Set(value.runs.map(run=>run.name)).size!==value.runs.length||new Set(value.runs.map(run=>run.planHash)).size!==value.runs.length)throw err('The shared campaign accounting is invalid. No further paid testing is allowed.');return value;
+ if(value.version!==1||value.maximumCents!==campaignMaximumCents||!value.id||!Array.isArray(value.runs)||value.runs.some(run=>!['model_comparison','tool_rehearsal','workflow_comparison'].includes(run.kind))||new Set(value.runs.map(run=>run.name)).size!==value.runs.length||new Set(value.runs.map(run=>run.planHash)).size!==value.runs.length)throw err('The shared campaign accounting is invalid. No further paid testing is allowed.');return value;
 }
 function campaignRuns(root:string,campaign:Campaign,allowNew?:string){
  const unexpected=readdirSync(root,{withFileTypes:true}).filter(entry=>entry.isDirectory()&&existsSync(join(root,entry.name,'plan.json'))&&!campaign.runs.some(run=>run.name===entry.name)&&entry.name!==allowNew);
  if(unexpected.length)throw err('Unregistered evaluation evidence exists. Reconcile the shared campaign before any further paid test.');
- return campaign.runs.map(run=>{const directory=runDirectory(root,run.name),plan=run.kind==='tool_rehearsal'?readToolPlan(directory):readPlan(directory),ledger=run.kind==='tool_rehearsal'?readToolLedger(directory,plan as ToolRehearsalPlan):readLedger(directory,plan as EvaluationPlan);
+ return campaign.runs.map(run=>{const directory=runDirectory(root,run.name);let plan:EvaluationPlan|ToolRehearsalPlan|WorkflowComparisonPlan,ledger:EvaluationLedger;
+  switch(run.kind){case 'model_comparison':plan=readPlan(directory);ledger=readLedger(directory,plan);break;case 'tool_rehearsal':plan=readToolPlan(directory);ledger=readToolLedger(directory,plan);break;case 'workflow_comparison':plan=readWorkflowPlan(directory);if(plan.bindings.campaignId!==campaign.id)throw err('The workflow campaign identity changed.');ledger=readWorkflowLedger(directory,plan);break;default:throw err('Unknown campaign evidence kind.');}
   if(plan.planHash!==run.planHash||plan.policy.maximumNanos!==run.maximumNanos)throw err('A registered campaign plan changed or is missing. Its cost cannot be reset.');
   return {run,ledger};});
 }
@@ -316,6 +317,126 @@ export async function executeToolRehearsalRequest(root:string,name:string,approv
  });
 }
 export function finishToolRehearsal(root:string,name:string,planHash:string){return withLock(resolve(root),()=>{const directory=runDirectory(root,name),plan=readToolPlan(directory),ledger=readToolLedger(directory,plan);if(plan.planHash!==planHash||ledger.attempts.some(a=>a.status!=='completed')||plan.scenarios.some((_,index)=>!ledger.attempts.some(a=>a.packetIndex===index)))throw err('Only a verified run with all three scenarios and no unresolved calls can be closed.');ledger.status='completed';saveLedger(directory,ledger);return inspectToolRehearsal(root,name);});}
+
+/** One fixed, operator-owned comparison; its mutable bodies come only from the frozen application harness. */
+export const workflowComparisonPolicy={model:'gpt-6.1-sol',reasoning:'high',serviceTier:'default',maxInputTokens:30_000,maxOutputTokens:4096,maximumCalls:40,maximumNanos:40*(30_000*5_000+4096*10_000),prerequisitePolicy:'skip_second_turn_only_when_required_first_turn_artifact_is_unavailable'} as const;
+export interface WorkflowComparisonSlot {id:string;role:'dispositions'|'acquisitions'|'manager';arm:'guided'|'generic';turn:0|1;conversationId:string;employeeRequestId:string;request:string;maxCalls:3|4}
+export interface WorkflowComparisonBindings {campaignId:string;fixtureHash:string;sourceHash:string;runtimeHash:string}
+interface WorkflowComparisonPlan {version:number;kind:'workflow_comparison';runId:string;createdAt:string;applicationRevision:string;runnerSourceHash:string;policy:typeof workflowComparisonPolicy;bindings:WorkflowComparisonBindings;slots:WorkflowComparisonSlot[];planHash:string}
+export interface WorkflowComparisonOutcome {slotId:string;status:'completed'|'quality_failed'|'prerequisite_skipped';evidenceHash:string;reason?:string}
+interface WorkflowComparisonLedger extends EvaluationLedger {outcomes:(WorkflowComparisonOutcome&{recordedAt:string})[]}
+const identity=z.string().regex(/^[A-Za-z0-9_.:-]{1,240}$/),digestSchema=z.string().regex(/^[a-f0-9]{64}$/);
+const workflowBindingsSchema=z.object({campaignId:z.string().uuid(),fixtureHash:digestSchema,sourceHash:digestSchema,runtimeHash:digestSchema}).strict();
+const workflowSlotSchema=z.object({id:z.string().regex(/^[A-Za-z0-9_-]{1,80}$/),role:z.enum(['dispositions','acquisitions','manager']),arm:z.enum(['guided','generic']),turn:z.union([z.literal(0),z.literal(1)]),conversationId:identity,employeeRequestId:identity,request:z.string().trim().min(1).max(12000),maxCalls:z.union([z.literal(3),z.literal(4)])}).strict();
+const workflowOutcomeSchema=z.object({slotId:workflowSlotSchema.shape.id,status:z.enum(['completed','quality_failed','prerequisite_skipped']),evidenceHash:digestSchema,reason:z.string().trim().min(1).max(1000).optional()}).strict();
+const workflowRequestSchema=z.object({planHash:digestSchema,slotId:workflowSlotSchema.shape.id,conversationId:identity,employeeRequestId:identity,renderedRequest:z.string().min(1).max(20000),renderedRequestHash:digestSchema}).strict();
+function readWorkflowRequest(directory:string,plan:WorkflowComparisonPlan,slot:WorkflowComparisonSlot){
+ const saved=workflowRequestSchema.parse(readJson(join(directory,'turns',`${slot.id}.json`)));
+ if(saved.planHash!==plan.planHash||saved.slotId!==slot.id||saved.conversationId!==slot.conversationId||saved.employeeRequestId!==slot.employeeRequestId||saved.renderedRequestHash!==fileHash(saved.renderedRequest))throw err('The rendered employee request binding changed.');return saved;
+}
+function latestUserRequest(payload:ReturnType<typeof toolPayload>){
+ const latest=payload.input.filter(value=>value.role==='user').at(-1);if(typeof latest?.content==='string')return latest.content;
+ if(Array.isArray(latest?.content)&&latest.content.every(value=>value&&typeof value==='object'&&(value as JsonItem).type==='input_text'&&typeof (value as JsonItem).text==='string'))return latest.content.map(value=>(value as JsonItem).text).join('');
+ throw err('The workflow request must retain its current employee text.');
+}
+function workflowSlots(value:unknown):WorkflowComparisonSlot[]{
+ const slots=z.array(workflowSlotSchema).length(12).parse(value),seen=new Set<string>();
+ if(new Set(slots.map(s=>s.id)).size!==12||new Set(slots.map(s=>s.employeeRequestId)).size!==12)throw err('Workflow slots and original employee requests must be globally distinct across both arms.');
+ for(const slot of slots){const key=`${slot.role}:${slot.arm}:${slot.turn}`;if(seen.has(key)||slot.maxCalls!==(slot.role==='dispositions'?4:3))throw err('The fixed role/arm/turn call limits changed.');seen.add(key);
+  const own=slots.find(s=>s.role===slot.role&&s.arm===slot.arm&&s.turn!==slot.turn),paired=slots.find(s=>s.role===slot.role&&s.arm!==slot.arm&&s.turn===slot.turn);
+  if(!own||own.conversationId!==slot.conversationId||!paired||paired.request!==slot.request||slots.some(s=>s.arm===slot.arm&&s.role!==slot.role&&s.conversationId===slot.conversationId))throw err('Each arm must retain its own role conversation and equal employee request templates.');
+ }
+ return slots;
+}
+function readWorkflowPlan(directory:string,dispatch=false):WorkflowComparisonPlan {
+ const raw=readJson(join(directory,'plan.json')) as WorkflowComparisonPlan;if(!raw||typeof raw!=='object')throw err('Workflow comparison plan is missing.');const {planHash,...value}=raw;
+ if(raw.version!==schemaVersion||raw.kind!=='workflow_comparison'||hash(value)!==planHash||hash(raw.policy)!==hash(workflowComparisonPolicy)||!/^[a-f0-9]{40}$/.test(raw.applicationRevision)||dispatch&&raw.runnerSourceHash!==runnerSourceHash())throw err('The workflow comparison plan changed or is invalid.');
+ workflowBindingsSchema.parse(raw.bindings);workflowSlots(raw.slots);return raw;
+}
+function previousWorkflowSlot(plan:WorkflowComparisonPlan,slot:WorkflowComparisonSlot){return plan.slots.find(s=>s.role===slot.role&&s.arm===slot.arm&&s.turn===0)!;}
+function validateWorkflowOutcome(plan:WorkflowComparisonPlan,ledger:WorkflowComparisonLedger,outcome:WorkflowComparisonOutcome){
+ workflowOutcomeSchema.parse(outcome);const index=plan.slots.findIndex(s=>s.id===outcome.slotId),slot=plan.slots[index];if(!slot)throw err('Unknown workflow outcome slot.');
+ const attempts=ledger.attempts.filter(a=>a.packetIndex===index),previous=slot.turn===1?ledger.outcomes.find(o=>o.slotId===previousWorkflowSlot(plan,slot).id):undefined;
+ if(attempts.some(a=>a.status!=='completed')||slot.turn===1&&!previous)throw err('A workflow outcome cannot hide unresolved usage or precede its own first turn.');
+ if(outcome.status==='completed'&&!attempts.length)throw err('A completed workflow turn requires a saved provider receipt.');
+ if(outcome.status!=='completed'&&!outcome.reason)throw err('A failed or skipped quality outcome requires its evidence reason.');
+ if(outcome.status==='prerequisite_skipped'&&(slot.turn!==1||previous?.status!=='quality_failed'||attempts.length))throw err('Only an unattempted second turn with a failed first-turn prerequisite may be skipped.');
+}
+function readWorkflowLedger(directory:string,plan:WorkflowComparisonPlan):WorkflowComparisonLedger {
+ const raw=readJson(join(directory,'ledger.json')) as WorkflowComparisonLedger;
+ if(!raw||raw.version!==schemaVersion||raw.planHash!==plan.planHash||!Array.isArray(raw.attempts)||raw.attempts.length>40||!Array.isArray(raw.outcomes)||raw.outcomes.length>12||!['prepared','running','paused','completed','stopped'].includes(raw.status)||new Set(raw.attempts.map(a=>a.id)).size!==raw.attempts.length||new Set(raw.outcomes.map(o=>o.slotId)).size!==raw.outcomes.length)throw err('Workflow comparison accounting is invalid.');
+ const counts=Array<number>(12).fill(0),responseIds=new Set<string>();
+ for(const attempt of raw.attempts){const slot=plan.slots[attempt.packetIndex];
+  if(!slot||!Number.isInteger(attempt.packetIndex)||!/^workflow-[a-f0-9]{32}$/.test(attempt.id)||attempt.turn!==counts[attempt.packetIndex]++||attempt.turn>=slot.maxCalls||attempt.model!=='gpt-6.1-sol'||!safeCount.safeParse(attempt.inputCount).success||attempt.inputCount>30_000||attempt.reservedNanos!==price(attempt.model,attempt.inputCount,4096)||!['dispatching','completed','incomplete','rejected','unknown','invalid_output','usage_overrun'].includes(attempt.status)||attempt.accountedNanos!==undefined&&(!Number.isSafeInteger(attempt.accountedNanos)||attempt.accountedNanos<0))throw err('A saved workflow dispatch claim is invalid.');
+  if(attempt.responseId){if(responseIds.has(attempt.responseId))throw err('A workflow provider receipt identity was reused.');responseIds.add(attempt.responseId);}
+ }
+ if(raw.approval&&(raw.approval.planHash!==plan.planHash||raw.approval.maximumCents!==999))throw err('The workflow campaign approval changed.');
+ const checked:WorkflowComparisonLedger={...raw,outcomes:[]};for(const saved of raw.outcomes){const {recordedAt,...outcome}=saved;if(typeof recordedAt!=='string'||!Number.isFinite(Date.parse(recordedAt)))throw err('Workflow outcome evidence is invalid.');validateWorkflowOutcome(plan,checked,outcome);checked.outcomes.push(saved);}
+ if(raw.status==='completed'&&(raw.outcomes.length!==12||raw.attempts.some(a=>a.status!=='completed')))throw err('A completed workflow comparison requires all twelve terminal outcomes and settled receipts.');
+ for(const attempt of raw.attempts){const saved=readJson(join(directory,'requests',`${attempt.id}.json`)) as {clientRequestId:string;planHash:string;slotId:string;conversationId:string;employeeRequestId:string;inputCount:number};const slot=plan.slots[attempt.packetIndex];
+  if(!identity.safeParse(saved.clientRequestId).success||attempt.id!==`workflow-${fileHash(saved.clientRequestId).slice(0,32)}`||saved.planHash!==plan.planHash||saved.slotId!==slot.id||saved.conversationId!==slot.conversationId||saved.employeeRequestId!==slot.employeeRequestId||saved.inputCount!==attempt.inputCount)throw err('The saved workflow request binding changed.');
+  const binding=readWorkflowRequest(directory,plan,slot),payload=toolPayload(JSON.stringify(readSavedRequest(directory,attempt)));if(latestUserRequest(payload)!==binding.renderedRequest)throw err('The saved provider body no longer matches this turn\'s rendered employee request.');if(attempt.status==='completed')verifiedCompletedReceipt(directory,attempt);
+ }
+ return raw;
+}
+function workflowCampaign(root:string,campaignId:string){
+ if(!existsSync(campaignFile(root)))throw err('The original shared campaign is required; missing evidence is not a new budget.');
+ const campaign=readCampaign(root);if(campaign.id!==campaignId)throw err('The original workflow campaign identity changed.');return campaign;
+}
+export function prepareWorkflowComparison(root:string,name:string,applicationRevision:string,slots:WorkflowComparisonSlot[],bindings:WorkflowComparisonBindings){
+ if(!/^[a-f0-9]{40}$/.test(applicationRevision))throw err('Freeze the exact application commit.');slots=workflowSlots(slots);bindings=workflowBindingsSchema.parse(bindings);
+ root=resolve(root);return withLock(root,()=>{workflowCampaign(root,bindings.campaignId);assertNoUncertainty(root);const directory=runDirectory(root,name);if(existsSync(directory))throw err('That run already exists. Evidence cannot be overwritten.');assertCampaignCapacity(root,workflowComparisonPolicy.maximumNanos);
+  const value={version:schemaVersion,kind:'workflow_comparison' as const,runId:randomUUID(),createdAt:now(),applicationRevision,runnerSourceHash:runnerSourceHash(),policy:structuredClone(workflowComparisonPolicy),bindings,slots},plan:WorkflowComparisonPlan={...value,planHash:hash(value)};
+  mkdirSync(directory,{mode:0o700});mkdirSync(join(directory,'requests'),{mode:0o700});mkdirSync(join(directory,'responses'),{mode:0o700});mkdirSync(join(directory,'turns'),{mode:0o700});durableJson(join(directory,'plan.json'),plan,true);
+  durableJson(join(directory,'ledger.json'),{version:schemaVersion,planHash:plan.planHash,approval:null,status:'prepared',attempts:[],outcomes:[],updatedAt:now()},true);registerCampaignRun(root,{name,planHash:plan.planHash,kind:'workflow_comparison',maximumNanos:plan.policy.maximumNanos});return inspectWorkflowComparison(root,name);
+ });
+}
+export function inspectWorkflowComparison(root:string,name:string){
+ const directory=runDirectory(root,name),plan=readWorkflowPlan(directory);workflowCampaign(resolve(root),plan.bindings.campaignId);const ledger=readWorkflowLedger(directory,plan);
+ return {directory,planHash:plan.planHash,applicationRevision:plan.applicationRevision,bindings:plan.bindings,model:plan.policy.model,maximumUsd:plan.policy.maximumNanos/1e9,maximumCalls:plan.policy.maximumCalls,status:ledger.status,attemptedCalls:ledger.attempts.length,accountedMaximumUsd:accounted(ledger)/1e9,outcomes:ledger.outcomes,slots:plan.slots.map((slot,index)=>({...slot,attempts:ledger.attempts.filter(a=>a.packetIndex===index).length})),unresolved:ledger.attempts.filter(a=>['dispatching','unknown'].includes(a.status)).map(a=>a.id)};
+}
+/** Application bodies vary with real local tool results; identities, limits and the frozen harness do not. */
+export async function executeWorkflowComparisonRequest(root:string,name:string,approval:{planHash:string;maximumCents:number},input:{slotId:string;conversationId:string;employeeRequestId:string;renderedRequest:string;requestId:string;body:string},transport:EvaluationTransport):Promise<JsonItem>{
+ root=resolve(root);return withLock(root,async()=>{const directory=runDirectory(root,name),plan=readWorkflowPlan(directory,true);workflowCampaign(root,plan.bindings.campaignId);assertNoUncertainty(root,name);const ledger=readWorkflowLedger(directory,plan);
+  if(approval.planHash!==plan.planHash||approval.maximumCents!==999)throw err('Use the exact workflow plan and original 999-cent campaign authorization.');
+  const packetIndex=plan.slots.findIndex(s=>s.id===input.slotId),slot=plan.slots[packetIndex];if(!slot||input.conversationId!==slot.conversationId||input.employeeRequestId!==slot.employeeRequestId||!identity.safeParse(input.requestId).success)throw err('The request is outside its frozen role, arm, turn or conversation.');
+  const payload=toolPayload(input.body),binding=workflowRequestSchema.parse({planHash:plan.planHash,slotId:slot.id,conversationId:slot.conversationId,employeeRequestId:slot.employeeRequestId,renderedRequest:input.renderedRequest,renderedRequestHash:fileHash(input.renderedRequest)});if(latestUserRequest(payload)!==binding.renderedRequest)throw err('The current employee message differs from the rendered workflow request.');
+  const bindingPath=join(directory,'turns',`${slot.id}.json`);if(existsSync(bindingPath)&&hash(readWorkflowRequest(directory,plan,slot))!==hash(binding))throw err('This turn\'s rendered request changed after its first dispatch.');
+  const id=`workflow-${fileHash(input.requestId).slice(0,32)}`,requestHash=fileHash(input.body),prior=ledger.attempts.find(a=>a.id===id);
+  if(prior){if(prior.requestHash!==requestHash||prior.packetIndex!==packetIndex||prior.status!=='completed')throw err('The earlier workflow request differs or has an unresolved outcome; it will not be resent.');readSavedRequest(directory,prior);return verifiedCompletedReceipt(directory,prior);}
+  if(ledger.status==='completed'||ledger.status==='stopped'||ledger.attempts.some(a=>a.status!=='completed')||ledger.outcomes.some(o=>o.slotId===slot.id))throw err('This workflow run or turn is closed or contains unresolved usage.');
+  if(slot.turn===1&&!ledger.outcomes.some(o=>o.slotId===previousWorkflowSlot(plan,slot).id))throw err('Complete and record this arm\'s first turn before its continuation.');
+  const turn=ledger.attempts.filter(a=>a.packetIndex===packetIndex).length;if(turn>=slot.maxCalls||ledger.attempts.length>=40)throw err('This workflow reached its fixed model-round limit.');
+  assertCampaignAdmission(root,name);if(!existsSync(bindingPath))durableJson(bindingPath,binding,true);if(!ledger.approval)ledger.approval={...approval,recordedAt:now(),source:'explicit_operator_cli'};ledger.status='running';saveLedger(directory,ledger);
+  const {max_output_tokens,service_tier,store,include,...countedPayload}=payload;void max_output_tokens;void service_tier;void store;void include;
+  let inputCount:number;try{inputCount=await countedInput(directory,id,countedPayload,30_000,transport);delete ledger.lastCountFailure;}catch(error){const code=countFailure(directory,ledger,id,error);throw err(`Input counting stopped (${code}); no generation was sent. Inspect the private counts evidence.`);}
+  const reservedNanos=price('gpt-6.1-sol',inputCount,4096);assertCampaignAdmission(root,name,reservedNanos);
+  durableJson(join(directory,'requests',`${id}.json`),{body:input.body,requestHash,clientRequestId:input.requestId,inputCount,planHash:plan.planHash,slotId:slot.id,conversationId:slot.conversationId,employeeRequestId:slot.employeeRequestId},true);
+  const attempt:EvaluationAttempt={id,packetIndex,turn,model:'gpt-6.1-sol',status:'dispatching',requestHash,inputCount,reservedNanos,startedAt:now(),requestFile:`requests/${id}.json`};ledger.attempts.push(attempt);saveLedger(directory,ledger);const started=performance.now();
+  try{
+   const response=await transport.create(input.body,input.requestId);attempt.elapsedMs=Math.round(performance.now()-started);attempt.httpStatus=response.status;if(response.requestId&&/^[A-Za-z0-9_.:-]{1,200}$/.test(response.requestId))attempt.providerRequestId=response.requestId;
+   const responseHash=fileHash(response.body);durableJson(join(directory,'responses',`${id}.json`),{status:response.status,body:response.body,responseHash,requestId:attempt.providerRequestId,elapsedMs:attempt.elapsedMs},true);attempt.responseHash=responseHash;attempt.responseFile=`responses/${id}.json`;
+   if(response.status<200||response.status>=300){attempt.status=[400,401,403,404,429].includes(response.status)?'rejected':'unknown';if(attempt.status==='rejected')attempt.accountedNanos=0;throw err('Provider HTTP failure.');}
+   const receipt=validateReceipt(parseBoundedJson(response.body,2_000_000),inputCount,'gpt-6.1-sol');
+   if(ledger.attempts.some(other=>other.id!==id&&other.responseId===receipt.value.id))throw err('Repeated response identity.');
+   attempt.responseId=receipt.value.id;attempt.usage=receipt.usage;attempt.accountedNanos=receipt.accountedNanos;
+   if(receipt.overrun){attempt.status='usage_overrun';throw err('Usage overrun.');}if(receipt.value.status!=='completed'){attempt.status='incomplete';throw err('Incomplete response.');}
+   if(receipt.value.output.some(value=>!['reasoning','message','function_call'].includes(String(value.type))||value.type!=='reasoning'&&value.status!==undefined&&value.status!=='completed')){attempt.status='invalid_output';throw err('Unsupported provider output.');}
+   attempt.status='completed';attempt.finishedAt=now();saveLedger(directory,ledger);return receipt.value;
+  }catch{if(attempt.status==='dispatching'){attempt.status='unknown';delete attempt.usage;delete attempt.accountedNanos;}attempt.finishedAt=now();attempt.failure='provider_or_receipt_failure';ledger.status='stopped';saveLedger(directory,ledger);throw err('The workflow comparison stopped with saved evidence. No automatic provider retry was made.');}
+ });
+}
+export function recordWorkflowComparisonOutcome(root:string,name:string,planHash:string,input:WorkflowComparisonOutcome){
+ return withLock(resolve(root),()=>{const directory=runDirectory(root,name),plan=readWorkflowPlan(directory);workflowCampaign(resolve(root),plan.bindings.campaignId);const ledger=readWorkflowLedger(directory,plan),outcome=workflowOutcomeSchema.parse(input);if(planHash!==plan.planHash)throw err('The workflow outcome belongs to a different plan.');
+  const prior=ledger.outcomes.find(o=>o.slotId===outcome.slotId);if(prior){const {recordedAt,...saved}=prior;void recordedAt;if(hash(saved)!==hash(outcome))throw err('The immutable workflow outcome changed.');return inspectWorkflowComparison(root,name);}
+  if(ledger.status==='completed'||ledger.status==='stopped'||ledger.attempts.some(a=>a.status!=='completed'))throw err('An outcome cannot close stopped or unresolved provider work.');validateWorkflowOutcome(plan,ledger,outcome);ledger.outcomes.push({...outcome,recordedAt:now()});saveLedger(directory,ledger);return inspectWorkflowComparison(root,name);
+ });
+}
+export function finishWorkflowComparison(root:string,name:string,planHash:string){
+ return withLock(resolve(root),()=>{const directory=runDirectory(root,name),plan=readWorkflowPlan(directory);workflowCampaign(resolve(root),plan.bindings.campaignId);const ledger=readWorkflowLedger(directory,plan);
+  if(plan.planHash!==planHash||ledger.status==='stopped'||ledger.outcomes.length!==12||ledger.attempts.some(a=>a.status!=='completed'))throw err('Only twelve terminal workflow outcomes with settled provider receipts can close this plan.');ledger.status='completed';saveLedger(directory,ledger);return inspectWorkflowComparison(root,name);
+ });
+}
 export async function runEvaluation(root:string,name:string,approval:{planHash:string;maximumCents:number;throughSample?:1|2},transport:EvaluationTransport){
  root=resolve(root);return withLock(root,async()=>{
   assertNoUncertainty(root,name);const directory=runDirectory(root,name),plan=readPlan(directory,true),ledger=readLedger(directory,plan);

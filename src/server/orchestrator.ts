@@ -2,6 +2,7 @@ import {conversationStyleInstructions} from './conversation-style';
 import {employeeRequestedInboxReply,employeeRequestedInboxRevision,focusedInboxReplyThread,inboxSourceForRequest,inboxThreadsForRequest} from './inbox-conversation';
 import {specialistReviewSchema} from './specialist-reviews';
 import {specialistMethodFingerprint,specialistMethodInstructions} from './specialist-methods';
+import {specialistGuidanceEvaluation} from './specialist-guidance-evaluation';
 import {qualificationResult,qualificationMethod} from './qualification-review';
 import {rolePreparationContextFingerprint,listRolePreparations,rolePreparationReference,prepareOpportunityIntake,prepareHandoffAction,handoffPreparationSchema} from './role-preparations';
 import {opportunityPreviewSchema} from './opportunities';
@@ -501,7 +502,8 @@ export async function chat(actor:Actor,message:string,conversationId?:string,req
   z.string().min(1).max(150).parse(requestId);
   z.string().trim().min(1).max(12000).parse(message);
   if(options.receivedAt)z.string().datetime({offset:true}).parse(options.receivedAt);
-  const db=getDb(),requestHash=fingerprint({message,conversationId,...(channel==='web'?{}:{channel}),...(options.receivedAt?{receivedAt:options.receivedAt}:{})});
+  const evaluation=specialistGuidanceEvaluation(actor);
+  const db=getDb(),requestHash=fingerprint({message,conversationId,...(channel==='web'?{}:{channel}),...(options.receivedAt?{receivedAt:options.receivedAt}:{}),...(evaluation?{specialistGuidanceEvaluation:evaluation}:{})});
   let explicitResult:ToolResult|null=null;
   const start=db.transaction(()=>{
     const prior=db.prepare('SELECT conversation_id,request_hash,status,result FROM assistant_turns WHERE organization_id=? AND office_id=? AND user_id=? AND request_id=?').get(actor.organizationId,actor.officeId,actor.id,requestId) as {conversation_id:string;request_hash:string;status:string;result:string|null}|undefined;
@@ -568,7 +570,7 @@ export function currentTextContext(actor:Actor,conversationId:string,receivedAt?
 }
 
 export function currentTextScope(actor:Actor,conversationId:string){
- const db=getDb();
+ const db=getDb(),evaluation=specialistGuidanceEvaluation(actor);
  // Materialize existing authorized CRM criteria before hashing, just as the workspace
  // does on first read. Opening that view must not look like an employee edit.
  intelligence.listInvestorIntelligence(actor);
@@ -577,7 +579,7 @@ export function currentTextScope(actor:Actor,conversationId:string){
         const visibleInvestorIds=new Set(current.investors.map(investor=>investor.id));
         const relationshipReports=(db.prepare('SELECT investor_id,data FROM relationship_reports WHERE organization_id=? ORDER BY rowid').all(actor.organizationId) as {investor_id:string;data:string}[]).filter(report=>visibleInvestorIds.has(report.investor_id));
         const protectedState=['investor_intelligence','buy_boxes','property_releases','deal_packages','channel_templates','journey_observations','debriefs','tasks'].map(table=>db.prepare(`SELECT data FROM ${table} WHERE organization_id=? AND office_id=? ORDER BY rowid`).all(actor.organizationId,actor.officeId));
-        return {actor,knowledge,updates,rolePreparations:rolePreparationContextFingerprint(actor),documents:documentContextReference(actor),transactionTeams:transactionTeamContextReference(actor),transactions:transactionContextReference(actor),analyses:analysisContextReference(actor),opportunities:opportunityContextReference(actor),handoffs:getHandoffBoard(actor).handoffAccessReference,workingMethods:relationshipMethodFingerprint(),specialistMethods:specialistMethodFingerprint(),qualificationMethod,workAccess:workContextSnapshot(actor),employeeMemory:getEmployeeMemory(actor),investors:current.investors,properties:current.properties,protectedState,relationshipReports,inbox:inboxContextFingerprint(actor),access:service.specialists.map(s=>featureAccess(actor,s.id)),withheld:service.getConversation(actor,conversationId).messages.filter(m=>m.content.startsWith('This historical message is withheld')).map(m=>m.id)};
+        return {actor,knowledge,updates,rolePreparations:rolePreparationContextFingerprint(actor),documents:documentContextReference(actor),transactionTeams:transactionTeamContextReference(actor),transactions:transactionContextReference(actor),analyses:analysisContextReference(actor),opportunities:opportunityContextReference(actor),handoffs:getHandoffBoard(actor).handoffAccessReference,workingMethods:relationshipMethodFingerprint(),specialistMethods:evaluation?fingerprint({catalog:specialistMethodFingerprint(),evaluation}):specialistMethodFingerprint(),qualificationMethod,workAccess:workContextSnapshot(actor),employeeMemory:getEmployeeMemory(actor),investors:current.investors,properties:current.properties,protectedState,relationshipReports,inbox:inboxContextFingerprint(actor),access:service.specialists.map(s=>featureAccess(actor,s.id)),withheld:service.getConversation(actor,conversationId).messages.filter(m=>m.content.startsWith('This historical message is withheld')).map(m=>m.id)};
 
 }
 

@@ -2,6 +2,7 @@ import {createHash} from 'node:crypto';
 import type {Actor} from '../lib/contracts';
 import {featureAccess} from './billing';
 import {specialists} from './registry';
+import {specialistGuidanceEvaluation} from './specialist-guidance-evaluation';
 
 export interface SpecialistMethod {
  specialistId:string; context:string[]; decisions:string[]; checks:string[];
@@ -30,5 +31,6 @@ export const specialistMethods:ReadonlyArray<SpecialistMethod>=[
 export const specialistMethodFingerprint=()=>createHash('sha256').update(JSON.stringify({revision:specialistMethodRevision,methods:specialistMethods})).digest('hex');
 export function availableSpecialistMethods(actor:Actor):SpecialistMethod[]{return specialistMethods.filter(method=>specialists.some(s=>s.id===method.specialistId&&s.roles.includes(actor.role))&&featureAccess(actor,method.specialistId).allowed).map(method=>structuredClone(method));}
 export function specialistMethodInstructions(actor:Actor):string {
- return `Specialist working standards ${specialistMethodRevision}, source docs/AI_EMPLOYEES.md, provisional AgentDesk design, not company policy. Apply relevant standards adaptively; these are not mandatory workflows. Retrieve current evidence through available tools, then choose the useful next action. Examples are fictional teaching examples, never facts about current records or proof of completed work. Tool availability and employee authority still control execution. ${JSON.stringify(availableSpecialistMethods(actor))}`;
+ const evaluation=specialistGuidanceEvaluation(actor),methods=availableSpecialistMethods(actor);
+ return `Specialist working standards ${specialistMethodRevision}, source docs/AI_EMPLOYEES.md, provisional AgentDesk design, not company policy. Apply relevant standards adaptively; these are not mandatory workflows. Retrieve current evidence through available tools, then choose the useful next action. Examples are fictional teaching examples, never facts about current records or proof of completed work. Tool availability and employee authority still control execution. ${evaluation?.mode==='omitted'?'':JSON.stringify(methods)}`;
 }
