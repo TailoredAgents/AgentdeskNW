@@ -103,18 +103,18 @@ function readLedger(directory:string,plan:EvaluationPlan):EvaluationLedger {
  return raw;
 }
 function saveLedger(directory:string,ledger:EvaluationLedger){ledger.updatedAt=now();durableJson(join(directory,'ledger.json'),ledger);}
-interface CampaignRun {name:string;planHash:string;kind:'model_comparison'|'tool_rehearsal'|'workflow_comparison';maximumNanos:number}
+interface CampaignRun {name:string;planHash:string;kind:'model_comparison'|'tool_rehearsal'|'workflow_comparison'|'workflow_capacity_followup';maximumNanos:number}
 interface Campaign {version:1;id:string;maximumCents:999;createdAt:string;runs:CampaignRun[]}
 function campaignFile(root:string){return join(root,'campaign.json');}
 function readCampaign(root:string):Campaign {
  const value=readJson(campaignFile(root)) as Campaign;
- if(value.version!==1||value.maximumCents!==campaignMaximumCents||!value.id||!Array.isArray(value.runs)||value.runs.some(run=>!['model_comparison','tool_rehearsal','workflow_comparison'].includes(run.kind))||new Set(value.runs.map(run=>run.name)).size!==value.runs.length||new Set(value.runs.map(run=>run.planHash)).size!==value.runs.length)throw err('The shared campaign accounting is invalid. No further paid testing is allowed.');return value;
+ if(value.version!==1||value.maximumCents!==campaignMaximumCents||!value.id||!Array.isArray(value.runs)||value.runs.some(run=>!['model_comparison','tool_rehearsal','workflow_comparison','workflow_capacity_followup'].includes(run.kind))||new Set(value.runs.map(run=>run.name)).size!==value.runs.length||new Set(value.runs.map(run=>run.planHash)).size!==value.runs.length)throw err('The shared campaign accounting is invalid. No further paid testing is allowed.');return value;
 }
 function campaignRuns(root:string,campaign:Campaign,allowNew?:string){
  const unexpected=readdirSync(root,{withFileTypes:true}).filter(entry=>entry.isDirectory()&&existsSync(join(root,entry.name,'plan.json'))&&!campaign.runs.some(run=>run.name===entry.name)&&entry.name!==allowNew);
  if(unexpected.length)throw err('Unregistered evaluation evidence exists. Reconcile the shared campaign before any further paid test.');
  return campaign.runs.map(run=>{const directory=runDirectory(root,run.name);let plan:EvaluationPlan|ToolRehearsalPlan|WorkflowComparisonPlan,ledger:EvaluationLedger;
-  switch(run.kind){case 'model_comparison':plan=readPlan(directory);ledger=readLedger(directory,plan);break;case 'tool_rehearsal':plan=readToolPlan(directory);ledger=readToolLedger(directory,plan);break;case 'workflow_comparison':plan=readWorkflowPlan(directory);if(plan.bindings.campaignId!==campaign.id)throw err('The workflow campaign identity changed.');ledger=readWorkflowLedger(directory,plan);break;default:throw err('Unknown campaign evidence kind.');}
+  switch(run.kind){case 'model_comparison':plan=readPlan(directory);ledger=readLedger(directory,plan);break;case 'tool_rehearsal':plan=readToolPlan(directory);ledger=readToolLedger(directory,plan);break;case 'workflow_comparison':case 'workflow_capacity_followup':plan=readWorkflowPlan(directory);if(plan.kind!==run.kind||plan.bindings.campaignId!==campaign.id)throw err('The workflow campaign identity changed.');ledger=readWorkflowLedger(directory,plan);break;default:throw err('Unknown campaign evidence kind.');}
   if(plan.planHash!==run.planHash||plan.policy.maximumNanos!==run.maximumNanos)throw err('A registered campaign plan changed or is missing. Its cost cannot be reset.');
   return {run,ledger};});
 }
@@ -320,14 +320,18 @@ export function finishToolRehearsal(root:string,name:string,planHash:string){ret
 
 /** One fixed, operator-owned comparison; its mutable bodies come only from the frozen application harness. */
 export const workflowComparisonPolicy={model:'gpt-6.1-sol',reasoning:'high',serviceTier:'default',maxInputTokens:30_000,maxOutputTokens:4096,maximumCalls:40,maximumNanos:40*(30_000*5_000+4096*10_000),prerequisitePolicy:'skip_second_turn_only_when_required_first_turn_artifact_is_unavailable'} as const;
-export interface WorkflowComparisonSlot {id:string;role:'dispositions'|'acquisitions'|'manager';arm:'guided'|'generic';turn:0|1;conversationId:string;employeeRequestId:string;request:string;maxCalls:3|4}
+export const workflowCapacityFollowupPolicy={model:'gpt-6.1-sol',reasoning:'high',serviceTier:'default',maxInputTokens:20_000,maxOutputTokens:4096,maximumCalls:40,maximumNanos:40*(20_000*5_000+4096*10_000),prerequisitePolicy:'skip_second_turn_only_when_required_first_turn_artifact_is_unavailable',correction:'capacity_and_lossless_tool_output_correction'} as const;
+export interface WorkflowComparisonSlot {id:string;role:'dispositions'|'acquisitions'|'manager';arm:'guided'|'generic';turn:0|1;conversationId:string;employeeRequestId:string;request:string;maxCalls:3|4|5}
 export interface WorkflowComparisonBindings {campaignId:string;fixtureHash:string;sourceHash:string;runtimeHash:string}
-interface WorkflowComparisonPlan {version:number;kind:'workflow_comparison';runId:string;createdAt:string;applicationRevision:string;runnerSourceHash:string;policy:typeof workflowComparisonPolicy;bindings:WorkflowComparisonBindings;slots:WorkflowComparisonSlot[];planHash:string}
+export interface WorkflowComparisonOriginal {name:string;planHash:string}
+type WorkflowPlanKind='workflow_comparison'|'workflow_capacity_followup';
+interface WorkflowComparisonPlan {version:number;kind:WorkflowPlanKind;runId:string;createdAt:string;applicationRevision:string;runnerSourceHash:string;policy:typeof workflowComparisonPolicy|typeof workflowCapacityFollowupPolicy;bindings:WorkflowComparisonBindings;slots:WorkflowComparisonSlot[];original?:WorkflowComparisonOriginal;planHash:string}
 export interface WorkflowComparisonOutcome {slotId:string;status:'completed'|'quality_failed'|'prerequisite_skipped';evidenceHash:string;reason?:string}
 interface WorkflowComparisonLedger extends EvaluationLedger {outcomes:(WorkflowComparisonOutcome&{recordedAt:string})[]}
 const identity=z.string().regex(/^[A-Za-z0-9_.:-]{1,240}$/),digestSchema=z.string().regex(/^[a-f0-9]{64}$/);
 const workflowBindingsSchema=z.object({campaignId:z.string().uuid(),fixtureHash:digestSchema,sourceHash:digestSchema,runtimeHash:digestSchema}).strict();
-const workflowSlotSchema=z.object({id:z.string().regex(/^[A-Za-z0-9_-]{1,80}$/),role:z.enum(['dispositions','acquisitions','manager']),arm:z.enum(['guided','generic']),turn:z.union([z.literal(0),z.literal(1)]),conversationId:identity,employeeRequestId:identity,request:z.string().trim().min(1).max(12000),maxCalls:z.union([z.literal(3),z.literal(4)])}).strict();
+const workflowSlotSchema=z.object({id:z.string().regex(/^[A-Za-z0-9_-]{1,80}$/),role:z.enum(['dispositions','acquisitions','manager']),arm:z.enum(['guided','generic']),turn:z.union([z.literal(0),z.literal(1)]),conversationId:identity,employeeRequestId:identity,request:z.string().trim().min(1).max(12000),maxCalls:z.union([z.literal(3),z.literal(4),z.literal(5)])}).strict();
+const workflowOriginalSchema=z.object({name:z.string().regex(/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,99}$/),planHash:digestSchema}).strict();
 const workflowOutcomeSchema=z.object({slotId:workflowSlotSchema.shape.id,status:z.enum(['completed','quality_failed','prerequisite_skipped']),evidenceHash:digestSchema,reason:z.string().trim().min(1).max(1000).optional()}).strict();
 const workflowRequestSchema=z.object({planHash:digestSchema,slotId:workflowSlotSchema.shape.id,conversationId:identity,employeeRequestId:identity,renderedRequest:z.string().min(1).max(20000),renderedRequestHash:digestSchema}).strict();
 function readWorkflowRequest(directory:string,plan:WorkflowComparisonPlan,slot:WorkflowComparisonSlot){
@@ -339,10 +343,10 @@ function latestUserRequest(payload:ReturnType<typeof toolPayload>){
  if(Array.isArray(latest?.content)&&latest.content.every(value=>value&&typeof value==='object'&&(value as JsonItem).type==='input_text'&&typeof (value as JsonItem).text==='string'))return latest.content.map(value=>(value as JsonItem).text).join('');
  throw err('The workflow request must retain its current employee text.');
 }
-function workflowSlots(value:unknown):WorkflowComparisonSlot[]{
- const slots=z.array(workflowSlotSchema).length(12).parse(value),seen=new Set<string>();
- if(new Set(slots.map(s=>s.id)).size!==12||new Set(slots.map(s=>s.employeeRequestId)).size!==12)throw err('Workflow slots and original employee requests must be globally distinct across both arms.');
- for(const slot of slots){const key=`${slot.role}:${slot.arm}:${slot.turn}`;if(seen.has(key)||slot.maxCalls!==(slot.role==='dispositions'?4:3))throw err('The fixed role/arm/turn call limits changed.');seen.add(key);
+function workflowSlots(value:unknown,kind:WorkflowPlanKind='workflow_comparison'):WorkflowComparisonSlot[]{
+ const total=kind==='workflow_comparison'?12:8,slots=z.array(workflowSlotSchema).length(total).parse(value),seen=new Set<string>();
+ if(new Set(slots.map(s=>s.id)).size!==total||new Set(slots.map(s=>s.employeeRequestId)).size!==total)throw err('Workflow slots and original employee requests must be globally distinct across both arms.');
+ for(const slot of slots){const key=`${slot.role}:${slot.arm}:${slot.turn}`;if(seen.has(key)||slot.maxCalls!==(kind==='workflow_comparison'?(slot.role==='dispositions'?4:3):5)||kind==='workflow_capacity_followup'&&slot.role==='acquisitions')throw err('The fixed role/arm/turn call limits changed.');seen.add(key);
   const own=slots.find(s=>s.role===slot.role&&s.arm===slot.arm&&s.turn!==slot.turn),paired=slots.find(s=>s.role===slot.role&&s.arm!==slot.arm&&s.turn===slot.turn);
   if(!own||own.conversationId!==slot.conversationId||!paired||paired.request!==slot.request||slots.some(s=>s.arm===slot.arm&&s.role!==slot.role&&s.conversationId===slot.conversationId))throw err('Each arm must retain its own role conversation and equal employee request templates.');
  }
@@ -350,8 +354,18 @@ function workflowSlots(value:unknown):WorkflowComparisonSlot[]{
 }
 function readWorkflowPlan(directory:string,dispatch=false):WorkflowComparisonPlan {
  const raw=readJson(join(directory,'plan.json')) as WorkflowComparisonPlan;if(!raw||typeof raw!=='object')throw err('Workflow comparison plan is missing.');const {planHash,...value}=raw;
- if(raw.version!==schemaVersion||raw.kind!=='workflow_comparison'||hash(value)!==planHash||hash(raw.policy)!==hash(workflowComparisonPolicy)||!/^[a-f0-9]{40}$/.test(raw.applicationRevision)||dispatch&&raw.runnerSourceHash!==runnerSourceHash())throw err('The workflow comparison plan changed or is invalid.');
- workflowBindingsSchema.parse(raw.bindings);workflowSlots(raw.slots);return raw;
+ const policy=raw.kind==='workflow_comparison'?workflowComparisonPolicy:raw.kind==='workflow_capacity_followup'?workflowCapacityFollowupPolicy:undefined;
+ if(raw.version!==schemaVersion||!policy||hash(value)!==planHash||hash(raw.policy)!==hash(policy)||!/^[a-f0-9]{40}$/.test(raw.applicationRevision)||dispatch&&raw.runnerSourceHash!==runnerSourceHash())throw err('The workflow comparison plan changed or is invalid.');
+ workflowBindingsSchema.parse(raw.bindings);workflowSlots(raw.slots,raw.kind);if(raw.kind==='workflow_capacity_followup')validateWorkflowOriginal(dirname(directory),raw);else if(raw.original!==undefined)throw err('The original workflow plan cannot acquire follow-up provenance.');return raw;
+}
+function validateWorkflowOriginal(root:string,plan:WorkflowComparisonPlan){
+ const original=workflowOriginalSchema.parse(plan.original),campaign=workflowCampaign(root,plan.bindings.campaignId),registered=campaign.runs.find(run=>run.name===original.name);
+ if(registered?.kind!=='workflow_comparison'||registered.planHash!==original.planHash)throw err('The follow-up requires its original registered workflow plan.');
+ const directory=runDirectory(root,original.name);if((readJson(join(directory,'plan.json')) as {kind?:string})?.kind!=='workflow_comparison')throw err('A follow-up cannot serve as its own or another follow-up\'s original plan.');const source=readWorkflowPlan(directory),ledger=readWorkflowLedger(directory,source);
+ if(source.kind!=='workflow_comparison'||source.planHash!==original.planHash||ledger.status!=='completed'||source.bindings.campaignId!==plan.bindings.campaignId||source.bindings.fixtureHash!==plan.bindings.fixtureHash)throw err('The original workflow must be completed with the same immutable fixture and campaign.');
+ for(const slot of plan.slots){const prior=source.slots.find(candidate=>candidate.role===slot.role&&candidate.arm===slot.arm&&candidate.turn===slot.turn);
+  if(!prior||prior.request!==slot.request||prior.conversationId!==slot.conversationId||source.slots.some(candidate=>candidate.employeeRequestId===slot.employeeRequestId))throw err('The follow-up must preserve original requests and conversations with fresh employee request identities.');
+ }
 }
 function previousWorkflowSlot(plan:WorkflowComparisonPlan,slot:WorkflowComparisonSlot){return plan.slots.find(s=>s.role===slot.role&&s.arm===slot.arm&&s.turn===0)!;}
 function validateWorkflowOutcome(plan:WorkflowComparisonPlan,ledger:WorkflowComparisonLedger,outcome:WorkflowComparisonOutcome){
@@ -364,15 +378,15 @@ function validateWorkflowOutcome(plan:WorkflowComparisonPlan,ledger:WorkflowComp
 }
 function readWorkflowLedger(directory:string,plan:WorkflowComparisonPlan):WorkflowComparisonLedger {
  const raw=readJson(join(directory,'ledger.json')) as WorkflowComparisonLedger;
- if(!raw||raw.version!==schemaVersion||raw.planHash!==plan.planHash||!Array.isArray(raw.attempts)||raw.attempts.length>40||!Array.isArray(raw.outcomes)||raw.outcomes.length>12||!['prepared','running','paused','completed','stopped'].includes(raw.status)||new Set(raw.attempts.map(a=>a.id)).size!==raw.attempts.length||new Set(raw.outcomes.map(o=>o.slotId)).size!==raw.outcomes.length)throw err('Workflow comparison accounting is invalid.');
- const counts=Array<number>(12).fill(0),responseIds=new Set<string>();
+ if(!raw||raw.version!==schemaVersion||raw.planHash!==plan.planHash||!Array.isArray(raw.attempts)||raw.attempts.length>plan.policy.maximumCalls||!Array.isArray(raw.outcomes)||raw.outcomes.length>plan.slots.length||!['prepared','running','paused','completed','stopped'].includes(raw.status)||new Set(raw.attempts.map(a=>a.id)).size!==raw.attempts.length||new Set(raw.outcomes.map(o=>o.slotId)).size!==raw.outcomes.length)throw err('Workflow comparison accounting is invalid.');
+ const counts=Array<number>(plan.slots.length).fill(0),responseIds=new Set<string>();
  for(const attempt of raw.attempts){const slot=plan.slots[attempt.packetIndex];
-  if(!slot||!Number.isInteger(attempt.packetIndex)||!/^workflow-[a-f0-9]{32}$/.test(attempt.id)||attempt.turn!==counts[attempt.packetIndex]++||attempt.turn>=slot.maxCalls||attempt.model!=='gpt-6.1-sol'||!safeCount.safeParse(attempt.inputCount).success||attempt.inputCount>30_000||attempt.reservedNanos!==price(attempt.model,attempt.inputCount,4096)||!['dispatching','completed','incomplete','rejected','unknown','invalid_output','usage_overrun'].includes(attempt.status)||attempt.accountedNanos!==undefined&&(!Number.isSafeInteger(attempt.accountedNanos)||attempt.accountedNanos<0))throw err('A saved workflow dispatch claim is invalid.');
+  if(!slot||!Number.isInteger(attempt.packetIndex)||!/^workflow-[a-f0-9]{32}$/.test(attempt.id)||attempt.turn!==counts[attempt.packetIndex]++||attempt.turn>=slot.maxCalls||attempt.model!=='gpt-6.1-sol'||!safeCount.safeParse(attempt.inputCount).success||attempt.inputCount>plan.policy.maxInputTokens||attempt.reservedNanos!==price(attempt.model,attempt.inputCount,4096)||!['dispatching','completed','incomplete','rejected','unknown','invalid_output','usage_overrun'].includes(attempt.status)||attempt.accountedNanos!==undefined&&(!Number.isSafeInteger(attempt.accountedNanos)||attempt.accountedNanos<0))throw err('A saved workflow dispatch claim is invalid.');
   if(attempt.responseId){if(responseIds.has(attempt.responseId))throw err('A workflow provider receipt identity was reused.');responseIds.add(attempt.responseId);}
  }
  if(raw.approval&&(raw.approval.planHash!==plan.planHash||raw.approval.maximumCents!==999))throw err('The workflow campaign approval changed.');
  const checked:WorkflowComparisonLedger={...raw,outcomes:[]};for(const saved of raw.outcomes){const {recordedAt,...outcome}=saved;if(typeof recordedAt!=='string'||!Number.isFinite(Date.parse(recordedAt)))throw err('Workflow outcome evidence is invalid.');validateWorkflowOutcome(plan,checked,outcome);checked.outcomes.push(saved);}
- if(raw.status==='completed'&&(raw.outcomes.length!==12||raw.attempts.some(a=>a.status!=='completed')))throw err('A completed workflow comparison requires all twelve terminal outcomes and settled receipts.');
+ if(raw.status==='completed'&&(raw.outcomes.length!==plan.slots.length||raw.attempts.some(a=>a.status!=='completed')))throw err(`A completed workflow comparison requires all ${plan.kind==='workflow_comparison'?'twelve':'eight'} terminal outcomes and settled receipts.`);
  for(const attempt of raw.attempts){const saved=readJson(join(directory,'requests',`${attempt.id}.json`)) as {clientRequestId:string;planHash:string;slotId:string;conversationId:string;employeeRequestId:string;inputCount:number};const slot=plan.slots[attempt.packetIndex];
   if(!identity.safeParse(saved.clientRequestId).success||attempt.id!==`workflow-${fileHash(saved.clientRequestId).slice(0,32)}`||saved.planHash!==plan.planHash||saved.slotId!==slot.id||saved.conversationId!==slot.conversationId||saved.employeeRequestId!==slot.employeeRequestId||saved.inputCount!==attempt.inputCount)throw err('The saved workflow request binding changed.');
   const binding=readWorkflowRequest(directory,plan,slot),payload=toolPayload(JSON.stringify(readSavedRequest(directory,attempt)));if(latestUserRequest(payload)!==binding.renderedRequest)throw err('The saved provider body no longer matches this turn\'s rendered employee request.');if(attempt.status==='completed')verifiedCompletedReceipt(directory,attempt);
@@ -391,9 +405,19 @@ export function prepareWorkflowComparison(root:string,name:string,applicationRev
   durableJson(join(directory,'ledger.json'),{version:schemaVersion,planHash:plan.planHash,approval:null,status:'prepared',attempts:[],outcomes:[],updatedAt:now()},true);registerCampaignRun(root,{name,planHash:plan.planHash,kind:'workflow_comparison',maximumNanos:plan.policy.maximumNanos});return inspectWorkflowComparison(root,name);
  });
 }
+export function prepareWorkflowCapacityFollowup(root:string,name:string,applicationRevision:string,slots:WorkflowComparisonSlot[],bindings:WorkflowComparisonBindings,original:WorkflowComparisonOriginal){
+ if(!/^[a-f0-9]{40}$/.test(applicationRevision))throw err('Freeze the exact application commit.');slots=workflowSlots(slots,'workflow_capacity_followup');bindings=workflowBindingsSchema.parse(bindings);original=workflowOriginalSchema.parse(original);
+ root=resolve(root);return withLock(root,()=>{const campaign=workflowCampaign(root,bindings.campaignId);assertNoUncertainty(root);const directory=runDirectory(root,name);if(existsSync(directory))throw err('That run already exists. Evidence cannot be overwritten.');
+  const value={version:schemaVersion,kind:'workflow_capacity_followup' as const,runId:randomUUID(),createdAt:now(),applicationRevision,runnerSourceHash:runnerSourceHash(),policy:structuredClone(workflowCapacityFollowupPolicy),bindings,slots,original},plan:WorkflowComparisonPlan={...value,planHash:hash(value)};validateWorkflowOriginal(root,plan);
+  const priorRequestIds=new Set(campaign.runs.filter(run=>run.kind==='workflow_comparison'||run.kind==='workflow_capacity_followup').flatMap(run=>readWorkflowPlan(runDirectory(root,run.name)).slots.map(slot=>slot.employeeRequestId)));
+  if(slots.some(slot=>priorRequestIds.has(slot.employeeRequestId)))throw err('Follow-up employee request identities must be fresh across the original campaign.');assertCampaignCapacity(root,plan.policy.maximumNanos);
+  mkdirSync(directory,{mode:0o700});mkdirSync(join(directory,'requests'),{mode:0o700});mkdirSync(join(directory,'responses'),{mode:0o700});mkdirSync(join(directory,'turns'),{mode:0o700});durableJson(join(directory,'plan.json'),plan,true);
+  durableJson(join(directory,'ledger.json'),{version:schemaVersion,planHash:plan.planHash,approval:null,status:'prepared',attempts:[],outcomes:[],updatedAt:now()},true);registerCampaignRun(root,{name,planHash:plan.planHash,kind:'workflow_capacity_followup',maximumNanos:plan.policy.maximumNanos});return inspectWorkflowComparison(root,name);
+ });
+}
 export function inspectWorkflowComparison(root:string,name:string){
  const directory=runDirectory(root,name),plan=readWorkflowPlan(directory);workflowCampaign(resolve(root),plan.bindings.campaignId);const ledger=readWorkflowLedger(directory,plan);
- return {directory,planHash:plan.planHash,applicationRevision:plan.applicationRevision,bindings:plan.bindings,model:plan.policy.model,maximumUsd:plan.policy.maximumNanos/1e9,maximumCalls:plan.policy.maximumCalls,status:ledger.status,attemptedCalls:ledger.attempts.length,accountedMaximumUsd:accounted(ledger)/1e9,outcomes:ledger.outcomes,slots:plan.slots.map((slot,index)=>({...slot,attempts:ledger.attempts.filter(a=>a.packetIndex===index).length})),unresolved:ledger.attempts.filter(a=>['dispatching','unknown'].includes(a.status)).map(a=>a.id)};
+ return {directory,kind:plan.kind,policy:plan.policy,original:plan.original,planHash:plan.planHash,applicationRevision:plan.applicationRevision,bindings:plan.bindings,model:plan.policy.model,maximumUsd:plan.policy.maximumNanos/1e9,maximumCalls:plan.policy.maximumCalls,status:ledger.status,attemptedCalls:ledger.attempts.length,accountedMaximumUsd:accounted(ledger)/1e9,outcomes:ledger.outcomes,slots:plan.slots.map((slot,index)=>({...slot,attempts:ledger.attempts.filter(a=>a.packetIndex===index).length})),unresolved:ledger.attempts.filter(a=>['dispatching','unknown'].includes(a.status)).map(a=>a.id)};
 }
 /** Application bodies vary with real local tool results; identities, limits and the frozen harness do not. */
 export async function executeWorkflowComparisonRequest(root:string,name:string,approval:{planHash:string;maximumCents:number},input:{slotId:string;conversationId:string;employeeRequestId:string;renderedRequest:string;requestId:string;body:string},transport:EvaluationTransport):Promise<JsonItem>{
@@ -406,10 +430,10 @@ export async function executeWorkflowComparisonRequest(root:string,name:string,a
   if(prior){if(prior.requestHash!==requestHash||prior.packetIndex!==packetIndex||prior.status!=='completed')throw err('The earlier workflow request differs or has an unresolved outcome; it will not be resent.');readSavedRequest(directory,prior);return verifiedCompletedReceipt(directory,prior);}
   if(ledger.status==='completed'||ledger.status==='stopped'||ledger.attempts.some(a=>a.status!=='completed')||ledger.outcomes.some(o=>o.slotId===slot.id))throw err('This workflow run or turn is closed or contains unresolved usage.');
   if(slot.turn===1&&!ledger.outcomes.some(o=>o.slotId===previousWorkflowSlot(plan,slot).id))throw err('Complete and record this arm\'s first turn before its continuation.');
-  const turn=ledger.attempts.filter(a=>a.packetIndex===packetIndex).length;if(turn>=slot.maxCalls||ledger.attempts.length>=40)throw err('This workflow reached its fixed model-round limit.');
+  const turn=ledger.attempts.filter(a=>a.packetIndex===packetIndex).length;if(turn>=slot.maxCalls||ledger.attempts.length>=plan.policy.maximumCalls)throw err('This workflow reached its fixed model-round limit.');
   assertCampaignAdmission(root,name);if(!existsSync(bindingPath))durableJson(bindingPath,binding,true);if(!ledger.approval)ledger.approval={...approval,recordedAt:now(),source:'explicit_operator_cli'};ledger.status='running';saveLedger(directory,ledger);
   const {max_output_tokens,service_tier,store,include,...countedPayload}=payload;void max_output_tokens;void service_tier;void store;void include;
-  let inputCount:number;try{inputCount=await countedInput(directory,id,countedPayload,30_000,transport);delete ledger.lastCountFailure;}catch(error){const code=countFailure(directory,ledger,id,error);throw err(`Input counting stopped (${code}); no generation was sent. Inspect the private counts evidence.`);}
+  let inputCount:number;try{inputCount=await countedInput(directory,id,countedPayload,plan.policy.maxInputTokens,transport);delete ledger.lastCountFailure;}catch(error){const code=countFailure(directory,ledger,id,error);throw err(`Input counting stopped (${code}); no generation was sent. Inspect the private counts evidence.`);}
   const reservedNanos=price('gpt-6.1-sol',inputCount,4096);assertCampaignAdmission(root,name,reservedNanos);
   durableJson(join(directory,'requests',`${id}.json`),{body:input.body,requestHash,clientRequestId:input.requestId,inputCount,planHash:plan.planHash,slotId:slot.id,conversationId:slot.conversationId,employeeRequestId:slot.employeeRequestId},true);
   const attempt:EvaluationAttempt={id,packetIndex,turn,model:'gpt-6.1-sol',status:'dispatching',requestHash,inputCount,reservedNanos,startedAt:now(),requestFile:`requests/${id}.json`};ledger.attempts.push(attempt);saveLedger(directory,ledger);const started=performance.now();
@@ -434,7 +458,7 @@ export function recordWorkflowComparisonOutcome(root:string,name:string,planHash
 }
 export function finishWorkflowComparison(root:string,name:string,planHash:string){
  return withLock(resolve(root),()=>{const directory=runDirectory(root,name),plan=readWorkflowPlan(directory);workflowCampaign(resolve(root),plan.bindings.campaignId);const ledger=readWorkflowLedger(directory,plan);
-  if(plan.planHash!==planHash||ledger.status==='stopped'||ledger.outcomes.length!==12||ledger.attempts.some(a=>a.status!=='completed'))throw err('Only twelve terminal workflow outcomes with settled provider receipts can close this plan.');ledger.status='completed';saveLedger(directory,ledger);return inspectWorkflowComparison(root,name);
+  if(plan.planHash!==planHash||ledger.status==='stopped'||ledger.outcomes.length!==plan.slots.length||ledger.attempts.some(a=>a.status!=='completed'))throw err(`Only ${plan.kind==='workflow_comparison'?'twelve':'eight'} terminal workflow outcomes with settled provider receipts can close this plan.`);ledger.status='completed';saveLedger(directory,ledger);return inspectWorkflowComparison(root,name);
  });
 }
 export async function runEvaluation(root:string,name:string,approval:{planHash:string;maximumCents:number;throughSample?:1|2},transport:EvaluationTransport){

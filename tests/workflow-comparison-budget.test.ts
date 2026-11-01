@@ -3,7 +3,7 @@ import {mkdtempSync,readFileSync,writeFileSync,rmSync,existsSync} from 'node:fs'
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {createHash} from 'node:crypto';
-import {executeWorkflowComparisonRequest,finishWorkflowComparison,inspectEvaluationCampaign,inspectWorkflowComparison,prepareWorkflowComparison,recordWorkflowComparisonOutcome,workflowComparisonPolicy,prepareToolRehearsal,executeToolRehearsalRequest,finishToolRehearsal,prepareEvaluation,runEvaluation,type EvaluationTransport,type WorkflowComparisonSlot,type WorkflowComparisonBindings,type EvaluationLedger} from '../evaluations/specialists/runner';
+import {executeWorkflowComparisonRequest,finishWorkflowComparison,inspectEvaluationCampaign,inspectWorkflowComparison,prepareWorkflowComparison,prepareWorkflowCapacityFollowup,recordWorkflowComparisonOutcome,workflowComparisonPolicy,workflowCapacityFollowupPolicy,prepareToolRehearsal,executeToolRehearsalRequest,finishToolRehearsal,prepareEvaluation,runEvaluation,type EvaluationTransport,type WorkflowComparisonSlot,type WorkflowComparisonBindings,type EvaluationLedger} from '../evaluations/specialists/runner';
 
 const roots:string[]=[];
 const digest=(value:unknown)=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
@@ -110,5 +110,49 @@ describe('quality evidence remains separate from provider accounting',()=>{
  it('requires current original campaign and intact request/receipt evidence after completion',async()=>{
   const state=await prepared(),transport=fake();for(const slot of state.planned){await dispatch(state,slot,transport);outcome(state,slot);}finishWorkflowComparison(state.root,'workflow',state.planHash);
   const ledger=read<EvaluationLedger>(join(state.directory,'ledger.json')),requestPath=join(state.directory,ledger.attempts[0].requestFile),request=read<{conversationId:string}>(requestPath);request.conversationId='another-conversation';write(requestPath,request);expect(()=>inspectEvaluationCampaign(state.root)).toThrow('binding changed');
+ });
+});
+
+function capacitySlots(state:State):WorkflowComparisonSlot[]{return state.planned.filter(slot=>slot.role!=='acquisitions').map(slot=>({...slot,id:`follow-${slot.id}`,employeeRequestId:`follow-${slot.employeeRequestId}`,maxCalls:5}));}
+function capacityPrepare(state:State,name='capacity',planned=capacitySlots(state),bindings=state.bindings){return prepareWorkflowCapacityFollowup(state.root,name,'b'.repeat(40),planned,bindings,{name:'workflow',planHash:state.planHash});}
+async function completedOriginal(){const state=await prepared(),transport=fake({count:30_000});for(const slot of state.planned){await dispatch(state,slot,transport);outcome(state,slot);}finishWorkflowComparison(state.root,'workflow',state.planHash);return state;}
+
+describe('fixed capacity and lossless-output follow-up',()=>{
+ it('requires the completed registered original and exactly eight matching fresh disposition/manager turns',async()=>{
+  const state=await prepared();expect(()=>capacityPrepare(state)).toThrow('must be completed');const transport=fake();for(const slot of state.planned){await dispatch(state,slot,transport);outcome(state,slot);}finishWorkflowComparison(state.root,'workflow',state.planHash);
+  const planned=capacitySlots(state);
+  for(const changed of [planned.slice(1),planned.map(slot=>({...slot,maxCalls:4 as const})),planned.map(slot=>slot.role==='dispositions'?{...slot,role:'acquisitions' as const}:slot)])expect(()=>capacityPrepare(state,'invalid',changed)).toThrow();
+  expect(()=>capacityPrepare(state,'fixture',planned,{...state.bindings,fixtureHash:'e'.repeat(64)})).toThrow('same immutable fixture');
+  expect(()=>capacityPrepare(state,'template',planned.map(slot=>({...slot,request:'A different but paired task.'})))).toThrow('preserve original');
+  expect(()=>capacityPrepare(state,'conversation',planned.map(slot=>({...slot,conversationId:`changed-${slot.conversationId}`})))).toThrow('preserve original');
+  expect(()=>capacityPrepare(state,'request-reuse',planned.map(slot=>({...slot,employeeRequestId:slot.employeeRequestId.replace('follow-','')})))).toThrow('fresh employee request');
+  expect(()=>prepareWorkflowCapacityFollowup(state.root,'wrong-parent','b'.repeat(40),planned,state.bindings,{name:'workflow',planHash:'e'.repeat(64)})).toThrow('original registered');
+  const run=capacityPrepare(state);expect(run).toMatchObject({kind:'workflow_capacity_followup',maximumCalls:40,maximumUsd:5.6384,original:{name:'workflow',planHash:state.planHash},policy:{maxInputTokens:20000,maxOutputTokens:4096,correction:'capacity_and_lossless_tool_output_correction'}});expect(run.slots).toHaveLength(8);expect(workflowCapacityFollowupPolicy.maximumNanos).toBe(5_638_400_000);
+  expect(inspectEvaluationCampaign(state.root)).toMatchObject({accountedUsd:0.0375,committedMaximumUsd:5.6759});
+ });
+ it('preserves the original 30k receipts while completing forty bounded calls in eight slots, with exact replay and fresh identities',async()=>{
+  const state=await completedOriginal(),originalPlan=readFileSync(join(state.directory,'plan.json'),'utf8'),originalLedger=readFileSync(join(state.directory,'ledger.json'),'utf8'),run=capacityPrepare(state),approval={planHash:run.planHash,maximumCents:999},transport=fake({count:20_000}),planned=capacitySlots(state);
+  for(const slot of planned){for(let round=0;round<5;round++)await executeWorkflowComparisonRequest(state.root,'capacity',approval,input(slot,round),transport);await expect(executeWorkflowComparisonRequest(state.root,'capacity',approval,input(slot,5),transport)).rejects.toThrow('round limit');recordWorkflowComparisonOutcome(state.root,'capacity',run.planHash,{slotId:slot.id,status:'completed',evidenceHash:'e'.repeat(64)});}
+  expect(finishWorkflowComparison(state.root,'capacity',run.planHash)).toMatchObject({status:'completed',attemptedCalls:40});expect(transport.create).toHaveBeenCalledTimes(40);
+  await executeWorkflowComparisonRequest(state.root,'capacity',approval,input(planned[0]),transport);expect(transport.create).toHaveBeenCalledTimes(40);expect(inspectEvaluationCampaign(state.root)).toMatchObject({accountedUsd:0.1375,committedMaximumUsd:0.1375,unresolved:[]});
+  expect(readFileSync(join(state.directory,'plan.json'),'utf8')).toBe(originalPlan);expect(readFileSync(join(state.directory,'ledger.json'),'utf8')).toBe(originalLedger);expect(inspectWorkflowComparison(state.root,'workflow')).toMatchObject({status:'completed',policy:{maxInputTokens:30000},attemptedCalls:12});
+  expect(()=>capacityPrepare(state,'reused-followup')).toThrow('fresh across the original campaign');
+ },20_000);
+ it('rejects 20,001 input tokens without generation and prevents changed or unknown retries',async()=>{
+  const state=await completedOriginal(),run=capacityPrepare(state),approval={planHash:run.planHash,maximumCents:999},slot=capacitySlots(state)[0],over=fake({count:20_001});
+  await expect(executeWorkflowComparisonRequest(state.root,'capacity',approval,input(slot),over)).rejects.toThrow('input_count_limit_exceeded');expect(over.create).not.toHaveBeenCalled();
+  const unknown=fake({count:20_000,fail:true});await expect(executeWorkflowComparisonRequest(state.root,'capacity',approval,input(slot),unknown)).rejects.toThrow('stopped');
+  await expect(executeWorkflowComparisonRequest(state.root,'capacity',approval,input(slot),unknown)).rejects.toThrow('unresolved');await expect(executeWorkflowComparisonRequest(state.root,'capacity',approval,{...input(slot),body:body(slot.request,{instructions:'changed'})},unknown)).rejects.toThrow('unresolved');
+  expect(unknown.create).toHaveBeenCalledTimes(1);expect(inspectEvaluationCampaign(state.root).unresolved).toHaveLength(1);expect(()=>finishWorkflowComparison(state.root,'capacity',run.planHash)).toThrow('eight terminal');
+ });
+ it('reserves the whole new run and fails closed when original proof disappears',async()=>{
+  const state=await completedOriginal();prepareEvaluation(state.root,'other-reservation','a'.repeat(40));expect(()=>capacityPrepare(state,'over-cap')).toThrow('$9.99');expect(existsSync(join(state.root,'over-cap'))).toBe(false);
+  // A separate completed original can admit the profile, but losing that proof never frees its cost.
+  const second=await completedOriginal(),run=capacityPrepare(second);rmSync(join(second.directory,'ledger.json'));expect(()=>inspectWorkflowComparison(second.root,'capacity')).toThrow('evidence');expect(()=>inspectEvaluationCampaign(second.root)).toThrow('evidence');expect(run.maximumUsd).toBe(5.6384);
+ });
+ it('rejects a follow-up masquerading as its own registered original without recursive validation',async()=>{
+  const state=await completedOriginal(),run=capacityPrepare(state),path=join(run.directory,'plan.json'),plan=read<{original:{name:string;planHash:string};planHash:string}>(path);plan.original={name:'capacity',planHash:run.planHash};const {planHash:ignored,...content}=plan;void ignored;plan.planHash=digest(content);write(path,plan);
+  const campaignPath=join(state.root,'campaign.json'),campaign=read<{runs:{name:string;kind:string;planHash:string}[]}>(campaignPath),entry=campaign.runs.find(value=>value.name==='capacity')!;entry.kind='workflow_comparison';entry.planHash=run.planHash;write(campaignPath,campaign);
+  expect(()=>inspectWorkflowComparison(state.root,'capacity')).toThrow('cannot serve as its own');
  });
 });

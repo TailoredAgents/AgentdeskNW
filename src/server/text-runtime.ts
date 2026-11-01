@@ -12,6 +12,7 @@ import {captureTextReplyTarget} from './text-delivery';
 import {responsesReceipt} from './responses-receipt';
 import {openTextExecution,advanceTextExecution,readTextExecution,textContextManifest,type TextState} from './text-execution';
 import {prepareSpecialistReview,assertSpecialistReviewCurrent,specialistResponseFormat,specialistReviewResult,type PendingSpecialistReview} from './specialist-reviews';
+import {serializeModelToolResult} from './model-tool-output';
 
 type Item=Record<string,unknown>;
 const callSchema=z.object({type:z.literal('function_call'),name:z.string().min(1).max(100),arguments:z.string().max(100000),call_id:z.string().min(1).max(200),id:z.string().optional(),status:z.string().optional()});
@@ -164,7 +165,7 @@ async function executeLiveText(input:{actor:Actor;conversationId:string;requestI
     if(fingerprint(input.currentScope())!==requestScope)throw new AppError(409,'Protected context changed before the specialist result was saved.');
     const result=executeRecordedTool(actor,conversationId,specialist.callId,'consult_specialist',specialist.originalArguments,()=>specialistReviewResult(actor,specialist,text),requestId);
     const current=execution.data;
-    return advanceTextExecution(actor,execution,'ready',{...current,specialistQueue:current.specialistQueue!.slice(1),items:[...current.items,{type:'function_call_output',call_id:specialist.callId,output:JSON.stringify(result)}],round:round+1,response:null,handled:[...new Set([...current.handled,specialist.callId])],artifacts:[...current.artifacts,...result.artifacts],specialistIds:[...new Set([...current.specialistIds,...result.specialistIds])]});
+    return advanceTextExecution(actor,execution,'ready',{...current,specialistQueue:current.specialistQueue!.slice(1),items:[...current.items,{type:'function_call_output',call_id:specialist.callId,output:serializeModelToolResult(result)}],round:round+1,response:null,handled:[...new Set([...current.handled,specialist.callId])],artifacts:[...current.artifacts,...result.artifacts],specialistIds:[...new Set([...current.specialistIds,...result.specialistIds])]});
    }).immediate();
    restore();continue;
   }
@@ -194,7 +195,7 @@ async function executeLiveText(input:{actor:Actor;conversationId:string;requestI
      }
      const result=executeRecordedTool(actor,conversationId,call.call_id,call.name,JSON.parse(call.arguments),()=>input.dispatch(call.name,JSON.parse(call.arguments)),requestId);
      if(!handled.has(call.call_id)){result.specialistIds.forEach(id=>nextSpecialists.add(id));appendToolArtifacts(nextArtifacts,result.artifacts);handled.add(call.call_id);evidenceScopes[call.call_id]=fingerprint(input.currentScope());}
-     nextItems.push({type:'function_call_output',call_id:call.call_id,output:JSON.stringify(result)});
+     nextItems.push({type:'function_call_output',call_id:call.call_id,output:serializeModelToolResult(result)});
     }catch(error){if(error instanceof EntitlementError)nextArtifacts.push({type:'marketplace',id:error.featureId,title:'Review AI Employee Marketplace'});nextItems.push({type:'function_call_output',call_id:call.call_id,output:JSON.stringify({error:error instanceof AppError?error.message:'Tool input was invalid or the operation could not complete.',completed:false})});}
    }
    // Local effects, tool receipts, changed scope and next-round position commit together.
