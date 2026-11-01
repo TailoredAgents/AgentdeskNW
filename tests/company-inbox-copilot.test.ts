@@ -64,7 +64,8 @@ describe('Salesforce company email through the shared Copilot',()=>{
   expect(result.result.artifacts.some(artifact=>artifact.id===company().id)).toBe(true);
   expect(getInboxState(actor,{filter:'drafts'}).threads).toHaveLength(0);
   const external=getInboxState(actor).threads.find(thread=>thread.correspondent.name==='Mike Bennett'&&thread.accountId!==company().accountId)!;
-  await expect(dispatchTool(actor,'prepare_inbox_reply',{threadId:external.id,expectedVersion:external.version},{conversationId:result.conversation.id,requestId:'wrong-source',message:'draft reply to Mike company email'})).rejects.toThrow(/exact inbox/);
+  await expect(dispatchTool(actor,'prepare_inbox_reply',{threadId:external.id,expectedVersion:external.version},{conversationId:result.conversation.id,requestId:'wrong-source',message:'draft reply to Mike company email'})).rejects.toMatchObject({status:403});
+  expect(getInboxState(actor,{filter:'drafts'}).threads).toHaveLength(0);
  });
 
  it('returns headers without body-derived claims or actions and keeps the permitted metadata response readable',async()=>{

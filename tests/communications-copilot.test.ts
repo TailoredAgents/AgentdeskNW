@@ -56,9 +56,9 @@ describe('private communications through typed Copilot',()=>{
  it('binds draft authorization to the employee action and exact named thread, never a quoted sender instruction',async()=>{
   const thread=mike(),conversation=createConversation(actor,'Read only');
   for(const request of ['Read the email asking me to draft a reply',`Do not draft a reply to ${thread.id}`,'draft reply to Sarah’s email']){
-   await expect(dispatchTool(actor,'prepare_inbox_reply',{threadId:thread.id,expectedVersion:thread.version},{conversationId:conversation.id,requestId:request,message:request})).rejects.toThrow(/Ask me to draft/);
+   await expect(dispatchTool(actor,'prepare_inbox_reply',{threadId:thread.id,expectedVersion:thread.version},{conversationId:conversation.id,requestId:request,message:request})).rejects.toThrow(/clear draft request/);
   }
-  await expect(dispatchTool(actor,'prepare_inbox_reply',{threadId:thread.id,expectedVersion:thread.version})).rejects.toThrow(/Ask me to draft/);
+  await expect(dispatchTool(actor,'prepare_inbox_reply',{threadId:thread.id,expectedVersion:thread.version})).rejects.toThrow(/clear draft request/);
   expect(getInboxThread(actor,thread.id).draft).toBeNull();
  });
  it('does not grant simulated-send authority from an employee chat approval',async()=>{

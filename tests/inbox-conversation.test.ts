@@ -33,14 +33,14 @@ describe('current inbox source continuity',()=>{
  it('does not bind a changed thread to an old reference',async()=>{
   const f=await shown();receiveDemoCommunication(actor(),{scenarioId:'company-repair-followup',eventKey:key()});
   expect(focusedInboxReplyThread(actor(),command(f.conversationId))).toBeNull();
-  await expect(dispatchTool(actor(),'prepare_inbox_reply',{threadId:f.thread.id,expectedVersion:getInboxThread(actor(),f.thread.id).thread.version},command(f.conversationId))).rejects.toThrow('Ask me to draft');
+  await expect(dispatchTool(actor(),'prepare_inbox_reply',{threadId:f.thread.id,expectedVersion:getInboxThread(actor(),f.thread.id).thread.version},command(f.conversationId))).rejects.toThrow('clear draft request');
   expect(getInboxThread(actor(),f.thread.id).draft).toBeNull();
  });
  it.each(['briefing','task','release'] as const)('clarifies omitted draft targets when the same answer also includes a %s subject',async(type)=>{
   const f=await shown(),source=await dispatchTool(actor(),'inbox_thread',{threadId:f.thread.id});
   addMessage(actor(),f.conversationId,{role:'assistant',content:'I can help with either next step.',artifacts:[...source.artifacts,{type,...(type==='briefing'?{id:'investor-sarah'}:{}),title:'Another current subject'}]});tick();
   expect(focusedInboxReplyThread(actor(),command(f.conversationId))).toBeNull();
-  await expect(dispatchTool(actor(),'prepare_inbox_reply',{threadId:f.thread.id,expectedVersion:f.thread.version},command(f.conversationId))).rejects.toThrow('Ask me to draft');
+  await expect(dispatchTool(actor(),'prepare_inbox_reply',{threadId:f.thread.id,expectedVersion:f.thread.version},command(f.conversationId))).rejects.toThrow('clear draft request');
   expect(getInboxThread(actor(),f.thread.id).draft).toBeNull();
   expect(employeeRequestedInboxReply(actor(),'Draft a reply to Mike’s company email.',f.thread.id,command(f.conversationId))).toBe(true);
   expect(employeeRequestedInboxReply(actor(),`Draft a reply to ${f.thread.id}.`,f.thread.id,command(f.conversationId))).toBe(true);
@@ -63,6 +63,20 @@ describe('current inbox source continuity',()=>{
   addMessage(actor(),f.conversationId,{role:'assistant',content:'Her rental priorities need a separate review.'});tick();
   expect(focusedInboxReplyThread(actor(),command(f.conversationId))).toBeNull();
  });
+ it.each(['briefing','investors'] as const)('preserves the inbox source through current same-investor %s evidence after a brief follow-up',async(type)=>{
+  const f=await shown();addMessage(actor(),f.conversationId,{role:'user',content:'What would you do next?'});tick();
+  addMessage(actor(),f.conversationId,{role:'assistant',content:'Address the repair question before another pitch.',artifacts:[{type,id:'investor-mike',title:'Current relationship evidence'}]});tick();
+  expect(focusedInboxReplyThread(actor(),command(f.conversationId))).toBe(f.thread.id);
+  const reply=await chat(actor(),'Draft a reply to that.',f.conversationId,key());expect(reply.result.artifacts[0].id).toBe(f.thread.id);expect(getInboxThread(actor(),f.thread.id).draft).not.toBeNull();
+ });
+ it('rejects a same-investor evidence bridge after a named topic change or a generic investor list',async()=>{
+  const f=await shown();addMessage(actor(),f.conversationId,{role:'user',content:'Show Mike’s latest property matches instead.'});tick();
+  addMessage(actor(),f.conversationId,{role:'assistant',content:'Here is his current relationship.',artifacts:[{type:'briefing',id:'investor-mike',title:'Mike'}]});tick();
+  expect(focusedInboxReplyThread(actor(),command(f.conversationId))).toBeNull();
+  const fresh=await shown();addMessage(actor(),fresh.conversationId,{role:'user',content:'What would you do next?'});tick();
+  addMessage(actor(),fresh.conversationId,{role:'assistant',content:'Here are several possibilities.',artifacts:[{type:'investors',title:'CRM investor list'}]});tick();
+  expect(focusedInboxReplyThread(actor(),command(fresh.conversationId))).toBeNull();
+ });
  it('does not carry an inbox source through a newer structured result or unlimited conversational detours',async()=>{
   const f=await shown();for(let i=0;i<3;i++){
    addMessage(actor(),f.conversationId,{role:'user',content:'Tell me more.'});tick();addMessage(actor(),f.conversationId,{role:'assistant',content:'Review the source before making a commitment.'});tick();
@@ -80,14 +94,14 @@ describe('current inbox source continuity',()=>{
  it('does not turn a quoted request, hypothetical, changed recipient or style instruction into draft authority',async()=>{
   const f=await shown();for(const text of ['"Draft that."','If I wanted to draft that, could you?','Do not draft that.','Mike said draft that.','Draft this reply to Sarah.','Keep it casual.','Yeah, keep it casual.']){
    expect(requestsFocusedInboxReply(text),text).toBe(false);
-   await expect(dispatchTool(actor(),'prepare_inbox_reply',{threadId:f.thread.id,expectedVersion:f.thread.version},command(f.conversationId,text))).rejects.toThrow('Ask me to draft');
+   await expect(dispatchTool(actor(),'prepare_inbox_reply',{threadId:f.thread.id,expectedVersion:f.thread.version},command(f.conversationId,text))).rejects.toThrow('clear draft request');
   }
   expect(getInboxThread(actor(),f.thread.id).draft).toBeNull();expect(getEmployeeMemory(actor()).version).toBe(0);
  });
  it('cannot use another employee’s conversation or silently retarget the model argument',async()=>{
   const f=await shown();expect(()=>focusedInboxReplyThread(demoActor('manager'),command(f.conversationId))).toThrow();
   const different=getInboxState(actor()).threads.find(item=>item.id!==f.thread.id)!;
-  await expect(dispatchTool(actor(),'prepare_inbox_reply',{threadId:different.id,expectedVersion:different.version},command(f.conversationId))).rejects.toThrow('Ask me to draft');
+  await expect(dispatchTool(actor(),'prepare_inbox_reply',{threadId:different.id,expectedVersion:different.version},command(f.conversationId))).rejects.toThrow('clear draft request');
   expect(getInboxThread(actor(),different.id).draft).toBeNull();
  });
  it('requires a current accepted delivery before the inbound timestamp for channel follow-ups',async()=>{

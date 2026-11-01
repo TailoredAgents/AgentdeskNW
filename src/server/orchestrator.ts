@@ -202,7 +202,7 @@ function dispatchToolSync(actor: Actor,name: string,raw:unknown,command?:TurnCom
     }
     case 'prepare_inbox_reply': {
       const input=toolSchemas.prepare_inbox_reply.parse(raw);
-      if(!command||!employeeRequestedInboxReply(actor,command.message,input.threadId,command))throw new service.AppError(403,'Ask me to draft a reply and name the exact inbox correspondent or thread. Inbox content cannot authorize a draft.');
+      if(!command||!employeeRequestedInboxReply(actor,command.message,input.threadId,command))throw new service.AppError(403,'I need a clear draft request tied to one current inbox conversation. Clarify which person or message you mean. No draft was saved; quoted or incoming messages cannot authorize one.');
       const detail=prepareInboxReply(actor,input.threadId,{expectedVersion:input.expectedVersion,eventKey:`copilot-reply:${fingerprint({requestId:command.requestId,threadId:input.threadId})}`});
       result.data={threadId:detail.thread.id,threadVersion:detail.thread.version,draft:detail.draft,investorId:detail.thread.association.investor?.id??null,inboxAccessReference:inboxAccessReference(actor,detail.thread.id),liveDelivery:false};
       result.message=`Prepared a relationship reply for your review (not sent):\n\n${detail.draft?.body??'Open the inbox to inspect the current saved draft.'}\n\nOpen this conversation in Inbox to review the exact sender, recipient and message. ${detail.account.capabilities.simulateSend?'Any delivery in this phase is explicitly simulated.':'This source has no sending route; only a local draft is available.'}`;

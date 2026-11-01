@@ -1,6 +1,21 @@
 # Conversational Copilot rehearsal
 
-**Operational acceptance reference, not a development roadmap.** Follow [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) for scope and sequence, [CONVERSATION_WORKFLOWS.md](CONVERSATION_WORKFLOWS.md) and [WORK_EXECUTION.md](WORK_EXECUTION.md) for execution contracts, and [PROGRESS.md](PROGRESS.md) for completed evidence. These authored cases are **not run** until actual outputs and saved effects are inspected. Earlier read-only role reviews do not automatically pass these multi-turn cases.
+**Operational acceptance reference, not a development roadmap.** Follow [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) for scope and sequence, [CONVERSATION_WORKFLOWS.md](CONVERSATION_WORKFLOWS.md) and [WORK_EXECUTION.md](WORK_EXECUTION.md) for execution contracts, and [PROGRESS.md](PROGRESS.md) for completed evidence. Authored cases remain **not run** unless the observed-run record below says otherwise. Earlier read-only role reviews do not automatically pass these multi-turn cases.
+
+## Observed hosted run — November 1, 2026
+
+Revision `08667ed`, Alex/dispositions, desktop-browser Copilot, existing configured model and spending mode unchanged. The UI showed AI configured; the provider model identifier was not exposed or independently exported. All business records were fictional. This is bounded browser-observed evidence, not a complete source-version/request-ID export, repeated reliability test or specialist benchmark.
+
+| Case | Observed status | Evidence and limits |
+| --- | --- | --- |
+| C-01 | passed_observed_run | The company-email question identified Mike's current repair-source/contractor-review request, then recommended addressing that gap before another walkthrough. Inbox showed the same Nov 1, 9:34 a.m. message. Both answers were concise and grounded. |
+| C-02 | partial | After the journey lookup, “Draft a reply to that” incorrectly demanded Mike's name. An explicit request saved one inspected unsent draft. “Keep it casual and shorter” produced a clearly unsaved revision; “Did you save?” correctly said no. Returning to Inbox verified the original body and 10:22 a.m. saved time unchanged. Settings still showed no writing/detail preferences. Continuity fix awaits hosted retest; arbitrary saved-body editing remains unsupported. |
+| C-03 | partial | One Mike repair-breakdown reminder saved for Nov 2 at 10 a.m. Eastern. The 2 p.m. correction unnecessarily asked which task after a duplicate-check lookup. Choice 1 changed the intended task; Work displayed Nov 2 at 2 p.m. The direct-correction fix awaits hosted retest. |
+| C-04 | passed_observed_run | Copilot first recommended Mike with relationship caveats. After the reported structural-repair exclusion, it changed to a conditional fit, held the pitch pending a qualified assessment and kept the property's actual structural condition unknown. “Should I still pitch it?” received a short “Not yet” with the relevant reason. No claimed CRM criteria change or outreach. |
+| C-05 | passed_observed_run | Short recommendation → requested evidence/uncertainty breakdown → short conclusion again, retaining Mike/property context. Settings afterward still showed no saved writing/detail preferences. |
+| C-06–C-09 | not_run | No live permanent-memory, acquisition follow-up, manager preparation or ambiguity case completed in this run. Authored/control tests are separate evidence. |
+
+Local browser evidence: `/tmp/agentdesk-conversation-rehearsal-08667ed.txt` and before/after saved-draft inspections. These temporary files are not a durable repository export. The source scenarios below retain their original acceptance criteria; the table records only what was actually observed.
 
 ## What we are measuring
 
@@ -21,7 +36,7 @@ Use the current fictional records rather than memorized expected facts. Before e
 
 **Pass:** identifies the actual current response and the decision-changing gap in plain language. The second answer builds on the first rather than reprinting an investor profile. No invented repair estimate, message arrival, completed research or contact permission. If there are multiple plausible Mike conversations, ask one focused question with useful choices.
 
-**Evidence:** exact source thread/version and relevant message; both responses; source link opens the same thread. **Status: not run.**
+**Evidence:** exact source thread/version and relevant message; both responses; source link opens the same thread. **Observed status: see the hosted-run table above.**
 
 ### C-02 — “Draft a reply to that,” then a style correction
 
@@ -35,7 +50,7 @@ Use the current fictional records rather than memorized expected facts. Before e
 
 **Known capability distinction:** the grounded reply tool is not a general arbitrary-body editor. If the current implementation cannot save the revised wording, say that plainly and provide the usable revision for the existing Inbox editor. This is a truthful bounded result, **not full conversational draft-edit acceptance**. Do not mark the saved-edit portion passed because the chat wording sounds better.
 
-**Evidence:** before/after thread and draft versions, exact saved body, recipients, unsent state and current preference version; all three responses. **Status: not run.**
+**Evidence:** before/after thread and draft versions, exact saved body, recipients, unsent state and current preference version; all three responses. **Observed status: see the hosted-run table above.**
 
 ### C-03 — Save a reminder, correct it and check it
 
@@ -47,7 +62,7 @@ Use the current fictional records rather than memorized expected facts. Before e
 
 **Pass:** one owned task is saved, then that exact task is rescheduled once. The answer uses the employee's America/New_York date and offset, including daylight-saving changes, and confirms the saved local time. It does not claim an investor response, sent notification or calendar booking. If the task focus is ambiguous, ask which task before changing anything.
 
-**Evidence:** task ID, title, owner, before/after version and ISO due time; actual displayed local time; replay has no second task or reschedule effect. **Status: not run.**
+**Evidence:** task ID, title, owner, before/after version and ISO due time; actual displayed local time; replay has no second task or reschedule effect. **Observed status: see the hosted-run table above.**
 
 ### C-04 — A correction changes the next recommendation
 
@@ -59,7 +74,7 @@ Use the current fictional records rather than memorized expected facts. Before e
 
 **Pass:** keeps the same property in focus, treats the new employee statement as reported evidence, and adapts the recommendation. Unknown property condition remains unknown. It neither assumes structural damage nor quietly updates approved criteria. It identifies the useful condition question or appropriate reviewed update, and does not revive the previous fit recommendation without considering the correction. No external research or outreach starts merely because the employee asked for advice.
 
-**Evidence:** current property/criteria versions, prior recommendation, supplied correction and next recommendation; any proposal remains pending separate review. **Status: not run.**
+**Evidence:** current property/criteria versions, prior recommendation, supplied correction and next recommendation; any proposal remains pending separate review. **Observed status: see the hosted-run table above.**
 
 ### C-05 — Let the employee choose the depth
 
@@ -71,7 +86,7 @@ Use the current fictional records rather than memorized expected facts. Before e
 
 **Pass:** short answers lead with the useful conclusion; the requested deeper answer exposes relevant evidence and uncertainty without inventing missing detail. The third turn contracts again. It does not make the employee restate the subject or save a permanent length preference from these local requests. The saved sources remain accessible through supporting links.
 
-**Evidence:** three outputs, current source links and unchanged saved preference version. **Status: not run.**
+**Evidence:** three outputs, current source links and unchanged saved preference version. **Observed status: see the hosted-run table above.**
 
 ### C-06 — A permanent preference is explicit and inspectable
 

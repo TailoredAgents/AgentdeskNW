@@ -150,29 +150,47 @@ const shortTaskCorrection=(message:string)=>/^(?:actually\s*,?\s*)?make\s+(?:it|
 const taskTimeFollowup=(message:string)=>/^(?:(?:and|okay|ok|please)[,.]?\s+)?(?:what time (?:is|was) (?:it|that|this|(?:the|my) (?:task|reminder))(?: (?:due|scheduled))?|what time did you (?:set|save)(?: (?:it|that|this))?|when (?:is|was) (?:it|that|this|(?:the|my) (?:task|reminder))(?: (?:due|scheduled))?)[.!?]?$/i.test(message.trim());
 
 /** Generic corrections cannot inherit an older task after the conversation changes subject. */
-function currentTaskSubject(actor:Actor,conversationId:string,task:Task,focus:ReturnType<typeof readConversationFocus>,asOf?:string):boolean {
+function currentTaskSubject(actor:Actor,conversationId:string,focus:ReturnType<typeof readConversationFocus>,asOf?:string):string|null {
   const messages=getConversation(actor,conversationId).messages;
   let index=messages.findLastIndex(message=>message.role==='assistant'),latest=messages[index];
-  const candidate=focus.candidates.find(item=>item.id===task.id);
+  const candidate=focus.candidates.length===1?focus.candidates[0]:undefined;
   // A current delivered reminder is also an actually shown subject. An older
   // reminder cannot override a newer conversation answer.
-  if(candidate?.source==='reminder'&&(!latest||Date.parse(candidate.createdAt)>Date.parse(latest.createdAt)))return true;
+  if(candidate?.source==='reminder'&&(!latest||Date.parse(candidate.createdAt)>Date.parse(latest.createdAt)))return candidate.id;
   for(let bridged=0;latest&&bridged<=2;bridged++){
-    if(latest.content.startsWith('This historical message is withheld'))return false;
+    if(latest.content.startsWith('This historical message is withheld'))return null;
     if(asOf){
-      if(Date.parse(latest.createdAt)>=Date.parse(asOf))return false;
+      if(Date.parse(latest.createdAt)>=Date.parse(asOf))return null;
       const delivered=getDb().prepare(`SELECT 1 FROM messaging_outbox o JOIN messaging_links l ON l.id=o.link_id
        WHERE o.reference_id=? AND o.kind='reply' AND o.status IN ('accepted','delivered') AND o.updated_at<?
        AND l.organization_id=? AND l.office_id=? AND l.user_id=? AND l.active=1 AND l.opted_out=0`)
         .get(latest.id,asOf,actor.organizationId,actor.officeId,actor.id);
-      if(!delivered)return false;
+      if(!delivered)return null;
     }
-    if(latest.artifacts.length)return latest.artifacts.every(item=>item.type==='task'&&item.id===task.id);
+    if(latest.artifacts.length){
+      if(!latest.artifacts.every(item=>item.type==='task'&&item.id))return null;
+      const ids=[...new Set(latest.artifacts.map(item=>item.id!))];
+      if(ids.length===1)return focus.candidates.some(item=>item.id===ids[0])?ids[0]:null;
+      // A duplicate check may show several old tasks before saving one new task.
+      // Bind the actual action event to this exact completed, shown reply. A
+      // read-only list, assistant prose or artifact order cannot choose a target.
+      const turn=getDb().prepare(`SELECT request_id FROM assistant_turns WHERE organization_id=? AND office_id=? AND user_id=? AND conversation_id=? AND status='completed' AND json_extract(result,'$.messageId')=?`)
+        .get(actor.organizationId,actor.officeId,actor.id,conversationId,latest.id) as {request_id:string}|undefined;
+      if(!turn)return null;
+      const event=getDb().prepare(`SELECT data FROM conversation_focus_events WHERE organization_id=? AND office_id=? AND user_id=? AND conversation_id=? AND source='assistant_result' AND turn_key=? AND event_key=?`);
+      const acted=focus.candidates.filter(item=>ids.includes(item.id)&&['create_task','manage_task','employee_command'].some(name=>{
+        const row=event.get(actor.organizationId,actor.officeId,actor.id,conversationId,turn.request_id,`tool:${fingerprint({requestId:turn.request_id,name,id:item.id,version:item.version})}`) as {data:string}|undefined;
+        if(!row)return false;
+        const data=JSON.parse(row.data) as {tasks:Array<{id:string;version:number}>};
+        return data.tasks.length===1&&data.tasks[0].id===item.id&&data.tasks[0].version===item.version;
+      }));
+      return acted.length===1?acted[0].id:null;
+    }
     const previousUser=messages.slice(0,index).findLastIndex(message=>message.role==='user');
-    if(bridged===2||previousUser<0||!taskTimeFollowup(messages[previousUser].content))return false;
+    if(bridged===2||previousUser<0||!taskTimeFollowup(messages[previousUser].content))return null;
     index=messages.slice(0,previousUser).findLastIndex(message=>message.role==='assistant');latest=messages[index];
   }
-  return false;
+  return null;
 }
 
 function prepareConcern(actor:Actor,message:string):PreparedConversationAction|null {
@@ -222,7 +240,11 @@ export function prepareConversationAction(actor:Actor,message:string,conversatio
     if(number)return clear('That task changed while you were choosing it. Name the task again so I can use its current details. Nothing has changed.');
     if(isPointer(intent.target)){
       const referenced=focus.candidates.map(candidate=>tasks.find(task=>task.id===candidate.id&&(task.version??0)===candidate.version)).filter((task):task is Task=>!!task);
-      if(focus.status==='ready'&&referenced.length===1)selected=referenced[0];
+      if(shortTaskCorrection(message)&&focus.status!=='stale'){
+        const subject=currentTaskSubject(actor,conversationId,focus,options.asOf);
+        selected=referenced.find(task=>task.id===subject);
+        if(!selected)return choices(actor,conversationId,tasks,intent,choiceRequestId,'Which reminder should I change? Name it or choose below.',options.asOf?options.requestId:undefined);
+      }else if(focus.status==='ready'&&referenced.length===1)selected=referenced[0];
       else return choices(actor,conversationId,referenced.length?referenced:tasks,intent,choiceRequestId,focus.status==='stale'?'The earlier task reference has changed. Which current task did you mean?':'Which task did you mean?',options.asOf?options.requestId:undefined);
     }else{
       const matching=namedTasks(actor,tasks,intent.target);
@@ -230,7 +252,6 @@ export function prepareConversationAction(actor:Actor,message:string,conversatio
       else return choices(actor,conversationId,matching.length?matching:tasks,intent,choiceRequestId,matching.length?'More than one task matches. Which one?':'I couldn’t match that title. Which task did you mean?',options.asOf?options.requestId:undefined);
     }
   }
-  if(shortTaskCorrection(message)&&!currentTaskSubject(actor,conversationId,selected,focus,options.asOf))return choices(actor,conversationId,tasks,intent,choiceRequestId,'Which reminder should I change? Name it or choose below.',options.asOf?options.requestId:undefined);
   let dueAt:string|null|undefined;
   if(intent.action==='reschedule'){
     const date=parseTaskDate(intent.dateText,selected,new Date(intent.referenceAt));

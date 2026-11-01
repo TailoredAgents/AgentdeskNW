@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Actor, Task } from '../src/lib/contracts';
-import { closeDb, demoActor, getDb } from '../src/server/db';
+import { closeDb, demoActor, getDb, now } from '../src/server/db';
 import { addMessage, createConversation, createTask, getInvestor } from '../src/server/services';
 import { getInboxState } from '../src/server/communications';
 import { grantLegacyTestWorkforce } from './fixtures';
@@ -97,10 +97,33 @@ describe('conversational task lifecycle',()=>{
     expect(getPersonalTask(actor,selected.id).version).toBe(2);
   });
 
+  it('prioritizes the one actually saved task in the latest completed turn over preceding duplicate-check results',async()=>{
+    const other=task('Existing callback','2026-10-30T13:00:00Z'),requestId='list-then-save',command={conversationId,requestId,message:'Remind me tomorrow at 10am to check the repair breakdown.'};
+    const list=await dispatchTool(actor,'list_my_tasks',{status:'open',query:null},command);
+    const saved=await dispatchTool(actor,'create_task',{title:'Repair breakdown check',dueAt:'2026-10-30T14:00:00Z',investorId:'investor-mike'},command);
+    const answer=addMessage(actor,conversationId,{role:'assistant',content:'Saved the repair breakdown reminder for tomorrow at 10am.',artifacts:[...list.artifacts,...saved.artifacts]});
+    getDb().prepare('INSERT INTO assistant_turns VALUES(?,?,?,?,?,?,?,?,?)').run(actor.organizationId,actor.officeId,actor.id,requestId,conversationId,'fixture-request','completed',now(),JSON.stringify({messageId:answer.id}));
+    const id=saved.artifacts[0].id!;expect(readConversationFocus(actor,conversationId).status).toBe('ambiguous');advance();
+    const changed=await chat(actor,'Actually, make that 2 p.m.',conversationId,'correct-created-task');
+    expect(changed.result.message).toContain('2:00 PM');expect(getPersonalTask(actor,id)).toMatchObject({dueAt:'2026-10-30T18:00:00.000Z',version:2});expect(getPersonalTask(actor,other.id).version).toBe(1);
+    advance();await chat(actor,'Actually, make that 2 p.m.',conversationId,'correct-created-task');expect(getPersonalTask(actor,id).version).toBe(2);
+  });
+
+  it('does not arbitrarily prioritize one of two tasks actually created in the same turn',async()=>{
+    const requestId='save-two-tasks',command={conversationId,requestId,message:'Create two reminders for these checks.'};
+    const one=await dispatchTool(actor,'create_task',{title:'First check',dueAt:'2026-10-30T14:00:00Z',investorId:null},command);
+    const two=await dispatchTool(actor,'create_task',{title:'Second check',dueAt:'2026-10-31T14:00:00Z',investorId:null},command);
+    const answer=addMessage(actor,conversationId,{role:'assistant',content:'Saved both reminders.',artifacts:[...one.artifacts,...two.artifacts]});
+    getDb().prepare('INSERT INTO assistant_turns VALUES(?,?,?,?,?,?,?,?,?)').run(actor.organizationId,actor.officeId,actor.id,requestId,conversationId,'fixture-request','completed',now(),JSON.stringify({messageId:answer.id}));advance();
+    expect(ask('Actually, make it 2pm')!.message).toContain('Which reminder');
+    expect(getPersonalTask(actor,one.artifacts[0].id!).version).toBe(1);expect(getPersonalTask(actor,two.artifacts[0].id!).version).toBe(1);
+  });
+
   it('keeps a time-only correction through an explicit choice without guessing between tasks',()=>{
     const first=task('Repair callback','2026-10-30T14:00:00Z'),second=task('Lender callback','2026-10-31T14:00:00Z');
-    focus(first,'same-turn');focus(second,'same-turn');advance();
-    expect(ask('Actually, make that 2 p.m.')!.message).toContain('Which task');
+    focus(first,'same-turn');focus(second,'same-turn');
+    addMessage(actor,conversationId,{role:'assistant',content:'Here are the two reminders.',artifacts:[first,second].map(value=>({type:'task',id:value.id,title:value.title}))});advance();
+    expect(ask('Actually, make that 2 p.m.')!.message).toContain('Which reminder');
     expect(getPersonalTask(actor,first.id).version).toBe(1);expect(getPersonalTask(actor,second.id).version).toBe(1);
     const choice=readConversationFocus(actor,conversationId).candidates.findIndex(item=>item.id===second.id)+1;advance();
     expect(ask(String(choice))!.message).toContain('2:00 PM');
@@ -110,7 +133,7 @@ describe('conversational task lifecycle',()=>{
   it('requires a current received reference and does not reuse a changed task for a correction',()=>{
     const value=task('Private callback');
     setConversationFocus(actor,conversationId,{kind:'task',id:value.id,version:value.version??0,source:'assistant_result',eventKey:'not-delivered',turnKey:'unseen',deliveryRequestId:'no-accepted-reply'});advance();
-    expect(ask('Make it tomorrow at 2pm')!.message).toContain('Which task');expect(getPersonalTask(actor,value.id).version).toBe(1);
+    expect(ask('Make it tomorrow at 2pm')!.message).toContain('Which reminder');expect(getPersonalTask(actor,value.id).version).toBe(1);
     focus(value);advance();mutateTask(actor,value.id,{action:'reschedule',dueAt:'2026-11-02T15:00:00Z',expectedVersion:value.version});advance();
     expect(ask('Actually, make that 2 p.m.')!.message).toContain('earlier task reference has changed');expect(getPersonalTask(actor,value.id)).toMatchObject({dueAt:'2026-11-02T15:00:00.000Z',version:2});
   });

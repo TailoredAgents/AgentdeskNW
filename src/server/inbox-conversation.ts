@@ -29,11 +29,16 @@ export function focusedInboxReplyThread(actor:Actor,command:InboxReplyCommand):s
  return getDb().transaction(()=>{
  const messages=getConversation(actor,command.conversationId).messages;
  let index=messages.findLastIndex(message=>message.role==='assistant'),latest=messages[index];
- const seenReplies=[];
+ const seenReplies=[],evidenceBridges:Artifact[]=[];
  for(let skipped=0;latest&&skipped<=2;skipped++){
   if(latest.content.startsWith('This historical message is withheld'))return null;
   seenReplies.push(latest);
-  if(latest.artifacts.length)break;
+  if(latest.artifacts.some(item=>item.type==='inbox'))break;
+  // A brief next-step discussion may retrieve the same person's current journey.
+  // Exact source IDs are checked against the earlier inbox association below;
+  // lists, prose, tasks, properties and different business actions cannot bridge.
+  if(latest.artifacts.some(item=>item.type!=='guidance'&&(!['investors','briefing'].includes(item.type)||!item.id)))return null;
+  evidenceBridges.push(...latest.artifacts.filter(item=>item.type!=='guidance'));
   const previousUser=messages.slice(0,index).findLastIndex(message=>message.role==='user');
   if(skipped===2||previousUser<0||!continuesInboxDiscussion(messages[previousUser].content))return null;
   index=messages.slice(0,previousUser).findLastIndex(message=>message.role==='assistant');latest=messages[index];
@@ -54,6 +59,7 @@ export function focusedInboxReplyThread(actor:Actor,command:InboxReplyCommand):s
  if(latest.artifacts.some(item=>item.type!=='guidance'&&(item.type!=='inbox'||item.id!==ids[0])))return null;
  const detail=getInboxThread(actor,ids[0]);
  if(detail.bodyAccess!=='full'||!detail.account.capabilities.localDraft)return null;
+ if(evidenceBridges.some(item=>item.id!==detail.thread.association.investor?.id))return null;
  // Public history deliberately strips tool data. Read only version metadata from
  // this same scoped message, after its current visible artifact passed redaction.
  // Raw content/references are never restored to the model or used as authority.
