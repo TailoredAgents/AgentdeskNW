@@ -1,5 +1,11 @@
 # AgentDesk progress log
 
+## November 1, 2026 — Hosted Sol configuration and truthful provider status
+
+`1dff01c` was committed/pushed and Render automatically reported **Deploy succeeded | Live**. A brief 502 during handover recovered on reload; Taylor's saved workspace loaded and Settings reported `gpt-6.1-sol`. No hosted AI request was sent. The observation exposed a status issue: an older Astra success appeared beside the new Sol configuration. Connection evidence now requires the exact configured model as well as operation kind; all historical receipts and aggregate usage remain unchanged. The empty-state wording identifies the model/employee boundary. Hosted Sol remains configured but unverified for an employee until that employee obtains a successful Sol receipt; the isolated actual-model evidence is not copied into hosted history.
+
+The narrow follow-up passed **47 provider/runtime/live-text tests**, typecheck, targeted lint and a production build, following the earlier full 1,853-test regression. Regression covers Astra success → Sol unverified → Sol success → Astra's own original receipt, with preserved history and usage. Paid testing remains **$1.372835 conservatively accounted**, no unresolved calls; this correction uses no additional provider requests. Final follow-up commit and Render promotion are verified in the delivery report.
+
 ## November 1, 2026 — Evaluated Sol default within the shared testing budget
 
 **Actual model evidence:** the frozen `5999b07` harness completed 24 advisory Responses calls: three fictional two-turn role cases, two samples and two models with identical specialist guidance, high reasoning and 4,096 output tokens. Two fresh-context blinded AI reviewers each scored all twelve exchanges 10/10 with no critical error. This limited internally authored set did not distinguish quality; it is not human/practitioner acceptance or a generic-versus-specialist comparison. Curated transcripts, grades, usage and tool evidence are in `evaluations/results/2026-11-01-model-selection.json`; raw provider bodies remain private and ignored.

@@ -2,6 +2,7 @@ import { afterEach,beforeEach,describe,expect,it,vi } from 'vitest';
 import { closeDb,demoActor } from '../src/server/db';
 import { billingPolicy,saveBillingPolicy } from '../src/server/billing';
 import { textProviderConfig } from '../src/server/provider-config';
+import { providerStatus } from '../src/server/providers';
 import { beginProviderOperation,fingerprint,providerOperations,recordProviderChildUsage,recordProviderUsage } from '../src/server/provider-runtime';
 import { reconcileTextUsage,reserveUsage,usageBalances } from '../src/server/metering';
 
@@ -28,6 +29,30 @@ describe('provider configuration',()=>{
 });
 
 describe('durable provider receipts',()=>{
+ it('uses only the configured model for connection evidence while retaining all receipt history and usage',()=>{
+  vi.stubEnv('OPENAI_API_KEY','mock-provider-status-key');vi.stubEnv('OPENAI_MODEL','gpt-6-astra');
+  const actor=demoActor();beginProviderOperation(actor,{...operation,kind:'text_response'});
+  const astra=recordProviderUsage(actor,{operationId:operation.operationId,providerResponseId:'resp-astra-status',status:'succeeded',usage:{input_tokens:20,output_tokens:10},actualCostCents:3});
+  const original=providerStatus(actor);
+  expect(original.text).toEqual({configured:true,model:'gpt-6-astra',state:'receipt_recorded',lastSuccessAt:astra.updatedAt,lastResponseId:'resp-astra-status'});
+  expect(original.usage).toEqual({operations:1,unresolved:0,knownCostOperations:1,knownCostCents:3,tokens:30});
+
+  vi.stubEnv('OPENAI_MODEL','gpt-6.1-sol');const unverified=providerStatus(actor);
+  expect(unverified.text).toEqual({configured:true,model:'gpt-6.1-sol',state:'configured_unverified',lastSuccessAt:null,lastResponseId:null});
+  expect(unverified.receipts).toEqual(original.receipts);expect(unverified.usage).toEqual(original.usage);
+  expect(providerOperations(actor)).toEqual([astra]);
+
+  beginProviderOperation(actor,{...operation,operationId:'sol-status',kind:'text_response',model:'gpt-6.1-sol'});
+  const sol=recordProviderUsage(actor,{operationId:'sol-status',providerResponseId:'resp-sol-status',status:'succeeded',usage:{input_tokens:40,output_tokens:15},actualCostCents:5});
+  const verified=providerStatus(actor);
+  expect(verified.text).toEqual({configured:true,model:'gpt-6.1-sol',state:'receipt_recorded',lastSuccessAt:sol.updatedAt,lastResponseId:'resp-sol-status'});
+  expect(verified.receipts).toHaveLength(2);expect(verified.receipts[1]).toEqual(original.receipts[0]);
+  expect(verified.usage).toEqual({operations:2,unresolved:0,knownCostOperations:2,knownCostCents:8,tokens:85});
+
+  vi.stubEnv('OPENAI_MODEL','gpt-6-astra');const restored=providerStatus(actor);
+  expect(restored.text).toEqual(original.text);expect(restored.receipts).toEqual(verified.receipts);expect(restored.usage).toEqual(verified.usage);
+  expect(providerOperations(actor)).toEqual([sol,astra]);
+ });
  it('starts an authorized operation once and rejects conflicting request reuse',()=>{
   const actor=demoActor();const first=beginProviderOperation(actor,operation);
   expect(beginProviderOperation(actor,operation)).toEqual(first);expect(providerOperations(actor)).toHaveLength(1);
