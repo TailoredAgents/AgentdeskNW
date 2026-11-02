@@ -26,6 +26,8 @@ Work survives app closure and service restart. Preserve desired outcome, current
 
 Native iPhone and Android are the primary daily surfaces; the detailed desktop workspace remains supported. Mixed devices, mostly iPhone, and no current Slack usage are owner-reported facts. App access is included. Optional employee-to-Copilot SMS is provisionally $19/month; Slack is retained for later demand.
 
+Until native distribution is available, the hosted website on a phone must represent the intended app’s core daily experience: Agent first, Agent/Work/Inbox navigation, readable results and exact review controls, with shared ongoing conversation and records. Preserve the desktop workspace and distinguish browser audio/notification/background limits from native behavior. A separate preview alone does not meet this presentation requirement.
+
 The Agent conversation, work history, memory, permissions and approval state continue across app/web and configured messaging. A request can start in one channel and finish in another without repeating context or duplicating work. SMS can complete ordinary requests and unambiguous decisions; a focused app review handles rich recipients/files/content when needed.
 
 The initial native client requires individual session handling, Agent text, reviewed microphone dictation, saved Work, notifications and result links. Add Inbox, draft review, approvals and entity links to finish phone workflows. Dictation is text input into the same command system; full live voice is a separate capability requiring equivalent tools, continuity, turn-taking/interruption, review and actual audio acceptance. Exports are not installed-phone proof.

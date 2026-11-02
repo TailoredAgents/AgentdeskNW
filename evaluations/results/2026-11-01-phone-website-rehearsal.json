@@ -1,0 +1,52 @@
+{
+  "date": "2026-11-01",
+  "baseRevision": "8dc5580c71472f40dbbe93f3346efc9d18891199",
+  "scope": "Hosted website phone interface; fictional local shared-service browser rehearsal",
+  "transport": "Local deterministic tools; OpenAI/messaging/push disabled",
+  "paidTestSpendUSD": 0,
+  "modelQualityAcceptance": false,
+  "physicalDeviceAcceptance": false,
+  "observed": [
+    "Phone root opens Agent; desktop root opens Overview; existing saved links retain route precedence.",
+    "One reminders request restored after reload and visible in desktop ongoing Copilot.",
+    "Fictional 325-cent maximum job awaited exact cost review; explicit denial canceled it with zero spent.",
+    "Unsaved company-email reply protected on Work navigation; saved reply visible unchanged on desktop, not sent.",
+    "Acquisitions role Work search opens the selected existing opportunity directly.",
+    "Manager handoff opens the same current source opportunity.",
+    "Unsaved opportunity internal note survives phone-to-desktop resize; discarded without saving.",
+    "Phone Return inserts newline without submitting; speech dialog opened/closed without audio or model dispatch."
+  ],
+  "viewports": [
+    {
+      "width": 390,
+      "height": 844
+    },
+    {
+      "width": 320,
+      "height": 568
+    },
+    {
+      "width": 390,
+      "height": 480
+    }
+  ],
+  "checks": {
+    "rootTests": 2047,
+    "rootTestFiles": 109,
+    "nativeTests": 95,
+    "workflowHttp": 112,
+    "conversationHttp": 51,
+    "mobileInboxHttp": 104,
+    "rootTypecheck": "passed",
+    "nativeTypecheck": "passed",
+    "lint": "passed with existing DemoAccess warning",
+    "productionBuild": "passed"
+  },
+  "notEstablished": [
+    "actual keyboard/audio/background/push behavior",
+    "native installation or distribution",
+    "additional model-quality evidence",
+    "live company CRM or correspondence",
+    "hosted revision until deployment verification"
+  ]
+}

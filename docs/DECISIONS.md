@@ -1,5 +1,12 @@
 # Architecture decisions
 
+## November 1, 2026 — Hosted phone website represents the app’s core experience
+
+The owner cannot distribute the native app yet and explicitly approved making the existing Render URL useful for the phone demonstration. Open Agent first at phone widths, keep Agent/Work/Inbox within reach, and reuse the same scoped conversation, business services, saved jobs and exact reviews. Work section definitions should be shared with the native client; desktop retains its detailed workspace. Do not substitute a separate disconnected preview or another mobile Agent backend.
+
+Validate ordinary phone browser journeys and short viewports, source links, reload continuity and unsaved Inbox protection. Preserve explicit spending/action decisions. Browser speech, actual phone keyboard/lifecycle, push and installed-native distribution remain separate acceptance; responsive browser inspection does not establish them. Existing public home-screen metadata is not an offline business-data cache. All demonstration business records remain fictional, with no new provider or paid-test authorization.
+
+
 ## November 1, 2026 — Explicit specialist completion contracts and iterative demo acceptance
 
 The owner asked to update documentation for the next goals and proceed after reviewing the uneven depth of the sixteen agents. Keep the canonical roadmap and existing product scope; add explicit per-agent demo completion contracts to AI_EMPLOYEES instead of another roadmap. Each contract must state the core employee outcome, meaningful variation/correction, inspectable output and missing evidence. Some tasks correctly produce a sourced read-only answer; do not create writes merely to satisfy a checklist. Registry status, implementation tests, actual-model judgment and later practitioner/company/device acceptance remain distinct.

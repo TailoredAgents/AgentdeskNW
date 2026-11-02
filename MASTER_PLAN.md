@@ -18,6 +18,8 @@ All three roles are primary audiences. Dispositions has more investor-facing wor
 
 The native iPhone/Android app is the primary daily experience, with Agent, Work and Inbox as the intended core workflow and a professional desktop workspace for detailed work. Employees use mixed phones, mostly iPhone, and do not currently use Slack. App access is included in the workforce subscription. Employee-to-Copilot SMS is an optional provisional $19/month convenience channel; Slack remains available for later demand.
 
+The owner’s November 1 presentation decision makes the hosted phone website the immediate app-like demonstration surface while store distribution is unavailable. It should open the shared Agent conversation and expose Agent, Work and Inbox with phone-specific controls and the same saved records/reviews. Keep the larger desktop workspace. Browser speech, keyboard/background behavior and notifications are separate acceptance from installed apps; do not promise identical operating-system features or treat a Render deployment as native distribution.
+
 ## What should make it valuable
 
 - **Convenience:** one conversation and work history across app, desktop, text, dictation, eventual live voice and configured messaging. Ask, leave, receive a useful update and continue without repeating context.

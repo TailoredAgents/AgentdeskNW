@@ -2,6 +2,8 @@
 
 **Shared spoken conversation implemented October 31, 2026; actual-phone audio acceptance remains pending.** [The implementation roadmap](../docs/IMPLEMENTATION_ROADMAP.md) is the sole authority for status, build order and next work. [Mobile requirements](../docs/MOBILE_DELIVERY_PLAN.md) define acceptance scope. This README records reproducible setup and the boundary between local/browser evidence and native acceptance.
 
+**Hosted phone website, November 1:** the existing site now represents the app’s core Agent/Work/Inbox experience at phone widths, using the same server conversation and records without native pairing. The role Work directory is shared through `src/lib/work-navigation.ts`. This does not distribute this Expo app or establish physical speech, keyboard, lifecycle or notification acceptance; see PROGRESS for the separate browser rehearsal.
+
 ## Architecture and current source
 
 This independent Expo/React Native project uses the existing AgentDesk NW backend and shared contracts and pure, client-safe intake form helpers in `../src/lib/`. `metro.config.cjs` watches that directory for runtime helper imports; server modules and the root application dependency graph remain excluded. It must stay inside the repository for those relative imports. It has its own package and lockfile; install dependencies in `mobile/`, not the root application. No server implementation or provider secret belongs in the native bundle.

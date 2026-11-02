@@ -1,5 +1,17 @@
 > **Operational reference, not the development roadmap.** Use [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) for current scope/status and [PROGRESS.md](PROGRESS.md) for dated evidence. Rehearse only accepted capabilities on the actual deployed revision; old presentation steps do not establish live connections, mobile readiness or production identity. Verify the current Render revision against the release evidence in PROGRESS before a presentation.
 
+## Phone presentation on the existing site
+
+Open the same hosted AgentDesk NW address in a phone browser and sign into the fictional workspace. At phone widths it opens **Agent**, continuing the employee’s saved ongoing conversation. No app-store installation or native pairing is required for this website. Saved work is shared with desktop.
+
+- **Agent:** type a request and tap Send; phone Return adds a new line. Talk opens the existing browser speech controls, whose availability depends on the browser. Do not claim audio has passed on an actual phone until tested.
+- **Work:** find saved jobs/approvals, follow-ups, updates and business records. Acquisitions and management also see intake opportunities; managers have Team overview. The counts identify personal open follow-ups and CRM reviews, not all unfinished work.
+- **Inbox:** review fictional company email, save an edited draft, and inspect the exact content/recipients before any separately reviewed simulation. Leaving with unsaved edits prompts to keep editing or discard.
+- **Settings** is in the top bar; the navigation menu retains other detailed workspace sections. Desktop continues to open Overview. Explicit saved links open their current destination instead of the default Agent screen.
+
+This represents the app’s core daily experience. It is still a website: native installation, actual phone audio/keyboard/background behavior and push acceptance remain separate. Browser testing must use disabled/mocked AI unless admitted to the original paid campaign. Do not submit hosted AI prompts merely to check the layout.
+
+
 ## Current GM demonstration priority — owner confirmed
 
 Use a fictional connected business workspace before seeking New Western access. The Salesforce source preview is supporting engineering; it is **not the meeting's main story or a prerequisite**. Existing CRM, Inbox, tasks and property releases are the simulated backend. Actions must save actual fictional results. No real investor delivery, company connection or live-research setup is needed for this rehearsal. Older provider preflight sections below are optional historical reference, not required meeting preparation.

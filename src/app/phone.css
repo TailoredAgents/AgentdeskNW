@@ -1,0 +1,117 @@
+/* The hosted phone experience shares services and review screens with desktop. */
+.phone-settings,.phone-work-back{display:none}
+.phone-work-home{max-width:720px;margin:0 auto}
+.phone-work-home h1{font-size:30px;letter-spacing:-1px;line-height:1.2;margin:8px 0 12px}
+.phone-work-intro{color:#63776b;font-size:14px;line-height:1.6;margin-bottom:24px}
+.phone-work-summary{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px}
+.phone-work-summary button{display:grid;grid-template-columns:1fr auto;gap:12px;text-align:left;padding:18px;border:1px solid #dce6df;border-radius:16px;background:#fff;color:#28503c}
+.phone-work-summary strong{font-size:26px;line-height:1}
+.phone-work-summary span{font-size:12px;line-height:1.5}
+.phone-work-summary button>svg:last-child{align-self:center}
+.phone-work-search{display:flex;flex-direction:row;align-items:center;gap:10px;padding:0 14px;border:1px solid #dce6df;background:white;border-radius:12px;color:#748779}
+.phone-work-search>svg{flex-shrink:0}
+.phone-work-search input{border:0;background:none;padding:14px 0;min-width:0;width:100%;box-shadow:none}
+.phone-work-group{margin-top:26px}
+.phone-work-group h2{font-size:12px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:#687d6e;margin-bottom:12px}
+.phone-work-group>div{background:#fff;border:1px solid #dfe8e1;border-radius:16px;overflow:hidden}
+.phone-work-group button{display:flex;align-items:center;gap:13px;width:100%;text-align:left;background:transparent;color:#244b36;padding:17px 15px;border-bottom:1px solid #edf1ec}
+.phone-work-group button:last-child{border-bottom:0}
+.phone-work-group button:hover{background:#f2f7f0}
+.phone-work-group button>span:nth-child(2){flex:1;min-width:0}
+.phone-work-group strong{display:block;font-size:14px;font-weight:600}
+.phone-work-group small{display:block;color:#718071;font-size:12px;line-height:1.5;margin-top:5px}
+.phone-work-group button>svg{flex-shrink:0;color:#8a9b8d}
+.phone-work-icon{width:39px;height:39px;display:grid;place-items:center;flex-shrink:0;background:#edf4e9;border-radius:12px;color:#40724c}
+.phone-work-footnote{text-align:center;font-size:11px;color:#768575;line-height:1.7;margin:24px 12px 0}
+
+@media(max-width:800px){
+  .phone-workspace{position:fixed;top:var(--phone-top,0px);left:0;right:0;height:var(--phone-height,100dvh);min-height:0;overflow:hidden;background:#f5f7f3}
+  .phone-workspace .main-column{height:100%;min-height:0;display:flex;flex-direction:column;margin:0;width:100%}
+  .phone-workspace .topbar{position:relative;top:auto;flex-shrink:0;height:auto;min-height:60px;padding:calc(7px + env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 7px max(16px,env(safe-area-inset-left));background:#f9fbf7;gap:8px}
+  .phone-workspace .breadcrumb{min-width:0;gap:6px;font-size:14px}
+  .phone-workspace .breadcrumb strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px}
+  .phone-workspace .breadcrumb-workspace,.phone-workspace .breadcrumb-chevron,.phone-workspace .voice-top,.phone-workspace .demo-guide-button{display:none}
+  .phone-workspace .mobile-menu{display:flex;width:36px;height:44px}
+  .phone-workspace .topbar-actions{gap:4px;flex-shrink:0}
+  .phone-workspace .topbar-actions>.badge{font-size:9px;padding:4px 6px;white-space:nowrap}
+  .phone-workspace .phone-settings{display:flex}
+  .phone-workspace .icon-button{min-width:44px;min-height:44px}
+  .phone-workspace .main-content{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;width:100%;max-width:none;padding:24px max(18px,env(safe-area-inset-right)) 28px max(18px,env(safe-area-inset-left));scroll-padding:18px}
+  .phone-workspace .main-content.assistant-main{height:auto;padding:0;overflow:hidden;display:flex}
+  .phone-workspace .chat-layout{width:100%;height:100%;min-height:0}
+  .phone-workspace .conversation-sidebar{display:none}
+  .phone-workspace .chat-main{min-width:0;min-height:0;width:100%;height:100%;display:flex;flex-direction:column}
+  .phone-workspace .chat-title{padding:8px 18px;background:#f5f7f3;border-bottom:0;gap:8px;min-height:64px}
+  .phone-workspace .chat-title>.copilot-avatar{width:38px;height:38px;border-radius:13px;background:#e6efdf;color:#39714a}
+  .phone-workspace .chat-title>div:nth-child(2){min-width:0;flex:1}
+  .phone-workspace .chat-title h1{font-size:16px;letter-spacing:-.4px}
+  .phone-workspace .chat-title span{font-size:10px;line-height:1.5;display:block;max-width:180px}
+  .phone-workspace .chat-title>button[aria-label="Continue phone and Slack conversation"],.phone-workspace .chat-title>button[aria-label="Talk to Copilot"]{display:none}
+  .phone-workspace .chat-messages{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:16px 18px 8px;scroll-padding:12px}
+  .phone-workspace .chat-welcome{max-width:430px;margin:18px auto 16px;text-align:left}
+  .phone-workspace .welcome-icon{display:none}
+  .phone-workspace .welcome-icon svg{width:25px}
+  .phone-workspace .chat-welcome .eyebrow{font-size:9px;letter-spacing:1.5px;margin-bottom:13px}
+  .phone-workspace .chat-welcome h2{font-size:32px;line-height:1.18;font-weight:500;letter-spacing:-1.2px}
+  .phone-workspace .chat-welcome>p:not(.eyebrow){font-size:14px;line-height:1.65;max-width:310px;margin:16px 0 22px}
+  .phone-workspace .prompt-grid{display:grid;grid-template-columns:1fr;gap:8px}
+  .phone-workspace .prompt-grid button{min-height:54px;padding:14px;border-radius:12px;gap:12px}
+  .phone-workspace .prompt-grid strong{font-size:13px;font-weight:500}
+  .phone-workspace .prompt-grid button>svg:first-child{width:18px}
+  .phone-workspace .chat-compose-wrapper{padding:10px 14px 8px;background:linear-gradient(#f5f7f3e8,#f5f7f3);max-height:60%;overflow-y:auto;flex-shrink:0}
+  .phone-workspace .chat-compose{padding:12px 12px 8px;border-radius:18px;border-color:#cbdccc;box-shadow:0 3px 18px #214b2f06}
+  .phone-workspace .chat-compose textarea{font-size:16px;line-height:1.5;min-height:48px;max-height:120px;resize:vertical}
+  .phone-workspace .compose-bottom>span{font-size:10px;line-height:1.5;max-width:155px;color:#6c7e6d}
+  .phone-workspace .compose-bottom>span>svg{display:none}
+  .phone-workspace .compose-bottom>div{gap:6px}
+  .phone-workspace .compose-voice{gap:6px;width:auto!important;font-size:12px;padding:0 7px;border-radius:12px;background:#f0f5ec;color:#346a45}
+  .phone-workspace .send-button{width:44px;height:44px;border-radius:13px}
+  .phone-workspace .chat-disclaimer{font-size:10px;line-height:1.5;margin:7px 8px 0}
+  .phone-workspace .message{gap:9px;margin-bottom:24px}
+  .phone-workspace .message-body{min-width:0;max-width:calc(100% - 34px)}
+  .phone-workspace .message-content,.phone-workspace .assistant-markdown,.phone-workspace .user-message p{font-size:14px;line-height:1.75}
+  .phone-workspace .message-label{font-size:11px}
+  .phone-workspace .user-message .message-body{padding:12px 15px;border-radius:16px 16px 4px 16px}
+  .phone-workspace .chat-artifact{padding:13px;border-radius:12px;min-height:55px}
+  .phone-workspace .chat-artifact strong{font-size:12px}
+  .phone-workspace .chat-artifact small{font-size:11px}
+  .phone-workspace .mobile-bottom-nav{position:static;display:flex;flex-shrink:0;height:auto;min-height:67px;padding:6px max(14px,env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left));border-top:1px solid #dfe8df;background:#fdfefb;gap:10px;z-index:20}
+  .phone-workspace .mobile-bottom-nav button{flex:1;display:flex;align-items:center;justify-content:center;gap:4px;flex-direction:column;min-height:54px;border-radius:14px;color:#73816f;font-size:11px;background:none}
+  .phone-workspace .mobile-bottom-nav button.active{background:#eaf3e3;color:#2e7047}
+  .phone-workspace .mobile-bottom-nav button span{font-size:11px;font-weight:600}
+  .phone-workspace .phone-work-back{display:flex;align-items:center;gap:5px;min-height:44px;font-size:12px;color:#386b49;background:transparent;padding:0;margin:-9px 0 16px}
+  .phone-work-back svg{transform:rotate(180deg)}
+  .phone-workspace .error-banner{flex-shrink:0;max-height:22%;overflow:auto;font-size:12px}
+  .phone-workspace .toast{top:70px;font-size:12px}
+  .phone-workspace .notification-drawer{top:60px;max-height:calc(var(--phone-height,100dvh) - 140px);overflow:auto}
+  .phone-workspace .sidebar{top:0;height:100%;max-height:none;z-index:100}
+  .phone-workspace .sidebar-scrim{position:absolute;inset:0;z-index:99}
+  .phone-workspace .modal-backdrop{z-index:200;padding:max(12px,env(safe-area-inset-top)) 12px max(12px,env(safe-area-inset-bottom));height:var(--phone-height,100dvh);top:var(--phone-top,0px);bottom:auto}
+  .phone-workspace .modal{max-height:100%;border-radius:18px}
+  .phone-workspace input:not([type=checkbox]):not([type=radio]),.phone-workspace textarea,.phone-workspace select{font-size:16px}
+  .phone-workspace .button{min-height:44px;font-size:12px}
+  .phone-workspace .button.small{min-height:40px}
+  .phone-workspace .tab-bar{gap:16px;overflow-x:auto;flex-wrap:nowrap}
+  .phone-workspace .tab-bar>button{white-space:nowrap;flex-shrink:0;min-height:44px;font-size:12px}
+  .phone-workspace .page-heading h1{font-size:27px;line-height:1.25}
+  .phone-workspace .page-heading .page-description{font-size:13px;line-height:1.7}
+  .phone-workspace .panel-description{font-size:13px;line-height:1.7}
+  .phone-workspace .communications-inbox .page-heading{margin-bottom:16px}
+  .phone-workspace .communications-inbox .page-heading{flex-direction:column;gap:12px}
+  .phone-workspace .communications-inbox .page-heading h1{font-size:26px;max-width:none}
+  .phone-workspace .inbox-primary-account>button{flex:0 0 auto;min-height:78px;width:100%}
+  .phone-workspace .inbox-thread-card{padding:20px 16px}
+  .phone-workspace .inbox-correspondent{font-size:14px}
+  .phone-workspace .inbox-thread-subject{font-size:13px}
+  .phone-workspace .inbox-message-body{font-size:14px}
+  .phone-workspace .inbox-filters button{min-height:44px;font-size:12px}
+  .phone-workspace .inbox-draft-footer>div{flex-wrap:wrap;gap:8px}
+  .phone-workspace .inbox-draft-footer .button{flex:1;justify-content:center}
+  .phone-workspace .work-cost-summary{font-size:14px}
+  .phone-workspace .work-review-scope{overflow-wrap:anywhere}
+}
+@media(max-width:360px){
+  .phone-workspace .topbar-actions>.badge{display:none}
+  .phone-workspace .chat-welcome h2{font-size:29px}
+  .phone-workspace .compose-bottom>span{max-width:110px}
+}

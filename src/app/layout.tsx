@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   appleWebApp: { capable: true, statusBarStyle: 'black-translucent', title: 'AgentDesk NW' },
   icons: { icon: '/icon.svg', apple: '/icon-192.png' },
 };
-export const viewport: Viewport = { width: 'device-width', initialScale: 1, themeColor: '#163c2e' };
+export const viewport: Viewport = { width: 'device-width', initialScale: 1, viewportFit: 'cover', interactiveWidget: 'resizes-content', themeColor: '#163c2e' };
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return <html lang="en"><body>{children}</body></html>;
 }
