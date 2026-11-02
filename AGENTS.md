@@ -46,6 +46,8 @@ Read `docs/IMPLEMENTATION_ROADMAP.md`, `MASTER_PLAN.md`, and the latest `docs/PR
 
 ## Communications inbox rules
 
+- Person-first browser Inbox uses a read-only current-source projection. Group only established permitted CRM associations or exact unlinked channel addresses; ambiguous/unavailable identities stay separate. Never merge original threads, recipients, drafts, status or send reviews. Call recaps/notes retain provenance; no actual calling, new team mailbox grants or model context is implied. Keep source limits visible and retire denied/obsolete projection content.
+
 - Follow `docs/COMMUNICATIONS_INBOX.md` for the private fictional email/investor-text inbox. Keep correspondence separate from employee Copilot conversations and channel inbox/outbox.
 - Office-manager CRM access does not grant mailbox access. Recheck linked investor permissions on reads and replay. Saving a manual draft or reviewing a match never sends a message or changes CRM facts.
 - Communications Phase 4A is authorized: additive fictional Salesforce company-email sources and explicit read/body/draft/simulated-send capabilities, preserving existing correspondence. Recheck current source access in UI, services and Copilot history/replay. No live connector or actual email delivery is authorized by this phase.

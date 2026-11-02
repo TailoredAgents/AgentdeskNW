@@ -1,5 +1,11 @@
 # Architecture decisions
 
+## November 1, 2026 — Person-first Inbox and compact correspondence controls
+
+The owner approved adapting the Tailored Agents conversation experience into AgentDesk. Use established permitted CRM associations, or the same exact unlinked channel address, to group private threads. Ambiguous or inaccessible identities stay separate. Keep each source thread, subject, recipient list, draft and exact send review intact. Surface existing sourced relationship records without presenting a recap as a verified call or adding provider calling. Keep all three roles, the green visual direction and Agent/Work/Inbox phone navigation. Source information moves into an expandable details pane; the fictional/no-delivery label stays visible.
+
+The new browser-only read projection must recheck every original source and never widen manager mailbox access, create model authority or change saved Copilot context. The separate native Expo layout and actual provider/device acceptance are not automatically upgraded by this web increment.
+
 ## November 1, 2026 — Hosted phone website represents the app’s core experience
 
 The owner cannot distribute the native app yet and explicitly approved making the existing Render URL useful for the phone demonstration. Open Agent first at phone widths, keep Agent/Work/Inbox within reach, and reuse the same scoped conversation, business services, saved jobs and exact reviews. Work section definitions should be shared with the native client; desktop retains its detailed workspace. Do not substitute a separate disconnected preview or another mobile Agent backend.

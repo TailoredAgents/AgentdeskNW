@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import type {Bootstrap} from '../src/lib/contracts';
 import type {BillingState} from '../src/lib/billing-contracts';
-import type {InboxState,InboxThreadDetail,InboxMutation} from '../src/lib/communications-contracts';
+import type {InboxConversation,InboxState,InboxThreadDetail,InboxMutation} from '../src/lib/communications-contracts';
 import type {ProviderStatus} from '../src/lib/provider-contracts';
 import type {WalletState} from '../src/lib/wallet-contracts';
 
@@ -23,6 +23,7 @@ const mutation=(current:InboxThreadDetail,label:string):InboxMutation=>({expecte
 
 // Compiled-server acceptance on the smoke runner's disposable fictional workspace.
 await request('inbox','GET',undefined,401);
+await request('inbox/private-thread/conversation','GET',undefined,401);
 const initial=await request<Bootstrap>('bootstrap');
 check(!initial.integrations.openai&&!initial.integrations.voice,'The inbox suite must not enable live AI');
 const employeeCookie=cookie;
@@ -43,6 +44,12 @@ const outlook=initialState.accounts.find(account=>account.provider==='outlook');
 assert.ok(mikeThread);assert.ok(davidThread);assert.ok(outlook);
 const mikeId=mikeThread.id;
 let mike=await detail(mikeId);
+const combined=await request<InboxThreadDetail&{conversation:InboxConversation}>(`inbox/${mikeId}/conversation`);
+check(combined.conversation.threads.length>1,'Person history combines current linked sources');
+check(combined.conversation.threads.every(item=>item.thread.association.investor?.id==='investor-mike'),'Person history excludes unrelated and ambiguous identities');
+check(combined.conversation.messages.every(message=>combined.conversation.threads.some(item=>item.thread.id===message.threadId)),'Every message retains its original permitted thread');
+check(combined.thread.id===mikeId&&combined.thread.unread===mike.thread.unread,'Combined reads preserve the selected thread and its read status');
+await request(`inbox/${mikeId}/conversation`,'POST',{},404);
 check(mike.thread.association.method==='exact_contact'&&mike.investorContext?.investorId==='investor-mike','Exact permitted contact matching surfaces Mike’s existing journey');
 check(mike.messages.some(message=>/repair/i.test(message.body)),'Mike’s fictional message raises repair-cost questions');
 check(mike.messages.every(message=>message.synthetic&&message.sourceRef&&message.sourceLabel&&['demo_received','demo_history'].includes(message.deliveryStatus)),'Every message retains fictional provenance and delivery status');
@@ -156,6 +163,7 @@ await request(`inbox/${mikeId}/draft`,'POST',{...mutation(mike,'foreign-draft'),
 check((await inbox(`?q=${runId}`)).threads.length===0,'Another employee cannot search private draft contents');
 await request('session','POST',{role:'manager'});
 const managerInbox=await inbox();
+await request(`inbox/${mikeId}/conversation`,'GET',undefined,404);
 check(managerInbox.threads.every(thread=>!initialState.threads.some(original=>original.id===thread.id)),'Manager CRM authority does not share employee inboxes');
 await request(`inbox/${mikeId}`,'GET',undefined,404);
 await request(`inbox/${mikeId}/link`,'POST',{...mutation(mike,'manager-link'),investorId:'investor-mike'},404);

@@ -1,4 +1,5 @@
 import {z} from 'zod';
+import {getInboxConversation} from './inbox-relationship';
 import {standingPermissionState,grantStandingPermission,revokeStandingPermission,grantStandingSchema,revokeStandingSchema} from './standing-permissions';
 import {receiveThreadDemoReply,receiveThreadDemoSchema} from './communications';
 import {NextRequest,NextResponse} from 'next/server';
@@ -18,6 +19,7 @@ export async function communicationsRoute(request:NextRequest,actor:Actor,path:s
  if(path.length===2&&id==='receive-demo'&&method==='POST')return json(receiveDemoCommunication(actor,receiveDemoSchema.parse(await readBody())));
  if(path.length===2&&method==='GET')return json(getInboxThread(actor,id));
  if(path.length===2&&method==='PATCH')return json(updateInboxThread(actor,id,threadUpdateSchema.parse(await readBody())));
+ if(path.length===3&&action==='conversation'&&method==='GET')return json(getInboxConversation(actor,id));
  if(path.length===3&&action==='routine-permissions'&&method==='GET')return json(standingPermissionState(actor,id));
  if(path.length===3&&action==='assist'&&method==='GET')return json(getInboxAssistance(actor,id));
  if(path.length===3&&method==='POST'){

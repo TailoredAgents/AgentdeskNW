@@ -20,6 +20,8 @@ The native iPhone/Android app is the primary daily experience, with Agent, Work 
 
 The owner’s November 1 presentation decision makes the hosted phone website the immediate app-like demonstration surface while store distribution is unavailable. It should open the shared Agent conversation and expose Agent, Work and Inbox with phone-specific controls and the same saved records/reviews. Keep the larger desktop workspace. Browser speech, keyboard/background behavior and notifications are separate acceptance from installed apps; do not promise identical operating-system features or treat a Render deployment as native distribution.
 
+The owner’s November 1 Inbox decision adopts a person-first communication workspace inspired by Tailored Agents: current permitted email/text history together, clearly labeled call recaps and notes, compact reply controls, and expandable business context. Preserve AgentDesk’s visual identity and domain services. Individual deal threads, recipients, source permissions and drafts remain distinct; the shared display never merges identities or gives managers private mailbox access. The master Agent remains separate from external correspondence.
+
 ## What should make it valuable
 
 - **Convenience:** one conversation and work history across app, desktop, text, dictation, eventual live voice and configured messaging. Ask, leave, receive a useful update and continue without repeating context.

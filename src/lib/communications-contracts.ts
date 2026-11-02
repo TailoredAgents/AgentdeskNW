@@ -30,6 +30,12 @@ export type InboxScenarioId='mike-repair-followup'|'sarah-rental-followup'|'davi
 export interface InboxScenario {id:InboxScenarioId;name:string;description:string;channel:CommunicationChannel;available:boolean}
 export interface InboxState {documentOptions?:CommunicationDocumentOption[];accounts:CommunicationAccount[];preferredAccountId:string|null;threads:InboxThread[];counts:Record<InboxFilter,number>;unreadCount:number;filter:InboxFilter;accountId:string|null;query:string;scenarios:InboxScenario[];canEdit:boolean;accessReason:string;mode:'demonstration';liveDelivery:false;notice:string}
 export interface InboxThreadDetail {documentOptions?:CommunicationDocumentOption[];bodyAccess:'full'|'headers_only'|'revoked';capabilityNotice:string;thread:InboxThread;account:CommunicationAccount;messages:CommunicationMessage[];draft:CommunicationDraft|null;draftHistory:CommunicationDraft[];investorContext:InvestorJourney|null;contextNotice:string;availableInvestors:InvestorMatch[];canEdit:boolean;accessReason:string;liveDelivery:false}
+/** Current private read projection. Original threads remain the sole mutation targets. */
+export interface InboxConversation {
+ key:string;threads:{thread:InboxThread;account:CommunicationAccount}[];
+ messages:CommunicationMessage[];evidence:InvestorJourney['evidence'];
+ totalThreads:number;totalMessages:number;totalEvidence:number;
+}
 export interface InboxMutation {expectedVersion:number;eventKey:string}
 export interface SaveCommunicationDraft extends InboxMutation {documents?:CommunicationDocumentReference[];body:string;subject?:string;cc?:CommunicationParty[]}
 export interface ReviseCommunicationDraft extends InboxMutation {draftId:string;draftVersion:number;sourceReference:string;body:string}

@@ -1,5 +1,16 @@
 # Copilot communications workflow — Phase 3
 
+## Person-first browser workspace — November 1, 2026
+
+Implemented with local service/browser acceptance; dated verification is in PROGRESS. The desktop and phone website use the same private Inbox services with a new read-only `/inbox/:threadId/conversation` projection. The list groups current threads by a permitted linked investor, or an exact same-channel address when unlinked. Needs-review and unavailable identities stay separate. This is navigation, not identity verification or a merge. All sources appear by default, with company email selected initially when available; source/channel/search filters remain explicit.
+
+The combined timeline preserves original message IDs, subjects, recipients, source labels and simulated statuses. Existing scoped journey call records, employee recaps and notes retain their provenance. It does not provide browser calling, audio recordings or automatic CRM fact extraction. A bounded read includes the selected thread plus up to 39 related threads, 200 recent messages and 60 relationship records, with a visible limit notice and original thread search. Every thread is reloaded under current source/owner/business access. No new private-content store, team mailbox or model context is created.
+
+The compact composer selects one exact thread; switching channel/subject/person uses the existing dirty-draft save/discard protection. Expand, shrink and hide only change presentation and keep the editor mounted. Recipients, CC, subject, files and saved revisions remain inspectable. The employee must still save and review exact content before a fictional send. The details pane retains relationship criteria/concerns, sourced assistance, explicit note/follow-up reviews and routine permissions. No outgoing message implies an inbound reply or completed transaction.
+
+Transient history errors withhold the combined timeline without discarding an unsaved draft; access failures retire private detail. Current source changes remove protected context and retire obsolete reviews. The separate native Inbox continues using the same original services; this increment changes the hosted website presentation, not native binaries or provider acceptance.
+
+
 Historical Phase 3 status: **implemented and verified**. Phase 2 is checkpointed at `e9d21b2`; Phase 3 at `77e69b7`. Its verification passed 413 automated tests, 535 compiled HTTP checks, typecheck, lint, production build, desktop/phone inspection and a migration-copy preservation rehearsal. Render deployment and live connections remain separate.
 
 Current extension: [Phase 4A company-email demonstration](COMPANY_EMAIL_DEMO.md) makes fictional Company email · Salesforce the primary path without replacing legacy account histories. The same reviewed services enforce source body/draft/send limits, duplicate-source identity and current access revisions. Captured activity permits local drafts but no sending; headers-only sources cannot support body-derived work. Revoked access masks content and blocks actions/replays; restoration requires fresh review. Company-specific Copilot requests use exact source/thread links. Current verification belongs in [PROGRESS.md](PROGRESS.md).
