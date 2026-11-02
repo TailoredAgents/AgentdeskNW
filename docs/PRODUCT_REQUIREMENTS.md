@@ -32,7 +32,7 @@ The Agent conversation, work history, memory, permissions and approval state con
 
 The initial native client requires individual session handling, Agent text, reviewed microphone dictation, saved Work, notifications and result links. Add Inbox, draft review, approvals and entity links to finish phone workflows. Dictation is text input into the same command system; full live voice is a separate capability requiring equivalent tools, continuity, turn-taking/interruption, review and actual audio acceptance. Exports are not installed-phone proof.
 
-Use light professional surfaces, an ink sidebar and restrained green accents. Complete role homes/onboarding and consistent typography, spacing, tables/forms, accessibility, loading/empty/error/disconnected states. Preserve unsaved drafts and make cost, progress and essential missing information clear without exposing internal tool traces.
+Use light professional surfaces, a charcoal sidebar and restrained warm-gold branding, following the November 2 decision. Preserve separate green/amber/red status meanings and fictional-concept identity. Complete role homes/onboarding and consistent typography, spacing, tables/forms, accessibility, loading/empty/error/disconnected states. Preserve unsaved drafts and make cost, progress and essential missing information clear without exposing internal tool traces.
 
 ## Memory, relationships and specialist depth
 

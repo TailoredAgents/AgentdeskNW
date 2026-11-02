@@ -4,6 +4,8 @@ Updated November 1, 2026. **This is the only authority for current delivery stat
 
 ## Where we are now
 
+**November 2 owner priority:** the company visit is today. The approved charcoal/gold/white palette has local production-build visual/contrast acceptance across the existing hosted desktop and phone website, with 2,058 regression tests and 248 HTTP checks passing. Publish source and separately verify Render’s exact Live revision, then return to the owner walkthrough. Preserve the existing fictional workflows and status colors. Native Expo visual alignment is deferred; no company branding approval is implied. This presentation pass does not change C1–C7 readiness.
+
 **A substantial fictional-data web demonstration and a bounded Copilot work engine are built. The complete business workforce, mobile product and connected company rollout are not finished.** The owner resumed development after the documentation reset. The bounded shared-controls/mobile foundation now has local integrated acceptance; actual-phone and live-provider acceptance remain pending.
 
 | State | Meaning |
@@ -47,7 +49,7 @@ Updated November 1, 2026. **This is the only authority for current delivery stat
 - Remember inspectable employee preferences and sourced customer/deal history. Corrections must improve the next relevant recommendation; stored memory alone is insufficient. Versioned methods and realistic evaluation establish specialist depth.
 - Be usefully autonomous within explicit action authority. Prepare work before asking for a necessary decision; allow scoped standing authorization for routine actions once implemented and tested. Do not weaken execution checks to simulate greater ability.
 - Ask approve/deny **before a whole job exceeds $1 in customer-facing credits**, including delegated work. A larger revised maximum needs a new decision. Optional auto top-up funds the wallet; it never approves a job.
-- Keep the light professional workspace, ink sidebar and restrained green accents. Complete aesthetic/accessibility passes across the whole product, including role homes, mobile navigation, approvals, inbox, billing and failure states.
+- Keep the light professional workspace, charcoal sidebar and restrained warm-gold branding approved November 2, with separate status colors. Complete aesthetic/accessibility passes across the whole product, including role homes, mobile navigation, approvals, inbox, billing and failure states.
 - Use fictional business records until company access is approved. Owner demo-account testing can proceed independently. No Apple/Google developer accounts exist yet; prepare locally. GitHub commit/push is authorized; a push does not verify a deployment.
 
 ## Completion means three different releases

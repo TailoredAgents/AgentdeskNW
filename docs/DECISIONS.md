@@ -1,5 +1,10 @@
 # Architecture decisions
 
+## November 2, 2026 — Charcoal and gold presentation
+
+The owner approved matching the current public New Western website’s visual palette. Observed at https://www.newwestern.com/: warm gold #C0985C, charcoal #2C2C2C, white #FFFFFF and light gray #E0E0E0. These are observed website colors, not a supplied official brand guide. Replace the prior green branding across the hosted desktop/phone experience while keeping green for success, amber for warnings and red for errors. Use charcoal text on gold, a darker gold for links/focus, neutral work surfaces and gold-tinted selections. Preserve layout, saved behavior, AgentDesk/Tailored Agents identity and fictional-demo labeling. Native Expo alignment remains separate. The owner says the New Western visit is today, November 2; no exact meeting time was supplied.
+
+
 ## November 1, 2026 — Person-first Inbox and compact correspondence controls
 
 The owner approved adapting the Tailored Agents conversation experience into AgentDesk. Use established permitted CRM associations, or the same exact unlinked channel address, to group private threads. Ambiguous or inaccessible identities stay separate. Keep each source thread, subject, recipient list, draft and exact send review intact. Surface existing sourced relationship records without presenting a recap as a verified call or adding provider calling. Keep all three roles, the green visual direction and Agent/Work/Inbox phone navigation. Source information moves into an expandable details pane; the fictional/no-delivery label stays visible.

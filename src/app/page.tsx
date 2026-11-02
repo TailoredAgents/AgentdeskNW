@@ -1,8 +1,5 @@
 'use client';
 
-import './work.css';
-import './phone.css';
-import './inbox-conversation.css';
 import {PhoneWorkTool} from '@/components/PhoneWorkTool';
 import {PhoneWorkHome,usePhoneWorkspace,type PhoneWorkDestination} from '@/components/PhoneWorkspace';
 import {ConversationResources} from '@/components/ConversationResources';

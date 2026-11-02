@@ -1,5 +1,18 @@
 # AgentDesk progress log
 
+## November 2, 2026 — New Western palette for the hosted presentation
+
+**Owner direction:** replace the earlier green visual branding with charcoal, restrained warm gold and white, following colors observed on https://www.newwestern.com/ on November 2 (#2C2C2C / #C0985C / #FFFFFF / #E0E0E0). These are website observations, not an official supplied brand guide. AgentDesk/Tailored Agents identity and fictional-concept labeling remain. The owner reports the company visit is today; the exact meeting time is unknown.
+
+**Implementation:** shared brand tokens and a final presentation stylesheet cover desktop navigation/dashboard, Copilot, turn-based phone controls, Inbox, source/review panels, billing, work and sign-in. Existing green-tinted surfaces/text were neutralized; gold is reserved for actions/selections, with darker gold links and charcoal button text. Success, warning and error colors retain separate meanings. All web styles now load in explicit root-layout order. Browser theme, manifest and SVG-derived home-screen icons use the same palette. This is a web presentation change; the independent Expo client, provider settings, permissions, billing behavior and saved workflows are unchanged.
+
+**Visual verification:** production-build browser review covers the desktop dashboard, Inbox and new-conversation dialog, Credits & billing, phone Agent/Work/Inbox at 390×844, and the Inbox at 320×568 with no document-width overflow. The phone composer gradient and sidebar edition contrast were corrected during review. Calculated contrast: charcoal/gold button 5.25:1, hover 4.60:1, dark-gold link/white 6.27:1, mobile selection 5.30:1, muted/canvas 5.51:1, sidebar text 8.81:1, success indicator 5.31:1. This is targeted visual/readability evidence, not a whole-product accessibility certification or physical-device acceptance. Local proof: `/tmp/agentdesk-gold-phone.png` and `/tmp/agentdesk-gold-desktop.png`.
+
+**Verification/publication:** final root typecheck, lint and production build passed; lint retains the existing DemoAccess navigation warning. The isolated final-build smoke suites passed 112 general/billing and 136 Inbox HTTP checks. The full free regression passed **2,058 tests across 110 files** in 486.45s. Final commit/push and exact Render Live publication are verified separately in the delivery report. No paid AI call was made; the original $9.99 testing campaign remains unchanged.
+
+**Earlier owner-authorized presentation allowance:** through the hosted manager controls, added exactly 1,000,000 operational text tokens to Alex. Verified included total 2,250,000, consumed 1,182,916, zero reserved and 1,067,084 available. This was not a wallet purchase, provider-credit purchase or paid rehearsal. Proof: `/tmp/agentdesk-alex-allowance-nov2.png`.
+
+
 ## November 1, 2026 — Person-first Inbox for desktop and phone
 
 **Owner direction and implementation:** adapted the Tailored Agents conversation approach into AgentDesk while retaining its green visual identity, private correspondence services and master-Agent separation. The browser list groups current permitted investor associations, or exact unlinked same-channel addresses; ambiguous and unavailable identities remain separate. A browser-only current-source read combines original email/text messages with labeled existing call recaps and relationship notes. Original deal subjects, accounts, recipients, drafts, statuses and exact reviews remain independent. Current-source checks and bounded display counts prevent a display group from becoming permission or factual authority. No provider, model context, customer tariff or native Expo layout changed.
