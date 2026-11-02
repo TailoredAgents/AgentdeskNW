@@ -115,11 +115,15 @@ describe('private communications through typed Copilot',()=>{
  });
  it('invalidates opaque model context after a private inbox arrival',async()=>{
   const thread=mike();vi.stubEnv('OPENAI_API_KEY','mock-key');
+  // Three mocked responses need their conservative request reservations, not a higher application limit.
+  grantCredits(demoActor('manager'),{userId:actor.id,category:'text_tokens',quantity:100000,eventKey:'opaque-inbox-fixture'});
   const opaque={type:'reasoning',id:'inbox-reasoning',summary:[],encrypted_content:'old-inbox-opaque'};
   const mock=vi.fn().mockResolvedValueOnce(answer([tool('inbox_thread',{threadId:thread.id},'read')])).mockResolvedValueOnce(answer([opaque,message('The current source needs review.')])).mockResolvedValueOnce(answer([message('Using the newly available source.')]));vi.stubGlobal('fetch',mock);
   const first=await chat(actor,`Read ${thread.id}`,undefined,'opaque-inbox-one');
   receiveDemoCommunication(actor,{scenarioId:'mike-repair-followup',eventKey:'opaque-new-source'});
-  await chat(actor,`Read ${thread.id}`,first.conversation.id,'opaque-inbox-two');
+  const second=await chat(actor,`Read ${thread.id}`,first.conversation.id,'opaque-inbox-two');
+  expect(mock.mock.calls.length,second.result.message).toBe(3);
+  expect(usageBalances(actor).find(item=>item.category==='text_tokens')).toMatchObject({consumed:210,reserved:0});
   expect(JSON.stringify(JSON.parse(mock.mock.calls[2][1].body as string).input)).not.toContain('old-inbox-opaque');
  });
  it('rejects inference output if inbox sources change while the model is responding',async()=>{

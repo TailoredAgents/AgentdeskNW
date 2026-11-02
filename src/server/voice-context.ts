@@ -1,3 +1,4 @@
+import {managementContextReference} from './management-reporting';
 import {specialistMethodFingerprint} from './specialist-methods';
 import {buyerGeographyMethod} from './buyer-geography';
 import {relationshipMethodFingerprint} from './relationship-methods';
@@ -19,7 +20,7 @@ import { getDisclosurePolicy, getInvestorIntelligence, isDisclosureReady } from 
 import { listReleases, listTemplates } from './workflows';
 import { listInvestors, listProperties } from './services';
 
-/** Fingerprints only protected state; routine task/job updates must not interrupt speech. */
+/** Fingerprints only protected state; routine private task/job updates do not interrupt speech; manager reporting sources are protected current evidence. */
 export function voiceContextSnapshot(actor:Actor):Record<string,string> {
   const result:Record<string,string>={};
   const add=(key:string,value:unknown)=>{result[key]=createHash('sha256').update(JSON.stringify(value)).digest('hex');};
@@ -31,6 +32,7 @@ export function voiceContextSnapshot(actor:Actor):Record<string,string> {
   add('knowledge',knowledgeContextReference(actor));
   add('analyses',analysisContextReference(actor));
   add('opportunities',opportunityContextReference(actor));
+  add('management',managementContextReference(actor));
   add('handoffs',getHandoffBoard(actor).handoffAccessReference);
   add('employeeMemory',getEmployeeMemory(actor));
   const releases=listReleases(actor);

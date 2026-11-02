@@ -1,6 +1,59 @@
 # Shared handoff coordination
 
-Updated November 1, 2026. This C4 specification supports [the canonical roadmap](IMPLEMENTATION_ROADMAP.md); it is not a competing schedule. The bounded workflow uses fictional operational records. Management practitioner acceptance and company procedure approval remain pending.
+Updated November 2, 2026. This C4 specification supports [the canonical roadmap](IMPLEMENTATION_ROADMAP.md); it is not a competing schedule. The bounded workflow uses fictional operational records. Management practitioner acceptance and company procedure approval remain pending.
+
+## Management reporting contract — November 2
+
+The owner requested management visibility into dispositions/acquisitions work, business effectiveness and data control, then authorized development while leaving meeting timing to them. The first current-business reporting increment is implemented; period/outcome performance analytics remain separate. Build order/status live only in the roadmap's M1–M6 sequence.
+
+### Questions and first-report boundaries
+
+The first increment answers: what needs attention in my authorized office, which role/employee owns it, what evidence explains the blocker, and what reviewed next step is available? Keep outcomes, current workload and AI use separate. It does not observe work outside connected/recorded sources, rank employees, infer effort from prompt counts, or determine employment outcomes.
+
+Use one server-owned report for the manager UI, model tool and saved office-priority work. Do not independently total bootstrap data in the UI. The old Team overview mixed personal usage with office counts. Its replacement uses `getManagementReport` through `/api/management-report`, `team_overview` and `office_priorities`. Private job/approval payloads and personal-only reminders are excluded. AI usage stays in Credits & billing; the management report does not imply missing usage is zero.
+
+| Measure | Definition/source for the first report | Interpretation and exclusions |
+| --- | --- | --- |
+| Current recorded relationships | Current permitted investor records grouped by current owner | Workload context only; not acquisition production, contacts made or sales success |
+| Recorded follow-ups needing attention | Currently permitted open business-linked tasks and recorded due dates, excluding personal-only reminders from shared reporting | A missing date is undated, not overdue. Completed task status is reported completion, not customer reply or closed deal |
+| Acquisition opportunities | Current authorized pre-inventory intake records, current revision, supplied/verified labels and missing required facts | Reviewing and not-pursuing remain distinct; saved intake is not published inventory or verified valuation |
+| Shared handoff attention | Existing current-source active assignments, overdue deadlines, missing acknowledgment, reported blockers, reports awaiting manager review and reviewed resolutions | Denominators and overlaps follow handoff method v4. Exclude changed/withdrawn sources from current performance totals and label them separately |
+| Available inventory/releases | Current permitted property/release status and separate recorded targets | A release is not a sale. A past closing target prompts reconfirmation; no inferred reservation, deposit or closure |
+| AI/work usage | Excluded from this report; existing Credits & billing remains the usage surface | Usage is not effectiveness or time saved. A future shared usage projection needs its own explicit unit/scope/coverage policy |
+
+Report each metric with its definition, as-of time, current scope, coverage, applicable denominator and evidence IDs resolved through current access checks. Return missing/unavailable coverage distinctly from a measured zero. Tie employee attribution to the actual record owner/assigned employee; roles alone do not prove work performed. A manager's approved action is attributed to that manager, not silently credited to the employee. Do not sum overlapping categories or treat retries as distinct work.
+
+### Sources, events and time
+
+Start with existing permitted business records and immutable handoff/intake events. Inventory history before adding a generic activity stream. Any new events must be written atomically with the actual domain mutation, use stable scoped identities and distinguish event time from capture time. Keep only minimal source references, actor, event kind and version; no private content snapshots or model-authored outcome events. Exact retry, source correction, reassignment, withdrawal and departure must preserve their original provenance without double counting.
+
+First-report snapshots do not establish weekly trends. Optional period measures require equal closed date windows, an explicit reporting timezone, a comparable eligible cohort and sufficient supported history. Show observed counts and denominators together. An empty or partial period is not a zero-percent conversion rate. Late-arriving records and corrections must be labeled; compare only currently permitted sources. Do not retain hidden historical aggregates to evade changed access. Company-wide office comparisons require a separately authorized executive scope; manager status remains office-scoped.
+
+Fictional historical examples may be authored only by explicit versioned demo fixture tooling. Label those events as authored sample history and preserve original event/capture provenance. Do not backdate actual user actions, reset existing fixtures, reopen resolved work or silently replace employee edits. A small coherent sample should cover a disposition follow-up, acquisition missing facts, blocked handoff, reported completion awaiting review, reviewed resolution and a changed source. Denied-scope examples belong in disposable tests, not a browsable management list.
+
+### Drill-down, Agent and follow-through
+
+Team overview should present office scope/as-of, role filters, an employee workload list and an attention list. Open a card to the exact permitted evidence and existing action screen. Role-specific missing-data and empty states are required. The responsive phone view uses the same records; graphs are secondary to readable next steps.
+
+Copilot should answer questions such as “What is holding up this office?”, “What is Jordan waiting on?” and “Which handoffs need my review?” with the same counts and current source references. It may prepare an existing scoped handoff proposal; authenticated review still applies it. An answer must distinguish preparation, acknowledgment, employee report and manager resolution. Unsupported comparisons should explain missing coverage and offer the available current report.
+
+Bind model/history/derived-work references to current report scope, versions, permitted source sets and relevant time boundaries. Source correction or lost access retires stale summaries and navigation; a generated report cannot grant access. Bound rows and show truncation/coverage rather than claiming a partial list is complete. Aggregate-only billing/usage information must not become private message or job evidence.
+
+### Implemented first increment
+
+`ManagementReport` is re-exported by the shared browser/server contract. The service runs in a synchronous SQLite read transaction, authenticates the current manager and Team Performance entitlement, restricts CRM sources to the actual office even when broader sharing is enabled, and builds totals before bounded source pagination. Role/employee/metric filters never accept tenant IDs or caller prices. Invalid employee selection is unavailable, not a leaked identity. Opportunity restrictions return `null` for both metric and employee counts; other supported empty sets return zero. Missing/unavailable ownership remains an unattributed office record, never a guessed employee.
+
+Ten current measures cover relationships, open and overdue buyer follow-ups, reviewing opportunities, blocked/awaiting-review/unassigned/changed/resolved handoffs, and inventory. Four main cards keep phone navigation compact; additional measures expand below. Source pages contain at most 40 records with total/offset/next-page coverage. Handoff evidence over 4,000 characters is explicitly an excerpt; the exact current source remains available. A buyer follow-up opens its permitted relationship, not another employee's private task editor. Opportunity and handoff links open their current scoped screens. Dates display the browser timezone abbreviation; no date-range series is claimed.
+
+A stable `managementAccessReference` binds the current scope, identities, business-source versions/content, reporting definitions and date-sensitive classifications. Worker/browser actor property order cannot change this identity. Company binding versions are included when that sign-in mode is selected. History, model/voice context and saved work recheck the reference; receipts remain immutable. Private-only reminders do not alter it. The legacy shared task list/bootstrap also omits colleagues’ personal-only reminders and tasks linked to unavailable/out-of-office investors; an employee still sees their own personal reminders. Legacy office-priority outputs without this reference require a fresh report, and the old office-summary artifact is withheld without affecting ordinary handoff preparation history. Specialist-method revision is `2026-11-02.1`.
+
+Existing additive fictional buyer/Preview Lane fixtures are reused without resets or backdated activity. Disposable cases exercise blocker → employee completion report → separate manager resolution, exact retries, changed sources, due boundaries, role/office restrictions and source pagination. This reporting increment adds no generic activity collector, provider call, message, CRM mutation or employee scoring. The report is read-only; existing authenticated handoff reviews remain the only follow-through mutation path.
+
+### Later outcome reporting and validation
+
+Define real performance reporting with company practitioners after source approval: investor response time from authorized communication event metadata; qualified opportunity cohorts; conversion stages supported by reviewed outcomes; explicit closing records; agreed acquisition/disposition revenue attribution; and measured task-time baselines. New private-source aggregates need an explicit company reporting policy and a minimal authorized projection, not a blanket manager mailbox grant. Do not display conversion, revenue, saved hours or an employee effectiveness score until their source/definition/coverage is available.
+
+Acceptance for the first increment includes independently expected counts, identical UI/tool results, overlap/zero/missing-data cases, source versions, denied office/employee scope, private-source exclusions, revocation, actor attribution, duplicate retries and current saved-work replay. At least one normal and one changed-fact journey must end with inspectable fictional records. Record service/transport tests separately from actual model and practitioner effectiveness. Reporting does not establish production security certification.
 
 ## Purpose and supported workflow
 

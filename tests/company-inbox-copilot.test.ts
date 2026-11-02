@@ -1,3 +1,4 @@
+import {grantCredits,usageBalances} from '../src/server/metering';
 import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest';
 import type {Actor,ToolResult} from '../src/lib/contracts';
 import type {CommunicationAccount,InboxThread} from '../src/lib/communications-contracts';
@@ -120,11 +121,15 @@ describe('Salesforce company email through the shared Copilot',()=>{
 
  it('removes opaque model state and old body excerpts after revocation without putting mailbox bodies into context',async()=>{
   const thread=company();vi.stubEnv('OPENAI_API_KEY','mock-key');
+  // Three mocked responses need their conservative request reservations, not a higher application limit.
+  grantCredits(demoActor('manager'),{userId:actor.id,category:'text_tokens',quantity:100000,eventKey:'opaque-company-fixture'});
   const opaque={type:'reasoning',id:'company-private-reasoning',summary:[],encrypted_content:'company-private-opaque'};
   const mock=vi.fn().mockResolvedValueOnce(answer([tool('inbox_thread',{threadId:thread.id},'company-read')])).mockResolvedValueOnce(answer([opaque,message('Private company source excerpt: repair breakdown.')])).mockResolvedValueOnce(answer([message('Company source access is unavailable.')]));vi.stubGlobal('fetch',mock);
   const first=await chat(actor,`read ${thread.id}`,undefined,'opaque-company-read');
   receiveDemoCommunication(actor,{scenarioId:'company-revoke-access',eventKey:'revoke-opaque-company'});
-  await chat(actor,'show my company email',first.conversation.id,'opaque-company-revoked');
+  const second=await chat(actor,'show my company email',first.conversation.id,'opaque-company-revoked');
+  expect(mock.mock.calls.length,second.result.message).toBe(3);
+  expect(usageBalances(actor).find(item=>item.category==='text_tokens')).toMatchObject({consumed:210,reserved:0});
   const next=JSON.parse(mock.mock.calls[2][1].body as string);
   expect(JSON.stringify(next.input)).not.toContain('company-private-opaque');expect(JSON.stringify(next.input)).not.toContain('Private company source excerpt');
   const firstInput=JSON.parse(mock.mock.calls[0][1].body as string).input;

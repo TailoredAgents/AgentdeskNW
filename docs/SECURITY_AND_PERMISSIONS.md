@@ -2,6 +2,16 @@
 
 [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) is the sole authority for completion status and development order. This specification preserves permission contracts and release gates; written source, local tests, real transport acceptance and production authorization are separate evidence.
 
+## Management reporting access — November 2
+
+The current management report uses a dedicated current-authorized business projection, with server-owned filters, reference checks and bounded source pages. These checks apply to this report; they are not a claim of a completed product-wide security audit. A manager sees only their permitted office; an executive/company-wide audience requires a separate explicitly provisioned scope later. No client filter, tool parameter or report ID can grant an office or owner. Filter sources before aggregation, pagination and employee grouping; protected identities, names and activity must not leak through totals or missing-record messages.
+
+Manager access does not include private employee Copilot conversations, Inbox bodies/drafts, personal-only reminders, private documents/transactions, practice reviews or private job instructions/results. Existing explicitly reviewed shared transaction summaries retain their own audience checks. If a future reporting policy permits derived communication timing, implement a minimal separately authorized event projection; do not grant message-body access as a shortcut.
+
+UI, API, model context, saved reports and cached work recheck current membership, source access and version/freshness. Report provenance carries source references, not copied sensitive content. Revocation and correction withhold obsolete results; restoration does not revive an old review. Audits identify the authenticated actor, action, source/version and review state with safe metadata. Shared management views must never expose generic raw audit/provider payloads.
+
+The first presentation should explain who can see the displayed business records and show inspectable approved actions. Test employee/manager/other-office/revoked identities in disposable environments; do not add hosted role switching or expose configuration secrets for a security demonstration. Present production identity, credential protection, access tests and uncompleted hosting/retention/recovery work with their actual evidence. A presentation PIN, encrypted credential store or passing tests is not complete enterprise security, encryption of every business record, a compliance certification or a promise that provider data never leaves the service.
+
 ## Current company identity and credential boundary — October 31
 
 Optional `AGENTDESK_AUTH_MODE=company_oidc` now implements company sign-in with pinned HTTPS authorization/token/JWKS endpoints, RS256 signature verification, exact issuer/audience, nonce, PKCE, single-use browser-bound state and fresh authentication. The normal login routes accept only a preprovisioned issuer/subject; email addresses, domains and token roles cannot grant membership. Demo PIN sessions and old demo phone pairings do not authenticate company mode. This is implemented protocol handling with signed fake-provider acceptance, not an approved New Western sign-in deployment.

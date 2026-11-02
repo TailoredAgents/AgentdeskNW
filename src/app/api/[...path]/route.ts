@@ -1,3 +1,4 @@
+import {getManagementReport,managementQuerySchema} from '@/server/management-reporting';
 import {readSalesforceSource,prepareSalesforceSourceDemo,refreshSalesforceSource,disconnectSalesforceSource} from '@/server/salesforce-source';
 import {companyAuthentication} from '@/server/company-auth';
 import {workspaceReadiness} from '@/server/workspace-readiness';
@@ -152,6 +153,12 @@ async function route(request:NextRequest,{params}:{params:Promise<{path:string[]
     }
     if(resource==='investors'&&id&&method==='PATCH'){
       const {changes}=z.object({changes:qualificationChangesSchema}).strict().parse(await body(request));return json(service.proposeInvestorUpdate(actor,id,changes),201);
+    }
+    if(resource==='management-report'&&path.length===1&&method==='GET'){
+      const params=request.nextUrl.searchParams;
+      if(new Set(params.keys()).size!==[...params.keys()].length)throw new service.AppError(400,'Repeated report filters are not supported.');
+      const query=Object.fromEntries(params);
+      return json(getManagementReport(actor,managementQuerySchema.parse({...query,...(query.offset!==undefined?{offset:Number(query.offset)}:{})})));
     }
     if(resource==='handoffs'&&path.length<=2){
       if(method==='GET')return json(id?getHandoff(actor,id):getHandoffBoard(actor));

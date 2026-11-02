@@ -1,3 +1,4 @@
+import {managementReferenceCurrent} from './management-reporting';
 import {qualificationReferenceCurrent} from './qualification-review';
 import {isRolePreparationArtifact} from '../lib/role-preparation-contracts';
 import {rolePreparationReferenceCurrent} from './role-preparations';
@@ -22,9 +23,9 @@ import { readInvestor, readProperty } from './access';
 import { getDisclosure, isDisclosureReady, listBuyBoxes } from './intelligence';
 import { inboxAccessReferenceCurrent, inboxReadableHistoryReference } from './communications-context';
 
-export interface HistoryReferences {qualificationReviews?:string[];rolePreparations?:string[];buyerShortlists?:string[];assignmentReviews?:string[];documentAccess?:string[];transactionTeamAccess?:string[];transactionAccess?:string[];investors:string[];properties:string[];releases:string[];packages:string[];debriefs:string[];inboxThreads:string[];inboxAccess:string[];workRuns?:string[];handoffAccess?:string[];workQuestions?:string[];knowledgeAccess?:string[];updatesAccess?:string[];analysisAccess?:string[];opportunityAccess?:string[]}
+export interface HistoryReferences {qualificationReviews?:string[];rolePreparations?:string[];buyerShortlists?:string[];assignmentReviews?:string[];documentAccess?:string[];transactionTeamAccess?:string[];transactionAccess?:string[];investors:string[];properties:string[];releases:string[];packages:string[];debriefs:string[];inboxThreads:string[];inboxAccess:string[];workRuns?:string[];managementAccess?:string[];handoffAccess?:string[];workQuestions?:string[];knowledgeAccess?:string[];updatesAccess?:string[];analysisAccess?:string[];opportunityAccess?:string[]}
 export type StoredMessage=Message & {references?:HistoryReferences};
-const empty=():HistoryReferences=>({qualificationReviews:[],rolePreparations:[],buyerShortlists:[],assignmentReviews:[],documentAccess:[],transactionTeamAccess:[],transactionAccess:[],investors:[],properties:[],releases:[],packages:[],debriefs:[],inboxThreads:[],inboxAccess:[],workRuns:[],handoffAccess:[],workQuestions:[],knowledgeAccess:[],updatesAccess:[],analysisAccess:[],opportunityAccess:[]});
+const empty=():HistoryReferences=>({qualificationReviews:[],rolePreparations:[],buyerShortlists:[],assignmentReviews:[],documentAccess:[],transactionTeamAccess:[],transactionAccess:[],investors:[],properties:[],releases:[],packages:[],debriefs:[],inboxThreads:[],inboxAccess:[],workRuns:[],managementAccess:[],handoffAccess:[],workQuestions:[],knowledgeAccess:[],updatesAccess:[],analysisAccess:[],opportunityAccess:[]});
 export const criteriaFingerprint=(actor:Actor,investorId:string)=>createHash('sha256').update(JSON.stringify(listBuyBoxes(actor,investorId))).digest('hex');
 // Repeated inherited references are validated once per synchronous SQLite read snapshot.
 // This cache never survives a read, an awaited provider call or a subsequent mutation.
@@ -72,6 +73,7 @@ export function collectHistoryReferences(actor:Actor,artifacts:Artifact[],inheri
     if(key==='analysisAccessReference')refs.analysisAccess!.push(item);
     if(key==='rolePreparationReference')refs.rolePreparations!.push(item);
     if(key==='opportunityAccessReference')refs.opportunityAccess!.push(item);
+    if(key==='managementAccessReference')refs.managementAccess!.push(item);
     if(key==='handoffAccessReference')refs.handoffAccess!.push(item);
     if(key==='inboxAccessReference')refs.inboxAccess.push(item);
    }else visit(item,depth+1);
@@ -107,6 +109,7 @@ export function historyReferencesVisible(actor:Actor,refs:HistoryReferences) {
   for(const reference of refs.rolePreparations??[])if(!currentReference(actor,'rolePreparations',reference,()=>rolePreparationReferenceCurrent(actor,reference)))return false;
   for(const reference of refs.opportunityAccess??[])if(!currentReference(actor,'opportunityAccess',reference,()=>opportunityReferenceCurrent(actor,reference)))return false;
   for(const reference of refs.workQuestions??[])if(!currentReference(actor,'workQuestions',reference,()=>workQuestionReferenceCurrent(actor,reference)))return false;
+  for(const reference of refs.managementAccess??[])if(!currentReference(actor,'managementAccess',reference,()=>managementReferenceCurrent(actor,reference)))return false;
   for(const reference of refs.handoffAccess??[])if(!currentReference(actor,'handoffAccess',reference,()=>handoffReferenceCurrent(actor,reference)))return false;
   for(const reference of refs.workRuns??[]){const [runId,version]=reference.split('@');if(version!==undefined&&!/^[1-9][0-9]*$/.test(version))return false;if(!currentReference(actor,'workRuns',reference,()=>workRunVisible(actor,runId,version===undefined?undefined:Number(version))))return false;}
   if(refs.inboxThreads?.length&&!featureAccess(actor,'core').allowed)return false;
@@ -147,6 +150,7 @@ function withheldHistoryNotice(actor:Actor,refs:HistoryReferences):NonNullable<M
  return {reason:'source_unavailable',message:'This earlier message is no longer available because its source information or access has changed.'};
 }
 export function readHistoryMessage(actor:Actor,message:StoredMessage):Message {
+ if(message.artifacts.some(item=>item.type==='handoff'&&item.title==='Review office handoffs')&&!message.references?.managementAccess?.length)return {id:message.id,role:message.role,content:'This historical message is withheld because the office reporting sources need a fresh review.',historyNotice:{reason:'source_unavailable',message:'Retrieve the current office report.'},createdAt:message.createdAt,specialistIds:[],artifacts:[]};
  if(message.references&&!historyReferencesVisible(actor,message.references))return {id:message.id,role:message.role,content:'This historical message is withheld because access or sharing eligibility for a referenced record has changed.',historyNotice:withheldHistoryNotice(actor,message.references),createdAt:message.createdAt,specialistIds:[],artifacts:[]};
  // Navigation opens current scoped services. CRM snapshots are never reissued as current facts from chat storage.
  return {id:message.id,role:message.role,content:message.content,createdAt:message.createdAt,specialistIds:message.specialistIds,artifacts:message.artifacts.map(artifact=>{const {data,...link}=artifact;return artifact.type==='notes'?{...link,data}:isRolePreparationArtifact(artifact)?{...link,data:{preparationId:(data as {preparationId:string}).preparationId}}:link;})};
@@ -154,5 +158,5 @@ export function readHistoryMessage(actor:Actor,message:StoredMessage):Message {
 
 export function assertInboxToolResultVisible(actor:Actor,artifacts:Artifact[]):void {
  const refs=collectHistoryReferences(actor,artifacts);
- if((refs.qualificationReviews?.length||refs.rolePreparations?.length||refs.buyerShortlists?.length||refs.assignmentReviews?.length||refs.documentAccess?.length||refs.transactionTeamAccess?.length||refs.transactionAccess?.length||refs.knowledgeAccess?.length||refs.updatesAccess?.length||refs.inboxThreads.length||refs.workRuns?.length||refs.handoffAccess?.length||refs.workQuestions?.length||refs.opportunityAccess?.length||refs.analysisAccess?.length)&&!historyReferencesVisible(actor,refs))throw new AppError(403,'Access to this result or its source context changed. Retrieve the conversation again.');
+ if((refs.qualificationReviews?.length||refs.rolePreparations?.length||refs.buyerShortlists?.length||refs.assignmentReviews?.length||refs.documentAccess?.length||refs.transactionTeamAccess?.length||refs.transactionAccess?.length||refs.knowledgeAccess?.length||refs.updatesAccess?.length||refs.inboxThreads.length||refs.workRuns?.length||refs.managementAccess?.length||refs.handoffAccess?.length||refs.workQuestions?.length||refs.opportunityAccess?.length||refs.analysisAccess?.length)&&!historyReferencesVisible(actor,refs))throw new AppError(403,'Access to this result or its source context changed. Retrieve the conversation again.');
 }

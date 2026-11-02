@@ -75,10 +75,9 @@ describe('acquisition and management conversational continuity with mocked model
   expect(result.result.artifacts.filter(item=>item.type==='task').map(item=>item.id)).toEqual([personal.id]);
   expect(JSON.stringify(toolOutput(mock,1,'personal-priorities'))).not.toContain(colleague.title);
   const office=getManagementOverview(taylor);
-  expect(office.tasks.map(task=>task.id)).toEqual(expect.arrayContaining([personal.id,colleague.id]));
-  expect(office.pendingApprovals.map(action=>action.id)).toEqual(expect.arrayContaining([ownApproval.id,otherApproval.id]));
-  expect(office.activeJobs.map(job=>job.id)).toEqual(expect.arrayContaining([ownJob.id,otherJob.id]));
-  expect(office.dormantInvestors.some(investor=>investor.ownerId===alex.id)).toBe(true);
+  const officeText=JSON.stringify(office);
+  for(const privateId of [personal.id,colleague.id,ownApproval.id,otherApproval.id,ownJob.id,otherJob.id])expect(officeText).not.toContain(privateId);
+  expect(office.records.some(item=>item.kind==='relationship'&&item.ownerId===alex.id)).toBe(true);
   expect(office.summary).toMatch(/^Your office has /);
  });
 

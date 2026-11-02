@@ -1,5 +1,11 @@
 # Architecture decisions
 
+## November 2, 2026 — Management reporting and owner-controlled meeting timing
+
+The owner moved the New Western meeting one day later and requested a plan for management reporting and data protection, then explicitly instructed development to proceed without waiting for the meeting time. Working meeting date is November 3; the owner manages timing. Extend the existing all-role fictional demonstration, preserving dispositions/acquisitions usefulness, into source-linked management visibility. The canonical roadmap's M1–M6 sequence owns the work order; the existing handoff/security documents own definitions and permissions.
+
+Prioritize a shared server report, role/employee workload, actionable bottlenecks, current source drill-downs and master-Agent continuity. Reconcile UI and Agent counting rather than placing charts over independently assembled data. Comparable trends follow source-history acceptance. Verified conversions, revenue, time savings, company-wide executive scopes and live sources remain later requirements. Never convert private mail/chat/file/practice records into shared analytics by implication. Keep implementation/testing, real-model evidence and production-security acceptance distinct. This decision is planning/development authorization, not permission for new paid tests, company connections, investor delivery or purchases.
+
 ## November 2, 2026 — Charcoal and gold presentation
 
 The owner approved matching the current public New Western website’s visual palette. Observed at https://www.newwestern.com/: warm gold #C0985C, charcoal #2C2C2C, white #FFFFFF and light gray #E0E0E0. These are observed website colors, not a supplied official brand guide. Replace the prior green branding across the hosted desktop/phone experience while keeping green for success, amber for warnings and red for errors. Use charcoal text on gold, a darker gold for links/focus, neutral work surfaces and gold-tinted selections. Preserve layout, saved behavior, AgentDesk/Tailored Agents identity and fictional-demo labeling. Native Expo alignment remains separate. The owner says the New Western visit is today, November 2; no exact meeting time was supplied.

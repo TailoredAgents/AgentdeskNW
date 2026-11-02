@@ -50,6 +50,8 @@ Acquisitions: wholesaler submission → duplicate/revision handling → missing 
 
 Management: scoped workload/pipeline → meaningful metrics and denominators → sourced exception → authorized owner/action → outcome → period comparison. Retries and duplicates are not productivity. Changes in assignment/access must affect pending work and visibility.
 
+November 2 management reporting clarification: deliver role-specific office workload, acquisition gaps and handoff/follow-through visibility through one shared UI/Agent projection. Metrics need definitions, source drill-downs, coverage, current scope and timestamps. Current snapshots are independently useful; historical trends need comparable event coverage. Employee productivity, sales conversion, revenue attribution and AI time savings require separately validated outcomes/baselines. No private employee conversations, mailboxes or practice reviews become manager-visible simply because reporting is enabled. Full contract: [MANAGEMENT_HANDOFFS](MANAGEMENT_HANDOFFS.md#management-reporting-contract--november-2).
+
 Shared notes, workflow guidance, CRM, documents, deal analysis and coaching support all permitted roles within normal work. Role scenarios remain provisional until the corresponding practitioners review them.
 
 ## Communications and sources

@@ -7,7 +7,7 @@ import {buildBuyerShortlist} from './buyer-shortlist';
 import {bindAssignment,withAssignment} from './assignment-roots';
 import {proactiveOwnsTopic} from './proactive-policy';
 import {employeeTimeZone} from './proactive-time';
-import {getHandoffBoard} from './handoffs';
+import {getManagementReport} from './management-reporting';
 import { researchConfig } from './external-research-provider';
 import { z } from 'zod';
 import type { Actor, Artifact, Bootstrap, Conversation, Investor, Message, NoteSummary, Notification, ProposedAction, ResearchInput, ResearchJob, Role, Settings, Task } from '../lib/contracts';
@@ -42,7 +42,14 @@ function refreshDuplicateStatus(actor:Actor,job:ResearchJob):ResearchJob {
 }
 function visibleResearch(actor:Actor,job:ResearchJob){const owner=actorForMember(actor.organizationId,actor.officeId,job.ownerId);if(!isAuthorizedActor(owner)||!researchSourceVisible(owner,job.id))return {...job,prospects:[],input:{...job.input,address:'Source context unavailable',county:'Unavailable',price:0,strategy:'Unavailable',propertyType:undefined},stage:'Original sources changed; saved results are withheld. Review current context before preparing replacement work.'};return refreshDuplicateStatus(actor,job);}
 export function listJobs(actor:Actor) { return scopedRows<ResearchJob>(actor,'research_jobs').map(job=>visibleResearch(actor,job)); }
-export function listTasks(actor:Actor) { return scopedRows<Task>(actor,'tasks'); }
+export function listTasks(actor:Actor) {
+ return scopedRows<Task>(actor,'tasks').filter(task=>{
+  if(task.ownerId===actor.id)return true;
+  if(!task.investorId)return false;
+  try{return readInvestorRow(actor,task.investorId).office_id===actor.officeId;}
+  catch(error){if(error instanceof AppError&&[403,404].includes(error.status))return false;throw error;}
+ });
+}
 function checkApprovalReferences(actor:Actor,action:ProposedAction):ProposedAction {
  if(typeof action.payload.investorId==='string')getInvestor(actor,action.payload.investorId);
  return action;
@@ -364,13 +371,7 @@ function dailyBrief(actor:Actor,personal:boolean) {
 }
 /** Personal priorities stay owned by this employee even when they manage an office. */
 export function getDailyBrief(actor:Actor) {return dailyBrief(actor,true);}
-export function getManagementOverview(actor:Actor) {
- requireFeature(actor,'team-performance');
- requireRole(actor,['manager']);
- const brief=dailyBrief(actor,false);
- const usage=getDb().prepare('SELECT kind,SUM(quantity) AS quantity FROM usage_events WHERE organization_id=? AND office_id=? GROUP BY kind').all(actor.organizationId,actor.officeId) as {kind:string;quantity:number}[];
- return {...brief,usage,handoffs:getHandoffBoard(actor),scope:'Authorized office only',synthetic:true};
-}
+export const getManagementOverview=getManagementReport;
 export function getBootstrap(actor:Actor):Bootstrap {
  assertActor(actor);processNotifications(actor);
  const organization=getDb().prepare('SELECT o.name,f.name AS office FROM organizations o JOIN offices f ON f.organization_id=o.id WHERE o.id=? AND f.id=?').get(actor.organizationId,actor.officeId) as {name:string;office:string};

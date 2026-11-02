@@ -1,6 +1,6 @@
 # Documentation map
 
-Updated November 1, 2026. This index assigns each document a purpose; it is not a second roadmap.
+Updated November 2, 2026. This index assigns each document a purpose; it is not a second roadmap.
 
 ## Authority and reading order
 
@@ -40,6 +40,8 @@ Updated November 1, 2026. This index assigns each document a purpose; it is not 
 | [PROGRESS](PROGRESS.md), [DECISIONS](DECISIONS.md) | Append-only chronology; newest summary/supersession guides interpretation of older entries |
 
 ## Keeping this clean
+
+`MANAGEMENT_HANDOFFS.md` also owns the management reporting metric/source/drill-down contract; `SECURITY_AND_PERMISSIONS.md` owns its access boundaries. The roadmap's M1–M6 section alone owns delivery order and status. Do not create another analytics roadmap.
 
 Each implementation slice updates the canonical checkpoint status and adds actual evidence to PROGRESS. Update affected domain specifications, identifying verified, working-draft, planned and external-acceptance states explicitly. Keep historical test totals attached to their revisions. No documentation change upgrades a feature's readiness, proves a deployment or authorizes a new provider connection.
 

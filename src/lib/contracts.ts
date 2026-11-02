@@ -1,4 +1,5 @@
 export type Role = 'dispositions' | 'acquisitions' | 'manager';
+export type {ManagementReport,ManagementQuery,ManagementMetric,ManagementMetricId,ManagementEvidence} from './management-contracts';
 export interface Actor { id:string; name:string; organizationId:string; officeId:string; role:Role }
 export interface Evidence { kind?:'business_profile'|'reported_transaction'|'strategy'|'contact'; confidence?:'unverified'; sourceId?:string; transactionDate?:string|null; price?:number|null; propertyAddress?:string|null; propertyType?:string; id:string; title:string; url:string|null; observedAt:string; detail:string; synthetic:boolean }
 export interface Investor { id:string; name:string; company:string; counties:string[]; strategy:string; budgetMin:number; budgetMax:number; financing:string|null; rehab:string|null; timeframe:string|null; email:string|null; phone:string|null; notes:string; lastContactAt:string|null; ownerId:string; synthetic:boolean }

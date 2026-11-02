@@ -74,6 +74,8 @@ All rows use fictional records and the same scoped services as the UI. Employee 
 
 ## Capability depth delivery matrix
 
+**November 2 management extension:** Team Performance uses the same source-linked reporting projection as Team overview for role workload, acquisition gaps, shared blockers and exact reviewed follow-through. Current office snapshots and future historical/sales metrics remain separate. See [reporting contract](MANAGEMENT_HANDOFFS.md#management-reporting-contract--november-2) and the roadmap's M1–M6 sequence; functional reporting checks do not establish new actual-model quality or practitioner acceptance.
+
 This is the specialist scope/evidence checklist for [canonical checkpoints C4–C7](IMPLEMENTATION_ROADMAP.md); the roadmap alone controls ordering and overall status. This checklist does not upgrade the registry statuses above. Every row must pass its declared functional scope, knowledge/judgment cases, tool/connection requirements, recovery/cost behavior and actual role acceptance. Use shared services and focused specialist reasoning where it improves the outcome; sixteen names do not require sixteen independently trained models.
 
 | Specialist | Next capability depth | Proof of useful work | Canonical checkpoints |

@@ -1,3 +1,4 @@
+import {managementContextReference,managementQuerySchema} from './management-reporting';
 import {conversationStyleInstructions} from './conversation-style';
 import {employeeRequestedInboxReply,employeeRequestedInboxRevision,focusedInboxReplyThread,inboxSourceForRequest,inboxThreadsForRequest} from './inbox-conversation';
 import {specialistReviewSchema} from './specialist-reviews';
@@ -87,7 +88,7 @@ const toolSchemas = {
   acquisition_context:z.object({releaseId:nullableId}).strict(),
   team_transactions:teamTransactionToolSchema,
   handoff_overview:noArgs,
-  team_overview:noArgs,
+  team_overview:managementQuerySchema.required(),
   daily_priorities:noArgs,
   search_crm:z.object({query:z.string().max(200)}).strict(),
   research_investors:researchSchema.extend({propertyType:z.string().min(2).max(100).nullable(),provider:z.enum(['synthetic-fixtures-v1','openai-web-search-v1']).nullable(),maxCostCents:z.number().int().min(1).max(10000).nullable()}),
@@ -133,7 +134,7 @@ const descriptions: Record<ToolName,string> = {
   acquisition_context:'Premium Acquisition-to-Disposition Coordinator: review authorized acquisition releases, source data, milestones and missing handoff information. This retrieves saved records; publishing or changing a release requires the employee to use the existing release editor.',
   team_transactions:'Retrieve only explicitly shared transaction summaries, selected reported dates and assigned follow-ups. Use teamId null for the permitted board. This is distinct from private transaction records and grants no private investor, email or document access. Source changes withhold obsolete content. Reports are unverified. Read-only: no assignment, acknowledgment, report, resolution, publication, withdrawal or outcome change.',
   handoff_overview:'Read current shared handoff assignments, acknowledgment, blockers and employee-reported outcomes. Managers see the office; other employees see only their current authorized assignments. Does not read private correspondence or mutate records. Open Work to review an assignment or outcome. Personal task completion never proves deal progress.',
-  team_overview:'Premium Team Performance: authorized office workload counts, not private conversations.',
+  team_overview:'Current office business report: follow-ups, opportunity gaps, blockers, employee workload and manager reviews with source links. Optional role/employeeId/metric filters and offset pages; use current returned IDs. Unknown dates, revenue, trends and performance rankings remain unavailable. No private correspondence, jobs, approval payloads or personal reminders.',
   daily_priorities:'Retrieve actual current tasks, research status, approvals and follow-ups for this employee.',
   search_crm:'Search the authorized local demo CRM by person, company or county. This is existing CRM, not external discovery.',
   research_investors:'Check existing CRM buyers with match_buyers first for ordinary buyer-finding requests. Use this tool when the employee asks for NEW or external prospects, not just a list of buyers. Queue durable investor research for a specific property. Choose synthetic-fixtures-v1 for fictional demo data or openai-web-search-v1 for explicitly authorized public-source research. External requires propertyType and an employee-approved maxCostCents estimate budget; ask before starting if not supplied. Public sources are unverified leads, not verified transactions or contacts. Ask for missing county, price and strategy; never invent property facts.',
@@ -178,6 +179,7 @@ function dispatchToolSync(actor: Actor,name: string,raw:unknown,command?:TurnCom
   if(!Object.hasOwn(toolSchemas,name))throw new service.AppError(400,'Unknown or unavailable assistant tool.');
   // Old saved callers predate optional research property type; model schemas remain strictly required/nullable.
   if(name==='research_investors'&&raw&&typeof raw==='object'&&!Array.isArray(raw))raw={propertyType:null,provider:null,maxCostCents:null,...raw};
+  if(name==='team_overview'&&raw&&typeof raw==='object'&&!Array.isArray(raw))raw={role:null,employeeId:null,metric:null,offset:null,...raw};
   if(name==='inbox_search'&&raw&&typeof raw==='object'&&!Array.isArray(raw))raw={source:null,...raw};
   if(name==='coaching_review'&&raw&&typeof raw==='object'&&!Array.isArray(raw))raw={situation:null,...raw};
   requireFeature(actor,'core');
@@ -267,7 +269,7 @@ function dispatchToolSync(actor: Actor,name: string,raw:unknown,command?:TurnCom
     case 'document_search':case 'document_read':case 'document_review':return dispatchDocumentTool(actor,name,raw);
     case 'team_transactions':return dispatchTeamTransactionTool(actor,raw);
     case 'handoff_overview':{if(actor.role==='manager')requireFeature(actor,'team-performance');const board=getHandoffBoard(actor);result.data=board;result.message=`${board.summary}\n${board.items.slice(0,10).map(item=>`${item.address}: ${item.nextStep}\n${item.evidence.join('\n')}`).join('\n\n')}\n${board.method.notice}`;result.artifacts=[{type:'handoff',title:'Review shared handoffs',data:{handoffAccessReference:board.handoffAccessReference}}];break;}
-    case 'team_overview':{const overview=service.getManagementOverview(actor);result.specialistIds=['team-performance'];result.data=overview;result.artifacts=[{type:'handoff',title:'Review office handoffs',data:{handoffAccessReference:overview.handoffs.handoffAccessReference}}];result.message=`Authorized office workload: ${JSON.stringify(overview)}. Fictional local demo data.`;break;}
+    case 'team_overview':{const overview=service.getManagementOverview(actor,managementQuerySchema.parse(raw));result.specialistIds=['team-performance'];result.data=overview;result.artifacts=[{type:'handoff',title:'Review shared handoffs',data:{managementAccessReference:overview.managementAccessReference,handoffAccessReference:overview.handoffs.handoffAccessReference}},...overview.records.filter(item=>item.destination.kind!=='property').slice(0,8).map(item=>({type:item.destination.kind==='investor'?'investors' as const:item.destination.kind==='property'?'release' as const:item.destination.kind as 'opportunity'|'handoff',id:item.destination.id,title:item.title,data:{managementAccessReference:overview.managementAccessReference}}))];result.message=`${overview.summary} ${overview.coverage.basis} ${overview.page.total} matching source records; ${overview.records.length} shown. Historical comparisons, revenue and verified sales rankings are unavailable.`;break;}
     case 'daily_priorities': {
       const data=service.getDailyBrief(actor);
       const priorities=data.priorities;
@@ -582,7 +584,7 @@ export function currentTextScope(actor:Actor,conversationId:string){
         const visibleInvestorIds=new Set(current.investors.map(investor=>investor.id));
         const relationshipReports=(db.prepare('SELECT investor_id,data FROM relationship_reports WHERE organization_id=? ORDER BY rowid').all(actor.organizationId) as {investor_id:string;data:string}[]).filter(report=>visibleInvestorIds.has(report.investor_id));
         const protectedState=['investor_intelligence','buy_boxes','property_releases','deal_packages','channel_templates','journey_observations','debriefs','tasks'].map(table=>db.prepare(`SELECT data FROM ${table} WHERE organization_id=? AND office_id=? ORDER BY rowid`).all(actor.organizationId,actor.officeId));
-        return {actor,knowledge,updates,rolePreparations:rolePreparationContextFingerprint(actor),documents:documentContextReference(actor),transactionTeams:transactionTeamContextReference(actor),transactions:transactionContextReference(actor),analyses:analysisContextReference(actor),opportunities:opportunityContextReference(actor),handoffs:getHandoffBoard(actor).handoffAccessReference,workingMethods:relationshipMethodFingerprint(),specialistMethods:evaluation?fingerprint({catalog:specialistMethodFingerprint(),evaluation}):specialistMethodFingerprint(),qualificationMethod,buyerGeographyMethod,workAccess:workContextSnapshot(actor),employeeMemory:getEmployeeMemory(actor),investors:current.investors,properties:current.properties,protectedState,relationshipReports,inbox:inboxContextFingerprint(actor),access:service.specialists.map(s=>featureAccess(actor,s.id)),withheld:service.getConversation(actor,conversationId).messages.filter(m=>m.content.startsWith('This historical message is withheld')).map(m=>m.id)};
+        return {actor,knowledge,updates,rolePreparations:rolePreparationContextFingerprint(actor),documents:documentContextReference(actor),transactionTeams:transactionTeamContextReference(actor),transactions:transactionContextReference(actor),analyses:analysisContextReference(actor),opportunities:opportunityContextReference(actor),handoffs:getHandoffBoard(actor).handoffAccessReference,management:managementContextReference(actor),workingMethods:relationshipMethodFingerprint(),specialistMethods:evaluation?fingerprint({catalog:specialistMethodFingerprint(),evaluation}):specialistMethodFingerprint(),qualificationMethod,buyerGeographyMethod,workAccess:workContextSnapshot(actor),employeeMemory:getEmployeeMemory(actor),investors:current.investors,properties:current.properties,protectedState,relationshipReports,inbox:inboxContextFingerprint(actor),access:service.specialists.map(s=>featureAccess(actor,s.id)),withheld:service.getConversation(actor,conversationId).messages.filter(m=>m.content.startsWith('This historical message is withheld')).map(m=>m.id)};
 
 }
 

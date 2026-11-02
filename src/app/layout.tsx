@@ -8,6 +8,7 @@ import './work.css';
 import './phone.css';
 import './inbox-conversation.css';
 import './brand.css';
+import './management.css';
 export const metadata: Metadata = {
   title: 'AgentDesk NW — Your work, moving forward',
   description: 'Your personal assistant, backed by a specialized AI workforce. A private concept demonstration by Tailored Agents.',

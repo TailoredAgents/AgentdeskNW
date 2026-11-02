@@ -26,7 +26,7 @@ describe('identity and tenant boundaries',()=>{
  });
  it('gates management/research roles and isolates offices',()=>{
   expect(()=>getManagementOverview(actor)).toThrow('Your role');
-  expect(getManagementOverview(demoActor('manager')).tasks).toHaveLength(3);
+  expect(getManagementOverview(demoActor('manager')).metrics.find(item=>item.id==='followups')?.value).toBe(2);
   expect(()=>createResearchJob(demoActor('acquisitions'),input)).toThrow('Your role');
   expect(getBootstrap(savannah).properties).toHaveLength(0);
   expect(()=>getInvestor(savannah,'investor-mike')).toThrow('not found');
