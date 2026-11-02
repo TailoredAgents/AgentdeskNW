@@ -45,6 +45,10 @@ Read `docs/IMPLEMENTATION_ROADMAP.md`, `MASTER_PLAN.md`, and the latest `docs/PR
 
 - Primary browser/native voice is turn-based device speech over the ordinary chat sender. Preserve one pending request, exact recovery identity, explicit decision-word review and epoch/permission cleanup on background/close. Audio pause never means job cancellation. No new audio host/receipt or customer charge is implied; the retained Realtime host still needs its separate admission. Native exports and simulated recognition callbacks do not establish physical audio acceptance.
 
+## Management recorded progress
+
+- Management reporting follows MANAGEMENT_HANDOFFS. Use the same current-office projection for UI, Agent and saved work. Recorded event counts use completed calendar windows in the declared demo timezone, separate today activity, current permitted cohorts and actual actor attribution. Handoff history/timing is current-cycle/source-bound; no old notes or private message snapshots enter reporting. Sparse history is not complete business-performance coverage. Keep unavailable source metrics distinct from zero; changed sources, local-day boundaries and membership changes invalidate saved results. Executive branch comparisons require separate scope; do not grant them through a report filter.
+
 ## Communications inbox rules
 
 - Person-first browser Inbox uses a read-only current-source projection. Group only established permitted CRM associations or exact unlinked channel addresses; ambiguous/unavailable identities stay separate. Never merge original threads, recipients, drafts, status or send reviews. Call recaps/notes retain provenance; no actual calling, new team mailbox grants or model context is implied. Keep source limits visible and retire denied/obsolete projection content.

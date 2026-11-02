@@ -158,7 +158,7 @@ async function route(request:NextRequest,{params}:{params:Promise<{path:string[]
       const params=request.nextUrl.searchParams;
       if(new Set(params.keys()).size!==[...params.keys()].length)throw new service.AppError(400,'Repeated report filters are not supported.');
       const query=Object.fromEntries(params);
-      return json(getManagementReport(actor,managementQuerySchema.parse({...query,...(query.offset!==undefined?{offset:Number(query.offset)}:{})})));
+      return json(getManagementReport(actor,managementQuerySchema.parse({...query,...(query.offset!==undefined?{offset:Number(query.offset)}:{}),...(query.activityOffset!==undefined?{activityOffset:Number(query.activityOffset)}:{})})));
     }
     if(resource==='handoffs'&&path.length<=2){
       if(method==='GET')return json(id?getHandoff(actor,id):getHandoffBoard(actor));

@@ -74,11 +74,11 @@ describe('current office management reporting',()=>{
   const after=getManagementReport(manager);expect(value(after,'review')).toBe(value(before,'review'));expect(value(after,'resolved')).toBe(value(before,'resolved')!+1);expect(after.records.find(item=>item.key===row.key)?.ownerId).toBe(jordan.id);
  });
  it('shares the same projection with Copilot, role filters and bounded source pagination',async()=>{
-  const report=getManagementReport(manager),result=await dispatchTool(manager,'team_overview',{});expect(result.data).toEqual({...report,query:{role:null,employeeId:null,metric:null,offset:null}});
+  const report=getManagementReport(manager),result=await dispatchTool(manager,'team_overview',{});expect(result.data).toEqual({...report,query:{role:null,employeeId:null,metric:null,offset:null,period:null,activity:null,activityWindow:null,activityOffset:null}});
   const roleReport=getManagementReport(manager,{role:'acquisitions'});expect(roleReport.records.every(row=>row.role==='acquisitions')).toBe(true);
   for(let i=0;i<43;i++)createTask(alex,{title:`Fictional paged task ${i}`,investorId:'investor-mike'});
   const first=getManagementReport(manager,{metric:'followups',employeeId:alex.id}),second=getManagementReport(manager,{metric:'followups',employeeId:alex.id,offset:40});expect(first.records).toHaveLength(40);expect(first.page.hasMore).toBe(true);expect(first.page.total).toBe(value(first,'followups'));expect(second.records.every(row=>!first.records.some(prior=>prior.key===row.key))).toBe(true);
-  const filtered=await dispatchTool(manager,'team_overview',{metric:'followups',employeeId:alex.id,offset:40});expect(filtered.data).toEqual({...second,query:{role:null,...second.query}});
+  const filtered=await dispatchTool(manager,'team_overview',{metric:'followups',employeeId:alex.id,offset:40});expect(filtered.data).toEqual({...second,query:{role:null,period:null,activity:null,activityWindow:null,activityOffset:null,...second.query}});
  });
  it('retires saved report/Agent context when business evidence changes while retaining immutable output',()=>{
   const step={key:'review',capabilityId:'office_priorities',input:{},dependsOn:[]},output=executeWorkCapability(manager,step,{}),saved=JSON.stringify(output),refs=collectHistoryReferences(manager,output.artifacts),voice=voiceContextSnapshot(manager);
@@ -94,7 +94,7 @@ describe('current office management reporting',()=>{
  });
  it('publishes strict nullable model filters while retaining older empty callers',()=>{
   const tool=toolDefinitions().find(item=>item.name==='team_overview')!;
-  expect(tool.parameters.required).toEqual(['role','employeeId','metric','offset']);expect(tool.parameters.additionalProperties).toBe(false);
+  expect(tool.parameters.required).toEqual(['role','employeeId','metric','offset','period','activity','activityWindow','activityOffset']);expect(tool.parameters.additionalProperties).toBe(false);
  });
  it('keeps current report identity stable across worker and HTTP actor construction order',()=>{
   const reference=getManagementReport(manager).managementAccessReference;

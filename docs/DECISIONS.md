@@ -148,3 +148,8 @@ Work stays local. Investor outreach, external messages, production CRM changes, 
 The owner requested continuing the fictional GM demonstration and restoring Render auto-redeploy. Use On Commit for the existing `agentdesk-nw` service and `autoDeployTrigger: commit` in its blueprint. No extra service, plan change, provider activation or live company data is part of this request. Required checks still precede pushes, and hosted success is verified separately.
 
 Acquisitions and management share current intake/assignment/report/review context through existing services. A one-time explicitly fictional sample makes the experience discoverable without resetting employee edits or implying provider work. Real CRM integration remains deferred.
+
+
+## November 2, 2026 — Deeper management reporting
+
+Owner authorized the recommended next release after confirming employee/branch/company visibility as the direction. Build employee profiles, recorded progress and management briefing within existing office scope. Use genuine saved fictional-event timestamps, not invented chart history; keep completed reporting windows and today separate. Explicit executive scope, approved communication/outcome metrics and real company acceptance remain later work. The canonical roadmap owns M7–M10.
