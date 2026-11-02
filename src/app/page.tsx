@@ -158,7 +158,7 @@ export default function Workspace() {
   useEffect(() => { const first = setTimeout(() => void refresh(), 0); const timer = setInterval(() => void refresh(), hasActiveJobs ? 3000 : 15000); return () => { clearTimeout(first); clearInterval(timer); }; }, [refresh, hasActiveJobs]);
   useEffect(() => { if (notice) { const timer = setTimeout(() => setNotice(''), 5000); return () => clearTimeout(timer); } }, [notice]);
   const messageCount = data?.conversations.find(c => c.id === conversationId)?.messages.length;
-  useEffect(() => { chatEnd.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }); }, [messageCount, sending, conversationId, view]);
+  useEffect(() => { if ((messageCount ?? 0) > 0 || sending) chatEnd.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }); }, [messageCount, sending, conversationId, view]);
   useEffect(() => { window.scrollTo({top:0,behavior:'instant'});mainContent.current?.scrollTo({top:0,behavior:'instant'}); }, [view]);
   const finishNavigation = (next: View) => { setEntryLink(null); if (next === 'queue') {setQueueTab('tasks');setWorkTool(undefined);} setView(next); setMobileNav(false); setNotifications(false); setPendingNavigation(null); };
   const navigate = (next: View, inboxThreadId?:string) => { if(next===view&&!inboxThreadId){setMobileNav(false);setNotifications(false);return;} if(next==='inbox'&&data&&(view!=='inbox'||inboxThreadId))setInboxSelection({actorId:data.actor.id,threadId:inboxThreadId}); if ((view === 'inbox'||view==='updates'||view==='knowledge'||view==='documents'||view==='transactions') && (inboxDirty || inboxBusy) && next !== view) {setPendingNavigation(next);setMobileNav(false);return;} finishNavigation(next); };

@@ -1,0 +1,79 @@
+/* Shared form rhythm and resilient layouts for the desktop/phone workspace. */
+.field-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; margin:18px 0; }
+.field-grid > *, .settings-grid > *, .form-grid > * { min-width:0; }
+.button-row { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:18px 0; }
+.button-row .button { max-width:100%; white-space:normal; }
+.transaction-tabs { margin:0 0 26px; gap:8px; }
+.document-workspace > div:first-child > .panel > .button { margin:16px 0; }
+.document-workspace > .panel > h3 + p { margin-top:10px; line-height:1.7; }
+.document-workspace label:has(> input[type=checkbox]),
+.updates-workspace label:has(> input[type=checkbox]) { flex-direction:row; align-items:flex-start; gap:10px; line-height:1.6; }
+.document-workspace label > input[type=checkbox],
+.updates-workspace label > input[type=checkbox] { margin:3px 0 0; }
+.updates-workspace .panel > label { margin:18px 0; }
+.updates-workspace .weekday-options { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:6px; }
+.updates-workspace .weekday-options label:has(> input[type=checkbox]) { flex-direction:column; align-items:center; justify-content:center; gap:8px; padding:10px 2px; border:1px solid var(--border); border-radius:9px; cursor:pointer; }
+.updates-workspace .weekday-options label:has(:checked) { background:var(--panel-raised); border-color:var(--accent); }
+.updates-workspace .field-grid label:has(> input[type=checkbox]) { padding:10px; border:1px solid var(--border); border-radius:9px; }
+.notes-layout .form-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.section-head { gap:12px; }
+.section-head > :first-child { min-width:0; }
+.document-workspace .setting-row > div, .updates-workspace .setting-row > div { min-width:0; overflow-wrap:anywhere; }
+.work-record-panel > h3 { margin:24px 0 10px; font-size:18px; }
+.work-record-panel > p:not(.panel-description) { margin:12px 0; line-height:1.75; overflow-wrap:anywhere; }
+.work-record-panel > .button { margin:8px 8px 8px 0; }
+.work-record-panel > details { margin-top:18px; }
+.work-record-panel fieldset { min-width:0; margin:20px 0; padding:18px; border:1px solid var(--border); border-radius:12px; }
+.work-record-panel legend { padding:0 8px; font-size:13px; font-weight:600; }
+.work-record-panel .summary-grid { margin:18px 0; }
+.work-record-panel .summary-grid label { min-width:0; }
+.work-record-panel small { line-height:1.6; }
+
+@media(max-width:800px) {
+  .field-grid, .notes-layout .form-grid { grid-template-columns:minmax(0,1fr); }
+  .phone-workspace .tab-bar { flex-wrap:wrap; overflow:visible; gap:4px 18px; }
+  .phone-workspace .tab-bar > button { padding-top:8px; padding-bottom:10px; }
+  .transaction-tabs .button { flex:1 1 140px; }
+  .document-workspace .button-row > .button, .updates-workspace .button-row:not(.weekday-options) > .button { flex:1 1 160px; }
+  .updates-workspace .weekday-options { gap:4px; }
+  .updates-workspace .weekday-options label { font-size:11px; }
+  .section-head { flex-wrap:wrap; }
+  .detail-title > div:not(.company-avatar) { flex:1 1 calc(100% - 60px); min-width:0; }
+  .detail-title > .badge { margin:0 0 0 53px; }
+  .phone-workspace .setting-row { gap:14px; }
+  .phone-workspace .setting-row > .button { flex-shrink:0; }
+  /* Let search and filters scroll with the people list on short phones. */
+  .conversation-inbox .inbox-thread-list { display:block; overflow-y:auto; }
+  .conversation-inbox .inbox-people-scroll { overflow:visible; }
+
+  /* Keep every investor fact and the existing scoped action, without sideways scrolling. */
+  .table-scroll:has(.investor-records-table) { overflow:visible; }
+  .table-scroll .investor-records-table { min-width:0; width:100%; }
+  .investor-records-table thead { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip-path:inset(50%); }
+  .investor-records-table tbody { display:grid; gap:12px; }
+  .investor-records-table tr { display:grid; grid-template-columns:minmax(0,1fr) 44px; padding:16px; border:1px solid var(--border); border-radius:12px; background:#fff; }
+  .investor-records-table td { display:block; border:0; padding:0; min-width:0; }
+  .investor-records-table td:first-child { grid-column:1; grid-row:1; padding-bottom:14px; }
+  .investor-records-table td:last-child { grid-column:2; grid-row:1; justify-self:end; }
+  .investor-records-table td[data-label] { grid-column:1 / -1; padding:8px 0; border-top:1px solid var(--border); line-height:1.6; font-size:13px; }
+  .investor-records-table td[data-label]::before { content:attr(data-label); display:block; margin-bottom:3px; font-size:11px; color:var(--muted); }
+  .investor-records-table .investor-cell { text-align:left; max-width:100%; }
+  .investor-records-table .investor-cell > span:last-child { min-width:0; }
+  .investor-records-table .investor-cell strong { font-size:14px; }
+  .investor-records-table .investor-cell small { white-space:normal; overflow-wrap:anywhere; }
+  .investor-records-table .icon-button { min-width:44px; min-height:44px; }
+}
+
+@media(max-width:480px) {
+  .qualification-form .form-grid { grid-template-columns:minmax(0,1fr); }
+  .qualification-form .form-grid .span-2 { grid-column:auto; }
+  .conversation-inbox .inbox-filters { flex-wrap:wrap; overflow:visible; }
+  .conversation-inbox .inbox-filters button { flex:0 0 auto; padding:8px; }
+}
+
+@media(max-width:360px) {
+  .phone-workspace .main-content:not(.assistant-main) { padding-left:12px; padding-right:12px; }
+  .phone-workspace .panel { padding:18px 14px; }
+  .phone-workspace .panel.property-card, .phone-workspace .panel.prospects-panel { padding:0; }
+  .phone-workspace .topbar-actions { gap:6px; }
+}

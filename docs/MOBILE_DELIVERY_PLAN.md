@@ -76,3 +76,7 @@ The native client can check the original saved chat request without replaying it
 Settings links directly to My updates. Its reminder/quiet-hour controls share employee settings and selected update timezone with desktop. Before changing preferences, the server compares the expected snapshot; an already-applied identical change returns without another effect. Unsaved/pending delivery preferences participate in the same navigation guard as schedule edits and item links.
 
 Keep actual device installation, speech, push/closed-app navigation, native screen readers, live employee SMS and richer native files/recipients on the canonical roadmap. Platform exports and browser walkthroughs do not satisfy those gates.
+
+## November 2 responsive presentation refinement
+
+The hosted phone website keeps the same scoped services and exact reviews. Investor tables become labeled record cards at phone widths, preserving every displayed fact and the original profile action. Work tabs and small-phone Inbox filters wrap; document, transaction and acquisition forms retain readable spacing and current action controls. Briefing weekdays and topic controls have aligned labels and usable grouping. Empty Agent conversations stay at the welcome message instead of scrolling to its end. This is browser presentation acceptance only; installed apps, physical keyboards/audio and push remain separate. See PROGRESS for tested widths and observed coverage.
